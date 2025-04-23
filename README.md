@@ -13,52 +13,115 @@
 
 
 2. **Publica la configuración (opcional)**:
+   ```bash
    php artisan vendor:publish --tag=whatsapp-config
 
 3. **Configura tus credenciales en .env**:
-
-    WHATSAPP_USER_MODEL=\App\Models\User::class
-    WHATSAPP_API_URL='https://graph.facebook.com/'
-    WHATSAPP_API_VERSION="v19.0"
+   ```bash
+   WHATSAPP_USER_MODEL=\App\Models\User::class
+   WHATSAPP_API_URL='https://graph.facebook.com/'
+   WHATSAPP_API_VERSION="v19.0"
 
 ⚙️ Configuración
 📁 Archivo config/whatsapp.php
 
 Configuración principal del paquete:
-
-'user_model' => env('WHATSAPP_USER_MODEL', \App\Models\User::class), // Modelo User
-'api_url' => env('WHATSAPP_API_URL', 'https://graph.facebook.com/'), // Base URL de la API
-'api_version' => env('WHATSAPWHATSAPP_API_VERSIONP_USER_MODEL', 'v19.0'), // API Version
+   
+   ```php
+   return [
+      'user_model' => env('WHATSAPP_USER_MODEL', \App\Models\User::class), // Modelo User
+      'api_url' => env('WHATSAPP_API_URL', 'https://graph.facebook.com/'), // Base URL de la API
+      'api_version' => env('WHATSAPP_API_VERSION', 'v19.0'), // Versión de la API
+   ];
+   ```
 
 🔄 Personalizar el Modelo User
 Si usas un modelo User personalizado:
 
+```markdown
+Si estás utilizando un modelo User personalizado, asegúrate de especificarlo en tu archivo `.env`:
+
+```env
 WHATSAPP_USER_MODEL=App\Modules\Auth\Models\Admin
+```
+
+Además, verifica que el modelo implementa las interfaces necesarias o extiende el modelo base esperado por el paquete. Por ejemplo:
+
+```php
+namespace App\Modules\Auth\Models;
+
+use Illuminate\Foundation\Auth\User as Authenticatable;
+
+class Admin extends Authenticatable
+{
+   // Tu lógica personalizada aquí
+}
+```
+```
 
 4.  🗃️ Migraciones
 
 🔍 Verificar configuración del User Model
 
-php artisan whatsapp:check-user-model
+```markdown
+5. **Verifica el modelo de usuario configurado**:
 
-Salida:
+Ejecuta el siguiente comando para asegurarte de que el modelo de usuario está correctamente configurado:
+
+```bash
+php artisan whatsapp:check-user-model
+```
+
+Este comando validará que el modelo especificado en el archivo `.env` cumple con los requisitos del paquete.
+
+Salida esperada (ejemplo):
+```plaintext
 ✅ Modelo User configurado: App\Models\User
+```
+
+Si hay algún problema, revisa la configuración en tu archivo `.env` y asegúrate de que el modelo implementa las interfaces necesarias.
+```
+
+
 
 Ejecuta las migraciones para crear las tablas necesarias:
    
+```bash
 php artisan migrate
+```
+
+Esto ejecutará las migraciones necesarias para crear las tablas requeridas por el paquete en tu base de datos.
 
 Tablas incluidas:
 
-- whatsapp_business_accounts 📇
-- whatsapp_phone_numbers ☎️
-- campaigns 📢
-- chat_sessions 💬
-- [+15 tablas relacionadas] 📊
+- whatsapp_business_accounts 📇  
+- whatsapp_phone_numbers ☎️  
+- campaigns 📢  
+- chat_sessions 💬  
+- message_templates 📝  
+- messages 📩  
+- message_logs 📜  
+- contacts 📋  
+- contact_groups 👥  
+- group_contacts 🔗  
+- scheduled_messages ⏰  
+- message_attachments 📎  
+- api_tokens 🔑  
+- webhook_events 🌐  
+- conversation_flows 🔄  
+- flow_steps 🛠️  
+- flow_conditions ⚙️  
+
 
 📦 Publicar elementos adicionales (opcional)
 
+```markdown
+```bash
 php artisan vendor:publish --tag=whatsapp-migrations  # Publicar migraciones
+```
+
+Este comando publicará las migraciones del paquete en tu directorio `database/migrations`. Puedes personalizarlas según tus necesidades antes de ejecutarlas.
+```
 
 🧩 Estructura del Paquete
 
