@@ -36,14 +36,14 @@ Configuración principal del paquete:
    ```
 
 🔄 Personalizar el Modelo User
+
 Si usas un modelo User personalizado:
 
-```markdown
-Si estás utilizando un modelo User personalizado, asegúrate de especificarlo en tu archivo `.env`:
+   Si estás utilizando un modelo User personalizado, asegúrate de especificarlo en tu archivo `.env`:
 
-```env
-WHATSAPP_USER_MODEL=App\Modules\Auth\Models\Admin
-```
+   ```env
+   WHATSAPP_USER_MODEL=App\Modules\Auth\Models\Admin
+   ```
 
 Además, verifica que el modelo implementa las interfaces necesarias o extiende el modelo base esperado por el paquete. Por ejemplo:
 
@@ -57,14 +57,13 @@ class Admin extends Authenticatable
    // Tu lógica personalizada aquí
 }
 ```
-```
+
 
 4.  🗃️ Migraciones
 
 🔍 Verificar configuración del User Model
 
-```markdown
-5. **Verifica el modelo de usuario configurado**:
+**Verifica el modelo de usuario configurado**:
 
 Ejecuta el siguiente comando para asegurarte de que el modelo de usuario está correctamente configurado:
 
@@ -80,8 +79,6 @@ Salida esperada (ejemplo):
 ```
 
 Si hay algún problema, revisa la configuración en tu archivo `.env` y asegúrate de que el modelo implementa las interfaces necesarias.
-```
-
 
 
 Ejecuta las migraciones para crear las tablas necesarias:
@@ -115,13 +112,12 @@ Tablas incluidas:
 
 📦 Publicar elementos adicionales (opcional)
 
-```markdown
 ```bash
 php artisan vendor:publish --tag=whatsapp-migrations  # Publicar migraciones
 ```
 
 Este comando publicará las migraciones del paquete en tu directorio `database/migrations`. Puedes personalizarlas según tus necesidades antes de ejecutarlas.
-```
+
 
 🧩 Estructura del Paquete
 
@@ -165,7 +161,6 @@ Desarrollado con ❤️ por ScriptDevelop
 2. **Sintaxis Resaltada**: Bloques de código con syntax highlighting.
 3. **Badges Interactivos** (Añade estos al inicio):
 
-   ```markdown
    [![Latest Version](https://img.shields.io/packagist/v/scriptdevelop/whatsapp-manager.svg?style=flat-square)](https://packagist.org/packages/scriptdevelop/whatsapp-manager)
    [![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-8892BF.svg?style=flat-square)](https://php.net/)
    [![Laravel Version](https://img.shields.io/badge/Laravel-10%2B-FF2D20.svg?style=flat-square)](https://laravel.com)
