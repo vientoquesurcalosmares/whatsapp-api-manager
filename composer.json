@@ -1,0 +1,33 @@
+{
+    "name": "scriptdevelop/whatsapp-manager",
+    "description": "Paquete para manejo de WhatsApp Business API en Laravel",
+    "type": "library",
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^12.00",
+        "guzzlehttp/guzzle": "^7.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "ScriptDevelop\\WhatsappManager\\WhatsappManagerServiceProvider"
+            ]
+        }
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "ScriptDevelop\\WhatsappManager\\": "src/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "ScriptDevelop\\WhatsappManager\\WhatsappManagerServiceProvider::postAutoloadDump"
+        ]
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^12.1",
+        "orchestra/testbench": "^10.2",
+        "mockery/mockery": "^1.6"
+    }
+}

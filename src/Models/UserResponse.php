@@ -1,0 +1,44 @@
+<?php
+
+namespace ScriptDevelop\WhatsappManager\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+use ScriptDevelop\WhatsappManager\Traits\GeneratesUlid;
+
+class UserResponse extends Model
+{
+    use HasFactory, SoftDeletes;
+    use GeneratesUlid;
+
+    protected $primaryKey = 'response_id';
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'session_id',
+        'flow_step_id',
+        'field_name',
+        'field_value',
+    ];
+
+    protected $casts = [
+        'field_value' => 'array',
+    ];
+
+    // Relaciones
+
+    // UserResponse pertenece a una sesión (chat_session)
+    public function chatSession()
+    {
+        return $this->belongsTo(ChatSession::class, 'session_id', 'session_id');
+    }
+
+    // UserResponse pertenece a un paso del flujo
+    public function flowStep()
+    {
+        return $this->belongsTo(FlowStep::class, 'flow_step_id', 'step_id');
+    }
+}
