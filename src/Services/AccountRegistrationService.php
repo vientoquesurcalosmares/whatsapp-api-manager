@@ -57,6 +57,35 @@ class AccountRegistrationService
     }
 
     /**
+     * Registra o actualiza una cuenta empresarial.
+     */
+    public function register(array $data): WhatsappBusinessAccount
+    {
+        if (empty($data['api_token'])) {
+            throw new \InvalidArgumentException('El token de API es requerido');
+        }
+
+        if (empty($data['business_id'])) {
+            throw new \InvalidArgumentException('El ID de la cuenta es requerido');
+        }
+
+        try {
+            $accountData = $this->whatsappService
+                ->withTempToken($data['api_token'])
+                ->getBusinessAccount($data['business_id']);
+
+            $account = $this->upsertBusinessAccount($data['api_token'], $accountData);
+            $this->registerPhoneNumbers($account);
+
+            return $account->load('phoneNumbers');
+
+        } catch (ApiException $e) {
+            Log::error("Error al registrar cuenta: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
      * Crea o actualiza la cuenta empresarial en la base de datos
      */
     protected function upsertBusinessAccount(string $apiToken, array $apiData): WhatsappBusinessAccount

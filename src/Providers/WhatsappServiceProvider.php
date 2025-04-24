@@ -4,6 +4,7 @@ namespace ScriptDevelop\WhatsappManager\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
+use ScriptDevelop\WhatsappManager\Services\AccountRegistrationService;
 use ScriptDevelop\WhatsappManager\Services\WhatsappService;
 use ScriptDevelop\WhatsappManager\Repositories\WhatsappBusinessAccountRepository;
 
@@ -17,15 +18,7 @@ class WhatsappServiceProvider extends ServiceProvider
             'whatsapp'
         );
 
-        // 2. Registrar el servicio PRINCIPAL con la clave 'whatsapp'
-        $this->app->singleton('whatsapp', function ($app) {
-            return new WhatsappService(
-                $app->make(ApiClient::class),
-                $app->make(WhatsappBusinessAccountRepository::class)
-            );
-        });
-
-        // 3. Registrar el cliente API
+        // 2. Registrar el cliente API
         $this->app->singleton(ApiClient::class, function ($app) {
             return new ApiClient(
                 config('whatsapp.api.url', 'https://graph.facebook.com'),
@@ -34,28 +27,43 @@ class WhatsappServiceProvider extends ServiceProvider
             );
         });
 
-        // 4. Registrar repositorio
+        // 3. Registrar repositorio
         $this->app->singleton(WhatsappBusinessAccountRepository::class);
+
+        // 4. Registrar servicio principal de mensajería
+        $this->app->singleton('whatsapp.service', function ($app) {
+            return new WhatsappService(
+                $app->make(ApiClient::class),
+                $app->make(WhatsappBusinessAccountRepository::class)
+            );
+        });
+
+        // 5. Registrar servicio de cuentas
+        $this->app->singleton('whatsapp.account', function ($app) {
+            return new AccountRegistrationService(
+                $app->make('whatsapp.service')
+            );
+        });
     }
 
     public function boot()
     {
-        // 1. Publicar migraciones desde src/database
+        // Publicar migraciones
         $this->publishes([
-            __DIR__.'/../database/migrations' => database_path('migrations'), // ✅ Ruta CORRECTA
+            __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'whatsapp-migrations');
 
-        // 2. Cargar migraciones automáticamente
+        // Cargar migraciones automáticamente
         if (config('whatsapp.load_migrations', true)) {
-            $this->loadMigrationsFrom(__DIR__.'/../database/migrations'); // ✅ Ruta CORRECTA
+            $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         }
 
-        // 3. Publicar configuración desde src/config
+        // Publicar configuración
         $this->publishes([
-            __DIR__.'/../config/whatsapp.php' => config_path('whatsapp.php'), // ✅ Ruta CORRECTA
+            __DIR__.'/../config/whatsapp.php' => config_path('whatsapp.php'),
         ], 'whatsapp-config');
 
-        // 4. Registrar comandos Artisan
+        // Registrar comandos Artisan
         if (class_exists(\ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel::class)) {
             $this->commands([
                 \ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel::class,
