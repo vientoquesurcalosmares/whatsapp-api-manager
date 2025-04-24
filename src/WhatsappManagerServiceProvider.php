@@ -11,54 +11,69 @@ class WhatsappManagerServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        // Fusionar configuración
-        $this->mergeConfigFrom(
-            __DIR__.'/Config/whatsapp.php', 
-            'whatsapp'
-        );
+        // Fusionar configuración (solo si existe el archivo)
+        if (file_exists(__DIR__.'/Config/whatsapp.php')) {
+            $this->mergeConfigFrom(
+                __DIR__.'/Config/whatsapp.php', 
+                'whatsapp'
+            );
+        }
 
+        // Registrar el cliente API
         $this->app->singleton(ApiClient::class, function ($app) {
             return new ApiClient(
-                config('whatsapp.api_url'),
-                config('whatsapp.api_version'),
-                config('whatsapp.timeout')
+                config('whatsapp.api_url', 'https://graph.facebook.com'), // Valor por defecto
+                config('whatsapp.api_version', 'v19.0'), // Valor por defecto
+                config('whatsapp.timeout', 30) // Valor por defecto
             );
         });
 
+        // Registrar el repositorio
         $this->app->singleton(WhatsappBusinessAccountRepository::class);
 
-        $this->app->singleton(WhatsappService::class, function ($app): WhatsappService {
+        // Registrar el servicio principal
+        $this->app->singleton(WhatsappService::class, function ($app) {
             return new WhatsappService(
-                $app->make(ApiClient::class), // Inyecta ApiClient
-                $app->make(WhatsappBusinessAccountRepository::class) // Inyecta el repositorio
+                $app->make(ApiClient::class),
+                $app->make(WhatsappBusinessAccountRepository::class)
             );
         });
     }
 
     public function boot()
     {
-        // Cargar migraciones
-        $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
+        // ========== CORRECCIONES PRINCIPALES ========== //
+        
+        // 1. Publicar migraciones con tag específico
+        $this->publishes([
+            __DIR__.'/Database/Migrations' => database_path('migrations'),
+        ], 'whatsapp-migrations'); // Tag modificado
 
-        // Publicar configuración (solo si la aplicación host es Laravel)
+        // 2. Cargar migraciones solo si no se publican
+        if (config('whatsapp.load_migrations', true)) {
+            $this->loadMigrationsFrom(__DIR__.'/Database/Migrations');
+        }
+
+        // Publicar configuración
         if ($this->app->runningInConsole()) {
             $this->publishConfig();
-
-            $this->commands([
-                \ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel::class,
-            ]);
+            
+            // Registrar comandos solo si existen
+            if (class_exists(\ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel::class)) {
+                $this->commands([
+                    \ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel::class,
+                ]);
+            }
         }
     }
 
     protected function publishConfig()
     {
-        // Método compatible con Laravel y paquetes independientes
-        $configPath = $this->app->bound('path.config') 
-            ? $this->app->make('path.config') 
-            : (function_exists('config_path') ? config_path() : __DIR__.'/../../../config');
-
-        $this->publishes([
-            __DIR__.'/Config/whatsapp.php' => $configPath.'/whatsapp.php',
-        ], 'whatsapp-config');
+        // Publicar configuración solo si el archivo existe
+        if (file_exists(__DIR__.'/Config/whatsapp.php')) {
+            $this->publishes([
+                __DIR__.'/Config/whatsapp.php' => config_path('whatsapp.php'),
+            ], 'whatsapp-config'); // Tag único para configuración
+        }
     }
 }
