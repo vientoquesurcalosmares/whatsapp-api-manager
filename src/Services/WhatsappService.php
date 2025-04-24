@@ -26,20 +26,7 @@ class WhatsappService
         return $this;
     }
 
-    /**
-     * Obtiene el perfil de whatsapp business.
-     */
-    public function getBusinessProfile(): array
-    {
-        $this->ensureAccountIsSet();
-
-        return $this->apiClient->request(
-            'GET',
-            Endpoints::GET_BUSINESS_PROFILE,
-            ['phone_number_id' => $this->businessAccount->phone_number_id],
-            headers: $this->getAuthHeaders()
-        );
-    }
+    
 
     /**
      * Envía un mensaje de texto.
@@ -81,4 +68,66 @@ class WhatsappService
             'Authorization' => 'Bearer ' . $this->businessAccount->api_token
         ];
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public function getBusinessAccount(string $whatsappBusinessId): array
+    {
+        return $this->apiClient->request(
+            'GET',
+            Endpoints::GET_BUSINESS_ACCOUNT,
+            ['whatsapp_business_id' => $whatsappBusinessId],
+            headers: $this->getAuthHeaders()
+        );
+    }
+
+    public function getPhoneNumbers(string $whatsappBusinessId): array
+    {
+        return $this->apiClient->request(
+            'GET',
+            Endpoints::GET_PHONE_NUMBERS,
+            ['whatsapp_business_id' => $whatsappBusinessId],
+            headers: $this->getAuthHeaders()
+        )['data']; // Asumiendo que la respuesta tiene clave 'data'
+    }
+
+    /**
+     * Obtiene el perfil de whatsapp business.
+     */
+    public function getBusinessProfile(string $phoneNumberId, array $fields = []): array
+    {
+        $query = [];
+        if (!empty($fields)) {
+            $query['fields'] = implode(',', $fields);
+        }
+
+        return $this->apiClient->request(
+            'GET',                                  // $method
+            Endpoints::GET_BUSINESS_PROFILE,        // $endpoint
+            ['phone_number_id' => $phoneNumberId],  // $params (reemplaza {phone_number_id})
+            [],                                     // $data (vacío para GET)
+            $query,                                 // Query params como array
+            $this->getAuthHeaders()                 // $headers
+        );
+    }
+
+    public function withTempToken(string $token): self
+    {
+        $this->businessAccount = new WhatsappBusinessAccount([
+            'api_token' => $token
+        ]);
+        return $this;
+    }
+
 }

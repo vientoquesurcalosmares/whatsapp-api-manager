@@ -34,11 +34,12 @@ class ApiClient
         string $endpoint,
         array $params = [],
         array $data = [],
+        array $query = [],
         array $headers = []
     ): array {
         try {
             // Construir URL final
-            $url = $this->buildUrl($endpoint, $params);
+            $url = $this->buildUrl($endpoint, $params, $query);
             
             // Configurar opciones
             $options = ['headers' => $headers];
@@ -61,13 +62,19 @@ class ApiClient
     /**
      * Construye la URL reemplazando placeholders.
      */
-    protected function buildUrl(string $endpoint, array $params): string
+    protected function buildUrl(string $endpoint, array $params, array $query = []): string
     {
-        return str_replace(
+        $url = str_replace(
             array_map(fn($k) => '{' . $k . '}', array_keys($params)),
             array_values($params),
             $this->version . '/' . $endpoint
         );
+
+        if (!empty($query)) {
+            $url .= '?' . http_build_query($query);
+        }
+
+        return $url;
     }
 
     /**

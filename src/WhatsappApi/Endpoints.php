@@ -4,7 +4,8 @@ namespace ScriptDevelop\WhatsappManager\WhatsappApi;
 
 class Endpoints
 {
-    // Business Profile
+    const GET_BUSINESS_ACCOUNT = '{whatsapp_business_id}';
+    const GET_PHONE_NUMBERS = '{whatsapp_business_id}/phone_numbers';
     const GET_BUSINESS_PROFILE = '{phone_number_id}/whatsapp_business_profile';
     
     // Messages
