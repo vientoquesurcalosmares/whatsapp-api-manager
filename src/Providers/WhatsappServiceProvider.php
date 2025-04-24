@@ -11,18 +11,18 @@ class WhatsappServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        // 1. Fusionar configuración desde la raíz del paquete
+        // 1. Fusionar configuración desde src/config
         $this->mergeConfigFrom(
-            __DIR__.'/../../../config/whatsapp.php', // Desde src/Providers
+            __DIR__.'/../config/whatsapp.php', // ✅ Ruta CORRECTA (src/config)
             'whatsapp'
         );
 
         // 2. Registrar el cliente API
         $this->app->singleton(ApiClient::class, function ($app) {
             return new ApiClient(
-                config('whatsapp.api_url', 'https://graph.facebook.com'),
-                config('whatsapp.api_version', 'v19.0'),
-                config('whatsapp.timeout', 30)
+                config('whatsapp.api.url', 'https://graph.facebook.com'),
+                config('whatsapp.api.version', 'v19.0'),
+                config('whatsapp.api.timeout', 30)
             );
         });
 
@@ -40,22 +40,22 @@ class WhatsappServiceProvider extends ServiceProvider
 
     public function boot()
     {
-        // 1. Publicar migraciones
+        // 1. Publicar migraciones desde src/database
         $this->publishes([
-            __DIR__.'/../../database/migrations' => database_path('migrations'),
+            __DIR__.'/../database/migrations' => database_path('migrations'), // ✅ Ruta CORRECTA
         ], 'whatsapp-migrations');
 
-        // 2. Cargar migraciones automáticamente (si no se publican)
+        // 2. Cargar migraciones automáticamente
         if (config('whatsapp.load_migrations', true)) {
-            $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
+            $this->loadMigrationsFrom(__DIR__.'/../database/migrations'); // ✅ Ruta CORRECTA
         }
 
-        // 3. Publicar configuración
+        // 3. Publicar configuración desde src/config
         $this->publishes([
-            __DIR__.'/../../config/whatsapp.php' => config_path('whatsapp.php'),
+            __DIR__.'/../config/whatsapp.php' => config_path('whatsapp.php'), // ✅ Ruta CORRECTA
         ], 'whatsapp-config');
 
-        // 4. Registrar comandos Artisan (si existen)
+        // 4. Registrar comandos Artisan
         if (class_exists(\ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel::class)) {
             $this->commands([
                 \ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel::class,
