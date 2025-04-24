@@ -24,6 +24,12 @@
     "scripts": {
         "post-autoload-dump": [
             "ScriptDevelop\\WhatsappManager\\WhatsappManagerServiceProvider::postAutoloadDump"
+        ],
+        "post-install-cmd": [
+            "@php artisan vendor:publish --provider=\"ScriptDevelop\\WhatsappManager\\WhatsappManagerServiceProvider\" --tag=\"migrations\" --force"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --provider=\"ScriptDevelop\\WhatsappManager\\WhatsappManagerServiceProvider\" --tag=\"migrations\" --force"
         ]
     },
     "require-dev": {
