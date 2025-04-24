@@ -13,7 +13,7 @@ class WhatsappServiceProvider extends ServiceProvider
     {
         // 1. Fusionar configuración desde la raíz del paquete
         $this->mergeConfigFrom(
-            __DIR__.'/../../config/whatsapp.php', // Ruta correcta
+            __DIR__.'/../../../config/whatsapp.php', // Desde src/Providers
             'whatsapp'
         );
 
