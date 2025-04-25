@@ -18,7 +18,7 @@ class WhatsappPhoneNumber extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'whatsapp_business_accounts_id',
+        'whatsapp_business_account_id',
         'whatsapp_business_profile_id',
         'whatsapp_bot_id',
         'display_phone_number',
@@ -38,7 +38,7 @@ class WhatsappPhoneNumber extends Model
 
     public function businessAccount()
     {
-        return $this->belongsTo(WhatsappBusinessAccount::class, 'whatsapp_business_accounts_id');
+        return $this->belongsTo(WhatsappBusinessAccount::class, 'whatsapp_business_account_id');
     }
 
     public function businessProfile()
