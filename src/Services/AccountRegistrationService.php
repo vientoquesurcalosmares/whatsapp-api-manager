@@ -51,11 +51,19 @@ class AccountRegistrationService
         }
     }
 
-    private function fetchAccountData(array $data): array
+    protected function fetchAccountData(array $data): array
     {
-        return $this->whatsappService
+        $response = $this->whatsappService
             ->withTempToken($data['api_token'])
             ->getBusinessAccount($data['business_id']);
+
+        // Debug: Registrar respuesta completa de la API
+        Log::channel('whatsapp')->debug('RESPUESTA CRUDA DE LA API BUSINESS ACCOUNT:', [
+            'Business ID solicitado' => $data['business_id'],
+            'Respuesta completa' => $response
+        ]);
+        
+        return $response;
     }
 
     private function upsertBusinessAccount(string $apiToken, array $apiData): WhatsappBusinessAccount
@@ -65,7 +73,7 @@ class AccountRegistrationService
             [
                 'name' => $apiData['name'] ?? 'Sin nombre',
                 'api_token' => $apiToken,
-                'phone_number_id' => $apiData['phone_number_id'] ?? null,
+                'phone_number_id' => $apiData['phone_number_id'] ?? $apiData['id'], // Usar business_id como fallback
                 'timezone_id' => $apiData['timezone_id'] ?? 0,
                 'message_template_namespace' => $apiData['message_template_namespace'] ?? null
             ]
