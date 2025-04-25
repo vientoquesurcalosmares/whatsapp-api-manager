@@ -73,11 +73,11 @@ class AccountRegistrationService
     protected function registerPhoneNumbers(WhatsappBusinessAccount $account): void
     {
         try {
-            $phoneNumbers = $this->whatsappService
+            $response = $this->whatsappService
                 ->forAccount($account->whatsapp_business_id)
                 ->getPhoneNumbers($account->whatsapp_business_id);
 
-            foreach ($phoneNumbers as $phoneData) {
+            foreach ($response['data'] as $phoneData) { // Acceder a ['data']
                 $this->registerSinglePhoneNumber($account, $phoneData);
             }
 
@@ -104,14 +104,14 @@ class AccountRegistrationService
     protected function registerBusinessProfile(WhatsappPhoneNumber $phone): void
     {
         try {
-            $profileData = $this->whatsappService
+            $response = $this->whatsappService
                 ->forAccount($phone->whatsapp_business_account_id)
                 ->getBusinessProfile($phone->phone_number_id);
 
-            $validData = (new BusinessProfileValidator())->validate($profileData);
-            
+            $validData = (new BusinessProfileValidator())->validate($response['data']);
+
             $profile = WhatsappBusinessProfile::updateOrCreate(
-                ['whatsapp_business_profile_id' => $phone->whatsapp_business_profile_id],
+                ['whatsapp_business_profile_id' => $phone->phone_number_id],
                 $validData
             );
 
@@ -120,7 +120,7 @@ class AccountRegistrationService
             ]);
 
         } catch (InvalidApiResponseException $e) {
-            Log::error("Perfil inválido: {$e->getMessage()}", ['details' => $e->getDetails()]);
+            Log::error("Perfil inválido: {$e->getMessage()}");
         } catch (ApiException $e) {
             Log::error("Error API: {$e->getMessage()}");
         }

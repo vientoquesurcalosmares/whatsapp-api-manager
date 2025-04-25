@@ -12,12 +12,12 @@ class BusinessProfileValidator
         'address' => 'nullable|string|max:256',
         'description' => 'nullable|string|max:512',
         'email' => 'nullable|email|max:128',
-        'profile_picture_url' => 'nullable|array',
-        'profile_picture_url.url' => 'required_with:profile_picture_url|url|max:512',
+        'profile_picture_url' => 'nullable', // Regla más flexible
         'vertical' => 'nullable|string|in:UNDEFINED,OTHER,PROFESSIONAL_SERVICES',
         'websites' => 'nullable|array',
-        'websites.*.url' => 'required|url|max:512',
-        'websites.*.type' => 'nullable|string|in:WEB,MOBILE_APP'
+        'websites.*.url' => 'required_with:websites|url|max:512',
+        'websites.*.type' => 'nullable|string|in:WEB,MOBILE_APP',
+        'messaging_product' => 'nullable|string'
     ];
 
     /**
@@ -44,10 +44,20 @@ class BusinessProfileValidator
             'address' => $data['address'] ?? null,
             'description' => $data['description'] ?? null,
             'email' => $data['email'] ?? null,
-            'profile_picture_url' => $data['profile_picture_url']['url'] ?? null,
+            'profile_picture_url' => $this->parseProfilePicture($data),
             'vertical' => $data['vertical'] ?? 'OTHER',
-            'websites' => $this->parseWebsites($data['websites'] ?? [])
+            'websites' => $this->parseWebsites($data['websites'] ?? []),
+            'messaging_product' => $data['messaging_product'] ?? 'whatsapp'
         ];
+    }
+
+    private function parseProfilePicture(array $data): ?string
+    {
+        $url = $data['profile_picture_url'] ?? null;
+        
+        return is_array($url) 
+            ? ($url['url'] ?? null)
+            : $url;
     }
 
     private function parseWebsites(array $websites): array
