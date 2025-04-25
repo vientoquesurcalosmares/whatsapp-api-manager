@@ -77,8 +77,8 @@ class AccountRegistrationService
                 ->forAccount($account->whatsapp_business_id)
                 ->getPhoneNumbers($account->whatsapp_business_id);
 
-            // Obtener datos directamente sin clave 'data'
-            $phoneNumbers = $response['data'] ?? $response;
+            $phoneNumbers = $response['data'] ?? [];
+            Log::debug('Datos de números telefónicos:', $phoneNumbers);
 
             foreach ($phoneNumbers as $phoneData) {
                 $this->registerSinglePhoneNumber($account, $phoneData);
@@ -111,15 +111,21 @@ class AccountRegistrationService
                 ->forAccount($phone->whatsapp_business_account_id)
                 ->getBusinessProfile($phone->phone_number_id);
 
-            // Usar respuesta completa si no hay clave 'data'
-            $apiData = $response['data'] ?? $response;
+            // Nueva estructura: $response['data'][0] contiene todo el perfil
+            $businessProfile = $response['data'][0] ?? [];
+            Log::debug('Perfil empresarial:', $businessProfile);
 
-            $validData = (new BusinessProfileValidator())->validate($apiData);
+            $validData = (new BusinessProfileValidator())->validate($businessProfile);
+            $websites = $this->parseWebsites($businessProfile['websites'] ?? []);
 
+            // Guardar perfil
             $profile = WhatsappBusinessProfile::updateOrCreate(
                 ['whatsapp_business_profile_id' => $phone->phone_number_id],
                 $validData
             );
+
+            // Sincronizar websites
+            $this->syncWebsites($profile, $websites);
 
             $phone->update([
                 'whatsapp_business_profile_id' => $profile->whatsapp_business_profile_id
@@ -129,6 +135,34 @@ class AccountRegistrationService
             Log::error("Perfil inválido: {$e->getMessage()}");
         } catch (ApiException $e) {
             Log::error("Error API: {$e->getMessage()}");
+        }
+    }
+
+    // Método para procesar websites (array de strings)
+    private function parseWebsites(array $websites): array
+    {
+        return array_map(function ($url) {
+            return [
+                'url' => $url,
+                'type' => 'WEB' // Valor por defecto
+            ];
+        }, $websites);
+    }
+
+    protected function syncWebsites(WhatsappBusinessProfile $profile, array $websites): void
+    {
+        // Eliminar websites existentes
+        $profile->websites()->delete();
+
+        // Crear nuevos registros
+        foreach ($websites as $websiteData) {
+            try {
+                $profile->websites()->create([
+                    'website' => $websiteData['url'] // Mapear 'url' al campo 'website' de la BD
+                ]);
+            } catch (\Exception $e) {
+                Log::error("Error guardando website: {$e->getMessage()}", $websiteData);
+            }
         }
     }
 }

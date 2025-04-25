@@ -14,15 +14,14 @@ return new class extends Migration
         Schema::create('websites', function (Blueprint $table) {
             $table->uuid('website_id')->primary();
             $table->uuid('whatsapp_business_profile_id');
-            $table->string('website', 45);
+            $table->string('website', 512);
             $table->timestamps();
             $table->softDeletes();
 
             $table->foreign('whatsapp_business_profile_id')
                   ->references('whatsapp_business_profile_id')
                   ->on('whatsapp_business_profiles')
-                  ->onDelete('no action')
-                  ->onUpdate('no action');
+                  ->onDelete('cascade');
         });
     }
 

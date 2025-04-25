@@ -12,12 +12,10 @@ class BusinessProfileValidator
         'address' => 'nullable|string|max:256',
         'description' => 'nullable|string|max:512',
         'email' => 'nullable|email|max:128',
-        'profile_picture_url' => 'nullable', // Permitir string o array
-        'profile_picture_url.url' => 'required_with:profile_picture_url|url|max:512', // Solo si es array
+        'profile_picture_url' => 'nullable|url|max:512', // Ahora es string
         'vertical' => 'nullable|string|in:UNDEFINED,OTHER,PROFESSIONAL_SERVICES',
         'websites' => 'nullable|array',
-        'websites.*.url' => 'required_with:websites|url|max:512',
-        'websites.*.type' => 'nullable|string|in:WEB,MOBILE_APP',
+        'websites.*' => 'url|max:512', // Validar cada URL directamente
         'messaging_product' => 'nullable|string'
     ];
 
@@ -35,7 +33,7 @@ class BusinessProfileValidator
             );
         }
 
-        return $this->formatValidData($validator->validated());
+        return $this->formatValidData($apiData);
     }
 
     private function formatValidData(array $data): array
@@ -45,9 +43,8 @@ class BusinessProfileValidator
             'address' => $data['address'] ?? null,
             'description' => $data['description'] ?? null,
             'email' => $data['email'] ?? null,
-            'profile_picture_url' => $this->parseProfilePicture($data),
+            'profile_picture_url' => $data['profile_picture_url'] ?? null,
             'vertical' => $data['vertical'] ?? 'OTHER',
-            'websites' => $this->parseWebsites($data['websites'] ?? []),
             'messaging_product' => $data['messaging_product'] ?? 'whatsapp'
         ];
     }
@@ -56,18 +53,25 @@ class BusinessProfileValidator
     {
         $url = $data['profile_picture_url'] ?? null;
         
-        return is_array($url) 
-            ? ($url['url'] ?? null)
-            : $url;
+        if (is_array($url)) {
+            return $url['url'] ?? null;
+        }
+        
+        return $url;
     }
 
     private function parseWebsites(array $websites): array
     {
         return array_map(function ($website) {
-            return [
-                'url' => $website['url'],
-                'type' => $website['type'] ?? 'WEB'
-            ];
+            return is_array($website) 
+                ? ['url' => $website['url'], 'type' => $website['type'] ?? 'WEB']
+                : ['url' => $website, 'type' => 'WEB'];
         }, $websites);
+    }
+
+    // Nuevo método para obtener websites
+    public function extractWebsites(array $data): array
+    {
+        return $this->parseWebsites($data['websites'] ?? []);
     }
 }
