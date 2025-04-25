@@ -14,8 +14,13 @@ class WhatsappServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/whatsapp.php', 'whatsapp');
+        // Fusionar configuración principal
+        $this->mergeConfigFrom(
+            __DIR__.'/../config/whatsapp.php',
+            'whatsapp'
+        );
 
+        // Registrar cliente API
         $this->app->singleton(ApiClient::class, function ($app) {
             return new ApiClient(
                 config('whatsapp.api.base_url', 'https://graph.facebook.com'),
@@ -24,8 +29,10 @@ class WhatsappServiceProvider extends ServiceProvider
             );
         });
 
+        // Registrar repositorio
         $this->app->singleton(WhatsappBusinessAccountRepository::class);
         
+        // Registrar servicio principal
         $this->app->singleton('whatsapp.service', function ($app) {
             return new WhatsappService(
                 $app->make(ApiClient::class),
@@ -33,6 +40,7 @@ class WhatsappServiceProvider extends ServiceProvider
             );
         });
 
+        // Registrar servicio de cuentas
         $this->app->singleton('whatsapp.account', function ($app) {
             return new AccountRegistrationService($app->make('whatsapp.service'));
         });
@@ -40,20 +48,13 @@ class WhatsappServiceProvider extends ServiceProvider
 
     public function boot()
     {
-        // Publicar configuraciones por separado
+        // Publicar solo configuraciones necesarias
         $this->publishes([
             __DIR__.'/../config/whatsapp.php' => config_path('whatsapp.php'),
-        ], 'whatsapp-config');
-
-        $this->publishes([
-            __DIR__.'/../config/logging.php' => config_path('logging.php'),
-        ], 'whatsapp-logging');
-
-        $this->publishes([
             __DIR__.'/../database/migrations' => database_path('migrations'),
-        ], 'whatsapp-migrations');
+        ], ['whatsapp-config', 'whatsapp-migrations']);
 
-        // Cargar migraciones automáticamente si está habilitado
+        // Cargar migraciones condicionalmente
         if (config('whatsapp.load_migrations', true)) {
             $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         }
