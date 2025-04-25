@@ -12,7 +12,8 @@ class BusinessProfileValidator
         'address' => 'nullable|string|max:256',
         'description' => 'nullable|string|max:512',
         'email' => 'nullable|email|max:128',
-        'profile_picture_url' => 'nullable', // Regla más flexible
+        'profile_picture_url' => 'nullable', // Permitir string o array
+        'profile_picture_url.url' => 'required_with:profile_picture_url|url|max:512', // Solo si es array
         'vertical' => 'nullable|string|in:UNDEFINED,OTHER,PROFESSIONAL_SERVICES',
         'websites' => 'nullable|array',
         'websites.*.url' => 'required_with:websites|url|max:512',

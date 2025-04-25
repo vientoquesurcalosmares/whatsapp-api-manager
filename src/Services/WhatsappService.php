@@ -71,12 +71,14 @@ class WhatsappService
 
     public function getPhoneNumbers(string $whatsappBusinessId): array
     {
-        return $this->apiClient->request(
+            $response = $this->apiClient->request(
             'GET',
             Endpoints::GET_PHONE_NUMBERS,
             ['whatsapp_business_id' => $whatsappBusinessId],
             headers: $this->getAuthHeaders()
-        )['data']; // Asumiendo que la respuesta tiene clave 'data'
+        );
+    
+        return $response['data'] ?? $response; // Adaptación para diferentes versiones de API
     }
 
     /**

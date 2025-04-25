@@ -77,7 +77,10 @@ class AccountRegistrationService
                 ->forAccount($account->whatsapp_business_id)
                 ->getPhoneNumbers($account->whatsapp_business_id);
 
-            foreach ($response['data'] as $phoneData) { // Acceder a ['data']
+            // Obtener datos directamente sin clave 'data'
+            $phoneNumbers = $response['data'] ?? $response;
+
+            foreach ($phoneNumbers as $phoneData) {
                 $this->registerSinglePhoneNumber($account, $phoneData);
             }
 
@@ -108,7 +111,10 @@ class AccountRegistrationService
                 ->forAccount($phone->whatsapp_business_account_id)
                 ->getBusinessProfile($phone->phone_number_id);
 
-            $validData = (new BusinessProfileValidator())->validate($response['data']);
+            // Usar respuesta completa si no hay clave 'data'
+            $apiData = $response['data'] ?? $response;
+
+            $validData = (new BusinessProfileValidator())->validate($apiData);
 
             $profile = WhatsappBusinessProfile::updateOrCreate(
                 ['whatsapp_business_profile_id' => $phone->phone_number_id],
