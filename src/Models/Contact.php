@@ -41,7 +41,7 @@ class Contact extends Model
 
     public function unreadMessagesCountByContact()
     {
-        return $this->messages()->whereNull('readed_at')->where('message_method', 'INPUT')->count();
+        return $this->messages()->whereNull('read_at')->where('message_method', 'INPUT')->count();
     }
 
     public function campaigns()

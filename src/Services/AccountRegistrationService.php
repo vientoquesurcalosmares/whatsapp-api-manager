@@ -120,34 +120,36 @@ class AccountRegistrationService
     protected function registerBusinessProfile(WhatsappPhoneNumber $phone): void
     {
         try {
-            Log::channel('whatsapp')->debug('Obteniendo perfil empresarial...');
+            // Obtener perfil existente del número de teléfono
+            $profile = $phone->businessProfile;
+
+            // Obtener datos del perfil desde la API
             $response = $this->whatsappService
                 ->forAccount($phone->whatsapp_business_account_id)
                 ->getBusinessProfile($phone->phone_number_id);
 
-            Log::channel('whatsapp')->debug('Respuesta completa del perfil:', $response);
-            
             $businessProfile = $response['data'][0] ?? [];
             if (empty($businessProfile)) {
                 Log::channel('whatsapp')->error('Estructura de perfil inválida');
                 return;
             }
 
-            Log::channel('whatsapp')->debug('Perfil procesado:', $businessProfile);
             $validator = new BusinessProfileValidator();
             $validData = $validator->validate($businessProfile);
-            $validatedWebsites = $validator->extractWebsites($businessProfile); // Usar método del validador
-            
-            // Corregir: Usar UUID como clave primaria
-            $profile = WhatsappBusinessProfile::updateOrCreate(
-                ['whatsapp_business_account_id' => $phone->whatsapp_business_account_id], // Nueva clave
-                $validData
-            );
+            $validatedWebsites = $validator->extractWebsites($businessProfile);
 
-            Log::channel('whatsapp')->info('Perfil empresarial actualizado:', $profile->toArray());
+            // Actualizar o crear el perfil
+            if ($profile) {
+                $profile->update($validData);
+            } else {
+                $profile = WhatsappBusinessProfile::create(array_merge($validData, [
+                    'whatsapp_business_account_id' => $phone->whatsapp_business_account_id
+                ]));
+                $phone->whatsapp_business_profile_id = $profile->whatsapp_business_profile_id;
+                $phone->save();
+            }
 
-            $this->syncWebsites($profile, $validatedWebsites); // Usar datos validados
-            $phone->update(['whatsapp_business_profile_id' => $profile->whatsapp_business_profile_id]); // Campo correcto
+            $this->syncWebsites($profile, $validatedWebsites);
 
         } catch (InvalidApiResponseException $e) {
             Log::channel('whatsapp')->error("Perfil inválido: {$e->getMessage()}");

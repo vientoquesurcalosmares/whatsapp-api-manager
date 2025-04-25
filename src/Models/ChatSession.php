@@ -63,7 +63,7 @@ class ChatSession extends Model
     public function assignedAgent()
     {
         return $this->belongsTo(
-            config('whatsapp.user_model'), 
+            config('whatsapp.models.user_model'), 
             'assigned_agent_id', // Clave foránea en chat_sessions
             'id' // Clave primaria del modelo User (asumiendo que es "id")
         );

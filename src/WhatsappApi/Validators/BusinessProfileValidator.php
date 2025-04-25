@@ -16,7 +16,7 @@ class BusinessProfileValidator
         'vertical' => 'nullable|string|in:UNDEFINED,OTHER,PROFESSIONAL_SERVICES',
         'websites' => 'nullable|array',
         'websites.*' => 'url|max:512', // Validar cada URL directamente
-        'messaging_product' => 'nullable|string'
+        'messaging_product' => 'required|string|in:whatsapp'
     ];
 
     /**

@@ -16,7 +16,6 @@ class MergeLoggingConfig extends Command
         $channelConfig = $this->getChannelConfig();
 
         try {
-            // Verificar existencia del archivo
             if (!File::exists($projectConfigPath)) {
                 $this->error("❌ Archivo logging.php no encontrado");
                 return 1;
@@ -24,13 +23,17 @@ class MergeLoggingConfig extends Command
 
             $configContent = File::get($projectConfigPath);
 
-            // Verificar si el canal ya existe
             if (strpos($configContent, "'whatsapp'") === false) {
                 $newContent = preg_replace(
-                    "/(['\"]channels['\"]\s*=>\s*\[)/",
-                    "$1\n{$channelConfig}",
+                    "/(['\"]channels['\"]\s*=>\s*\[)([^\]]*)/",
+                    "$1$2\n{$channelConfig}",
                     $configContent
                 );
+
+                if ($newContent === null) {
+                    $this->error("❌ Error al modificar el archivo de configuración");
+                    return 2;
+                }
 
                 File::put($projectConfigPath, $newContent);
                 $this->info("✅ Canal 'whatsapp' agregado exitosamente");
@@ -42,7 +45,7 @@ class MergeLoggingConfig extends Command
 
         } catch (\Exception $e) {
             $this->error("🔥 Error crítico: " . $e->getMessage());
-            return 2;
+            return 3;
         }
     }
 
@@ -50,13 +53,13 @@ class MergeLoggingConfig extends Command
     {
         return <<<'EOD'
 
-        'whatsapp' => [
-            'driver' => 'daily',
-            'path' => storage_path('logs/whatsapp.log'),
-            'level' => 'debug',
-            'days' => 7,
-            'tap' => [\ScriptDevelop\WhatsappManager\Logging\CustomizeFormatter::class],
-        ],
-        EOD;
+    'whatsapp' => [
+        'driver' => 'daily',
+        'path' => storage_path('logs/whatsapp.log'),
+        'level' => 'debug',
+        'days' => 7,
+        'tap' => [\ScriptDevelop\WhatsappManager\Logging\CustomizeFormatter::class],
+    ],
+EOD;
     }
 }

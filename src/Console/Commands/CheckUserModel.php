@@ -11,7 +11,7 @@ class CheckUserModel extends Command
 
     public function handle()
     {
-        $userModel = config('whatsapp.user_model');
+        $userModel = config('whatsapp.models.user_model');
 
         if (!class_exists($userModel)) {
             $this->error("El modelo User ($userModel) no existe.");
