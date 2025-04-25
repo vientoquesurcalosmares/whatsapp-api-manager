@@ -26,29 +26,6 @@ class WhatsappService
         return $this;
     }
 
-    
-
-    /**
-     * Envía un mensaje de texto.
-     */
-    public function sendTextMessage(string $to, string $message): array
-    {
-        $this->ensureAccountIsSet();
-
-        return $this->apiClient->request(
-            'POST',
-            Endpoints::SEND_MESSAGE,
-            ['phone_number_id' => $this->businessAccount->phone_number_id],
-            data: [
-                'messaging_product' => 'whatsapp',
-                'to' => $to,
-                'type' => 'text',
-                'text' => ['body' => $message]
-            ],
-            headers: $this->getAuthHeaders()
-        );
-    }
-
     /**
      * Asegura que una cuenta esté configurada.
      */

@@ -34,7 +34,7 @@ class Message extends Model
         'json_content',
         'status',
         'delivered_at',
-        'readed_at',
+        'read_at',
         'edited_at',
         'failed_at',
         'code_error',

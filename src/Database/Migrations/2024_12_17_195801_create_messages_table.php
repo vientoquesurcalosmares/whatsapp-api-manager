@@ -29,7 +29,7 @@ return new class extends Migration
             $table->json('json_content')->nullable();
             $table->string('status', 45)->nullable();
             $table->string('delivered_at', 45)->nullable();
-            $table->string('readed_at', 45)->nullable();
+            $table->string('read_at', 45)->nullable();
             $table->string('edited_at', 45)->nullable();
             $table->string('failed_at', 45)->nullable();
             $table->integer('code_error')->nullable();

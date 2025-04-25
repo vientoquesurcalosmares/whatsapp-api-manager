@@ -8,24 +8,37 @@ use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessProfile;
 use ScriptDevelop\WhatsappManager\Traits\GeneratesUlid;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Exceptions\ApiException;
+use ScriptDevelop\WhatsappManager\Exceptions\InvalidApiResponseException;
+use ScriptDevelop\WhatsappManager\WhatsappApi\Validators\BusinessProfileValidator;
 
 class AccountRegistrationService
 {
-    use GeneratesUlid; // Para generar ULIDs si es necesario
+    use GeneratesUlid;
 
     public function __construct(
         protected WhatsappService $whatsappService
     ) {}
 
-    /**
-     * Registra o actualiza una cuenta empresarial de WhatsApp con todos sus datos asociados.
-     * 
-     * @param string $apiToken Token de acceso de Meta
-     * @param string $whatsappBusinessId ID de la cuenta empresarial en WhatsApp
-     * @return WhatsappBusinessAccount
-     * @throws ApiException
-     */
     public function register(array $data): WhatsappBusinessAccount
+    {
+        $this->validateInput($data);
+
+        try {
+            $account = $this->upsertBusinessAccount(
+                $data['api_token'],
+                $this->fetchAccountData($data)
+            );
+            
+            $this->registerPhoneNumbers($account);
+            return $account->load('phoneNumbers');
+
+        } catch (ApiException | InvalidApiResponseException $e) {
+            Log::error("Error registro cuenta: {$e->getMessage()}", ['exception' => $e]);
+            throw $e;
+        }
+    }
+
+    protected function validateInput(array $data): void
     {
         if (empty($data['api_token'])) {
             throw new \InvalidArgumentException('El token de API es requerido');
@@ -34,26 +47,15 @@ class AccountRegistrationService
         if (empty($data['business_id'])) {
             throw new \InvalidArgumentException('El ID de la cuenta es requerido');
         }
-
-        try {
-            $accountData = $this->whatsappService
-                ->withTempToken($data['api_token'])
-                ->getBusinessAccount($data['business_id']);
-
-            $account = $this->upsertBusinessAccount($data['api_token'], $accountData);
-            $this->registerPhoneNumbers($account);
-
-            return $account->load('phoneNumbers');
-
-        } catch (ApiException $e) {
-            Log::error("Error al registrar cuenta: " . $e->getMessage());
-            throw $e;
-        }
     }
 
-    /**
-     * Crea o actualiza la cuenta empresarial en la base de datos
-     */
+    protected function fetchAccountData(array $data): array
+    {
+        return $this->whatsappService
+            ->withTempToken($data['api_token'])
+            ->getBusinessAccount($data['business_id']);
+    }
+
     protected function upsertBusinessAccount(string $apiToken, array $apiData): WhatsappBusinessAccount
     {
         return WhatsappBusinessAccount::updateOrCreate(
@@ -61,16 +63,13 @@ class AccountRegistrationService
             [
                 'name' => $apiData['name'] ?? 'Cuenta sin nombre',
                 'api_token' => $apiToken,
-                'phone_number_id' => $apiData['id'], // Ajustar según respuesta real
+                'phone_number_id' => $apiData['phone_number_id'] ?? $apiData['id'],
                 'timezone_id' => $apiData['timezone_id'] ?? 0,
                 'message_template_namespace' => $apiData['message_template_namespace'] ?? null
             ]
         );
     }
 
-    /**
-     * Registra todos los números telefónicos asociados a la cuenta
-     */
     protected function registerPhoneNumbers(WhatsappBusinessAccount $account): void
     {
         try {
@@ -83,17 +82,13 @@ class AccountRegistrationService
             }
 
         } catch (ApiException $e) {
-            Log::error("Error registrando números: " . $e->getMessage());
+            Log::error("Error números telefónicos: {$e->getMessage()}");
             throw $e;
         }
     }
 
-    /**
-     * Registra un número telefónico y su perfil asociado
-     */
     protected function registerSinglePhoneNumber(WhatsappBusinessAccount $account, array $phoneData): void
     {
-        // Registrar número
         $phone = WhatsappPhoneNumber::updateOrCreate(
             ['phone_number_id' => $phoneData['id']],
             [
@@ -103,65 +98,31 @@ class AccountRegistrationService
             ]
         );
 
-        // Registrar perfil empresarial del número
         $this->registerBusinessProfile($phone);
     }
 
-    /**
-     * Registra el perfil empresarial de un número telefónico
-     */
     protected function registerBusinessProfile(WhatsappPhoneNumber $phone): void
     {
         try {
             $profileData = $this->whatsappService
                 ->forAccount($phone->whatsapp_business_account_id)
-                ->getBusinessProfile(
-                    $phone->phone_number_id,
-                    ['about', 'address', 'description', 'email', 'profile_picture_url', 'websites', 'vertical']
-                );
+                ->getBusinessProfile($phone->phone_number_id);
 
-            // Crear o actualizar el perfil
+            $validData = (new BusinessProfileValidator())->validate($profileData);
+            
             $profile = WhatsappBusinessProfile::updateOrCreate(
                 ['whatsapp_business_profile_id' => $phone->whatsapp_business_profile_id],
-                $this->mapProfileData($profileData)
+                $validData
             );
 
-            // Actualizar el phone_number con el ID del perfil
             $phone->update([
                 'whatsapp_business_profile_id' => $profile->whatsapp_business_profile_id
             ]);
 
+        } catch (InvalidApiResponseException $e) {
+            Log::error("Perfil inválido: {$e->getMessage()}", ['details' => $e->getDetails()]);
         } catch (ApiException $e) {
-            Log::error("Perfil no registrado para {$phone->phone_number_id}: " . $e->getMessage());
+            Log::error("Error API: {$e->getMessage()}");
         }
-    }
-
-    /**
-     * Mapea los datos de la API al formato de la base de datos
-     */
-    protected function mapProfileData(array $apiData): array
-    {
-        return [
-            'about' => $apiData['about'] ?? null,
-            'address' => $apiData['address'] ?? null,
-            'description' => $apiData['description'] ?? null,
-            'email' => $apiData['email'] ?? null,
-            'profile_picture_url' => $apiData['profile_picture_url']['url'] ?? null,
-            'vertical' => $apiData['vertical'] ?? 'OTHER',
-            'websites' => $this->extractWebsites($apiData)
-        ];
-    }
-
-    /**
-     * Extrae URLs de sitios web del formato de la API
-     */
-    protected function extractWebsites(array $apiData): ?array
-    {
-        if (!isset($apiData['websites'])) return null;
-
-        return array_map(fn($website) => [
-            'url' => $website['url'],
-            'type' => $website['type'] ?? 'WEB'
-        ], $apiData['websites']);
     }
 }
