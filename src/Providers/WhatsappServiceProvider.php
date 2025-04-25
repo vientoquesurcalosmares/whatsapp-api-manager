@@ -7,6 +7,7 @@ use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\Services\AccountRegistrationService;
 use ScriptDevelop\WhatsappManager\Services\WhatsappService;
 use ScriptDevelop\WhatsappManager\Repositories\WhatsappBusinessAccountRepository;
+use ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel;
 
 class WhatsappServiceProvider extends ServiceProvider
 {
@@ -64,10 +65,8 @@ class WhatsappServiceProvider extends ServiceProvider
         ], 'whatsapp-config');
 
         // Registrar comandos Artisan
-        if (class_exists(\ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel::class)) {
-            $this->commands([
-                \ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel::class,
-            ]);
-        }
+        $this->commands([
+            CheckUserModel::class,
+        ]);
     }
 }

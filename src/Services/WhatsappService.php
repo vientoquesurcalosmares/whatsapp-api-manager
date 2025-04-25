@@ -2,6 +2,7 @@
 
 namespace ScriptDevelop\WhatsappManager\Services;
 
+use Illuminate\Support\Facades\Log;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
@@ -61,44 +62,44 @@ class WhatsappService
 
     public function getBusinessAccount(string $whatsappBusinessId): array
     {
-        return $this->apiClient->request(
+        $response = $this->apiClient->request(
             'GET',
             Endpoints::GET_BUSINESS_ACCOUNT,
             ['whatsapp_business_id' => $whatsappBusinessId],
             headers: $this->getAuthHeaders()
         );
+
+        Log::channel('whatsapp')->debug('Respuesta de getBusinessAccount:', $response);
+        return $response;
     }
 
     public function getPhoneNumbers(string $whatsappBusinessId): array
     {
-            $response = $this->apiClient->request(
+        $response = $this->apiClient->request(
             'GET',
             Endpoints::GET_PHONE_NUMBERS,
             ['whatsapp_business_id' => $whatsappBusinessId],
             headers: $this->getAuthHeaders()
         );
-    
-        return $response['data'] ?? $response; // Adaptación para diferentes versiones de API
+
+        Log::channel('whatsapp')->debug('Respuesta de getPhoneNumbers:', $response);
+        return $response['data'] ?? $response;
     }
 
     /**
      * Obtiene el perfil de whatsapp business.
      */
-    public function getBusinessProfile(string $phoneNumberId, array $fields = []): array
+    public function getBusinessProfile(string $phoneNumberId): array
     {
-        $query = [];
-        if (!empty($fields)) {
-            $query['fields'] = implode(',', $fields);
-        }
-
-        return $this->apiClient->request(
-            'GET',                                  // $method
-            Endpoints::GET_BUSINESS_PROFILE,        // $endpoint
-            ['phone_number_id' => $phoneNumberId],  // $params (reemplaza {phone_number_id})
-            [],                                     // $data (vacío para GET)
-            $query,                                 // Query params como array
-            $this->getAuthHeaders()                 // $headers
+        $response = $this->apiClient->request(
+            'GET',
+            Endpoints::GET_BUSINESS_PROFILE,
+            ['phone_number_id' => $phoneNumberId],
+            headers: $this->getAuthHeaders()
         );
+
+        Log::channel('whatsapp')->debug('Respuesta de getBusinessProfile:', $response);
+        return $response;
     }
 
     public function withTempToken(string $token): self

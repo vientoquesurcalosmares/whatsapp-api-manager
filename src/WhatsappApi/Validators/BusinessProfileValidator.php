@@ -52,12 +52,7 @@ class BusinessProfileValidator
     private function parseProfilePicture(array $data): ?string
     {
         $url = $data['profile_picture_url'] ?? null;
-        
-        if (is_array($url)) {
-            return $url['url'] ?? null;
-        }
-        
-        return $url;
+        return is_array($url) ? ($url['url'] ?? null) : $url;
     }
 
     private function parseWebsites(array $websites): array
@@ -72,6 +67,12 @@ class BusinessProfileValidator
     // Nuevo método para obtener websites
     public function extractWebsites(array $data): array
     {
-        return $this->parseWebsites($data['websites'] ?? []);
+        $websites = $data['websites'] ?? [];
+        return array_map(function ($item) {
+            return [
+                'url' => is_array($item) ? ($item['url'] ?? $item) : $item,
+                'type' => 'WEB'
+            ];
+        }, $websites);
     }
 }
