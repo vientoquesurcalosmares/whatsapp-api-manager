@@ -43,7 +43,11 @@ class WhatsappPhoneNumber extends Model
 
     public function businessProfile()
     {
-        return $this->belongsTo(WhatsappBusinessProfile::class, 'whatsapp_business_profile_id');
+        return $this->belongsTo(
+            WhatsappBusinessProfile::class,
+            'whatsapp_business_profile_id', // Clave foránea en phone_numbers
+            'whatsapp_business_profile_id'  // Clave primaria en business_profiles
+        );
     }
 
     public function contacts()

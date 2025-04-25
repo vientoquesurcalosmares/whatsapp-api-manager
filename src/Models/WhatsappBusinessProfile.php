@@ -34,6 +34,10 @@ class WhatsappBusinessProfile extends Model
 
     public function phoneNumber()
     {
-        return $this->hasOne(WhatsappPhoneNumber::class, 'whatsapp_business_profile_id');
+        return $this->hasOne(
+            WhatsappPhoneNumber::class,
+            'whatsapp_business_profile_id', // Clave foránea en phone_numbers
+            'whatsapp_business_profile_id'  // Clave primaria en este modelo
+        );
     }
 }

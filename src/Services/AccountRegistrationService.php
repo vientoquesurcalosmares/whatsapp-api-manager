@@ -120,10 +120,16 @@ class AccountRegistrationService
                     ['about', 'address', 'description', 'email', 'profile_picture_url', 'websites', 'vertical']
                 );
 
-            WhatsappBusinessProfile::updateOrCreate(
-                ['whatsapp_phone_id' => $phone->whatsapp_phone_id],
+            // Crear o actualizar el perfil
+            $profile = WhatsappBusinessProfile::updateOrCreate(
+                ['whatsapp_business_profile_id' => $phone->whatsapp_business_profile_id],
                 $this->mapProfileData($profileData)
             );
+
+            // Actualizar el phone_number con el ID del perfil
+            $phone->update([
+                'whatsapp_business_profile_id' => $profile->whatsapp_business_profile_id
+            ]);
 
         } catch (ApiException $e) {
             Log::error("Perfil no registrado para {$phone->phone_number_id}: " . $e->getMessage());
@@ -140,7 +146,7 @@ class AccountRegistrationService
             'address' => $apiData['address'] ?? null,
             'description' => $apiData['description'] ?? null,
             'email' => $apiData['email'] ?? null,
-            'profile_picture_url' => $apiData['profile_picture_url']['url'] ?? null, // Ejemplo de anidación
+            'profile_picture_url' => $apiData['profile_picture_url']['url'] ?? null,
             'vertical' => $apiData['vertical'] ?? 'OTHER',
             'websites' => $this->extractWebsites($apiData)
         ];
