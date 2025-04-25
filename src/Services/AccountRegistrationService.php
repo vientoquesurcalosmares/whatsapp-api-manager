@@ -25,40 +25,6 @@ class AccountRegistrationService
      * @return WhatsappBusinessAccount
      * @throws ApiException
      */
-    public function registerFullAccount(string $apiToken, string $whatsappBusinessId): WhatsappBusinessAccount
-    {
-        // 1. Validación básica
-        if (empty($apiToken)) {
-            throw new \InvalidArgumentException('El token de API es requerido');
-        }
-
-        if (empty($whatsappBusinessId)) {
-            throw new \InvalidArgumentException('El ID de la cuenta empresarial es requerido');
-        }
-
-        try {
-            // 2. Obtener datos de la cuenta desde la API
-            $businessAccountData = $this->whatsappService
-                ->withTempToken($apiToken)
-                ->getBusinessAccount($whatsappBusinessId);
-
-            // 3. Registrar/Actualizar en base de datos
-            $account = $this->upsertBusinessAccount($apiToken, $businessAccountData);
-
-            // 4. Registrar números telefónicos asociados
-            $this->registerPhoneNumbers($account);
-
-            return $account->load('phoneNumbers');
-
-        } catch (ApiException $e) {
-            Log::error("Error API al registrar cuenta: " . $e->getMessage());
-            throw new ApiException("Error en el registro: " . $e->getMessage(), $e->getCode(), $e->getDetails());
-        }
-    }
-
-    /**
-     * Registra o actualiza una cuenta empresarial.
-     */
     public function register(array $data): WhatsappBusinessAccount
     {
         if (empty($data['api_token'])) {
@@ -96,6 +62,7 @@ class AccountRegistrationService
                 'name' => $apiData['name'] ?? 'Cuenta sin nombre',
                 'api_token' => $apiToken,
                 'phone_number_id' => $apiData['id'], // Ajustar según respuesta real
+                'timezone_id' => $apiData['timezone_id'] ?? 0,
                 'message_template_namespace' => $apiData['message_template_namespace'] ?? null
             ]
         );
