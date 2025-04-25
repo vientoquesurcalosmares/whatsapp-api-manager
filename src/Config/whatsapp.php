@@ -10,4 +10,5 @@ return [
         'business_account' => \ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount::class,
         'user_model' => env('AUTH_MODEL', App\Models\User::class),
     ],
+    'load_migrations' => true, // Control para migraciones automáticas
 ];
