@@ -26,75 +26,61 @@ class AccountRegistrationService
         $this->validateInput($data);
 
         try {
-            Log::channel('whatsapp')->debug('Obteniendo datos de la cuenta...');
+            // 1. Verificar y registrar/actualizar la cuenta empresarial
             $accountData = $this->fetchAccountData($data);
-            Log::channel('whatsapp')->debug('Datos de cuenta obtenidos:', $accountData);
-
             $account = $this->upsertBusinessAccount($data['api_token'], $accountData);
-            Log::channel('whatsapp')->info('Cuenta empresarial creada/actualizada:', $account->toArray());
-
-            Log::channel('whatsapp')->debug('Registrando números telefónicos...');
+            
+            // 2. Registrar números telefónicos asociados
             $this->registerPhoneNumbers($account);
             
-            return $account->load('phoneNumbers');
+            // 3. Obtener y vincular perfiles empresariales
+            $this->linkBusinessProfilesToPhones($account);
+
+            return $account->load(['phoneNumbers.businessProfile']);
 
         } catch (ApiException | InvalidApiResponseException $e) {
-            Log::channel('whatsapp')->error("Error registro cuenta: {$e->getMessage()}", ['exception' => $e]);
+            Log::channel('whatsapp')->error("Error registro cuenta: {$e->getMessage()}");
             throw $e;
         }
     }
 
-
-    protected function validateInput(array $data): void
+    private function validateInput(array $data): void
     {
-        if (empty($data['api_token'])) {
-            throw new \InvalidArgumentException('El token de API es requerido');
-        }
-
-        if (empty($data['business_id'])) {
-            throw new \InvalidArgumentException('El ID de la cuenta es requerido');
+        if (empty($data['api_token']) || empty($data['business_id'])) {
+            throw new \InvalidArgumentException('Token API y Business ID son requeridos');
         }
     }
 
-    protected function fetchAccountData(array $data): array
+    private function fetchAccountData(array $data): array
     {
         return $this->whatsappService
             ->withTempToken($data['api_token'])
             ->getBusinessAccount($data['business_id']);
     }
 
-    protected function upsertBusinessAccount(string $apiToken, array $apiData): WhatsappBusinessAccount
+    private function upsertBusinessAccount(string $apiToken, array $apiData): WhatsappBusinessAccount
     {
         return WhatsappBusinessAccount::updateOrCreate(
             ['whatsapp_business_id' => $apiData['id']],
             [
-                'name' => $apiData['name'] ?? 'Cuenta sin nombre',
+                'name' => $apiData['name'] ?? 'Sin nombre',
                 'api_token' => $apiToken,
-                'phone_number_id' => $apiData['phone_number_id'] ?? $apiData['id'],
+                'phone_number_id' => $apiData['phone_number_id'] ?? null,
                 'timezone_id' => $apiData['timezone_id'] ?? 0,
                 'message_template_namespace' => $apiData['message_template_namespace'] ?? null
             ]
         );
     }
 
-    protected function registerPhoneNumbers(WhatsappBusinessAccount $account): void
+    private function registerPhoneNumbers(WhatsappBusinessAccount $account): void
     {
         try {
-            Log::channel('whatsapp')->debug('Solicitando números telefónicos...');
             $response = $this->whatsappService
                 ->forAccount($account->whatsapp_business_id)
                 ->getPhoneNumbers($account->whatsapp_business_id);
 
-            Log::channel('whatsapp')->debug('Respuesta de números telefónicos:', $response);
-            $phoneNumbers = $response['data'] ?? [];
-
-            if (empty($phoneNumbers)) {
-                Log::channel('whatsapp')->warning('No se encontraron números telefónicos en la respuesta');
-                return;
-            }
-
-            foreach ($phoneNumbers as $phoneData) {
-                $this->registerSinglePhoneNumber($account, $phoneData);
+            foreach ($response['data'] ?? [] as $phoneData) {
+                $this->updateOrCreatePhoneNumber($account, $phoneData);
             }
 
         } catch (ApiException $e) {
@@ -103,75 +89,64 @@ class AccountRegistrationService
         }
     }
 
-    protected function registerSinglePhoneNumber(WhatsappBusinessAccount $account, array $phoneData): void
+    private function updateOrCreatePhoneNumber(WhatsappBusinessAccount $account, array $phoneData): WhatsappPhoneNumber
     {
-        $phone = WhatsappPhoneNumber::updateOrCreate(
+        return WhatsappPhoneNumber::updateOrCreate(
             ['phone_number_id' => $phoneData['id']],
             [
                 'whatsapp_business_account_id' => $account->whatsapp_business_id,
                 'display_phone_number' => $phoneData['display_phone_number'],
-                'verified_name' => $phoneData['verified_name']
+                'verified_name' => $phoneData['verified_name'],
+                'whatsapp_business_profile_id' => null // Se actualizará después
             ]
         );
-
-        $this->registerBusinessProfile($phone);
     }
 
-    protected function registerBusinessProfile(WhatsappPhoneNumber $phone): void
+    private function linkBusinessProfilesToPhones(WhatsappBusinessAccount $account): void
     {
-        try {
-            // Obtener perfil existente del número de teléfono
-            $profile = $phone->businessProfile;
-
-            // Obtener datos del perfil desde la API
-            $response = $this->whatsappService
-                ->forAccount($phone->whatsapp_business_account_id)
-                ->getBusinessProfile($phone->phone_number_id);
-
-            $businessProfile = $response['data'][0] ?? [];
-            if (empty($businessProfile)) {
-                Log::channel('whatsapp')->error('Estructura de perfil inválida');
-                return;
-            }
-
-            $validator = new BusinessProfileValidator();
-            $validData = $validator->validate($businessProfile);
-            $validatedWebsites = $validator->extractWebsites($businessProfile);
-
-            // Actualizar o crear el perfil
-            if ($profile) {
-                $profile->update($validData);
-            } else {
-                $profile = WhatsappBusinessProfile::create(array_merge($validData, [
-                    'whatsapp_business_account_id' => $phone->whatsapp_business_account_id
-                ]));
-                $phone->whatsapp_business_profile_id = $profile->whatsapp_business_profile_id;
-                $phone->save();
-            }
-
-            $this->syncWebsites($profile, $validatedWebsites);
-
-        } catch (InvalidApiResponseException $e) {
-            Log::channel('whatsapp')->error("Perfil inválido: {$e->getMessage()}");
-        } catch (ApiException $e) {
-            Log::channel('whatsapp')->error("Error API: {$e->getMessage()}");
+        foreach ($account->phoneNumbers as $phone) {
+            $this->processPhoneNumberProfile($phone);
         }
     }
 
-    protected function syncWebsites(WhatsappBusinessProfile $profile, array $websites): void
+    private function processPhoneNumberProfile(WhatsappPhoneNumber $phone): void
     {
-        // Eliminar websites existentes
-        $profile->websites()->delete();
+        try {
+            $profileData = $this->whatsappService
+                ->forAccount($phone->whatsapp_business_account_id)
+                ->getBusinessProfile($phone->phone_number_id);
 
-        // Crear nuevos registros
-        foreach ($websites as $websiteData) {
-            try {
-                $profile->websites()->create([
-                    'website' => $websiteData['url'] // Mapear 'url' al campo 'website' de la BD
-                ]);
-            } catch (\Exception $e) {
-                Log::error("Error guardando website: {$e->getMessage()}", $websiteData);
-            }
+            $this->upsertBusinessProfile($phone, $profileData['data'][0] ?? []);
+
+        } catch (ApiException | InvalidApiResponseException $e) {
+            Log::channel('whatsapp')->error("Error perfil para número {$phone->id}: {$e->getMessage()}");
+        }
+    }
+
+    private function upsertBusinessProfile(WhatsappPhoneNumber $phone, array $profileData): void
+    {
+        $validator = new BusinessProfileValidator();
+        $validData = $validator->validate($profileData);
+        
+        $profile = WhatsappBusinessProfile::updateOrCreate(
+            ['whatsapp_business_account_id' => $phone->whatsapp_business_account_id],
+            $validData
+        );
+
+        // Vincular perfil con el número telefónico
+        if ($phone->whatsapp_business_profile_id !== $profile->id) {
+            $phone->update(['whatsapp_business_profile_id' => $profile->id]);
+        }
+        
+        $this->syncProfileWebsites($profile, $validator->extractWebsites($profileData));
+    }
+
+    private function syncProfileWebsites(WhatsappBusinessProfile $profile, array $websites): void
+    {
+        $profile->websites()->delete();
+        
+        foreach ($websites as $website) {
+            $profile->websites()->create(['website' => $website['url']]);
         }
     }
 }
