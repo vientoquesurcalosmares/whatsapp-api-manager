@@ -59,10 +59,15 @@ class WhatsappServiceProvider extends ServiceProvider
             $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         }
 
-        // Publicar configuración
+        // Publicar configuración principal
         $this->publishes([
             __DIR__.'/../config/whatsapp.php' => config_path('whatsapp.php'),
         ], 'whatsapp-config');
+
+        // Publicar configuración de logs (¡Nuevo!)
+        $this->publishes([
+            __DIR__.'/../config/logging.php' => config_path('logging.php'),
+        ], 'whatsapp-logging');
 
         // Registrar comandos Artisan
         $this->commands([
