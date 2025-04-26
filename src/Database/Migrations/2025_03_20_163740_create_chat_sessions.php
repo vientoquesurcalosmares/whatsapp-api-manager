@@ -17,23 +17,22 @@ return new class extends Migration
             $table->uuid('whatsapp_phone_id'); // Número de WhatsApp usado
             $table->uuid('assigned_bot_id')->nullable();
             $table->foreignUuid('flow_id')->nullable(); // Flujo activo
-            $table->uuid('current_step_id')->nullable(); // Paso actual en el flujo
+            $table->uuid('current_step_id')->nullable(); 
             $table->enum('status', ['active', 'paused', 'completed'])->default('active');
-            $table->json('context')->nullable(); // Respuestas del usuario (ej: nombre, teléfono), Datos del flujo almacenados en JSON (por ejemplo, nodo actual, datos recopilados, etc.).
-            $table->timestamp('assigned_at')->nullable(); // Fecha de asignación a agente
+            $table->json('context')->nullable(); 
+            $table->timestamp('assigned_at')->nullable(); 
 
-            // Asumimos que los agentes se gestionan en la tabla "users" y su id es integer.
-            $table->unsignedBigInteger('assigned_agent_id')->nullable();
-            // Estado del flujo: PENDING (aún no asignado o esperando acción), IN_PROGRESS o FINALIZED.
+            // Declaración Única:
+            $table->foreignId('assigned_agent_id')->nullable()->constrained('users')->onDelete('set null');
+            
             $table->enum('flow_status', ['PENDING', 'IN_PROGRESS', 'FINALIZED'])->default('IN_PROGRESS');
             $table->timestamps();
             $table->softDeletes();
 
+            // Claves foráneas
             $table->foreign('contact_id')->references('contact_id')->on('contacts')->onDelete('cascade');
             $table->foreign('whatsapp_phone_id')->references('phone_number_id')->on('whatsapp_phone_numbers');
             $table->foreign('assigned_bot_id')->references('whatsapp_bot_id')->on('whatsapp_bots')->onDelete('set null');
-            // $table->foreign('assigned_agent_id')->references('id')->on('users')->onDelete('set null');
-            $table->foreignId('assigned_agent_id')->nullable()->constrained('users');
             $table->foreign('flow_id')->references('flow_id')->on('flows');
             $table->foreign('current_step_id')->references('step_id')->on('flow_steps');
 
