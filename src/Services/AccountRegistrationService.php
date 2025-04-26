@@ -97,6 +97,28 @@ class AccountRegistrationService
         }
     }
 
+    private function registerSinglePhoneNumber(WhatsappBusinessAccount $account, array $phoneData): void 
+    {
+        try {
+            WhatsappPhoneNumber::updateOrCreate(
+                ['phone_number_id' => $phoneData['id']],
+                [
+                    'whatsapp_business_account_id' => $account->whatsapp_business_id,
+                    'display_phone_number' => $phoneData['display_phone_number'],
+                    'verified_name' => $phoneData['verified_name']
+                ]
+            );
+            
+            Log::channel('whatsapp')->debug('Número registrado:', $phoneData);
+            
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error guardando número', [
+                'error' => $e->getMessage(),
+                'data' => $phoneData
+            ]);
+        }
+    }
+
     private function updateOrCreatePhoneNumber(WhatsappBusinessAccount $account, array $phoneData): WhatsappPhoneNumber
     {
         return WhatsappPhoneNumber::updateOrCreate(
@@ -158,7 +180,7 @@ class AccountRegistrationService
         }
     }
 
-    private function syncProfileWebsites(WhatsappBusinessProfile $profile, array $websites): void
+    private function syncWebsites(WhatsappBusinessProfile $profile, array $websites): void
     {
         $profile->websites()->delete();
         

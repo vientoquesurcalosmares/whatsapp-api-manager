@@ -13,7 +13,7 @@ class WhatsappPhoneNumber extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
-    protected $primaryKey = 'whatsapp_phone_id';
+    protected $primaryKey = 'phone_number_id';
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -43,10 +43,10 @@ class WhatsappPhoneNumber extends Model
 
     public function businessProfile()
     {
-        return $this->belongsTo(
-            WhatsappBusinessProfile::class,
-            'whatsapp_business_profile_id', // Clave foránea en phone_numbers
-            'whatsapp_business_profile_id'  // Clave primaria en business_profiles
+        return $this->hasOne(
+            WhatsappBusinessProfile::class, 
+            'whatsapp_business_profile_id', // FK en perfiles
+            'phone_number_id' // PK en números telefónicos
         );
     }
 
