@@ -30,9 +30,10 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->foreign('contact_id')->references('contact_id')->on('contacts')->onDelete('cascade');
-            $table->foreign('whatsapp_phone_id')->references('whatsapp_phone_id')->on('whatsapp_phone_numbers');
+            $table->foreign('whatsapp_phone_id')->references('phone_number_id')->on('whatsapp_phone_numbers');
             $table->foreign('assigned_bot_id')->references('whatsapp_bot_id')->on('whatsapp_bots')->onDelete('set null');
-            $table->foreign('assigned_agent_id')->references('id')->on('users')->onDelete('set null');
+            // $table->foreign('assigned_agent_id')->references('id')->on('users')->onDelete('set null');
+            $table->foreignId('assigned_agent_id')->nullable()->constrained('users');
             $table->foreign('flow_id')->references('flow_id')->on('flows');
             $table->foreign('current_step_id')->references('step_id')->on('flow_steps');
 

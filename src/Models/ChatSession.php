@@ -50,7 +50,7 @@ class ChatSession extends Model
     // ChatSession pertenece a un número de WhatsApp
     public function whatsappPhone()
     {
-        return $this->belongsTo(WhatsappPhoneNumber::class, 'whatsapp_phone_id', 'whatsapp_phone_id');
+        return $this->belongsTo(WhatsappPhoneNumber::class, 'whatsapp_phone_id', 'phone_number_id');
     }
 
     // ChatSession puede estar asignada a un bot
