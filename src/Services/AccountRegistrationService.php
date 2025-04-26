@@ -84,13 +84,16 @@ class AccountRegistrationService
     {
         try {
             $response = $this->whatsappService
-                ->forAccount($account->whatsapp_business_id)
-                ->getPhoneNumbers($account->whatsapp_business_id);
+            ->forAccount($account->whatsapp_business_id)
+            ->getPhoneNumbers($account->whatsapp_business_id);
+
+            Log::channel('whatsapp')->debug('Respuesta de getPhoneNumbers:', $response);
 
             foreach ($response['data'] ?? [] as $phoneData) {
-                $this->updateOrCreatePhoneNumber($account, $phoneData);
+                Log::channel('whatsapp')->debug('Procesando número:', $phoneData);
+                $phone = $this->updateOrCreatePhoneNumber($account, $phoneData);
+                Log::channel('whatsapp')->debug('Número guardado:', $phone->toArray());
             }
-
         } catch (ApiException $e) {
             Log::channel('whatsapp')->error("Error números telefónicos: {$e->getMessage()}");
             throw $e;
@@ -142,9 +145,18 @@ class AccountRegistrationService
     private function processPhoneNumberProfile(WhatsappPhoneNumber $phone): void
     {
         try {
-            $profileData = $this->whatsappService->getBusinessProfile($phone->api_phone_number_id);
-            Log::channel('whatsapp')->debug('Datos del perfil:', $profileData);
-            $this->upsertBusinessProfile($phone, $profileData['data'][0] ?? []);
+            $profileData = $this->whatsappService
+                ->forAccount($phone->whatsapp_business_account_id)
+                ->getBusinessProfile($phone->api_phone_number_id);
+
+            Log::channel('whatsapp')->debug('Datos del perfil recibidos:', $profileData);
+
+            if (!isset($profileData['data'][0])) {
+                Log::channel('whatsapp')->error('Perfil no encontrado en la respuesta');
+                return;
+            }
+
+            $this->upsertBusinessProfile($phone, $profileData['data'][0]);
         } catch (ApiException | InvalidApiResponseException $e) {
             Log::channel('whatsapp')->error("Error perfil para número {$phone->phone_number_id}: {$e->getMessage()}");
         }

@@ -32,7 +32,7 @@ class WhatsappBusinessAccount extends Model
 
     public function phoneNumbers()
     {
-        return $this->hasMany(WhatsappPhoneNumber::class, 'whatsapp_business_account_id');
+        return $this->hasMany(WhatsappPhoneNumber::class, 'whatsapp_business_account_id', 'whatsapp_business_id');
     }
 
     public function templates()
