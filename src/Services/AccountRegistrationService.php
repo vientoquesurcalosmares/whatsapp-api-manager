@@ -87,7 +87,7 @@ class AccountRegistrationService
             ->forAccount($account->whatsapp_business_id)
             ->getPhoneNumbers($account->whatsapp_business_id);
 
-            Log::channel('whatsapp')->debug('Respuesta de getPhoneNumbers:', $response);
+            Log::channel('whatsapp')->debug('Respuesta de getPhoneNumbers Service:', $response);
 
             foreach ($response['data'] ?? [] as $phoneData) {
                 Log::channel('whatsapp')->debug('Procesando número:', $phoneData);
@@ -124,15 +124,23 @@ class AccountRegistrationService
 
     private function updateOrCreatePhoneNumber(WhatsappBusinessAccount $account, array $phoneData): WhatsappPhoneNumber
     {
-        return WhatsappPhoneNumber::updateOrCreate(
-            ['api_phone_number_id' => $phoneData['id']],
-            [
-                'whatsapp_business_account_id' => $account->whatsapp_business_id,
-                'display_phone_number' => $phoneData['display_phone_number'],
-                'verified_name' => $phoneData['verified_name'],
-                'api_phone_number_id' => $phoneData['id']
-            ]
-        );
+        try {
+            return WhatsappPhoneNumber::updateOrCreate(
+                ['api_phone_number_id' => $phoneData['id']],
+                [
+                    'whatsapp_business_account_id' => $account->whatsapp_business_id,
+                    'display_phone_number' => $phoneData['display_phone_number'],
+                    'verified_name' => $phoneData['verified_name'],
+                    'api_phone_number_id' => $phoneData['id']
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error al guardar número', [
+                'error' => $e->getMessage(),
+                'data' => $phoneData
+            ]);
+            throw $e;
+        }
     }
 
     private function linkBusinessProfilesToPhones(WhatsappBusinessAccount $account): void

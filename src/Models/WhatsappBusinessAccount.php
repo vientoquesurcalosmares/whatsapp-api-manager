@@ -14,11 +14,6 @@ class WhatsappBusinessAccount extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $casts = [
-        // Encriptar automáticamente el token al guardar/leer
-        'api_token' => 'encrypted', // <-- Agregar esta línea
-    ];
-
     protected $fillable = [
         'whatsapp_business_id',
         'phone_number_id',

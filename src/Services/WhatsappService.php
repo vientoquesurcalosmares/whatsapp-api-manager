@@ -82,7 +82,7 @@ class WhatsappService
             headers: $this->getAuthHeaders()
         );
 
-        Log::channel('whatsapp')->debug('Respuesta de getPhoneNumbers:', $response);
+        Log::channel('whatsapp')->debug('Respuesta de getPhoneNumbers API:', $response);
         return $response['data'] ?? $response;
     }
 
