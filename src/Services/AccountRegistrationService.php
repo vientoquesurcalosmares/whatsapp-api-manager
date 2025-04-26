@@ -211,9 +211,9 @@ class AccountRegistrationService
     private function parseWebsites(array $apiWebsites): array
     {
         return array_map(function ($website) {
-            return is_array($website) 
-                ? ['website' => $website['url']]
-                : ['website' => $website];
+            // Si es un array, extraer 'url'; si es string, usarlo directamente
+            $url = is_array($website) ? ($website['url'] ?? null) : $website;
+            return ['website' => $url];
         }, $apiWebsites);
     }
 
@@ -222,7 +222,10 @@ class AccountRegistrationService
         $profile->websites()->delete();
         
         foreach ($websites as $website) {
-            $profile->websites()->create(['website' => $website['url']]);
+            // Filtrar URLs vacías o inválidas
+            if (!empty($website['website']) && filter_var($website['website'], FILTER_VALIDATE_URL)) {
+                $profile->websites()->create(['website' => $website['website']]);
+            }
         }
     }
 }
