@@ -98,7 +98,7 @@ class WhatsappService
             headers: $this->getAuthHeaders()
         );
 
-        Log::channel('whatsapp')->debug('Respuesta de getBusinessProfile:', $response);
+        Log::channel('whatsapp')->debug('Respuesta de getBusinessProfile API:', $response);
         return $response;
     }
 
