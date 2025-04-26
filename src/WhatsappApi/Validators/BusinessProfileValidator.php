@@ -2,6 +2,7 @@
 
 namespace ScriptDevelop\WhatsappManager\WhatsappApi\Validators;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use ScriptDevelop\WhatsappManager\Exceptions\InvalidApiResponseException;
 
@@ -16,7 +17,7 @@ class BusinessProfileValidator
         'vertical' => 'nullable|string|in:UNDEFINED,OTHER,PROFESSIONAL_SERVICES,ENTERTAIN,EVENT_PLAN',
         'websites' => 'nullable|array',
         'websites.*' => 'url|max:512',
-        'messaging_product' => 'required|string|in:whatsapp'
+        'messaging_product' => 'required|string|in:whatsapp',
     ];
 
     /**
@@ -24,13 +25,22 @@ class BusinessProfileValidator
      */
     public function validate(array $profileData): array
     {   
+        // Si el perfil viene dentro de un campo 'data', extraerlo
+        if (isset($profileData['data'])) {
+            $profileData = $profileData['data'][0] ?? []; // Extraer el primer perfil
+        }
+
+        // Verificar si el perfil está vacío
         if (empty($profileData)) {
             throw new InvalidApiResponseException("La respuesta del perfil está vacía");
         }
 
+        Log::channel('whatsapp')->debug('Datos recibidos en el validador:', $profileData);
+
         $validator = Validator::make($profileData, $this->rules);
 
         if ($validator->fails()) {
+            Log::channel('whatsapp')->error('Errores de validación:', $validator->errors()->toArray());
             throw InvalidApiResponseException::fromValidationError(
                 $validator->errors()->first(),
                 $validator->errors()->toArray()
