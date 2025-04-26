@@ -14,10 +14,10 @@ class InvalidApiResponseException extends Exception
         string $message = "",
         int $code = 0,
         array $details = [],
-        Throwable $previous = null // Ahora sí reconoce Throwable
+        ?Throwable $previous = null // Hacer explícitamente nullable
     ) {
-        $this->details = $details;
         parent::__construct($message, $code, $previous);
+        $this->details = $details;
     }
 
     public function getDetails(): array

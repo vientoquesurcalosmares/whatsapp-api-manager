@@ -103,11 +103,14 @@ class WhatsappService
     // }
     public function getBusinessProfile(string $phoneNumberId): array
     {
+        // Construir URL con parámetros de campos
         $url = Endpoints::build(Endpoints::GET_BUSINESS_PROFILE, [
             'phone_number_id' => $phoneNumberId
         ]) . '?' . http_build_query([
             'fields' => 'about,address,description,email,profile_picture_url,websites,vertical'
         ]);
+
+        Log::channel('whatsapp')->debug('URL de Solicitud de Perfil:', ['url' => $url]);
 
         $response = $this->apiClient->request(
             'GET',
@@ -115,7 +118,6 @@ class WhatsappService
             headers: $this->getAuthHeaders()
         );
 
-        Log::channel('whatsapp')->debug('URL del Perfil:', ['url' => $url]);
         return $response;
     }
 

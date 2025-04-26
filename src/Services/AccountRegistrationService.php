@@ -177,6 +177,10 @@ class AccountRegistrationService
     private function upsertBusinessProfile(WhatsappPhoneNumber $phone, array $profileData): void
     {
         try {
+            if (empty($profileData)) {
+                throw new InvalidApiResponseException("La respuesta del perfil está vacía");
+            }
+            
             $validator = new BusinessProfileValidator();
             $validData = $validator->validate($profileData);
 
@@ -196,7 +200,9 @@ class AccountRegistrationService
             $this->syncWebsites($profile, $websitesData);
 
         } catch (InvalidApiResponseException $e) {
-            Log::channel('whatsapp')->error("Error perfil: {$e->getMessage()}");
+            Log::channel('whatsapp')->error("Error en perfil: {$e->getMessage()}", [
+                'profile_data' => $profileData
+            ]);
         }
     }
 
