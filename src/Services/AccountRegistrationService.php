@@ -100,12 +100,12 @@ class AccountRegistrationService
     private function updateOrCreatePhoneNumber(WhatsappBusinessAccount $account, array $phoneData): WhatsappPhoneNumber
     {
         return WhatsappPhoneNumber::updateOrCreate(
-            ['phone_number_id' => $phoneData['id']],
+            ['phone_number_id' => $phoneData['id']], // Usar 'id' directamente de la respuesta
             [
                 'whatsapp_business_account_id' => $account->whatsapp_business_id,
                 'display_phone_number' => $phoneData['display_phone_number'],
                 'verified_name' => $phoneData['verified_name'],
-                'whatsapp_business_profile_id' => null // Se actualizará después
+                'phone_number_id' => $phoneData['id'] // <-- Añadir esta línea
             ]
         );
     }
@@ -133,20 +133,29 @@ class AccountRegistrationService
 
     private function upsertBusinessProfile(WhatsappPhoneNumber $phone, array $profileData): void
     {
-        $validator = new BusinessProfileValidator();
-        $validData = $validator->validate($profileData);
-        
-        $profile = WhatsappBusinessProfile::updateOrCreate(
-            ['whatsapp_business_account_id' => $phone->whatsapp_business_account_id],
-            $validData
-        );
+        try {
+            $validator = new BusinessProfileValidator();
+            $validData = $validator->validate($profileData);
+            
+            // Vincular perfil al número telefónico
+            $validData['whatsapp_business_profile_id'] = $phone->whatsapp_phone_id;
 
-        // Vincular perfil con el número telefónico
-        if ($phone->whatsapp_business_profile_id !== $profile->id) {
+            // Crear/actualizar perfil
+            $profile = WhatsappBusinessProfile::updateOrCreate(
+                ['whatsapp_business_profile_id' => $phone->whatsapp_phone_id],
+                $validData
+            );
+
+            // Sincronizar websites
+            $websitesData = $validator->extractWebsites($profileData);
+            $this->syncWebsites($profile, $websitesData);
+
+            // Vincular perfil al número
             $phone->update(['whatsapp_business_profile_id' => $profile->id]);
+
+        } catch (InvalidApiResponseException $e) {
+            Log::channel('whatsapp')->error("Error perfil: {$e->getMessage()}");
         }
-        
-        $this->syncProfileWebsites($profile, $validator->extractWebsites($profileData));
     }
 
     private function syncProfileWebsites(WhatsappBusinessProfile $profile, array $websites): void

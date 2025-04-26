@@ -67,12 +67,12 @@ class BusinessProfileValidator
     // Nuevo método para obtener websites
     public function extractWebsites(array $data): array
     {
-        $websites = $data['websites'] ?? [];
-        return array_map(function ($item) {
+        return array_map(function ($website) {
             return [
-                'url' => is_array($item) ? ($item['url'] ?? $item) : $item,
-                'type' => 'WEB'
+                'website' => is_array($website) 
+                    ? $website['url'] 
+                    : $website
             ];
-        }, $websites);
+        }, $data['websites'] ?? []);
     }
 }
