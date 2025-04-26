@@ -122,12 +122,12 @@ class AccountRegistrationService
     private function updateOrCreatePhoneNumber(WhatsappBusinessAccount $account, array $phoneData): WhatsappPhoneNumber
     {
         return WhatsappPhoneNumber::updateOrCreate(
-            ['phone_number_id' => $phoneData['id']], // Usar 'id' directamente de la respuesta
+            ['api_phone_number_id' => $phoneData['id']], // Usar 'id' directamente de la respuesta
             [
                 'whatsapp_business_account_id' => $account->whatsapp_business_id,
                 'display_phone_number' => $phoneData['display_phone_number'],
                 'verified_name' => $phoneData['verified_name'],
-                'phone_number_id' => $phoneData['id'] // <-- Añadir esta línea
+                'api_phone_number_id' => $phoneData['id'] // <-- Añadir esta línea
             ]
         );
     }

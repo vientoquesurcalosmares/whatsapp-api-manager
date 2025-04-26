@@ -17,7 +17,7 @@ return new class extends Migration
             $table->uuid('whatsapp_business_profile_id')->nullable();
             $table->uuid('whatsapp_bot_id')->nullable();
             $table->string('display_phone_number', 45)->unique();
-            $table->string('phone_number_id', 45)->unique();
+            $table->string('api_phone_number_id', 45)->unique();
             $table->string('verified_name', 150);
             $table->timestamps();
             $table->softDeletes();
