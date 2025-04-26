@@ -26,7 +26,7 @@ return new class extends Migration
             // $table->foreignId('assigned_agent_id')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('assigned_agent_id')
                 ->nullable()
-                ->constrained(config('whatsapp-manager.models.user_table')) // ✅ Usar configuración
+                ->constrained(config('whatsapp.models.user_table')) // ✅ Usar configuración
                 ->onDelete('set null');
             
             $table->enum('flow_status', ['PENDING', 'IN_PROGRESS', 'FINALIZED'])->default('IN_PROGRESS');
