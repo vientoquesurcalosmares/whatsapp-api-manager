@@ -37,7 +37,7 @@ return new class extends Migration
             $table->text('message_error')->nullable();
             $table->text('details_error')->nullable();
             $table->json('json')->nullable();
-            $table->boolean('bot')->default(false); // Añadir el campo booleano 'bot'
+            $table->boolean('bot')->default(false);
             $table->timestamps();
             $table->softDeletes();
 
@@ -50,12 +50,12 @@ return new class extends Migration
                   ->on('conversations');
 
             $table->foreign('whatsapp_phone_id')
-                  ->references('whatsapp_phone_id')
+                  ->references('phone_number_id')
                   ->on('whatsapp_phone_numbers');
 
-            $table->index('wa_id'); // Índice para wa_id
-            $table->index('status'); // Índice para status
-            $table->index('message_type'); // Índice para message_type
+            $table->index('wa_id');
+            $table->index('status');
+            $table->index('message_type');
         });
     }
 
