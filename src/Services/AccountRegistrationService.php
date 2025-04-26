@@ -127,7 +127,7 @@ class AccountRegistrationService
                 'whatsapp_business_account_id' => $account->whatsapp_business_id,
                 'display_phone_number' => $phoneData['display_phone_number'],
                 'verified_name' => $phoneData['verified_name'],
-                'api_phone_number_id' => $phoneData['id'] // Campo crítico
+                'api_phone_number_id' => $phoneData['id']
             ]
         );
     }
@@ -142,12 +142,9 @@ class AccountRegistrationService
     private function processPhoneNumberProfile(WhatsappPhoneNumber $phone): void
     {
         try {
-            $profileData = $this->whatsappService
-                ->forAccount($phone->whatsapp_business_account_id)
-                ->getBusinessProfile($phone->api_phone_number_id);
-
-            $this->upsertBusinessProfile($phone, $profileData);
-
+            $profileData = $this->whatsappService->getBusinessProfile($phone->api_phone_number_id);
+            Log::channel('whatsapp')->debug('Datos del perfil:', $profileData);
+            $this->upsertBusinessProfile($phone, $profileData['data'][0] ?? []);
         } catch (ApiException | InvalidApiResponseException $e) {
             Log::channel('whatsapp')->error("Error perfil para número {$phone->phone_number_id}: {$e->getMessage()}");
         }
