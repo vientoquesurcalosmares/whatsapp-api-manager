@@ -165,7 +165,7 @@ class AccountRegistrationService
                 return;
             }
 
-            $this->upsertBusinessProfile($phone, $profileData['data'][0]);
+            $this->upsertBusinessProfile($phone, $profileData);
         } catch (ApiException | InvalidApiResponseException $e) {
             // Log::channel('whatsapp')->error("Error perfil para número {$phone->phone_number_id}: {$e->getMessage()}");
             Log::channel('whatsapp')->error("Error en Perfil: {$e->getMessage()}", [

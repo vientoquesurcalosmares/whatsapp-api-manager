@@ -13,7 +13,7 @@ class BusinessProfileValidator
         'description' => 'nullable|string|max:512',
         'email' => 'nullable|email|max:128', // Hacer explícitamente nullable
         'profile_picture_url' => 'nullable|url|max:512',
-        'vertical' => 'nullable|string|in:UNDEFINED,OTHER,PROFESSIONAL_SERVICES,ENTERTAIN,EVENT_PLAN', // Añadir ENTERTAIN
+        'vertical' => 'nullable|string|in:UNDEFINED,OTHER,PROFESSIONAL_SERVICES,ENTERTAIN,EVENT_PLAN',
         'websites' => 'nullable|array',
         'websites.*' => 'url|max:512',
         'messaging_product' => 'required|string|in:whatsapp'
@@ -22,10 +22,8 @@ class BusinessProfileValidator
     /**
      * @throws InvalidApiResponseException
      */
-    public function validate(array $apiData): array
-    {
-        $profileData = $apiData['data'][0] ?? [];
-    
+    public function validate(array $profileData): array
+    {   
         if (empty($profileData)) {
             throw new InvalidApiResponseException("La respuesta del perfil está vacía");
         }
