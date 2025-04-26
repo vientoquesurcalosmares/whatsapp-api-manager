@@ -24,6 +24,10 @@ class BusinessProfileValidator
      */
     public function validate(array $apiData): array
     {
+        if (empty($apiData['data'][0])) {
+            throw new InvalidApiResponseException("Estructura del perfil inválida");
+        }
+        
         $validator = Validator::make($apiData, $this->rules);
 
         if ($validator->fails()) {

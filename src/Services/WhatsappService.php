@@ -89,16 +89,33 @@ class WhatsappService
     /**
      * Obtiene el perfil de whatsapp business.
      */
+    // public function getBusinessProfile(string $phoneNumberId): array
+    // {
+    //     $response = $this->apiClient->request(
+    //         'GET',
+    //         Endpoints::GET_BUSINESS_PROFILE,
+    //         ['phone_number_id' => $phoneNumberId],
+    //         headers: $this->getAuthHeaders()
+    //     );
+
+    //     Log::channel('whatsapp')->debug('Respuesta de getBusinessProfile API:', $response);
+    //     return $response;
+    // }
     public function getBusinessProfile(string $phoneNumberId): array
     {
+        $url = Endpoints::build(Endpoints::GET_BUSINESS_PROFILE, [
+            'phone_number_id' => $phoneNumberId
+        ]) . '?' . http_build_query([
+            'fields' => 'about,address,description,email,profile_picture_url,websites,vertical'
+        ]);
+
         $response = $this->apiClient->request(
             'GET',
-            Endpoints::GET_BUSINESS_PROFILE,
-            ['phone_number_id' => $phoneNumberId],
+            $url,
             headers: $this->getAuthHeaders()
         );
 
-        Log::channel('whatsapp')->debug('Respuesta de getBusinessProfile API:', $response);
+        Log::channel('whatsapp')->debug('URL del Perfil:', ['url' => $url]);
         return $response;
     }
 
