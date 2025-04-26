@@ -89,7 +89,7 @@ class AccountRegistrationService
 
             Log::channel('whatsapp')->debug('Respuesta de getPhoneNumbers Service:', $response);
 
-            foreach ($response['data'] ?? [] as $phoneData) {
+            foreach ($response as $phoneData) {
                 Log::channel('whatsapp')->debug('Procesando número:', $phoneData);
                 $phone = $this->updateOrCreatePhoneNumber($account, $phoneData);
                 Log::channel('whatsapp')->debug('Número guardado:', $phone->toArray());
