@@ -2,6 +2,7 @@
 
 namespace ScriptDevelop\WhatsappManager\WhatsappApi;
 
+use Illuminate\Support\Facades\Log;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Exceptions\ApiException;
@@ -55,6 +56,11 @@ class ApiClient
             return json_decode($response->getBody(), true) ?: [];
 
         } catch (GuzzleException $e) {
+            Log::channel('whatsapp')->error('API Error', [
+                'url' => $url,
+                'error' => $e->getMessage()
+            ]);
+            // throw ApiException::fromGuzzleException($e);
             throw $this->handleException($e);
         }
     }

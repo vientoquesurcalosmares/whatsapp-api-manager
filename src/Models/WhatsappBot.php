@@ -35,7 +35,7 @@ class WhatsappBot extends Model
                 'flows' => ['dxFlow', 'welcomeFlow', 'registerFlow', 'fullSamplesFlow'],
                 'jwtToken' => $bot->phoneNumbers->first()->businessAccount->api_token,
                 'numberId' => $bot->phoneNumbers->first()->phone_number_id,
-                'verifyToken' => env('WHATSAPP_VERIFY_TOKEN'),
+                'verifyToken' => config('whatsapp-manager.webhook.verify_token'),
                 'version' => env('WHATSAPP_API_VERSION'),
                 'dbHost' => env('DB_HOST'),
                 'dbUser' => env('DB_USERNAME'),

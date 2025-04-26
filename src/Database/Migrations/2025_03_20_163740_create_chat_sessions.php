@@ -23,7 +23,11 @@ return new class extends Migration
             $table->timestamp('assigned_at')->nullable(); 
 
             // Declaración Única:
-            $table->foreignId('assigned_agent_id')->nullable()->constrained('users')->onDelete('set null');
+            // $table->foreignId('assigned_agent_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('assigned_agent_id')
+                ->nullable()
+                ->constrained(config('whatsapp-manager.user_table')) // ✅ Usar configuración
+                ->onDelete('set null');
             
             $table->enum('flow_status', ['PENDING', 'IN_PROGRESS', 'FINALIZED'])->default('IN_PROGRESS');
             $table->timestamps();

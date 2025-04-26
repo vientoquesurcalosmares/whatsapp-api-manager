@@ -36,7 +36,7 @@ class CampaignMetric extends Model
     public function calculateEngagementRate(): float
     {
         $totalResponses = $this->positive_responses + $this->negative_responses;
-        return $totalResponses > 0
+        return $this->delivered > 0 
             ? round(($totalResponses / $this->delivered) * 100, 2)
             : 0;
     }

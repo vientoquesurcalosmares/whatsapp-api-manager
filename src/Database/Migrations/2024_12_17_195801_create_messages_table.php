@@ -28,10 +28,10 @@ return new class extends Migration
             $table->string('caption', 45)->nullable();
             $table->json('json_content')->nullable();
             $table->string('status', 45)->nullable();
-            $table->string('delivered_at', 45)->nullable();
-            $table->string('read_at', 45)->nullable();
-            $table->string('edited_at', 45)->nullable();
-            $table->string('failed_at', 45)->nullable();
+            $table->timestamp('delivered_at')->nullable();
+            $table->timestamp('read_at')->nullable();
+            $table->timestamp('edited_at')->nullable();
+            $table->timestamp('failed_at')->nullable();
             $table->integer('code_error')->nullable();
             $table->text('title_error')->nullable();
             $table->text('message_error')->nullable();
@@ -56,6 +56,8 @@ return new class extends Migration
             $table->index('wa_id');
             $table->index('status');
             $table->index('message_type');
+            $table->index('delivered_at');
+            $table->index(['message_from', 'message_to']);
         });
     }
 

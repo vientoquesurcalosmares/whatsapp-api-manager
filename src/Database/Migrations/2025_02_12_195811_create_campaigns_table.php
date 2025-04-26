@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('campaigns', function (Blueprint $table) {
             $table->uuid('campaign_id')->primary();
-            $table->char('whatsapp_business_account_id', 36);
+            $table->string('whatsapp_business_account_id', 255);
             $table->uuid('template_id')->nullable(); // Si usa plantillas
             $table->string('name', 255);
             $table->text('message_content'); // Mensaje personalizado
