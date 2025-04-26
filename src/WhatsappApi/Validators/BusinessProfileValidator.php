@@ -11,11 +11,11 @@ class BusinessProfileValidator
         'about' => 'nullable|string|max:512',
         'address' => 'nullable|string|max:256',
         'description' => 'nullable|string|max:512',
-        'email' => 'nullable|email|max:128',
+        'email' => 'nullable|email|max:128', // Hacer explícitamente nullable
         'profile_picture_url' => 'nullable|url|max:512',
-        'vertical' => 'nullable|string|in:UNDEFINED,OTHER,PROFESSIONAL_SERVICES',
+        'vertical' => 'nullable|string|in:UNDEFINED,OTHER,PROFESSIONAL_SERVICES,ENTERTAIN,EVENT_PLAN', // Añadir ENTERTAIN
         'websites' => 'nullable|array',
-        'websites.*.url' => 'url|max:512', // Validar estructura anidada
+        'websites.*' => 'url|max:512',
         'messaging_product' => 'required|string|in:whatsapp'
     ];
 
@@ -24,11 +24,13 @@ class BusinessProfileValidator
      */
     public function validate(array $apiData): array
     {
-        if (empty($apiData['data'][0])) {
-            throw new InvalidApiResponseException("Estructura del perfil inválida");
+        $profileData = $apiData['data'][0] ?? [];
+    
+        if (empty($profileData)) {
+            throw new InvalidApiResponseException("La respuesta del perfil está vacía");
         }
-        
-        $validator = Validator::make($apiData, $this->rules);
+
+        $validator = Validator::make($profileData, $this->rules);
 
         if ($validator->fails()) {
             throw InvalidApiResponseException::fromValidationError(
@@ -37,7 +39,7 @@ class BusinessProfileValidator
             );
         }
 
-        return $this->formatValidData($apiData);
+        return $this->formatValidData($profileData);
     }
 
     private function formatValidData(array $data): array
@@ -49,7 +51,8 @@ class BusinessProfileValidator
             'email' => $data['email'] ?? null,
             'profile_picture_url' => $data['profile_picture_url'] ?? null,
             'vertical' => $data['vertical'] ?? 'OTHER',
-            'messaging_product' => $data['messaging_product'] ?? 'whatsapp'
+            'messaging_product' => $data['messaging_product'] ?? 'whatsapp',
+            'websites' => $data['websites'] ?? [] // Asegurar array vacío si no hay websites
         ];
     }
 

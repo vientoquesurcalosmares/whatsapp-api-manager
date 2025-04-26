@@ -3,6 +3,7 @@
 namespace ScriptDevelop\WhatsappManager\Services;
 
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessProfile;
@@ -186,14 +187,13 @@ class AccountRegistrationService
 
             // 1. Crear/Actualizar el perfil (con ULID generado automáticamente)
             $profile = WhatsappBusinessProfile::updateOrCreate(
-                ['whatsapp_business_profile_id' => $validData['id'] ?? null], // Usar ID de la API si existe
+                ['whatsapp_business_profile_id' => $validData['id'] ?? Str::ulid()],
                 $validData
             );
 
             // 2. Vincular el perfil al número telefónico
-            $phone->update([
-                'whatsapp_business_profile_id' => $profile->whatsapp_business_profile_id
-            ]);
+            $phone->whatsapp_business_profile_id = $profile->whatsapp_business_profile_id;
+            $phone->save();
 
             // 3. Sincronizar websites
             $websitesData = $this->parseWebsites($profileData['websites'] ?? []);
