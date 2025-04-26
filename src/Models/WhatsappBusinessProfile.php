@@ -18,6 +18,7 @@ class WhatsappBusinessProfile extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'whatsapp_business_profile_id',
         'profile_picture_url',
         'about',
         'address',

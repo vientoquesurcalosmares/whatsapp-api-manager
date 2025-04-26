@@ -43,10 +43,10 @@ class WhatsappPhoneNumber extends Model
 
     public function businessProfile()
     {
-        return $this->hasOne(
-            WhatsappBusinessProfile::class, 
-            'whatsapp_business_profile_id', // FK en perfiles
-            'phone_number_id' // PK en números telefónicos
+        return $this->belongsTo(
+            WhatsappBusinessProfile::class,
+            'whatsapp_business_profile_id', 
+            'whatsapp_business_profile_id'
         );
     }
 
