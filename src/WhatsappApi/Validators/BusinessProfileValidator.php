@@ -18,6 +18,8 @@ class BusinessProfileValidator
         'websites' => 'nullable|array',
         'websites.*' => 'url|max:512',
         'messaging_product' => 'required|string|in:whatsapp',
+        'verified_name' => 'required|string|max:150',
+        'quality_rating' => 'nullable|string|in:GREEN,YELLOW,RED'
     ];
 
     /**

@@ -126,12 +126,29 @@ class AccountRegistrationService
     private function updateOrCreatePhoneNumber(WhatsappBusinessAccount $account, array $phoneData): WhatsappPhoneNumber
     {
         try {
+            // Obtener detalles adicionales del número
+            $phoneDetails = $this->whatsappService->getPhoneNumberDetails($phoneData['id']);
+            
+            // return WhatsappPhoneNumber::updateOrCreate(
+            //     ['api_phone_number_id' => $phoneData['id']],
+            //     [
+            //         'whatsapp_business_account_id' => $account->whatsapp_business_id,
+            //         'display_phone_number' => $phoneData['display_phone_number'],
+            //         'verified_name' => $phoneData['verified_name'],
+            //         'api_phone_number_id' => $phoneData['id']
+            //     ]
+            // );
             return WhatsappPhoneNumber::updateOrCreate(
                 ['api_phone_number_id' => $phoneData['id']],
                 [
                     'whatsapp_business_account_id' => $account->whatsapp_business_id,
-                    'display_phone_number' => $phoneData['display_phone_number'],
-                    'verified_name' => $phoneData['verified_name'],
+                    'display_phone_number' => $phoneDetails['display_phone_number'],
+                    'verified_name' => $phoneDetails['verified_name'],
+                    'code_verification_status' => $phoneDetails['code_verification_status'],
+                    'quality_rating' => $phoneDetails['quality_rating'],
+                    'platform_type' => $phoneDetails['platform_type'],
+                    'throughput' => $phoneDetails['throughput'] ?? null,
+                    'webhook_configuration' => $phoneDetails['webhook_configuration'] ?? null,
                     'api_phone_number_id' => $phoneData['id']
                 ]
             );

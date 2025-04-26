@@ -86,6 +86,26 @@ class WhatsappService
         return $response['data'] ?? $response;
     }
 
+    public function getPhoneNumberDetails(string $phoneNumberId): array
+    {
+        // Construir URL con versión y parámetros
+        $url = Endpoints::build(
+            Endpoints::GET_PHONE_DETAILS,
+            [
+                'version' => config('whatsapp-manager.api.version'), // Obtener versión del config
+                'phone_number_id' => $phoneNumberId
+            ]
+        ) . '?fields=' . urlencode('verified_name,code_verification_status,display_phone_number,quality_rating,platform_type,throughput,webhook_configuration');
+
+        Log::channel('whatsapp')->debug('URL de detalles de número:', ['url' => $url]);
+
+        return $this->apiClient->request(
+            'GET',
+            $url,
+            headers: $this->getAuthHeaders() // ✅ Incluir token de autenticación
+        );
+    }
+
     /**
      * Obtiene el perfil de whatsapp business.
      */

@@ -19,6 +19,13 @@ return new class extends Migration
             $table->string('display_phone_number', 45)->unique();
             $table->string('api_phone_number_id', 45)->unique();
             $table->string('verified_name', 150);
+
+            $table->string('code_verification_status', 45)->nullable();
+            $table->string('quality_rating', 45)->nullable();
+            $table->string('platform_type', 45)->nullable();
+            $table->json('throughput')->nullable();
+            $table->json('webhook_configuration')->nullable();
+            
             $table->timestamps();
             $table->softDeletes();
 

@@ -24,6 +24,17 @@ class WhatsappPhoneNumber extends Model
         'display_phone_number',
         'api_phone_number_id',
         'verified_name',
+
+        'code_verification_status',
+        'quality_rating',
+        'platform_type',
+        'throughput',
+        'webhook_configuration'
+    ];
+
+    protected $casts = [
+        'throughput' => 'array',
+        'webhook_configuration' => 'array',
     ];
 
     public function bot()

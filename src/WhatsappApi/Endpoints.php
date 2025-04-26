@@ -8,6 +8,7 @@ class Endpoints
     const GET_PHONE_NUMBERS = '{whatsapp_business_id}/phone_numbers';
     // const GET_BUSINESS_PROFILE = '{phone_number_id}/whatsapp_business_profile';
     const GET_BUSINESS_PROFILE = '{phone_number_id}/whatsapp_business_profile';
+    const GET_PHONE_DETAILS = '{phone_number_id}';
     
     // Messages
     const SEND_MESSAGE = '{phone_number_id}/messages';

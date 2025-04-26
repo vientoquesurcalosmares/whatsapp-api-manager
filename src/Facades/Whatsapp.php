@@ -24,4 +24,9 @@ class Whatsapp extends Facade
     {
         return app('whatsapp.service');
     }
+
+    public static function phone()
+    {
+        return app('whatsapp.service');
+    }
 }
