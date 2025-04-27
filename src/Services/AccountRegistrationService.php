@@ -148,8 +148,7 @@ class AccountRegistrationService
                     'quality_rating' => $phoneDetails['quality_rating'],
                     'platform_type' => $phoneDetails['platform_type'],
                     'throughput' => $phoneDetails['throughput'] ?? null,
-                    'webhook_configuration' => $phoneDetails['webhook_configuration'] ?? null,
-                    'api_phone_number_id' => $phoneData['id']
+                    'webhook_configuration' => $phoneDetails['webhook_configuration'] ?? null
                 ]
             );
         } catch (\Exception $e) {
@@ -223,6 +222,12 @@ class AccountRegistrationService
 
             throw $e;
         }
+    }
+
+    public function syncPhoneNumber(string $accountId, array $phoneData): WhatsappPhoneNumber
+    {
+        $account = WhatsappBusinessAccount::findOrFail($accountId);
+        return $this->updateOrCreatePhoneNumber($account, $phoneData);
     }
 
     private function parseWebsites(array $apiWebsites): array
