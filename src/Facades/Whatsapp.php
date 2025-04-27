@@ -3,7 +3,6 @@
 namespace ScriptDevelop\WhatsappManager\Facades;
 
 use Illuminate\Support\Facades\Facade;
-use ScriptDevelop\WhatsappManager\Services\AccountRegistrationService;
 
 /**
  * @method static \ScriptDevelop\WhatsappManager\Services\AccountRegistrationService account()
@@ -29,12 +28,5 @@ class Whatsapp extends Facade
     public static function phone()
     {
         return app('whatsapp.service');
-    }
-
-    public static function syncPhone(string $accountId, string $phoneNumberId)
-    {
-        $service = app('whatsapp.service');
-        $details = $service->getPhoneNumberDetails($phoneNumberId);
-        return app(AccountRegistrationService::class)->syncPhoneNumber($accountId, $details);
     }
 }

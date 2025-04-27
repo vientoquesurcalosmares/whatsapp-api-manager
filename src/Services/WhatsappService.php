@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Log;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
-use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\Repositories\WhatsappBusinessAccountRepository;
 
 
@@ -100,37 +99,10 @@ class WhatsappService
 
         Log::channel('whatsapp')->debug('URL de detalles de número:', ['url' => $url]);
 
-        $response = $this->apiClient->request(
+        return $this->apiClient->request(
             'GET',
             $url,
-            headers: $this->getAuthHeaders()
-        );
-
-        if(config('whatsapp.sync_on_query')) {
-            $this->updateLocalPhoneNumber($phoneNumberId, $response);
-        }
-
-        return $response;
-        // return $this->apiClient->request(
-        //     'GET',
-        //     $url,
-        //     headers: $this->getAuthHeaders() // ✅ Incluir token de autenticación
-        // );
-    }
-
-    private function updateLocalPhoneNumber(string $phoneId, array $apiData): WhatsappPhoneNumber
-    {
-        return WhatsappPhoneNumber::updateOrCreate(
-            ['api_phone_number_id' => $phoneId],
-            [
-                'verified_name' => $apiData['verified_name'],
-                'quality_rating' => $apiData['quality_rating'],
-                'code_verification_status' => $apiData['code_verification_status'],
-                'display_phone_number' => $apiData['display_phone_number'],
-                'platform_type' => $apiData['platform_type'],
-                'throughput' => $apiData['throughput'] ?? null,
-                'webhook_configuration' => $apiData['webhook_configuration'] ?? null
-            ]
+            headers: $this->getAuthHeaders() // ✅ Incluir token de autenticación
         );
     }
 

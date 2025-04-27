@@ -15,5 +15,4 @@ return [
         'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
     ],
     'load_migrations' => true, // Control para migraciones automáticas
-    'sync_on_query' => env('WHATSAPP_SYNC_ON_QUERY', false),
 ];

@@ -49,11 +49,7 @@ class WhatsappPhoneNumber extends Model
 
     public function businessAccount()
     {
-        return $this->belongsTo(
-            WhatsappBusinessAccount::class,
-            'whatsapp_business_account_id', // Columna LOCAL en phone_numbers
-            'whatsapp_business_id' // Columna REMOTA en business_accounts
-        );
+        return $this->belongsTo(WhatsappBusinessAccount::class, 'whatsapp_business_account_id');
     }
 
     public function businessProfile()

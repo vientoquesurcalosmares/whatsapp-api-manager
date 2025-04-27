@@ -69,7 +69,7 @@ class AccountRegistrationService
 
     private function upsertBusinessAccount(string $apiToken, array $apiData): WhatsappBusinessAccount
     {
-        $account = WhatsappBusinessAccount::updateOrCreate(
+        return WhatsappBusinessAccount::updateOrCreate(
             ['whatsapp_business_id' => $apiData['id']],
             [
                 'name' => $apiData['name'] ?? 'Sin nombre',
@@ -79,13 +79,6 @@ class AccountRegistrationService
                 'message_template_namespace' => $apiData['message_template_namespace'] ?? null
             ]
         );
-
-        Log::channel('whatsapp')->debug('Cuenta empresarial creada:', [
-            'id' => $account->whatsapp_business_id
-        ]);
-
-        return $account;
-
     }
 
     private function registerPhoneNumbers(WhatsappBusinessAccount $account): void
@@ -135,11 +128,6 @@ class AccountRegistrationService
         try {
             // Obtener detalles adicionales del número
             $phoneDetails = $this->whatsappService->getPhoneNumberDetails($phoneData['id']);
-
-            Log::channel('whatsapp')->debug('Datos para updateOrCreate:', [
-                'account_id' => $account->whatsapp_business_id,
-                'phone_data' => $phoneDetails
-            ]);
             
             // return WhatsappPhoneNumber::updateOrCreate(
             //     ['api_phone_number_id' => $phoneData['id']],
@@ -160,7 +148,8 @@ class AccountRegistrationService
                     'quality_rating' => $phoneDetails['quality_rating'],
                     'platform_type' => $phoneDetails['platform_type'],
                     'throughput' => $phoneDetails['throughput'] ?? null,
-                    'webhook_configuration' => $phoneDetails['webhook_configuration'] ?? null
+                    'webhook_configuration' => $phoneDetails['webhook_configuration'] ?? null,
+                    'api_phone_number_id' => $phoneData['id']
                 ]
             );
         } catch (\Exception $e) {
@@ -234,12 +223,6 @@ class AccountRegistrationService
 
             throw $e;
         }
-    }
-
-    public function syncPhoneNumber(string $accountId, array $phoneData): WhatsappPhoneNumber
-    {
-        $account = WhatsappBusinessAccount::findOrFail($accountId);
-        return $this->updateOrCreatePhoneNumber($account, $phoneData);
     }
 
     private function parseWebsites(array $apiWebsites): array
