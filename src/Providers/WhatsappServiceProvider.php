@@ -9,6 +9,7 @@ use ScriptDevelop\WhatsappManager\Services\WhatsappService;
 use ScriptDevelop\WhatsappManager\Repositories\WhatsappBusinessAccountRepository;
 use ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel;
 use ScriptDevelop\WhatsappManager\Console\Commands\MergeLoggingConfig;
+use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
 
 class WhatsappServiceProvider extends ServiceProvider
 {
@@ -43,6 +44,12 @@ class WhatsappServiceProvider extends ServiceProvider
         // Registrar servicio de cuentas
         $this->app->singleton('whatsapp.account', function ($app) {
             return new AccountRegistrationService($app->make('whatsapp.service'));
+        });
+
+        $this->app->singleton('whatsapp.message_dispatcher', function ($app) {
+            return new MessageDispatcherService(
+                $app->make(ApiClient::class)
+            );
         });
     }
 

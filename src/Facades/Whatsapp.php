@@ -12,17 +12,12 @@ class Whatsapp extends Facade
 {
     protected static function getFacadeAccessor()
     {
-        return 'whatsapp.service'; // Coincide con la clave del servicio principal
+        return 'whatsapp.message_dispatcher';
     }
 
     public static function account()
     {
         return app('whatsapp.account');
-    }
-
-    public static function message()
-    {
-        return app('whatsapp.service');
     }
 
     public static function phone()

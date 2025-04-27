@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 use ScriptDevelop\WhatsappManager\Traits\GeneratesUlid;
+use ScriptDevelop\WhatsappManager\Enums\MessageStatus;
 
 class Message extends Model
 {
@@ -42,6 +43,12 @@ class Message extends Model
         'message_error',
         'details_error',
         'json',
+    ];
+
+    protected $casts = [
+        'status' => MessageStatus::class,
+        'json_content' => 'array',
+        'json' => 'array'
     ];
     
 

@@ -5,6 +5,10 @@ return [
         'base_url' => env('WHATSAPP_API_URL', 'https://graph.facebook.com'),
         'version' => env('WHATSAPP_API_VERSION', 'v19.0'),
         'timeout' => env('WHATSAPP_API_TIMEOUT', 30),
+        'retry' => [
+            'attempts' => 3,
+            'delay' => 500
+        ]
     ],
     'models' => [
         'business_account' => \ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount::class,
