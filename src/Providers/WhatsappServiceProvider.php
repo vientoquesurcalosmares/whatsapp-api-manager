@@ -30,10 +30,6 @@ class WhatsappServiceProvider extends ServiceProvider
             );
         });
 
-        // Registrar repositorio
-        $this->app->singleton(WhatsappBusinessAccountRepository::class);
-        
-        // Registrar servicio principal
         $this->app->singleton('whatsapp.service', function ($app) {
             return new WhatsappService(
                 $app->make(ApiClient::class),
@@ -41,14 +37,17 @@ class WhatsappServiceProvider extends ServiceProvider
             );
         });
 
-        // Registrar servicio de cuentas
-        $this->app->singleton('whatsapp.account', function ($app) {
-            return new AccountRegistrationService($app->make('whatsapp.service'));
-        });
-
+        // Servicio específico para envío de mensajes
         $this->app->singleton('whatsapp.message_dispatcher', function ($app) {
             return new MessageDispatcherService(
                 $app->make(ApiClient::class)
+            );
+        });
+
+        // Servicio de registro de cuentas
+        $this->app->singleton('whatsapp.account', function ($app) {
+            return new AccountRegistrationService(
+                $app->make('whatsapp.service')
             );
         });
     }
