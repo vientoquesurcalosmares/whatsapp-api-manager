@@ -1,6 +1,7 @@
 <?php
 
 return [
+
     'channels' => [
         'whatsapp' => [
             'driver' => 'daily',
@@ -10,4 +11,5 @@ return [
             'tap' => [\ScriptDevelop\WhatsappManager\Logging\CustomizeFormatter::class],
         ],
     ],
+
 ];

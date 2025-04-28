@@ -8,17 +8,17 @@ use ScriptDevelop\WhatsappManager\Services\AccountRegistrationService;
 use ScriptDevelop\WhatsappManager\Services\WhatsappService;
 use ScriptDevelop\WhatsappManager\Repositories\WhatsappBusinessAccountRepository;
 use ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel;
-use ScriptDevelop\WhatsappManager\Console\Commands\MergeLoggingConfig;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
 
 class WhatsappServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        // Fusionar configuración principal
+        // Fusionar configuraciones
         $this->mergeConfigFrom(__DIR__.'/../config/whatsapp.php', 'whatsapp');
+        $this->mergeConfigFrom(__DIR__.'/../config/logging-whatsapp.php', 'logging');
 
-        // Registrar cliente API principal
+        // Registrar servicios
         $this->app->singleton(ApiClient::class, function ($app) {
             return new ApiClient(
                 config('whatsapp.api.base_url', 'https://graph.facebook.com'),
@@ -29,7 +29,6 @@ class WhatsappServiceProvider extends ServiceProvider
 
         $this->app->singleton(WhatsappBusinessAccountRepository::class);
 
-        // Servicio principal para operaciones generales (phone)
         $this->app->singleton('whatsapp.phone', function ($app) {
             return new WhatsappService(
                 $app->make(ApiClient::class),
@@ -37,15 +36,13 @@ class WhatsappServiceProvider extends ServiceProvider
             );
         });
 
-        // Servicio de envío de mensajes
-        $this->app->singleton('whatsapp.message', function($app) {
+        $this->app->singleton('whatsapp.message', function ($app) {
             return new MessageDispatcherService(
                 $app->make(ApiClient::class)
             );
         });
 
-        // Servicio de registro de cuentas
-        $this->app->singleton('whatsapp.account', function($app) {
+        $this->app->singleton('whatsapp.account', function ($app) {
             return new AccountRegistrationService(
                 $app->make('whatsapp.phone')
             );
@@ -54,21 +51,23 @@ class WhatsappServiceProvider extends ServiceProvider
 
     public function boot()
     {
-        // Publicar solo configuraciones necesarias
+        // Publicar whatsapp.php
         $this->publishes([
             __DIR__.'/../config/whatsapp.php' => config_path('whatsapp.php'),
-            __DIR__.'/../database/migrations' => database_path('migrations'),
-        ], ['whatsapp-config', 'whatsapp-migrations']);
+        ], 'whatsapp-config');
 
-        // Cargar migraciones condicionalmente
+        // Publicar migraciones si es necesario
+        $this->publishes([
+            __DIR__.'/../database/migrations' => database_path('migrations'),
+        ], 'whatsapp-migrations');
+
         if (config('whatsapp.load_migrations', true)) {
             $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         }
 
-        // Registrar comandos
         $this->commands([
             CheckUserModel::class,
-            MergeLoggingConfig::class
+            // Ojo: ya no necesitas MergeLoggingConfig, a menos que quieras que sea opcional
         ]);
     }
 }
