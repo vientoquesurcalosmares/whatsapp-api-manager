@@ -16,6 +16,7 @@ class WhatsappBusinessAccount extends Model
 
     protected $fillable = [
         'whatsapp_business_id',
+        'wa_business_account_id',
         'phone_number_id',
         'name',
         'api_token',

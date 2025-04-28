@@ -70,8 +70,9 @@ class AccountRegistrationService
     private function upsertBusinessAccount(string $apiToken, array $apiData): WhatsappBusinessAccount
     {
         return WhatsappBusinessAccount::updateOrCreate(
-            ['whatsapp_business_id' => $apiData['id']],
+            ['wa_business_account_id' => $apiData['id']],
             [
+                'wa_business_account_id' => $apiData['id'],
                 'name' => $apiData['name'] ?? 'Sin nombre',
                 'api_token' => $apiToken,
                 'phone_number_id' => $apiData['phone_number_id'] ?? $apiData['id'], // Usar business_id como fallback
@@ -81,25 +82,25 @@ class AccountRegistrationService
         );
     }
 
-    private function registerPhoneNumbers(WhatsappBusinessAccount $account): void
-    {
-        try {
-            $response = $this->whatsappService
-            ->forAccount($account->whatsapp_business_id)
-            ->getPhoneNumbers($account->whatsapp_business_id);
+    // private function registerPhoneNumbers(WhatsappBusinessAccount $account): void
+    // {
+    //     try {
+    //         $response = $this->whatsappService
+    //         ->forAccount($account->whatsapp_business_id)
+    //         ->getPhoneNumbers($account->whatsapp_business_id);
 
-            Log::channel('whatsapp')->debug('Respuesta de getPhoneNumbers Service:', $response);
+    //         Log::channel('whatsapp')->debug('Respuesta de getPhoneNumbers Service:', $response);
 
-            foreach ($response as $phoneData) {
-                Log::channel('whatsapp')->debug('Procesando número:', $phoneData);
-                $phone = $this->updateOrCreatePhoneNumber($account, $phoneData);
-                Log::channel('whatsapp')->debug('Número guardado:', $phone->toArray());
-            }
-        } catch (ApiException $e) {
-            Log::channel('whatsapp')->error("Error números telefónicos: {$e->getMessage()}");
-            throw $e;
-        }
-    }
+    //         foreach ($response as $phoneData) {
+    //             Log::channel('whatsapp')->debug('Procesando número:', $phoneData);
+    //             $phone = $this->updateOrCreatePhoneNumber($account, $phoneData);
+    //             Log::channel('whatsapp')->debug('Número guardado:', $phone->toArray());
+    //         }
+    //     } catch (ApiException $e) {
+    //         Log::channel('whatsapp')->error("Error números telefónicos: {$e->getMessage()}");
+    //         throw $e;
+    //     }
+    // }
 
     private function registerSinglePhoneNumber(WhatsappBusinessAccount $account, array $phoneData): void 
     {
