@@ -37,7 +37,7 @@ return new class extends Migration
             $table->softDeletes();
 
             // Claves foráneas
-            $table->foreign('contact_id')->references('contact_id')->on('contacts')->onDelete('cascade');
+            $table->foreign('contact_id')->references('contact_id')->on('whatsapp_contacts')->onDelete('cascade');
             $table->foreign('whatsapp_phone_id')->references('phone_number_id')->on('whatsapp_phone_numbers');
             $table->foreign('assigned_bot_id')->references('whatsapp_bot_id')->on('whatsapp_bots')->onDelete('set null');
             $table->foreign('flow_id')->references('flow_id')->on('flows');
