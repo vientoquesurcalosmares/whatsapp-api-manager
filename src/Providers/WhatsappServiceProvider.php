@@ -16,7 +16,7 @@ class WhatsappServiceProvider extends ServiceProvider
     {
         // Fusionar configuraciones
         $this->mergeConfigFrom(__DIR__.'/../config/whatsapp.php', 'whatsapp');
-        $this->mergeConfigFrom(__DIR__.'/../config/logging-whatsapp.php', 'logging');
+        $this->mergeConfigFrom(__DIR__.'/../config/logging.php', 'logging');
 
         // Registrar servicios
         $this->app->singleton(ApiClient::class, function ($app) {
