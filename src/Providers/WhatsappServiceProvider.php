@@ -27,6 +27,8 @@ class WhatsappServiceProvider extends ServiceProvider
             );
         });
 
+        $this->app->singleton(WhatsappBusinessAccountRepository::class);
+
         // Servicio principal para operaciones generales (phone)
         $this->app->singleton('whatsapp.phone', function ($app) {
             return new WhatsappService(

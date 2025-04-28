@@ -17,7 +17,7 @@ class AccountRegistrationService
     use GeneratesUlid;
 
     public function __construct(
-        protected WhatsappService $whatsappPhoneService // Renombrar variable
+        protected WhatsappService $whatsappService
     ) {}
 
     public function register(array $data): WhatsappBusinessAccount
