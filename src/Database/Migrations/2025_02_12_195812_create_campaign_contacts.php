@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('campaign_contact', function (Blueprint $table) {
-            $table->uuid('campaign_id');
-            $table->uuid('contact_id');
+            $table->ulid('campaign_id');
+            $table->ulid('contact_id');
             $table->enum('status', ['PENDING', 'SENT', 'DELIVERED', 'READ', 'FAILED']);
             $table->timestamp('sent_at')->nullable();
             $table->timestamp('delivered_at')->nullable();

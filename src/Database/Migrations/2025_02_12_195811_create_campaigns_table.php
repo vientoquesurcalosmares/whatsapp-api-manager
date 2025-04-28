@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('campaigns', function (Blueprint $table) {
-            $table->uuid('campaign_id')->primary();
+            $table->ulid('campaign_id')->primary();
             $table->string('whatsapp_business_account_id', 255);
-            $table->uuid('template_id')->nullable(); // Si usa plantillas
+            $table->ulid('template_id')->nullable(); // Si usa plantillas
             $table->string('name', 255);
             $table->text('message_content'); // Mensaje personalizado
             $table->enum('type', ['INMEDIATA', 'PROGRAMADA']);

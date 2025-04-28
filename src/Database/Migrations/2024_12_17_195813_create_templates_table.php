@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('templates', function (Blueprint $table) {
-            $table->uuid('template_id')->primary();
+            $table->ulid('template_id')->primary();
             $table->string('whatsapp_business_id', 200);
             $table->string('wa_template_id', 200)->unique();
             $table->string('name', 250);

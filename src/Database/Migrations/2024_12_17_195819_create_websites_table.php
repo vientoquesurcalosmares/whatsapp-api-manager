@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('websites', function (Blueprint $table) {
-            $table->uuid('website_id')->primary();
+            $table->ulid('website_id')->primary();
             $table->foreignUuid('whatsapp_business_profile_id')
                 ->constrained(
                     table: 'whatsapp_business_profiles', 

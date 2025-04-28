@@ -12,12 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('chat_sessions', function (Blueprint $table) {
-            $table->uuid('session_id')->primary();
-            $table->uuid('contact_id');
-            $table->uuid('whatsapp_phone_id'); // Número de WhatsApp usado
-            $table->uuid('assigned_bot_id')->nullable();
+            $table->ulid('session_id')->primary();
+            $table->ulid('contact_id');
+            $table->ulid('whatsapp_phone_id'); // Número de WhatsApp usado
+            $table->ulid('assigned_bot_id')->nullable();
             $table->foreignUuid('flow_id')->nullable(); // Flujo activo
-            $table->uuid('current_step_id')->nullable(); 
+            $table->ulid('current_step_id')->nullable(); 
             $table->enum('status', ['active', 'paused', 'completed'])->default('active');
             $table->json('context')->nullable(); 
             $table->timestamp('assigned_at')->nullable(); 

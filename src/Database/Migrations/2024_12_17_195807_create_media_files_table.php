@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('media_files', function (Blueprint $table) {
-            $table->uuid('media_file_id')->primary();
-            $table->uuid('message_id');
+            $table->ulid('media_file_id')->primary();
+            $table->ulid('message_id');
             $table->string('media_type', 45);
             $table->string('file_name', 45);
             $table->string('mime_type', 45);

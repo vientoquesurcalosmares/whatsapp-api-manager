@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('messages', function (Blueprint $table) {
-            $table->uuid('message_id')->primary();
-            $table->uuid('whatsapp_phone_id');
-            $table->uuid('contact_id');
-            $table->uuid('conversation_id')->nullable();
+            $table->ulid('message_id')->primary();
+            $table->ulid('whatsapp_phone_id');
+            $table->ulid('contact_id');
+            $table->ulid('conversation_id')->nullable();
             $table->string('wa_id', 100)->nullable();
             $table->string('messaging_product', 45)->nullable();
             $table->string('message_method', 45)->default('INPUT');

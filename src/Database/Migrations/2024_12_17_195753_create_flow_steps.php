@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('flow_steps', function (Blueprint $table) {
-            $table->uuid('step_id')->primary();
+            $table->ulid('step_id')->primary();
             $table->foreignUuid('flow_id')->constrained('flows', 'flow_id');
             $table->integer('order'); // Orden de ejecución
             $table->enum('type', ['text', 'menu', 'input', 'media', 'location', 'document']);

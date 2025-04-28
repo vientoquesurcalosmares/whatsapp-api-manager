@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('conversations', function (Blueprint $table) {
-            $table->uuid('conversation_id')->primary();
+            $table->ulid('conversation_id')->primary();
             $table->string('wa_conversation_id', 200)->unique();
             $table->timestamp('expiration_timestamp');
             $table->string('origin', 45);

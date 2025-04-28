@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('user_responses', function (Blueprint $table) {
-            $table->uuid('response_id')->primary();
+            $table->ulid('response_id')->primary();
             $table->foreignUuid('session_id')->constrained('chat_sessions', 'session_id');
             $table->foreignUuid('flow_step_id')->constrained('flow_steps', 'step_id');
             $table->string('field_name'); // Ej: "nombre", "telefono"

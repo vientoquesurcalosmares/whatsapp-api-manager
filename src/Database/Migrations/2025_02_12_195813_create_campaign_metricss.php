@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('campaign_metrics', function (Blueprint $table) {
-            $table->uuid('campaign_id')->primary();
+            $table->ulid('campaign_id')->primary();
             $table->integer('sent')->default(0);
             $table->integer('delivered')->default(0);
             $table->integer('read')->default(0);

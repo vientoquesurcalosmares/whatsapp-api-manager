@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('whatsapp_bots', function (Blueprint $table) {
-            $table->uuid('whatsapp_bot_id')->primary();
+            $table->ulid('whatsapp_bot_id')->primary();
             $table->string('bot_name', 45);
             $table->integer('port');
             $table->string('url', 45);

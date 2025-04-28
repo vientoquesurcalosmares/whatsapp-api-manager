@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('flows', function (Blueprint $table) {
-            $table->uuid('flow_id')->primary();
+            $table->ulid('flow_id')->primary();
             $table->foreignUuid('bot_id'); // Bot asociado
             $table->string('name');
             $table->json('trigger_keywords')->nullable();
