@@ -17,7 +17,7 @@ return new class extends Migration
             $table->uuid('contact_id');
             $table->uuid('conversation_id')->nullable();
             $table->string('wa_id', 100)->nullable();
-            $table->string('messaging_product', 45);
+            $table->string('messaging_product', 45)->nullable();
             $table->string('message_method', 45)->default('INPUT');
             $table->string('message_from', 45);
             $table->string('message_to', 20);
