@@ -68,11 +68,11 @@ class WhatsappServiceProvider extends ServiceProvider
 
         // Publicar rutas
         $this->publishes([
-            __DIR__ . '/../routes/whatsapp_webhook.php' => base_path('routes/whatsapp_webhook.php'),
+            __DIR__ . '/routes/whatsapp_webhook.php' => base_path('routes/whatsapp_webhook.php'),
         ], 'whatsapp-routes');
 
         // Cargar rutas automáticamente
-        $this->loadRoutesFrom(__DIR__.'/../routes/whatsapp_webhook.php');
+        $this->loadRoutesFrom(__DIR__.'/routes/whatsapp_webhook.php');
 
         // Registrar comandos de consola
         if ($this->app->runningInConsole()) {
