@@ -9,6 +9,7 @@ use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Exceptions\WhatsappApiException;
+use Illuminate\Support\Facades\Log; // <-- Agregamos esto
 
 class MessageDispatcherService
 {
@@ -22,6 +23,13 @@ class MessageDispatcherService
         string $text,
         bool $previewUrl = false
     ): Message {
+        Log::info('Iniciando envío de mensaje.', [
+            'phoneNumberId' => $phoneNumberId,
+            'to' => $to,
+            'text' => $text,
+            'previewUrl' => $previewUrl,
+        ]);
+
         $phoneNumber = $this->validatePhoneNumber($phoneNumberId);
         $contact = $this->resolveContact($to);
 
@@ -35,20 +43,31 @@ class MessageDispatcherService
             'status' => MessageStatus::PENDING
         ]);
 
+        Log::info('Mensaje creado en base de datos.', ['message_id' => $message->id]);
+
         try {
             $response = $this->sendViaApi($phoneNumber, $to, $text, $previewUrl);
+            Log::info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
+            Log::error('Error al enviar mensaje por API WhatsApp.', [
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
+                'details' => $e->getDetails()
+            ]);
             return $this->handleError($message, $e);
         }
     }
 
     private function validatePhoneNumber(string $phoneNumberId): WhatsappPhoneNumber
     {
+        Log::info('Validando número de teléfono.', ['phone_number_id' => $phoneNumberId]);
+
         $phone = WhatsappPhoneNumber::with('businessAccount')
             ->findOrFail($phoneNumberId);
 
         if (!$phone->businessAccount?->api_token) {
+            Log::error('Número de teléfono sin token API válido.', ['phone_number_id' => $phoneNumberId]);
             throw new \InvalidArgumentException('El número no tiene un token API válido asociado');
         }
 
@@ -57,10 +76,16 @@ class MessageDispatcherService
 
     private function resolveContact(string $phoneNumber): Contact
     {
-        return Contact::firstOrCreate(
+        Log::info('Resolviendo contacto.', ['phone_number' => $phoneNumber]);
+
+        $contact = Contact::firstOrCreate(
             ['phone_number' => $phoneNumber],
             ['country_code' => substr($phoneNumber, 0, 3)]
         );
+
+        Log::info('Contacto resuelto.', ['contact_id' => $contact->contact_id]);
+
+        return $contact;
     }
 
     private function sendViaApi(
@@ -69,11 +94,19 @@ class MessageDispatcherService
         string $text,
         bool $previewUrl
     ): array {
+        $endpoint = Endpoints::build(Endpoints::SEND_MESSAGE, [
+            'phone_number_id' => $phone->api_phone_number_id
+        ]);
+
+        Log::info('Enviando solicitud a la API de WhatsApp.', [
+            'endpoint' => $endpoint,
+            'to' => $to,
+            'body' => $text
+        ]);
+
         return $this->apiClient->request(
             'POST',
-            Endpoints::build(Endpoints::SEND_MESSAGE, [
-                'phone_number_id' => $phone->api_phone_number_id
-            ]),
+            $endpoint,
             data: [
                 'messaging_product' => 'whatsapp',
                 'recipient_type' => 'individual',
@@ -93,6 +126,11 @@ class MessageDispatcherService
 
     private function handleSuccess(Message $message, array $response): Message
     {
+        Log::info('Mensaje enviado exitosamente.', [
+            'message_id' => $message->id,
+            'api_response' => $response
+        ]);
+
         $message->update([
             'wa_id' => $response['messages'][0]['id'],
             'messaging_product' => $response['messaging_product'],
@@ -105,6 +143,11 @@ class MessageDispatcherService
 
     private function handleError(Message $message, WhatsappApiException $e): Message
     {
+        Log::error('Error al manejar envío de mensaje.', [
+            'message_id' => $message->id,
+            'error' => $e->getMessage()
+        ]);
+
         $message->update([
             'status' => MessageStatus::FAILED,
             'code_error' => $e->getCode(),
