@@ -38,16 +38,16 @@ class WhatsappServiceProvider extends ServiceProvider
         });
 
         // Servicio de envío de mensajes
-        $this->app->singleton('whatsapp.message', function ($app) {
+        $this->app->singleton('whatsapp.message', function($app) {
             return new MessageDispatcherService(
                 $app->make(ApiClient::class)
             );
         });
 
         // Servicio de registro de cuentas
-        $this->app->singleton('whatsapp.account', function ($app) {
+        $this->app->singleton('whatsapp.account', function($app) {
             return new AccountRegistrationService(
-                $app->make('whatsapp.phone') // Cambiar a 'whatsapp.phone'
+                $app->make('whatsapp.phone')
             );
         });
     }
