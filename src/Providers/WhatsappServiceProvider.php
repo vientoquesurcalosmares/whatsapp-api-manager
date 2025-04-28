@@ -15,8 +15,8 @@ class WhatsappServiceProvider extends ServiceProvider
     public function register()
     {
         // Fusionar configuraciones
-        $this->mergeConfigFrom(__DIR__.'/../config/whatsapp.php', 'whatsapp');
-        $this->mergeConfigFrom(__DIR__.'/../config/logging.php', 'logging');
+        $this->mergeConfigFrom(__DIR__ . '/../config/whatsapp.php', 'whatsapp');
+        $this->mergeConfigFrom(__DIR__ . '/../config/logging.php', 'logging');
 
         // Registrar servicios
         $this->app->singleton(ApiClient::class, function ($app) {
@@ -51,23 +51,27 @@ class WhatsappServiceProvider extends ServiceProvider
 
     public function boot()
     {
-        // Publicar whatsapp.php
+        // Publicar archivos de configuración
         $this->publishes([
-            __DIR__.'/../config/whatsapp.php' => config_path('whatsapp.php'),
+            __DIR__ . '/../config/whatsapp.php' => config_path('whatsapp.php'),
         ], 'whatsapp-config');
 
-        // Publicar migraciones si es necesario
+        // Publicar migraciones
         $this->publishes([
-            __DIR__.'/../database/migrations' => database_path('migrations'),
+            __DIR__ . '/../database/migrations' => database_path('migrations'),
         ], 'whatsapp-migrations');
 
+        // Cargar automáticamente las migraciones si está habilitado
         if (config('whatsapp.load_migrations', true)) {
-            $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+            $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
         }
 
-        $this->commands([
-            CheckUserModel::class,
-            // Ojo: ya no necesitas MergeLoggingConfig, a menos que quieras que sea opcional
-        ]);
+        // Registrar comandos de consola
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                CheckUserModel::class,
+                // No necesitas MergeLoggingConfig, salvo que quieras hacer la fusión opcional de logging
+            ]);
+        }
     }
 }
