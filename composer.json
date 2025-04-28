@@ -1,6 +1,6 @@
 {
     "name": "scriptdevelop/whatsapp-manager",
-    "version": "1.0.80", 
+    "version": "1.0.81", 
     "description": "Paquete para manejo de WhatsApp Business API en Laravel",
     "type": "library",
     "require": {
