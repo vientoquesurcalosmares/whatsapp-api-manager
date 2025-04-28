@@ -66,6 +66,14 @@ class WhatsappServiceProvider extends ServiceProvider
             $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
         }
 
+        // Publicar rutas
+        $this->publishes([
+            __DIR__ . '/../routes/whatsapp_webhook.php' => base_path('routes/whatsapp_webhook.php'),
+        ], 'whatsapp-routes');
+
+        // Cargar rutas automáticamente
+        $this->loadRoutesFrom(__DIR__.'/../routes/whatsapp_webhook.php');
+
         // Registrar comandos de consola
         if ($this->app->runningInConsole()) {
             $this->commands([
