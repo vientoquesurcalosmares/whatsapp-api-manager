@@ -16,7 +16,7 @@ class Campaign extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
-    protected $table = 'whatgsapp_campaigns';
+    protected $table = 'whatsapp_campaigns';
     protected $primaryKey = 'campaign_id';
     public $incrementing = false;
     protected $keyType = 'string';
