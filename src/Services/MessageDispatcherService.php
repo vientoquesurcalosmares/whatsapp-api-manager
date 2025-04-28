@@ -95,6 +95,7 @@ class MessageDispatcherService
     {
         $message->update([
             'wa_id' => $response['messages'][0]['id'],
+            'messaging_product' => $response['messaging_product'],
             'status' => MessageStatus::SENT,
             'json_content' => $response
         ]);
