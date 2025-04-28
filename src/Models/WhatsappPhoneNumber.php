@@ -22,6 +22,8 @@ class WhatsappPhoneNumber extends Model
         'whatsapp_business_profile_id',
         'whatsapp_bot_id',
         'display_phone_number',
+        'country_code',
+        'phone_number',
         'api_phone_number_id',
         'verified_name',
 

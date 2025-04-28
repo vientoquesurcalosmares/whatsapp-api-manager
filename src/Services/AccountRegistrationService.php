@@ -128,21 +128,24 @@ class AccountRegistrationService
         try {
             // Obtener detalles adicionales del número
             $phoneDetails = $this->whatsappService->getPhoneNumberDetails($phoneData['id']);
+
+            // Extraer country code y phone number del display_phone_number
+            $displayPhoneNumber = $phoneDetails['display_phone_number'];
             
-            // return WhatsappPhoneNumber::updateOrCreate(
-            //     ['api_phone_number_id' => $phoneData['id']],
-            //     [
-            //         'whatsapp_business_account_id' => $account->whatsapp_business_id,
-            //         'display_phone_number' => $phoneData['display_phone_number'],
-            //         'verified_name' => $phoneData['verified_name'],
-            //         'api_phone_number_id' => $phoneData['id']
-            //     ]
-            // );
+            // Asumiendo formato tipo "+57 314 5055047"
+            preg_match('/^\+(\d+)\s*(.+)$/', $displayPhoneNumber, $matches);
+
+            $countryCode = $matches[1] ?? null;
+            $phoneNumber = preg_replace('/\s+/', '', $matches[2] ?? ''); // Elimina espacios del número
+
+            
             return WhatsappPhoneNumber::updateOrCreate(
                 ['api_phone_number_id' => $phoneData['id']],
                 [
                     'whatsapp_business_account_id' => $account->whatsapp_business_id,
                     'display_phone_number' => $phoneDetails['display_phone_number'],
+                    'country_code' => $countryCode,
+                    'phone_number' => $phoneNumber,
                     'verified_name' => $phoneDetails['verified_name'],
                     'code_verification_status' => $phoneDetails['code_verification_status'],
                     'quality_rating' => $phoneDetails['quality_rating'],

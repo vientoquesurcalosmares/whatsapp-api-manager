@@ -81,11 +81,11 @@ class MessageDispatcherService
     private function resolveContact(string $countryCode, string $phoneNumber): Contact
     {
         $fullPhoneNumber = $countryCode . $phoneNumber;
-        
+
         Log::info('Resolviendo contacto.', ['full_phone_number' => $fullPhoneNumber]);
 
         $contact = Contact::firstOrCreate(
-            ['phone_number' => $fullPhoneNumber],
+            ['phone_number' => $phoneNumber],
             ['country_code' => $countryCode]
         );
 
