@@ -16,12 +16,9 @@ class WhatsappServiceProvider extends ServiceProvider
     public function register()
     {
         // Fusionar configuración principal
-        $this->mergeConfigFrom(
-            __DIR__.'/../config/whatsapp.php',
-            'whatsapp'
-        );
+        $this->mergeConfigFrom(__DIR__.'/../config/whatsapp.php', 'whatsapp');
 
-        // Registrar cliente API
+        // Registrar cliente API principal
         $this->app->singleton(ApiClient::class, function ($app) {
             return new ApiClient(
                 config('whatsapp.api.base_url', 'https://graph.facebook.com'),
@@ -30,6 +27,7 @@ class WhatsappServiceProvider extends ServiceProvider
             );
         });
 
+        // Servicio principal para operaciones generales
         $this->app->singleton('whatsapp.service', function ($app) {
             return new WhatsappService(
                 $app->make(ApiClient::class),
