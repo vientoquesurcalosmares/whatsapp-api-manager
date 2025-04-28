@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('campaign_metrics', function (Blueprint $table) {
+        Schema::create('whatsapp_campaign_metrics', function (Blueprint $table) {
             $table->ulid('campaign_id')->primary();
             $table->integer('sent')->default(0);
             $table->integer('delivered')->default(0);
@@ -30,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('campaign_metrics');
+        Schema::dropIfExists('whatsapp_campaign_metrics');
     }
 };

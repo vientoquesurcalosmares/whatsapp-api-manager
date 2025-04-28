@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('campaign_contact', function (Blueprint $table) {
+        Schema::create('whatsapp_campaign_contact', function (Blueprint $table) {
             $table->ulid('campaign_id');
             $table->ulid('contact_id');
             $table->enum('status', ['PENDING', 'SENT', 'DELIVERED', 'READ', 'FAILED']);
@@ -29,7 +29,7 @@ return new class extends Migration
 
             $table->foreign('contact_id')
                   ->references('contact_id')
-                  ->on('contacts');
+                  ->on('whatsapp_contacts');
         });
     }
 
@@ -38,6 +38,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('campaign_contact');
+        Schema::dropIfExists('whatsapp_campaign_contact');
     }
 };
