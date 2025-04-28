@@ -70,9 +70,8 @@ class AccountRegistrationService
     private function upsertBusinessAccount(string $apiToken, array $apiData): WhatsappBusinessAccount
     {
         return WhatsappBusinessAccount::updateOrCreate(
-            ['wa_business_account_id' => $apiData['id']],
+            ['whatsapp_business_id' => $apiData['id']],
             [
-                'wa_business_account_id' => $apiData['id'],
                 'name' => $apiData['name'] ?? 'Sin nombre',
                 'api_token' => $apiToken,
                 'phone_number_id' => $apiData['phone_number_id'] ?? $apiData['id'], // Usar business_id como fallback
@@ -102,27 +101,27 @@ class AccountRegistrationService
         }
     }
 
-    // private function registerSinglePhoneNumber(WhatsappBusinessAccount $account, array $phoneData): void 
-    // {
-    //     try {
-    //         WhatsappPhoneNumber::updateOrCreate(
-    //             ['phone_number_id' => $phoneData['id']],
-    //             [
-    //                 'whatsapp_business_account_id' => $account->whatsapp_business_id,
-    //                 'display_phone_number' => $phoneData['display_phone_number'],
-    //                 'verified_name' => $phoneData['verified_name']
-    //             ]
-    //         );
+    private function registerSinglePhoneNumber(WhatsappBusinessAccount $account, array $phoneData): void 
+    {
+        try {
+            WhatsappPhoneNumber::updateOrCreate(
+                ['phone_number_id' => $phoneData['id']],
+                [
+                    'whatsapp_business_account_id' => $account->whatsapp_business_id,
+                    'display_phone_number' => $phoneData['display_phone_number'],
+                    'verified_name' => $phoneData['verified_name']
+                ]
+            );
             
-    //         Log::channel('whatsapp')->debug('Número registrado:', $phoneData);
+            Log::channel('whatsapp')->debug('Número registrado:', $phoneData);
             
-    //     } catch (\Exception $e) {
-    //         Log::channel('whatsapp')->error('Error guardando número', [
-    //             'error' => $e->getMessage(),
-    //             'data' => $phoneData
-    //         ]);
-    //     }
-    // }
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error guardando número', [
+                'error' => $e->getMessage(),
+                'data' => $phoneData
+            ]);
+        }
+    }
 
     private function updateOrCreatePhoneNumber(WhatsappBusinessAccount $account, array $phoneData): WhatsappPhoneNumber
     {
