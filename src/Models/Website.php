@@ -14,7 +14,7 @@ class Website extends Model
     use GeneratesUlid;
 
 
-    protected $table = 'whatgsapp_websites';
+    protected $table = 'whatsapp_websites';
     protected $primaryKey = 'website_id';
     public $incrementing = false;
     protected $keyType = 'string';
