@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('websites', function (Blueprint $table) {
+        Schema::create('whatsapp_websites', function (Blueprint $table) {
             $table->ulid('website_id')->primary();
             $table->foreignUuid('whatsapp_business_profile_id')
                 ->constrained(
@@ -31,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('websites');
+        Schema::dropIfExists('whatsapp_websites');
     }
 };

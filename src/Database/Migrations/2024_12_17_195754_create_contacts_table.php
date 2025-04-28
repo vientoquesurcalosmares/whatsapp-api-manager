@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('contacts', function (Blueprint $table) {
+        Schema::create('whatsapp_contacts', function (Blueprint $table) {
             $table->ulid('contact_id')->primary();
             $table->string('wa_id', 200)->unique()->nullable();
             $table->string('country_code', 45);
@@ -32,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('contacts');
+        Schema::dropIfExists('whatsapp_contacts');
     }
 };

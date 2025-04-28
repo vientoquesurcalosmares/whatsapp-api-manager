@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('chat_sessions', function (Blueprint $table) {
+        Schema::create('whatsapp_chat_sessions', function (Blueprint $table) {
             $table->ulid('session_id')->primary();
             $table->ulid('contact_id');
             $table->ulid('whatsapp_phone_id'); // Número de WhatsApp usado
@@ -52,6 +52,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('chat_sessions');
+        Schema::dropIfExists('whatsapp_chat_sessions');
     }
 };

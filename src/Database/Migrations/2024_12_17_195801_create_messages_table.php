@@ -43,7 +43,7 @@ return new class extends Migration
 
             $table->foreign('contact_id')
                   ->references('contact_id')
-                  ->on('contacts');
+                  ->on('whatsapp_contacts');
 
             $table->foreign('conversation_id')
                   ->references('conversation_id')

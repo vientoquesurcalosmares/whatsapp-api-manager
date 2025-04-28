@@ -21,9 +21,11 @@ return new class extends Migration
             $table->integer('response_count')->default(0); // Interacciones
             $table->text('error_details')->nullable();
 
+            $table->primary(['campaign_id', 'contact_id']);
+
             $table->foreign('campaign_id')
                   ->references('campaign_id')
-                  ->on('campaigns');
+                  ->on('whatsapp_campaigns');
 
             $table->foreign('contact_id')
                   ->references('contact_id')

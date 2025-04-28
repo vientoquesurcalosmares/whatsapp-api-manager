@@ -27,7 +27,7 @@ return new class extends Migration
 
             $table->foreign('message_id')
                   ->references('message_id')
-                  ->on('messages');
+                  ->on('whatsapp_messages');
         });
     }
 

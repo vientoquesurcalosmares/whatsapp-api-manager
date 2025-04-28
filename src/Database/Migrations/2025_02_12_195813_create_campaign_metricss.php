@@ -20,10 +20,8 @@ return new class extends Migration
             $table->integer('positive_responses')->default(0); // Ej: "Sí", "Comprar"
             $table->integer('negative_responses')->default(0); // Ej: "No", "Cancelar"
             $table->integer('opt_outs')->default(0); // Bajas
-
-            $table->foreign('campaign_id')
-                  ->references('campaign_id')
-                  ->on('campaigns');
+            
+            $table->foreign('campaign_id')->references('campaign_id')->on('whatsapp_campaigns')->onDelete('cascade');
         });
     }
 
