@@ -13,6 +13,7 @@ class ChatSession extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
+    protected $table = 'whatsapp_chat_sessions';
     protected $primaryKey = 'session_id';
     public $incrementing = false;
     protected $keyType = 'string';

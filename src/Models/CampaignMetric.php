@@ -13,6 +13,7 @@ class CampaignMetric extends Model
     use HasFactory;
     use GeneratesUlid;
 
+    protected $table = 'whatsapp_campaign_metrics';
     protected $primaryKey = 'campaign_id';
     public $incrementing = false;
     protected $keyType = 'string';

@@ -13,6 +13,7 @@ class Template extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
+    protected $table = 'whatsapp_templates';
     protected $primaryKey = 'template_id';
     public $incrementing = false;
     protected $keyType = 'string';

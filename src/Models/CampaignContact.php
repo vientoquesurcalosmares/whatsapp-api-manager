@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class CampaignContact extends Pivot
 {
-    protected $table = 'campaign_contact';
+    protected $table = 'whatsapp_campaign_contact';
 
     protected $casts = [
         'sent_at' => 'datetime',

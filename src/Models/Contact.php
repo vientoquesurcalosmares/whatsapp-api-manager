@@ -13,6 +13,7 @@ class Contact extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
+    protected $table = 'whatsapp_contacts';
     protected $primaryKey = 'contact_id';
     public $incrementing = false;
     protected $keyType = 'string';
