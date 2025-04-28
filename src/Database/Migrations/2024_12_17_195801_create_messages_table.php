@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('messages', function (Blueprint $table) {
+        Schema::create('whatsapp_messages', function (Blueprint $table) {
             $table->ulid('message_id')->primary();
             $table->ulid('whatsapp_phone_id');
             $table->ulid('contact_id');
@@ -66,6 +66,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('messages');
+        Schema::dropIfExists('whatsapp_messages');
     }
 };
