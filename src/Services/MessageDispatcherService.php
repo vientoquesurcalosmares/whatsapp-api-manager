@@ -19,25 +19,29 @@ class MessageDispatcherService
 
     public function sendTextMessage(
         string $phoneNumberId,
-        string $to,
+        string $countryCode,
+        string $phoneNumber,
         string $text,
         bool $previewUrl = false
     ): Message {
         Log::info('Iniciando envío de mensaje.', [
             'phoneNumberId' => $phoneNumberId,
-            'to' => $to,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
             'text' => $text,
             'previewUrl' => $previewUrl,
         ]);
 
-        $phoneNumber = $this->validatePhoneNumber($phoneNumberId);
-        $contact = $this->resolveContact($to);
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         $message = Message::create([
-            'whatsapp_phone_id' => $phoneNumber->phone_number_id,
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => $phoneNumber->display_phone_number,
-            'message_to' => $to,
+            'message_from' => $phoneNumberModel->display_phone_number,
+            'message_to' => $fullPhoneNumber,
             'message_type' => 'text',
             'message_content' => $text,
             'status' => MessageStatus::PENDING
@@ -46,7 +50,7 @@ class MessageDispatcherService
         Log::info('Mensaje creado en base de datos.', ['message_id' => $message->id]);
 
         try {
-            $response = $this->sendViaApi($phoneNumber, $to, $text, $previewUrl);
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, $text, $previewUrl);
             Log::info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -74,13 +78,15 @@ class MessageDispatcherService
         return $phone;
     }
 
-    private function resolveContact(string $phoneNumber): Contact
+    private function resolveContact(string $countryCode, string $phoneNumber): Contact
     {
-        Log::info('Resolviendo contacto.', ['phone_number' => $phoneNumber]);
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+        
+        Log::info('Resolviendo contacto.', ['full_phone_number' => $fullPhoneNumber]);
 
         $contact = Contact::firstOrCreate(
-            ['phone_number' => $phoneNumber],
-            ['country_code' => substr($phoneNumber, 0, 3)]
+            ['phone_number' => $fullPhoneNumber],
+            ['country_code' => $countryCode]
         );
 
         Log::info('Contacto resuelto.', ['contact_id' => $contact->contact_id]);
