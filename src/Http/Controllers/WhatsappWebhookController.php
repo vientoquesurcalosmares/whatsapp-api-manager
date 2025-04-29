@@ -162,10 +162,10 @@ class WhatsappWebhookController extends Controller
             return;
         }
 
-        $messageRecord = Message::where('message_id', $messageId)->first();
+        $messageRecord = Message::where('wa_id', $messageId)->first();
 
         if (!$messageRecord) {
-            Log::warning('Message record not found for status update.', ['message_id' => $messageId]);
+            Log::warning('Message record not found for status update.', ['wa_id' => $messageId]);
             return;
         }
 
@@ -178,7 +178,8 @@ class WhatsappWebhookController extends Controller
         }
 
         Log::info('Estado actualizado', [
-            'message_id' => $messageId,
+            'message_id' => $messageRecord->message_id,
+            'wa_id' => $messageId,
             'status' => $statusValue,
             'conversation' => $messageRecord->conversation_id
         ]);
