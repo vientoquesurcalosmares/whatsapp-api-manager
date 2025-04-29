@@ -32,6 +32,8 @@ class Message extends Model
         'message_content',
         'media_url',
         'message_context',
+        'message_context_id',
+        'message_context_from',
         'caption',
         'json_content',
         'status',
@@ -71,5 +73,15 @@ class Message extends Model
     public function mediaFiles()
     {
         return $this->hasMany(MediaFile::class, 'message_id');
+    }
+
+    public function parentMessage()
+    {
+        return $this->belongsTo(Message::class, 'context_message_id', 'wa_id');
+    }
+
+    public function replies()
+    {
+        return $this->hasMany(Message::class, 'context_message_id', 'wa_id');
     }
 }

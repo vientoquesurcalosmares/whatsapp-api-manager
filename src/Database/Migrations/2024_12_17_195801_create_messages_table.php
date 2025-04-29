@@ -24,7 +24,9 @@ return new class extends Migration
             $table->string('message_type', 45);
             $table->text('message_content');
             $table->string('media_url', 512)->nullable();
-            $table->string('message_context', 45)->nullable();
+            $table->text('message_context')->nullable();
+            $table->string('message_context_id', 45)->nullable();
+            $table->string('message_context_from', 45)->nullable();
             $table->string('caption', 45)->nullable();
             $table->json('json_content')->nullable();
             $table->string('status', 45)->nullable();

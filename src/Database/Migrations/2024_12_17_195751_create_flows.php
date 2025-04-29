@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('flows', function (Blueprint $table) {
             $table->ulid('flow_id')->primary();
-            $table->foreignUuid('bot_id'); // Bot asociado
+            $table->foreignUlid('bot_id'); // Bot asociado
             $table->string('name');
             $table->json('trigger_keywords')->nullable();
             $table->boolean('is_case_sensitive')->default(false);
