@@ -144,8 +144,10 @@ class WhatsappWebhookController extends Controller
             'message_to' => $whatsappPhone->country_code.$whatsappPhone->phone_number,
             'message_content' => $message['text']['body'] ?? '',
             'message_type' => $message['type'],
-            'json_content' => json_encode($message),
+            'json_content' => $message,
             'json' => json_encode($message),
+            'messaging_product' => 'whatsapp',
+            'status' => 'received',
             // 'received_at' => now(),
         ]);
 
