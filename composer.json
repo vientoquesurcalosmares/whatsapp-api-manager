@@ -1,12 +1,26 @@
 {
     "name": "scriptdevelop/whatsapp-manager",
-    "version": "1.0.90", 
+    "version": "1.0.91",
     "description": "Paquete para manejo de WhatsApp Business API en Laravel",
     "type": "library",
+    "license": "MIT",
     "require": {
         "php": "^8.2",
         "laravel/framework": "^12.0",
         "guzzlehttp/guzzle": "^7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^12.1",
+        "orchestra/testbench": "^10.2",
+        "mockery/mockery": "^1.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "ScriptDevelop\\WhatsappManager\\": "src/"
+        },
+        "files": [
+            "src/Helpers/CountryCodes.php"
+        ]
     },
     "extra": {
         "laravel": {
@@ -16,12 +30,6 @@
             "aliases": {
                 "Whatsapp": "ScriptDevelop\\WhatsappManager\\Facades\\Whatsapp"
             }
-        }
-    },
-    "license": "MIT",
-    "autoload": {
-        "psr-4": {
-            "ScriptDevelop\\WhatsappManager\\": "src/"
         }
     },
     "scripts": {
@@ -35,10 +43,5 @@
             "@php artisan vendor:publish --tag=whatsapp-migrations --force",
             "@php artisan whatsapp:merge-logging --force"
         ]
-    },
-    "require-dev": {
-        "phpunit/phpunit": "^12.1",
-        "orchestra/testbench": "^10.2",
-        "mockery/mockery": "^1.6"
     }
 }
