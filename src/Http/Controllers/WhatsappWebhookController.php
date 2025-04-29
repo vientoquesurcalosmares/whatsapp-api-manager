@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use ScriptDevelop\WhatsappManager\Enums\MessageStatus;
 use ScriptDevelop\WhatsappManager\Models\Contact;
+use ScriptDevelop\WhatsappManager\Models\Conversation;
 use ScriptDevelop\WhatsappManager\Models\Message;
 use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
@@ -154,6 +155,7 @@ class WhatsappWebhookController extends Controller
     {
         $messageId = $status['id'] ?? null;
         $statusValue = $status['status'] ?? null;
+        $timestamp = $status['timestamp'] ?? null;
 
         if (empty($messageId) || empty($statusValue)) {
             Log::warning('Missing message ID or status in status update.', $status);
@@ -167,11 +169,18 @@ class WhatsappWebhookController extends Controller
             return;
         }
 
-        $messageRecord->update(['status' => $statusValue]);
+        // 1. Actualizar estado del mensaje
+        $this->updateMessageStatus($messageRecord, $statusValue, $timestamp);
+        
+        // 2. Procesar datos de conversación y métricas
+        if (isset($status['conversation'])) {
+            $this->processConversationData($messageRecord, $status);
+        }
 
-        Log::info('Updated message status.', [
+        Log::info('Estado actualizado', [
             'message_id' => $messageId,
             'status' => $statusValue,
+            'conversation' => $messageRecord->conversation_id
         ]);
     }
 
@@ -189,5 +198,48 @@ class WhatsappWebhookController extends Controller
         }
 
         return [null, null];
+    }
+
+    private function updateMessageStatus(Message $message, string $status, ?string $timestamp): void
+    {
+        $updateData = ['status' => $status];
+        
+        if ($timestamp) {
+            $date = \Carbon\Carbon::createFromTimestamp($timestamp);
+            
+            match($status) {
+                'sent' => $updateData['sent_at'] = $date,
+                'delivered' => $updateData['delivered_at'] = $date,
+                'read' => $updateData['read_at'] = $date,
+                default => null
+            };
+        }
+
+        $message->update($updateData);
+    }
+
+    private function processConversationData(Message $message, array $status): void
+    {
+        $conversationData = $status['conversation'];
+        $pricingData = $status['pricing'] ?? [];
+
+        $conversation = Conversation::updateOrCreate(
+            ['wa_conversation_id' => $conversationData['id']],
+            [
+                'expiration_timestamp' => isset($conversationData['expiration_timestamp']) 
+                    ? \Carbon\Carbon::createFromTimestamp($conversationData['expiration_timestamp'])
+                    : null,
+                'origin' => $conversationData['origin']['type'] ?? 'unknown',
+                'pricing_model' => $pricingData['pricing_model'] ?? null,
+                'billable' => $pricingData['billable'] ?? false,
+                'category' => $pricingData['category'] ?? 'service'
+            ]
+        );
+
+        // Vincular conversación al mensaje si no está asignada
+        if (!$message->conversation_id) {
+            $message->conversation()->associate($conversation);
+            $message->save();
+        }
     }
 }
