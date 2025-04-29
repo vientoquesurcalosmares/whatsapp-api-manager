@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use ScriptDevelop\WhatsappManager\Models\Contact;
 use ScriptDevelop\WhatsappManager\Models\Message;
+use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
 
 class WhatsappWebhookController extends Controller
@@ -121,20 +122,35 @@ class WhatsappWebhookController extends Controller
             'contact_name' => $contact['profile']['name'] ?? $contactRecord->contact_name,
         ]);
 
-        Message::create([
+        $apiPhoneNumberId = $metadata['phone_number_id'] ?? null;
+
+        $whatsappPhone = null;
+        if ($apiPhoneNumberId) {
+            $whatsappPhone = WhatsappPhoneNumber::where('api_phone_number_id', $apiPhoneNumberId)->first();
+        }
+
+        if (!$whatsappPhone) {
+            Log::error('No matching WhatsappPhoneNumber found for api_phone_number_id.', [
+                'api_phone_number_id' => $apiPhoneNumberId,
+            ]);
+            return;
+        }
+
+        $message_saved = Message::create([
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
             'contact_id' => $contactRecord->contact_id,
-            'message_id' => $message['id'] ?? null,
-            'from' => $phoneNumber,
-            'country_code' => $countryCode,
-            'text' => $message['text']['body'] ?? '',
+            'wa_id' => $message['id'] ?? null,
+            'message_from' => $phoneNumber,
+            'message_to' => $whatsappPhone->country_code.$whatsappPhone->phone_number,
+            'message_content' => $message['text']['body'] ?? '',
             'type' => $message['type'],
-            'raw_payload' => json_encode($message),
-            'received_at' => now(),
+            'json_content' => json_encode($message),
+            'json' => json_encode($message),
+            // 'received_at' => now(),
         ]);
 
-        Log::info('Saved incoming WhatsApp message for contact.', [
-            'country_code' => $countryCode,
-            'phone_number' => $phoneNumber,
+        Log::info('Message saved. ', [
+            'message' => $message_saved
         ]);
     }
 
