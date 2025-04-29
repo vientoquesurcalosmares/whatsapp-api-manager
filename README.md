@@ -1,7 +1,23 @@
 # 📱 WhatsApp Business API Manager for Laravel
 
-**Un paquete elegante y potente para integrar WhatsApp Business API en tus aplicaciones Laravel.**  
-✨ Gestión de mensajes, plantillas, campañas, flujos conversacionales y más.
+LARAVEL WHatsapp Manager
+
+**Un paquete elegante y potente para integrar WhatsApp Business API en tus aplicaciones Laravel 12+.**  
+✨ Gestión de mensajes, plantillas, campañas, flujos conversacionales, métricas y más.
+
+---
+
+## 🚀 Características Principales
+
+- **Envía mensajes** de texto, multimedia, interactivos.
+- **Webhooks integrados** para recibir mensajes y actualizaciones.
+- **Gestión de conversaciones** con métricas de cobro. 💰
+- **Bots conversacionales** con flujos dinámicos. 🤖
+- **Sincronización automática** de números telefónicos y perfiles.
+- **Soporte para campañas** masivas programadas. 📅
+- 100% compatible con **Laravel Echo** para notificaciones en tiempo real.
+
+---
 
 ---
 
@@ -10,30 +26,91 @@
 1. **Instala el paquete vía Composer**:
    ```bash
    composer require scriptdevelop/whatsapp-manager
-
+   ```
 
 2. **Publica la configuración (opcional)**:
    ```bash
    php artisan vendor:publish --tag=whatsapp-config
+   ```
 
-3. **Configura tus credenciales en .env**:
+   ⚙️ Configuración
+
+   Configuración principal (config/whatsapp.php):
+      
+      ```php
+      return [
+
+         'api' => [
+            'base_url' => env('WHATSAPP_API_URL', 'https://graph.facebook.com'),
+            'version' => env('WHATSAPP_API_VERSION', 'v19.0'),
+            'timeout' => env('WHATSAPP_API_TIMEOUT', 30),
+            'retry' => [
+                  'attempts' => 3,
+                  'delay' => 500,
+            ],
+         ],
+
+         'models' => [
+            'business_account' => \ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount::class,
+            'user_model' => env('AUTH_MODEL', App\Models\User::class),
+            'user_table' => env('AUTH_TABLE', 'users'),
+         ],
+
+         'webhook' => [
+            'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
+         ],
+
+         'load_migrations' => true, // Control para migraciones automáticas
+      ];
+      ```
+   Configuración de logs (config/logging.php):
+
+   Configuración principal del paquete:
+   Añadir el canal whatsapp.
+
+      ```php
+      'channels' => [
+         'whatsapp' => [
+               'driver' => 'daily',
+               'path' => storage_path('logs/whatsapp.log'),
+               'level' => 'debug',
+               'days' => 7,
+               'tap' => [\ScriptDevelop\WhatsappManager\Logging\CustomizeFormatter::class],
+         ],
+      ],
+      ```
+
+3. **Publica las migraciones (opcional)**:
+   ```bash
+   php artisan vendor:publish --tag=whatsapp-migrations
+
+4. **Publica las rutas (OBLIGATORIO)**:
+   Se necesita para el webhook.
+
+   ```bash
+   php artisan vendor:publish --tag=whatsapp-routes
+   ```
+
+   Excluir rutas del webhook de CSRF:
+
+   Al publicar las rutas es importante anexar las rutas del webhook a las excepciones del CSRF.
+   En bootstrap/app.php:
+
+   ```php
+   ->withMiddleware(function (Middleware $middleware) {
+        $middleware->validateCsrfTokens(except: [
+            '/whatsapp-webhook',
+        ]);
+    })
+   ```
+
+5. **Configura tus credenciales en .env**:
    ```bash
    WHATSAPP_USER_MODEL=\App\Models\User::class
    WHATSAPP_API_URL='https://graph.facebook.com/'
    WHATSAPP_API_VERSION="v19.0"
+   WHATSAPP_SYNC_ON_QUERY=true
 
-⚙️ Configuración
-📁 Archivo config/whatsapp.php
-
-Configuración principal del paquete:
-   
-   ```php
-   return [
-      'user_model' => env('WHATSAPP_USER_MODEL', \App\Models\User::class), // Modelo User
-      'api_url' => env('WHATSAPP_API_URL', 'https://graph.facebook.com/'), // Base URL de la API
-      'api_version' => env('WHATSAPP_API_VERSION', 'v19.0'), // Versión de la API
-   ];
-   ```
 
 🔄 Personalizar el Modelo User
 
@@ -59,7 +136,7 @@ class Admin extends Authenticatable
 ```
 
 
-4.  🗃️ Migraciones
+6.  🗃️ Migraciones
 
 🔍 Verificar configuración del User Model
 
@@ -118,16 +195,42 @@ php artisan vendor:publish --tag=whatsapp-migrations  # Publicar migraciones
 
 Este comando publicará las migraciones del paquete en tu directorio `database/migrations`. Puedes personalizarlas según tus necesidades antes de ejecutarlas.
 
+📡 Configuración de Webhooks en Meta
+Ir a Meta Developers
 
+Configurar Webhook:
+
+URL: https://tudominio.com/whatsapp-webhook
+
+Token: EL_TOKEN_DE_TU_.ENV
+
+Eventos a suscribir: messages, message_statuses
+
+Tambien puedes usar la herramienta nrock
 🧩 Estructura del Paquete
 
 whatsapp-manager/
 ├── src/
-│   ├── Models/           # Modelos Eloquent
-│   ├── Services/         # Lógica de negocio
-│   ├── Console/          # Comandos Artisan
-│   └── Database/         # Migraciones
-└── config/               # Configuración
+│   ├── Models/               # Modelos Eloquent
+│   ├── Services/             # Lógica de negocio y API
+│   ├── Console/              # Comandos Artisan personalizados
+│   ├── Database/
+│   │   ├── Migrations/       # Migraciones de base de datos
+│   │   └── Seeders/          # Seeders opcionales
+│   ├── Http/
+│   │   ├── Controllers/      # Controladores HTTP y Webhook
+│   │   └── Middleware/       # Middleware personalizados
+│   ├── Events/               # Eventos del sistema
+│   ├── Listeners/            # Listeners para eventos
+│   ├── Notifications/        # Notificaciones y canales
+│   ├── Logging/              # Personalización de logs
+│   └── Support/              # Utilidades y helpers
+├── routes/
+│   └── whatsapp.php          # Rutas del paquete (webhook, API)
+├── config/
+│   └── whatsapp.php          # Configuración principal
+└── resources/
+   └── views/                # Vistas opcionales para panel o notificaciones
 
 🤝 Contribuir
 ¡Tu ayuda es bienvenida! Sigue estos pasos:
