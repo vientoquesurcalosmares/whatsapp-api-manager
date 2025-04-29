@@ -224,12 +224,25 @@ class WhatsappWebhookController extends Controller
         $conversationData = $status['conversation'];
         $pricingData = $status['pricing'] ?? [];
 
+        // Validar expiration_timestamp
+        $expirationTimestamp = null;
+        if (isset($conversationData['expiration_timestamp']) 
+            && is_numeric($conversationData['expiration_timestamp'])) {
+            $expirationTimestamp = \Carbon\Carbon::createFromTimestamp(
+                $conversationData['expiration_timestamp']
+            );
+        }
+
+        // Validar ID de conversación
+        if (empty($conversationData['id'])) {
+            Log::warning('Conversation ID inválido', $conversationData);
+            return;
+        }
+
         $conversation = Conversation::updateOrCreate(
             ['wa_conversation_id' => $conversationData['id']],
             [
-                'expiration_timestamp' => isset($conversationData['expiration_timestamp']) 
-                    ? \Carbon\Carbon::createFromTimestamp($conversationData['expiration_timestamp'])
-                    : null,
+                'expiration_timestamp' => $expirationTimestamp,
                 'origin' => $conversationData['origin']['type'] ?? 'unknown',
                 'pricing_model' => $pricingData['pricing_model'] ?? null,
                 'billable' => $pricingData['billable'] ?? false,

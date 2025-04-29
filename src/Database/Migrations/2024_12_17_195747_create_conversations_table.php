@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('conversations', function (Blueprint $table) {
             $table->ulid('conversation_id')->primary();
             $table->string('wa_conversation_id', 200)->unique();
-            $table->timestamp('expiration_timestamp');
+            $table->timestamp('expiration_timestamp')->nullable();
             $table->string('origin', 45);
             $table->string('pricing_model', 45)->nullable();
             $table->string('billable', 45)->nullable();
