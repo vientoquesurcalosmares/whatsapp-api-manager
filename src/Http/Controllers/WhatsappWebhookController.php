@@ -18,84 +18,104 @@ class WhatsappWebhookController extends Controller
         $verifyToken = config('whatsapp-webhook.verify_token', env('WHATSAPP_VERIFY_TOKEN'));
 
         if ($request->isMethod('get') && $request->has(['hub_mode', 'hub_challenge', 'hub_verify_token'])) {
-            if ($request->hub_mode === 'subscribe' && $request->hub_verify_token === $verifyToken) {
-                return response()->make($request->input('hub_challenge'), 200);
-            }
-            return response()->json(['error' => 'Invalid token'], 403);
+            return $this->verifyWebhook($request, $verifyToken);
         }
 
         if ($request->isMethod('post')) {
-            $payload = $request->all();
-            Log::info('WhatsApp Webhook Payload:', $payload);
-
-            if (isset($payload['entry'][0]['changes'][0]['value'])) {
-                $value = $payload['entry'][0]['changes'][0]['value'];
-
-                if (isset($value['messages'][0])) {
-                    $message = $value['messages'][0] ?? [];
-                    $contact = $value['contacts'][0] ?? null;
-                    $metadata = $value['metadata'] ?? null;
-
-                    $this->handleIncomingMessage($message, $contact, $metadata);
-                }
-
-                if (isset($value['statuses'][0])) {
-                    $status = $value['statuses'][0] ?? [];
-                    $this->handleStatusUpdate($status);
-                }
-            }
-
-            return response()->json(['success' => true]);
+            return $this->processIncomingMessage($request);
         }
 
         return response()->json(['error' => 'Invalid request method.'], 400);
     }
 
+    protected function verifyWebhook(Request $request, string $verifyToken): Response|JsonResponse
+    {
+        if (
+            $request->input('hub_mode') === 'subscribe' &&
+            $request->input('hub_verify_token') === $verifyToken
+        ) {
+            return response()->make($request->input('hub_challenge'), 200);
+        }
+
+        return response()->json(['error' => 'Invalid verify token.'], 403);
+    }
+
+    protected function processIncomingMessage(Request $request): JsonResponse
+    {
+        $payload = $request->all();
+        Log::info('Received WhatsApp Webhook Payload:', $payload);
+
+        $value = data_get($payload, 'entry.0.changes.0.value');
+
+        if (!$value) {
+            Log::warning('No value found in webhook payload.', $payload);
+            return response()->json(['error' => 'Invalid payload.'], 422);
+        }
+
+        if (isset($value['messages'][0])) {
+            $this->handleIncomingMessage(
+                $value['messages'][0] ?? [],
+                $value['contacts'][0] ?? null,
+                $value['metadata'] ?? null
+            );
+        }
+
+        if (isset($value['statuses'][0])) {
+            $this->handleStatusUpdate($value['statuses'][0] ?? []);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
     protected function handleIncomingMessage(array $message, ?array $contact, ?array $metadata): void
     {
-        if (($message['type'] ?? null) === 'text') {
-            $fullPhone = preg_replace('/\D/', '', $message['from'] ?? '');
-
-            if (!$fullPhone) {
-                Log::warning('Incoming message without valid phone number.', $message);
-                return;
-            }
-
-            // Dividir el número en country code y phone number
-            [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
-
-            if (!$countryCode || !$phoneNumber) {
-                Log::warning('Could not split phone number.', ['fullPhone' => $fullPhone]);
-                return;
-            }
-
-            $contactRecord = Contact::firstOrCreate(
-                ['phone_number' => $phoneNumber],
-                [
-                    'country_code' => $countryCode,
-                    'name' => $contact['profile']['name'] ?? null,
-                    'metadata' => $metadata ?? [],
-                ]
-            );
-
-            $contactRecord->update([
-                'name' => $contact['profile']['name'] ?? $contactRecord->name,
-                'metadata' => $metadata ?? $contactRecord->metadata,
-            ]);
-
-            Message::create([
-                'contact_id' => $contactRecord->id,
-                'message_id' => $message['id'] ?? null,
-                'from' => $phoneNumber,
-                'country_code' => $countryCode,
-                'text' => $message['text']['body'] ?? '',
-                'type' => $message['type'],
-                'raw_payload' => json_encode($message),
-                'received_at' => now(),
-            ]);
-
-            Log::info('Saved incoming WhatsApp message for contact: +' . $countryCode . ' ' . $phoneNumber);
+        if (($message['type'] ?? '') !== 'text') {
+            return;
         }
+
+        $fullPhone = preg_replace('/\D/', '', $message['from'] ?? '');
+
+        if (empty($fullPhone)) {
+            Log::warning('Incoming message without a valid phone number.', $message);
+            return;
+        }
+
+        [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
+
+        if (empty($countryCode) || empty($phoneNumber)) {
+            Log::warning('Unable to split phone number.', ['fullPhone' => $fullPhone]);
+            return;
+        }
+
+        $contactRecord = Contact::firstOrCreate(
+            ['phone_number' => $phoneNumber],
+            [
+                'country_code' => $countryCode,
+                'name' => $contact['profile']['name'] ?? null,
+                'metadata' => $metadata ?? [],
+            ]
+        );
+
+        $contactRecord->update([
+            'name' => $contact['profile']['name'] ?? $contactRecord->name,
+            'metadata' => $metadata ?? $contactRecord->metadata,
+        ]);
+
+        Message::create([
+            'contact_id' => $contactRecord->id,
+            'message_id' => $message['id'] ?? null,
+            'from' => $phoneNumber,
+            'country_code' => $countryCode,
+            'text' => $message['text']['body'] ?? '',
+            'type' => $message['type'],
+            'raw_payload' => json_encode($message),
+            'received_at' => now(),
+        ]);
+
+        Log::info('Saved incoming WhatsApp message for contact.', [
+            'country_code' => $countryCode,
+            'phone_number' => $phoneNumber,
+        ]);
     }
 
     protected function handleStatusUpdate(array $status): void
@@ -103,30 +123,31 @@ class WhatsappWebhookController extends Controller
         $messageId = $status['id'] ?? null;
         $statusValue = $status['status'] ?? null;
 
-        if (!$messageId || !$statusValue) {
-            Log::warning('Missing message ID or status value in status update.', $status);
+        if (empty($messageId) || empty($statusValue)) {
+            Log::warning('Missing message ID or status in status update.', $status);
             return;
         }
 
         $messageRecord = Message::where('message_id', $messageId)->first();
 
         if (!$messageRecord) {
-            Log::warning('Message not found for status update: ' . $messageId);
+            Log::warning('Message record not found for status update.', ['message_id' => $messageId]);
             return;
         }
 
-        $messageRecord->status = $statusValue;
-        $messageRecord->save();
+        $messageRecord->update(['status' => $statusValue]);
 
-        Log::info('Updated status for message ID: ' . $messageId . ' to status: ' . $statusValue);
+        Log::info('Updated message status.', [
+            'message_id' => $messageId,
+            'status' => $statusValue,
+        ]);
     }
 
     private function splitPhoneNumber(string $fullPhone): array
     {
         $codes = CountryCodes::list();
 
-        // Ordenamos por longitud descendente para detectar bien los códigos de 3 dígitos primero
-        usort($codes, fn($a, $b) => strlen($b) <=> strlen($a));
+        usort($codes, static fn($a, $b) => strlen($b) <=> strlen($a));
 
         foreach ($codes as $code) {
             if (str_starts_with($fullPhone, $code)) {
@@ -135,7 +156,6 @@ class WhatsappWebhookController extends Controller
             }
         }
 
-        // No encontró coincidencia
         return [null, null];
     }
 }
