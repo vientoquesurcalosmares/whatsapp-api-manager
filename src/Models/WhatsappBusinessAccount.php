@@ -25,6 +25,13 @@ class WhatsappBusinessAccount extends Model
         'message_template_namespace'
     ];
 
+    public function setApiTokenAttribute($value) {
+        $this->attributes['api_token'] = encrypt($value);
+    }
+    public function getApiTokenAttribute($value) {
+        return decrypt($value);
+    }
+
     public function phoneNumbers()
     {
         return $this->hasMany(WhatsappPhoneNumber::class, 'whatsapp_business_account_id', 'whatsapp_business_id');
