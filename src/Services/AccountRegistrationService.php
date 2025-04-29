@@ -170,7 +170,18 @@ class AccountRegistrationService
                 $validData
             );
 
-            $phone->update(['whatsapp_business_profile_id' => $profile->whatsapp_business_profile_id]);
+            $profile = $phone->whatsapp_business_profile_id 
+            ? WhatsappBusinessProfile::find($phone->whatsapp_business_profile_id)
+            : null;
+
+            if ($profile) {
+                // Actualizar perfil existente
+                $profile->update($validData);
+            } else {
+                // Crear nuevo perfil solo si no existe
+                $profile = WhatsappBusinessProfile::create($validData);
+                $phone->update(['whatsapp_business_profile_id' => $profile->whatsapp_business_profile_id]);
+            }
 
             // Sincronizar websites
             $this->syncWebsites(
