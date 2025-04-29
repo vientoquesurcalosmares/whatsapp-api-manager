@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('messaging_product', 45)->nullable();
             $table->string('message_method', 45)->default('INPUT');
             $table->string('message_from', 45);
-            $table->string('message_to', 20);
+            $table->string('message_to', 45);
             $table->string('message_type', 45);
             $table->text('message_content');
             $table->string('media_url', 512)->nullable();

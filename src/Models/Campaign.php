@@ -50,7 +50,7 @@ class Campaign extends Model
 
     public function template(): BelongsTo
     {
-        return $this->belongsTo(Template::class);
+        return $this->belongsTo(Template::class, 'template_id', 'template_id');
     }
 
     public function contacts(): BelongsToMany

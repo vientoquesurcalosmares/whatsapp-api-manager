@@ -44,6 +44,7 @@ class MessageDispatcherService
             'message_to' => $fullPhoneNumber,
             'message_type' => 'text',
             'message_content' => $text,
+            'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING
         ]);
 

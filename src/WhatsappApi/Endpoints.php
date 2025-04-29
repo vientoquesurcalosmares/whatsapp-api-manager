@@ -20,6 +20,12 @@ class Endpoints
     // Método para construir URLs con parámetros dinámicos
     public static function build(string $endpoint, array $params = []): string
     {
+        // foreach (self::getRequiredParams($endpoint) as $param) {
+        //     if (!isset($params[$param])) {
+        //         throw new \InvalidArgumentException("Missing required parameter: $param");
+        //     }
+        // }
+
         $placeholders = array_map(fn($key) => "{{$key}}", array_keys($params));
         
         return str_replace(

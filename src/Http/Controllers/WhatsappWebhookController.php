@@ -7,6 +7,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use ScriptDevelop\WhatsappManager\Enums\MessageStatus;
 use ScriptDevelop\WhatsappManager\Models\Contact;
 use ScriptDevelop\WhatsappManager\Models\Message;
 use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -99,13 +100,6 @@ class WhatsappWebhookController extends Controller
             return;
         }
 
-        [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
-
-        if (empty($countryCode) || empty($phoneNumber)) {
-            Log::warning('Unable to split phone number.', ['fullPhone' => $fullPhone]);
-            return;
-        }
-
         $contactRecord = Contact::firstOrCreate(
             [
                 'country_code' => $countryCode,
@@ -147,7 +141,7 @@ class WhatsappWebhookController extends Controller
             'json_content' => $message,
             'json' => json_encode($message),
             'messaging_product' => 'whatsapp',
-            'status' => 'received',
+            'status' => MessageStatus::RECEIVED,
             // 'received_at' => now(),
         ]);
 
