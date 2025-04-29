@@ -29,7 +29,9 @@ return new class extends Migration
             $table->string('message_context_from', 45)->nullable();
             $table->string('caption', 45)->nullable();
             $table->json('json_content')->nullable();
-            $table->string('status', 45)->nullable();
+            $table->enum('status', [
+                'pending', 'sent', 'delivered', 'read', 'failed', 'received'
+            ])->default('pending');
             $table->timestamp('delivered_at')->nullable();
             $table->timestamp('read_at')->nullable();
             $table->timestamp('edited_at')->nullable();
