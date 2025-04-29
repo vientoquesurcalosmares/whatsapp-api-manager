@@ -37,11 +37,13 @@ return new class extends Migration
 
             $table->foreign('whatsapp_business_profile_id')
                   ->references('whatsapp_business_profile_id')
-                  ->on('whatsapp_business_profiles');
+                  ->on('whatsapp_business_profiles')
+                  ->onDelete('cascade');
 
             $table->foreign('whatsapp_bot_id')
                   ->references('whatsapp_bot_id')
-                  ->on('whatsapp_bots');
+                  ->on('whatsapp_bots')
+                  ->onDelete('cascade');
         });
     }
 

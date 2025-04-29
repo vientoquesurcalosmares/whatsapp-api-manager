@@ -43,15 +43,18 @@ return new class extends Migration
 
             $table->foreign('contact_id')
                   ->references('contact_id')
-                  ->on('whatsapp_contacts');
+                  ->on('whatsapp_contacts')
+                  ->onDelete('cascade');
 
             $table->foreign('conversation_id')
                   ->references('conversation_id')
-                  ->on('conversations');
+                  ->on('conversations')
+                  ->onDelete('cascade');
 
             $table->foreign('whatsapp_phone_id')
                   ->references('phone_number_id')
-                  ->on('whatsapp_phone_numbers');
+                  ->on('whatsapp_phone_numbers')
+                  ->onDelete('cascade');
 
             $table->index('wa_id');
             $table->index('status');

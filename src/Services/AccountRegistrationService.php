@@ -165,14 +165,7 @@ class AccountRegistrationService
             $validator = new BusinessProfileValidator();
             $validData = $validator->validate($profileData);
 
-            $profile = WhatsappBusinessProfile::updateOrCreate(
-                ['whatsapp_business_profile_id' => $validData['id'] ?? Str::ulid()],
-                $validData
-            );
-
-            $profile = $phone->whatsapp_business_profile_id 
-            ? WhatsappBusinessProfile::find($phone->whatsapp_business_profile_id)
-            : null;
+            $profile = $phone->businessProfile;
 
             if ($profile) {
                 // Actualizar perfil existente

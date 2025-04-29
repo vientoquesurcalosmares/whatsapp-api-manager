@@ -209,6 +209,7 @@ Eventos a suscribir: messages, message_statuses
 Tambien puedes usar la herramienta nrock
 🧩 Estructura del Paquete
 
+```bash
 whatsapp-manager/
 ├── src/
 │   ├── Models/               # Modelos Eloquent
@@ -230,7 +231,8 @@ whatsapp-manager/
 ├── config/
 │   └── whatsapp.php          # Configuración principal
 └── resources/
-   └── views/                # Vistas opcionales para panel o notificaciones
+   └── views/                 # Vistas opcionales para panel o notificaciones
+```
 
 🤝 Contribuir
 ¡Tu ayuda es bienvenida! Sigue estos pasos:
