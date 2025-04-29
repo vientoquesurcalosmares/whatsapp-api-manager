@@ -73,7 +73,25 @@ class WhatsappWebhookController extends Controller
             return;
         }
 
+        Log::warning('Handle Incoming Message: ', [
+            'message' => $message,
+            'contact' => $contact,
+            'metadata' => $metadata,
+        ]);
+
+        if (empty($contact['wa_id'])) {
+            Log::warning('No wa_id found in contact.', $contact ?? []);
+            return;
+        }
+
         $fullPhone = preg_replace('/\D/', '', $message['from'] ?? '');
+
+        [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
+
+        if (empty($countryCode) || empty($phoneNumber)) {
+            Log::warning('Unable to split phone number.', ['fullPhone' => $fullPhone]);
+            return;
+        }
 
         if (empty($fullPhone)) {
             Log::warning('Incoming message without a valid phone number.', $message);
@@ -88,21 +106,23 @@ class WhatsappWebhookController extends Controller
         }
 
         $contactRecord = Contact::firstOrCreate(
-            ['phone_number' => $phoneNumber],
             [
                 'country_code' => $countryCode,
-                'name' => $contact['profile']['name'] ?? null,
-                'metadata' => $metadata ?? [],
+                'phone_number' => $phoneNumber,
+            ],
+            [
+                'wa_id' => $contact['wa_id'],
+                'contact_name' => $contact['profile']['name'] ?? null,
             ]
         );
 
         $contactRecord->update([
-            'name' => $contact['profile']['name'] ?? $contactRecord->name,
-            'metadata' => $metadata ?? $contactRecord->metadata,
+            'wa_id' => $contact['wa_id'], // Siempre actualizarlo
+            'contact_name' => $contact['profile']['name'] ?? $contactRecord->contact_name,
         ]);
 
         Message::create([
-            'contact_id' => $contactRecord->id,
+            'contact_id' => $contactRecord->contact_id,
             'message_id' => $message['id'] ?? null,
             'from' => $phoneNumber,
             'country_code' => $countryCode,
