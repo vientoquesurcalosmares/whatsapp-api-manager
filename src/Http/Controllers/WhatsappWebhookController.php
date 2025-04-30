@@ -27,7 +27,7 @@ class WhatsappWebhookController extends Controller
         if ($request->isMethod('post')) {
             return $this->processIncomingMessage($request);
         }
-
+        Log::channel('whatsapp')->error('Registro webhook invalido', [$request]);
         return response()->json(['error' => 'Invalid request method.'], 400);
     }
 
@@ -37,21 +37,22 @@ class WhatsappWebhookController extends Controller
             $request->input('hub_mode') === 'subscribe' &&
             $request->input('hub_verify_token') === $verifyToken
         ) {
+            Log::channel('whatsapp')->info('Configuracion de webhook valido!', [$request]);
             return response()->make($request->input('hub_challenge'), 200);
         }
-
+        Log::channel('whatsapp')->error('Error al registrar webhook!', [$request]);
         return response()->json(['error' => 'Invalid verify token.'], 403);
     }
 
     protected function processIncomingMessage(Request $request): JsonResponse
     {
         $payload = $request->all();
-        Log::info('Received WhatsApp Webhook Payload:', $payload);
+        Log::channel('whatsapp')->info('Received WhatsApp Webhook Payload:', $payload);
 
         $value = data_get($payload, 'entry.0.changes.0.value');
 
         if (!$value) {
-            Log::warning('No value found in webhook payload.', $payload);
+            Log::channel('whatsapp')->warning('No value found in webhook payload.', $payload);
             return response()->json(['error' => 'Invalid payload.'], 422);
         }
 
@@ -76,14 +77,14 @@ class WhatsappWebhookController extends Controller
             return;
         }
 
-        Log::warning('Handle Incoming Message: ', [
+        Log::channel('whatsapp')->warning('Handle Incoming Message: ', [
             'message' => $message,
             'contact' => $contact,
             'metadata' => $metadata,
         ]);
 
         if (empty($contact['wa_id'])) {
-            Log::warning('No wa_id found in contact.', $contact ?? []);
+            Log::channel('whatsapp')->warning('No wa_id found in contact.', $contact ?? []);
             return;
         }
 
@@ -92,12 +93,12 @@ class WhatsappWebhookController extends Controller
         [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
 
         if (empty($countryCode) || empty($phoneNumber)) {
-            Log::warning('Unable to split phone number.', ['fullPhone' => $fullPhone]);
+            Log::channel('whatsapp')->warning('Unable to split phone number.', ['fullPhone' => $fullPhone]);
             return;
         }
 
         if (empty($fullPhone)) {
-            Log::warning('Incoming message without a valid phone number.', $message);
+            Log::channel('whatsapp')->warning('Incoming message without a valid phone number.', $message);
             return;
         }
 
@@ -125,7 +126,7 @@ class WhatsappWebhookController extends Controller
         }
 
         if (!$whatsappPhone) {
-            Log::error('No matching WhatsappPhoneNumber found for api_phone_number_id.', [
+            Log::channel('whatsapp')->error('No matching WhatsappPhoneNumber found for api_phone_number_id.', [
                 'api_phone_number_id' => $apiPhoneNumberId,
             ]);
             return;
@@ -146,7 +147,7 @@ class WhatsappWebhookController extends Controller
             // 'received_at' => now(),
         ]);
 
-        Log::info('Message saved. ', [
+        Log::channel('whatsapp')->info('Message saved. ', [
             'message' => $message_saved
         ]);
     }
@@ -158,14 +159,14 @@ class WhatsappWebhookController extends Controller
         $timestamp = $status['timestamp'] ?? null;
 
         if (empty($messageId) || empty($statusValue)) {
-            Log::warning('Missing message ID or status in status update.', $status);
+            Log::channel('whatsapp')->warning('Missing message ID or status in status update.', $status);
             return;
         }
 
         $messageRecord = Message::where('wa_id', $messageId)->first();
 
         if (!$messageRecord) {
-            Log::warning('Message record not found for status update.', ['wa_id' => $messageId]);
+            Log::channel('whatsapp')->warning('Message record not found for status update.', ['wa_id' => $messageId]);
             return;
         }
 
@@ -177,7 +178,7 @@ class WhatsappWebhookController extends Controller
             $this->processConversationData($messageRecord, $status);
         }
 
-        Log::info('Estado actualizado', [
+        Log::channel('whatsapp')->info('Estado actualizado', [
             'message_id' => $messageRecord->message_id,
             'wa_id' => $messageId,
             'status' => $statusValue,
@@ -235,7 +236,7 @@ class WhatsappWebhookController extends Controller
 
         // Validar ID de conversación
         if (empty($conversationData['id'])) {
-            Log::warning('Conversation ID inválido', $conversationData);
+            Log::channel('whatsapp')->warning('Conversation ID inválido', $conversationData);
             return;
         }
 

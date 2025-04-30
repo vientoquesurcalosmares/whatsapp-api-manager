@@ -24,7 +24,7 @@ class MessageDispatcherService
         string $text,
         bool $previewUrl = false
     ): Message {
-        Log::info('Iniciando envío de mensaje.', [
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
             'phoneNumber' => $phoneNumber,
@@ -48,14 +48,14 @@ class MessageDispatcherService
             'status' => MessageStatus::PENDING
         ]);
 
-        Log::info('Mensaje creado en base de datos.', ['message_id' => $message->id]);
+        Log::channel('whatsapp')->info('Mensaje creado en base de datos.', ['message_id' => $message->id]);
 
         try {
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, $text, $previewUrl);
-            Log::info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
+            Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
-            Log::error('Error al enviar mensaje por API WhatsApp.', [
+            Log::channel('whatsapp')->error('Error al enviar mensaje por API WhatsApp.', [
                 'exception_message' => $e->getMessage(),
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails()
@@ -66,13 +66,13 @@ class MessageDispatcherService
 
     private function validatePhoneNumber(string $phoneNumberId): WhatsappPhoneNumber
     {
-        Log::info('Validando número de teléfono.', ['phone_number_id' => $phoneNumberId]);
+        Log::channel('whatsapp')->info('Validando número de teléfono.', ['phone_number_id' => $phoneNumberId]);
 
         $phone = WhatsappPhoneNumber::with('businessAccount')
             ->findOrFail($phoneNumberId);
 
         if (!$phone->businessAccount?->api_token) {
-            Log::error('Número de teléfono sin token API válido.', ['phone_number_id' => $phoneNumberId]);
+            Log::channel('whatsapp')->error('Número de teléfono sin token API válido.', ['phone_number_id' => $phoneNumberId]);
             throw new \InvalidArgumentException('El número no tiene un token API válido asociado');
         }
 
@@ -83,14 +83,16 @@ class MessageDispatcherService
     {
         $fullPhoneNumber = $countryCode . $phoneNumber;
 
-        Log::info('Resolviendo contacto.', ['full_phone_number' => $fullPhoneNumber]);
+        Log::channel('whatsapp')->info('Resolviendo contacto.', ['full_phone_number' => $fullPhoneNumber]);
 
         $contact = Contact::firstOrCreate(
-            ['phone_number' => $phoneNumber],
-            ['country_code' => $countryCode]
+            [
+            'phone_number' => $phoneNumber,
+            'country_code' => $countryCode
+            ]
         );
 
-        Log::info('Contacto resuelto.', ['contact_id' => $contact->contact_id]);
+        Log::channel('whatsapp')->info('Contacto resuelto.', ['contact_id' => $contact->contact_id]);
 
         return $contact;
     }
@@ -105,7 +107,7 @@ class MessageDispatcherService
             'phone_number_id' => $phone->api_phone_number_id
         ]);
 
-        Log::info('Enviando solicitud a la API de WhatsApp.', [
+        Log::channel('whatsapp')->info('Enviando solicitud a la API de WhatsApp.', [
             'endpoint' => $endpoint,
             'to' => $to,
             'body' => $text
@@ -133,7 +135,7 @@ class MessageDispatcherService
 
     private function handleSuccess(Message $message, array $response): Message
     {
-        Log::info('Mensaje enviado exitosamente.', [
+        Log::channel('whatsapp')->info('Mensaje enviado exitosamente.', [
             'message_id' => $message->id,
             'api_response' => $response
         ]);
@@ -150,7 +152,7 @@ class MessageDispatcherService
 
     private function handleError(Message $message, WhatsappApiException $e): Message
     {
-        Log::error('Error al manejar envío de mensaje.', [
+        Log::channel('whatsapp')->error('Error al manejar envío de mensaje.', [
             'message_id' => $message->id,
             'error' => $e->getMessage()
         ]);

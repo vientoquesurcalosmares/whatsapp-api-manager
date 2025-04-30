@@ -47,19 +47,6 @@ class WhatsappService
         ];
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
     public function getBusinessAccount(string $whatsappBusinessId): array
     {
         $response = $this->apiClient->request(
@@ -105,22 +92,7 @@ class WhatsappService
             headers: $this->getAuthHeaders() // ✅ Incluir token de autenticación
         );
     }
-
-    /**
-     * Obtiene el perfil de whatsapp business.
-     */
-    // public function getBusinessProfile(string $phoneNumberId): array
-    // {
-    //     $response = $this->apiClient->request(
-    //         'GET',
-    //         Endpoints::GET_BUSINESS_PROFILE,
-    //         ['phone_number_id' => $phoneNumberId],
-    //         headers: $this->getAuthHeaders()
-    //     );
-
-    //     Log::channel('whatsapp')->debug('Respuesta de getBusinessProfile API:', $response);
-    //     return $response;
-    // }
+    
     public function getBusinessProfile(string $phoneNumberId): array
     {
         // Construir URL con parámetros de campos
