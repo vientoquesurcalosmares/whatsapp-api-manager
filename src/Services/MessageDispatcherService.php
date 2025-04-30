@@ -9,7 +9,7 @@ use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Exceptions\WhatsappApiException;
-use Illuminate\Support\Facades\Log; // <-- Agregamos esto
+use Illuminate\Support\Facades\Log;
 
 class MessageDispatcherService
 {
@@ -17,51 +17,74 @@ class MessageDispatcherService
         protected ApiClient $apiClient
     ) {}
 
-    public function sendTextMessage(
-        string $phoneNumberId,
-        string $countryCode,
-        string $phoneNumber,
-        string $text,
-        bool $previewUrl = false
+    public function sendText(
+        string $to,
+        string $content,
+        bool $previewUrl = false,
+        ?string $replyTo = null,
+        string $phoneNumberId
     ): Message {
-        Log::info('Iniciando envío de mensaje.', [
-            'phoneNumberId' => $phoneNumberId,
-            'countryCode' => $countryCode,
-            'phoneNumber' => $phoneNumber,
-            'text' => $text,
+        Log::info('Iniciando envío de mensaje de texto.', [
+            'to' => $to,
+            'content' => $content,
             'previewUrl' => $previewUrl,
+            'replyTo' => $replyTo,
+            'phoneNumberId' => $phoneNumberId,
         ]);
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
-
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-        $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
-            'contact_id' => $contact->contact_id,
-            'message_from' => $phoneNumberModel->display_phone_number,
-            'message_to' => $fullPhoneNumber,
+            'message_to' => $to,
             'message_type' => 'text',
-            'message_content' => $text,
+            'message_content' => $content,
             'message_method' => 'OUTPUT',
-            'status' => MessageStatus::PENDING
+            'status' => MessageStatus::PENDING,
         ]);
 
-        Log::info('Mensaje creado en base de datos.', ['message_id' => $message->id]);
-
         try {
-            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, $text, $previewUrl);
+            $response = $this->sendViaApi($phoneNumberModel, $to, $content, $previewUrl, $replyTo);
             Log::info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
             Log::error('Error al enviar mensaje por API WhatsApp.', [
                 'exception_message' => $e->getMessage(),
                 'exception_code' => $e->getCode(),
-                'details' => $e->getDetails()
+                'details' => $e->getDetails(),
             ]);
             return $this->handleError($message, $e);
         }
+    }
+
+    public function sendImage(
+        string $to,
+        string $mediaIdOrUrl,
+        bool $isUrl = false,
+        ?string $caption = null,
+        ?string $replyTo = null,
+        string $phoneNumberId
+    ): Message {
+        Log::info('Iniciando envío de imagen.', [
+            'to' => $to,
+            'mediaIdOrUrl' => $mediaIdOrUrl,
+            'isUrl' => $isUrl,
+            'caption' => $caption,
+            'replyTo' => $replyTo,
+            'phoneNumberId' => $phoneNumberId,
+        ]);
+    
+        // Usa el servicio especializado para manejar imágenes
+        $imageService = new \ScriptDevelop\WhatsappManager\Services\Messages\ImageMessageService($this->apiClient);
+    
+        return $imageService->send(
+            $to,
+            $mediaIdOrUrl,
+            $isUrl,
+            $caption,
+            $replyTo,
+            $phoneNumberId
+        );
     }
 
     private function validatePhoneNumber(string $phoneNumberId): WhatsappPhoneNumber
@@ -79,54 +102,44 @@ class MessageDispatcherService
         return $phone;
     }
 
-    private function resolveContact(string $countryCode, string $phoneNumber): Contact
-    {
-        $fullPhoneNumber = $countryCode . $phoneNumber;
-
-        Log::info('Resolviendo contacto.', ['full_phone_number' => $fullPhoneNumber]);
-
-        $contact = Contact::firstOrCreate(
-            ['phone_number' => $phoneNumber],
-            ['country_code' => $countryCode]
-        );
-
-        Log::info('Contacto resuelto.', ['contact_id' => $contact->contact_id]);
-
-        return $contact;
-    }
-
     private function sendViaApi(
         WhatsappPhoneNumber $phone,
         string $to,
         string $text,
-        bool $previewUrl
+        bool $previewUrl,
+        ?string $replyTo
     ): array {
         $endpoint = Endpoints::build(Endpoints::SEND_MESSAGE, [
-            'phone_number_id' => $phone->api_phone_number_id
+            'phone_number_id' => $phone->api_phone_number_id,
         ]);
+
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'recipient_type' => 'individual',
+            'to' => $to,
+            'type' => 'text',
+            'text' => [
+                'preview_url' => $previewUrl,
+                'body' => $text,
+            ],
+        ];
+
+        if ($replyTo) {
+            $payload['context'] = ['message_id' => $replyTo];
+        }
 
         Log::info('Enviando solicitud a la API de WhatsApp.', [
             'endpoint' => $endpoint,
-            'to' => $to,
-            'body' => $text
+            'payload' => $payload,
         ]);
 
         return $this->apiClient->request(
             'POST',
             $endpoint,
-            data: [
-                'messaging_product' => 'whatsapp',
-                'recipient_type' => 'individual',
-                'to' => $to,
-                'type' => 'text',
-                'text' => [
-                    'preview_url' => $previewUrl,
-                    'body' => $text
-                ]
-            ],
+            data: $payload,
             headers: [
                 'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
-                'Content-Type' => 'application/json'
+                'Content-Type' => 'application/json',
             ]
         );
     }
@@ -135,14 +148,14 @@ class MessageDispatcherService
     {
         Log::info('Mensaje enviado exitosamente.', [
             'message_id' => $message->id,
-            'api_response' => $response
+            'api_response' => $response,
         ]);
 
         $message->update([
-            'wa_id' => $response['messages'][0]['id'],
-            'messaging_product' => $response['messaging_product'],
+            'wa_id' => $response['messages'][0]['id'] ?? null,
+            'messaging_product' => $response['messaging_product'] ?? null,
             'status' => MessageStatus::SENT,
-            'json_content' => $response
+            'json_content' => $response,
         ]);
 
         return $message;
@@ -152,7 +165,7 @@ class MessageDispatcherService
     {
         Log::error('Error al manejar envío de mensaje.', [
             'message_id' => $message->id,
-            'error' => $e->getMessage()
+            'error' => $e->getMessage(),
         ]);
 
         $message->update([
@@ -160,7 +173,7 @@ class MessageDispatcherService
             'code_error' => $e->getCode(),
             'title_error' => $e->getMessage(),
             'details_error' => json_encode($e->getDetails()),
-            'json_content' => $e->getDetails()
+            'json_content' => $e->getDetails(),
         ]);
 
         return $message;

@@ -9,6 +9,7 @@ use ScriptDevelop\WhatsappManager\Models\Message;
 /**
  * @method static \ScriptDevelop\WhatsappManager\Services\AccountRegistrationService account()
  * @method static \ScriptDevelop\WhatsappManager\Services\WhatsappService phone()
+ * @method static \ScriptDevelop\WhatsappManager\Services\MessageDispatcherService message()
  * @method static array getPhoneNumbers(string $whatsappBusinessId)
  * @method static array getBusinessProfile(string $phoneNumberId)
  * 
@@ -30,17 +31,23 @@ class Whatsapp extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return 'whatsapp.phone';
+        // Cambiar el accessor para que apunte a 'whatsapp' (WhatsappManager)
+        return 'whatsapp';
     }
 
     public static function phone(): \ScriptDevelop\WhatsappManager\Services\WhatsappService
     {
-        return app('whatsapp.phone');
+        return app('whatsapp')->phone();
     }
 
     public static function account(): \ScriptDevelop\WhatsappManager\Services\AccountRegistrationService
     {
-        return app('whatsapp.account');
+        return app('whatsapp')->account();
+    }
+
+    public static function message(): \ScriptDevelop\WhatsappManager\Services\MessageDispatcherService
+    {
+        return app('whatsapp')->message();
     }
 
     // Métodos de mensajería con parámetros explícitos
@@ -50,7 +57,7 @@ class Whatsapp extends Facade
         bool $previewUrl = false,
         ?string $replyTo = null
     ): Message {
-        return app('whatsapp.dispatcher.text')->send(
+        return self::message()->sendText(
             $to,
             $content,
             $previewUrl,
@@ -66,7 +73,7 @@ class Whatsapp extends Facade
         ?string $caption = null,
         ?string $replyTo = null
     ): Message {
-        return app('whatsapp.dispatcher.image')->send(
+        return self::message()->sendImage(
             $to,
             $mediaIdOrUrl,
             $isUrl,
