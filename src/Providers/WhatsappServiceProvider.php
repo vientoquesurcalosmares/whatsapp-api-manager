@@ -9,6 +9,7 @@ use ScriptDevelop\WhatsappManager\Services\WhatsappService;
 use ScriptDevelop\WhatsappManager\Repositories\WhatsappBusinessAccountRepository;
 use ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
+use ScriptDevelop\WhatsappManager\Services\WhatsappManager;
 
 class WhatsappServiceProvider extends ServiceProvider
 {
@@ -19,6 +20,10 @@ class WhatsappServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../config/logging.php', 'logging');
 
         // Registrar servicios
+        $this->app->singleton('whatsapp', function ($app) {
+            return new WhatsappManager();
+        });
+        
         $this->app->singleton(ApiClient::class, function ($app) {
             return new ApiClient(
                 config('whatsapp.api.base_url', 'https://graph.facebook.com'),
