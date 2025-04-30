@@ -22,6 +22,7 @@ return [
         'user_model' => env('AUTH_MODEL', App\Models\User::class),
         'user_table' => env('AUTH_TABLE', 'users'),
     ],
+
     'webhook' => [
         'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
     ],
