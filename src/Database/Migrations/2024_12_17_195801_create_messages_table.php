@@ -57,6 +57,11 @@ return new class extends Migration
                   ->references('phone_number_id')
                   ->on('whatsapp_phone_numbers')
                   ->onDelete('cascade');
+            
+            $table->foreign('message_context_id')
+                  ->references('message_id')
+                  ->on('whatsapp_messages')
+                  ->onDelete('set null'); // Si el mensaje de contexto se elimina, se establece como null
 
             $table->index('wa_id');
             $table->index('status');

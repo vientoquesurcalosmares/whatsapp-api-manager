@@ -77,11 +77,13 @@ class Message extends Model
 
     public function parentMessage()
     {
-        return $this->belongsTo(Message::class, 'context_message_id', 'wa_id');
+        // Relación uno a uno: este mensaje pertenece a un mensaje de contexto
+        return $this->belongsTo(Message::class, 'message_context_id', 'message_id');
     }
 
     public function replies()
     {
-        return $this->hasMany(Message::class, 'context_message_id', 'wa_id');
+        // Relación uno a muchos: este mensaje tiene múltiples réplicas
+        return $this->hasMany(Message::class, 'message_context_id', 'message_id');
     }
 }
