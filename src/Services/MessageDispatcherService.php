@@ -163,17 +163,20 @@ class MessageDispatcherService
         string $countryCode,
         string $phoneNumber,
         string $contextMessageId,
-        string $emoji,
-        bool $previewUrl = false
+        string $emoji
     ): Message {
         Log::info('Iniciando envío replica de mensaje.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
             'phoneNumber' => $phoneNumber,
             'contextMessageId' => $contextMessageId,//wa_id del mensaje de contexto
-            'text' => $emoji,
-            'previewUrl' => $previewUrl,
+            'emoji' => $emoji
         ]);
+
+        if (empty($emoji)) {
+            Log::channel('whatsapp')->error('El emoji está vacío.');
+            throw new \InvalidArgumentException('El emoji no puede estar vacío.');
+        }
 
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
