@@ -142,15 +142,27 @@ class MessageDispatcherService
         Log::channel('whatsapp')->info('Mensaje creado en base de datos.', ['message_id' => $message->message_id]);
 
         try {
-            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, $text, $previewUrl, $contextMessage->wa_id);
+            // Preparar los parámetros para el envío
+            $parameters = [
+                'preview_url' => $previewUrl,
+                'body' => $text,
+            ];
+    
+            // Enviar el mensaje a través de la API
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'text', $parameters, $contextMessage->wa_id);
+    
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
+    
+            // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
             Log::channel('whatsapp')->error('Error al enviar mensaje por API WhatsApp.', [
                 'exception_message' => $e->getMessage(),
                 'exception_code' => $e->getCode(),
-                'details' => $e->getDetails()
+                'details' => $e->getDetails(),
             ]);
+    
+            // Manejar el error del envío
             return $this->handleError($message, $e);
         }
     }

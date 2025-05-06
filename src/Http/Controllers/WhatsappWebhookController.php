@@ -132,6 +132,19 @@ class WhatsappWebhookController extends Controller
             return;
         }
 
+        // Buscar el mensaje de contexto si existe
+        $contextMessageId = null;
+        if (!empty($message['context']['id'])) {
+            $contextMessage = Message::where('wa_id', $message['context']['id'])->first();
+            if ($contextMessage) {
+                $contextMessageId = $contextMessage->message_id;
+            } else {
+                Log::channel('whatsapp')->warning('Context message not found.', [
+                    'context_id' => $message['context']['id'],
+                ]);
+            }
+        }
+
         $message_saved = Message::create([
             'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
             'contact_id' => $contactRecord->contact_id,
@@ -143,6 +156,7 @@ class WhatsappWebhookController extends Controller
             'json_content' => $message,
             'json' => json_encode($message),
             'messaging_product' => 'whatsapp',
+            'message_context_id' => $contextMessageId, // Relación con el mensaje de contexto
             'status' => MessageStatus::RECEIVED,
             // 'received_at' => now(),
         ]);
