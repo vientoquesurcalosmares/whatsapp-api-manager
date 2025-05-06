@@ -31,12 +31,16 @@ class MessageDispatcherService
             'text' => $text,
             'previewUrl' => $previewUrl,
         ]);
-
+    
         $fullPhoneNumber = $countryCode . $phoneNumber;
-
+    
+        // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+    
+        // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-
+    
+        // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
@@ -47,13 +51,22 @@ class MessageDispatcherService
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING
         ]);
-
+    
         Log::channel('whatsapp')->info('Mensaje creado en base de datos.', ['message_id' => $message->id]);
-
+    
         try {
-            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, $text, $previewUrl);
-            Log::info("Enviando mensaje de texto");
+            // Preparar los parámetros para el envío
+            $parameters = [
+                'preview_url' => $previewUrl,
+                'body' => $text,
+            ];
+    
+            // Enviar el mensaje a través de la API
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'text', $parameters);
+    
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
+    
+            // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
             Log::channel('whatsapp')->error('Error al enviar mensaje por API WhatsApp.', [
@@ -61,6 +74,8 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails()
             ]);
+    
+            // Manejar el error del envío
             return $this->handleError($message, $e);
         }
     }
@@ -139,7 +154,7 @@ class MessageDispatcherService
             return $this->handleError($message, $e);
         }
     }
-    
+
     private function validatePhoneNumber(string $phoneNumberId): WhatsappPhoneNumber
     {
         Log::channel('whatsapp')->info('Validando número de teléfono.', ['phone_number_id' => $phoneNumberId]);
@@ -176,8 +191,8 @@ class MessageDispatcherService
     private function sendViaApi(
         WhatsappPhoneNumber $phone,
         string $to,
-        string $text,
-        bool $previewUrl,
+        string $type,
+        array $parameters,
         ?string $contextMessageId = null
     ): array {
         $endpoint = Endpoints::build(Endpoints::SEND_MESSAGE, [
@@ -187,21 +202,94 @@ class MessageDispatcherService
         Log::info('Enviando solicitud a la API de WhatsApp.', [
             'endpoint' => $endpoint,
             'to' => $to,
-            'body' => $text,
+            'type' => $type,
+            'parameters' => $parameters,
             'contextMessageId' => $contextMessageId
         ]);
 
-        // Construir el cuerpo de la solicitud
+        // Construir el cuerpo base de la solicitud
         $data = [
             'messaging_product' => 'whatsapp',
             'recipient_type' => 'individual',
             'to' => $to,
-            'type' => 'text',
-            'text' => [
-                'preview_url' => $previewUrl,
-                'body' => $text
-            ]
+            'type' => $type,
         ];
+
+        // Ensamblar el contenido dinámico según el tipo de mensaje
+        switch ($type) {
+            case 'text':
+                $data['text'] = [
+                    'preview_url' => $parameters['preview_url'] ?? false,
+                    'body' => $parameters['body'] ?? ''
+                ];
+                break;
+
+            case 'reaction':
+                $data['reaction'] = [
+                    'message_id' => $parameters['message_id'] ?? '',
+                    'emoji' => $parameters['emoji'] ?? ''
+                ];
+                break;
+
+            case 'image':
+                $data['image'] = $parameters['id'] 
+                    ? ['id' => $parameters['id']] 
+                    : ['link' => $parameters['link'] ?? ''];
+                break;
+
+            case 'audio':
+                $data['audio'] = $parameters['id'] 
+                    ? ['id' => $parameters['id']] 
+                    : ['link' => $parameters['link'] ?? ''];
+                break;
+
+            case 'document':
+                $data['document'] = $parameters['id'] 
+                    ? [
+                        'id' => $parameters['id'],
+                        'caption' => $parameters['caption'] ?? '',
+                        'filename' => $parameters['filename'] ?? ''
+                    ]
+                    : [
+                        'link' => $parameters['link'] ?? '',
+                        'caption' => $parameters['caption'] ?? ''
+                    ];
+                break;
+
+            case 'sticker':
+                $data['sticker'] = $parameters['id'] 
+                    ? ['id' => $parameters['id']] 
+                    : ['link' => $parameters['link'] ?? ''];
+                break;
+
+            case 'video':
+                $data['video'] = $parameters['id'] 
+                    ? [
+                        'id' => $parameters['id'],
+                        'caption' => $parameters['caption'] ?? ''
+                    ]
+                    : [
+                        'link' => $parameters['link'] ?? '',
+                        'caption' => $parameters['caption'] ?? ''
+                    ];
+                break;
+
+            case 'contacts':
+                $data['contacts'] = $parameters['contacts'] ?? [];
+                break;
+
+            case 'location':
+                $data['location'] = [
+                    'latitude' => $parameters['latitude'] ?? '',
+                    'longitude' => $parameters['longitude'] ?? '',
+                    'name' => $parameters['name'] ?? '',
+                    'address' => $parameters['address'] ?? ''
+                ];
+                break;
+
+            default:
+                throw new \InvalidArgumentException("Tipo de mensaje no soportado: $type");
+        }
 
         // Agregar contexto si se proporciona un mensaje de contexto
         if ($contextMessageId) {
