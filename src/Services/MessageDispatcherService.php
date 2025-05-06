@@ -82,10 +82,23 @@ class MessageDispatcherService
             'previewUrl' => $previewUrl,
         ]);
 
+        Log::info('Iniciando envío replica de mensaje.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'contextMessageId' => $contextMessageId,//wa_id del mensaje de contexto
+            'text' => $text,
+            'previewUrl' => $previewUrl,
+        ]);
+
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
+                'contextMessageId' => $contextMessageId,
+            ]);
+
+            Log::error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
             ]);
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
