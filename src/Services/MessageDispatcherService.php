@@ -94,8 +94,8 @@ class MessageDispatcherService
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
 
-        Log::info('Mensaje de replica.', ['message' => $contextMessage]);
-        
+        Log::info('Mensaje de replica.', ['message' => $contextMessage, 'message_id' => $contextMessage->message_id, 'wa_id' => $contextMessage->wa_id]);
+
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
@@ -121,10 +121,10 @@ class MessageDispatcherService
             'message_content' => $text,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
-            'message_context_id' => $contextMessage->id, // Relación con el mensaje de contexto
+            'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
         ]);
 
-        Log::channel('whatsapp')->info('Mensaje creado en base de datos.', ['message_id' => $message->id]);
+        Log::channel('whatsapp')->info('Mensaje creado en base de datos.', ['message_id' => $message->message_id]);
 
         try {
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, $text, $previewUrl, $contextMessage->wa_id);
@@ -139,68 +139,7 @@ class MessageDispatcherService
             return $this->handleError($message, $e);
         }
     }
-
-    public function sendReplyReactionMessage(
-        string $phoneNumberId,
-        string $countryCode,
-        string $phoneNumber,
-        string $contextMessageId,
-        string $emoji
-    ): Message {
-        Log::channel('whatsapp')->info('Iniciando envío replica de mensaje.', [
-            'phoneNumberId' => $phoneNumberId,
-            'countryCode' => $countryCode,
-            'phoneNumber' => $phoneNumber,
-            'contextMessageId' => $contextMessageId,//wa_id del mensaje de contexto
-            'text' => $emoji,
-        ]);
-
-        // Verificar que el mensaje de contexto exista
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
-        if (!$contextMessage) {
-            Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
-                'contextMessageId' => $contextMessageId,
-            ]);
-
-            Log::error('El mensaje de contexto no existe en la base de datos.', [
-                'contextMessageId' => $contextMessageId,
-            ]);
-            throw new \InvalidArgumentException('El mensaje de contexto no existe.');
-        }
-
-        $fullPhoneNumber = $countryCode . $phoneNumber;
-
-        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-        $contact = $this->resolveContact($countryCode, $phoneNumber);
-
-        $message = Message::create([
-            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
-            'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
-            'message_to' => $fullPhoneNumber,
-            'message_type' => 'reaction',
-            'message_content' => $emoji,
-            'message_method' => 'OUTPUT',
-            'status' => MessageStatus::PENDING,
-            'message_context_id' => $contextMessage->id, // Relación con el mensaje de contexto
-        ]);
-
-        Log::channel('whatsapp')->info('Mensaje creado en base de datos.', ['message_id' => $message->id]);
-
-        try {
-            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, $text, $previewUrl, $contextMessage->wa_id);
-            Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-            return $this->handleSuccess($message, $response);
-        } catch (WhatsappApiException $e) {
-            Log::channel('whatsapp')->error('Error al enviar mensaje por API WhatsApp.', [
-                'exception_message' => $e->getMessage(),
-                'exception_code' => $e->getCode(),
-                'details' => $e->getDetails()
-            ]);
-            return $this->handleError($message, $e);
-        }
-    }
-
+    
     private function validatePhoneNumber(string $phoneNumberId): WhatsappPhoneNumber
     {
         Log::channel('whatsapp')->info('Validando número de teléfono.', ['phone_number_id' => $phoneNumberId]);
