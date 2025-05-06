@@ -173,8 +173,6 @@ class MessageDispatcherService
             'emoji' => $emoji
         ]);
 
-        $emoji = '😂'; // Emoji por defecto
-
         if (empty($emoji)) {
             Log::channel('whatsapp')->error('El emoji está vacío.');
             throw new \InvalidArgumentException('El emoji no puede estar vacío.');
@@ -207,7 +205,7 @@ class MessageDispatcherService
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'reaction',
-            'message_content' => '😂',
+            'message_content' => $emoji,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
@@ -219,7 +217,7 @@ class MessageDispatcherService
             // Preparar los parámetros para el envío
             $parameters = [
                 'message_id' => $contextMessage->wa_id,
-                'emoji' => '😂',
+                'emoji' => $emoji,
             ];
     
             // Enviar el mensaje a través de la API
