@@ -52,6 +52,7 @@ class MessageDispatcherService
 
         try {
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, $text, $previewUrl);
+            Log::info("Enviando mensaje de texto");
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
