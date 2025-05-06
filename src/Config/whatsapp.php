@@ -4,7 +4,7 @@ return [
 
     'api' => [
         'base_url' => env('WHATSAPP_API_URL', 'https://graph.facebook.com'),
-        'version' => env('WHATSAPP_API_VERSION', 'v19.0'),
+        'version' => env('WHATSAPP_API_VERSION', 'v21.0'),
         'timeout' => env('WHATSAPP_API_TIMEOUT', 30),
         'retry' => [
             'attempts' => 3,

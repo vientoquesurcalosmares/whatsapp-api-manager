@@ -40,7 +40,7 @@ class MessageDispatcherService
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => $phoneNumberModel->display_phone_number,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'text',
             'message_content' => $text,
