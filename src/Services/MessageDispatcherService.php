@@ -173,6 +173,8 @@ class MessageDispatcherService
             'emoji' => $emoji
         ]);
 
+        $emoji = '😂'; // Emoji por defecto
+
         if (empty($emoji)) {
             Log::channel('whatsapp')->error('El emoji está vacío.');
             throw new \InvalidArgumentException('El emoji no puede estar vacío.');
