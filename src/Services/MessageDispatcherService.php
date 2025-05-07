@@ -547,9 +547,17 @@ class MessageDispatcherService
                 ],
                 data: $fileStream
             );
+        } catch (\Exception $e) {
+            Log::error('Error al subir el archivo.', [
+                'filePath' => $filePath,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
         } finally {
             // Asegurarse de cerrar el archivo incluso si ocurre un error
-            fclose($fileStream);
+            if (is_resource($fileStream)) {
+                fclose($fileStream);
+            }
         }
 
         return $response['h'] ?? throw new \RuntimeException('No se pudo subir el archivo.');
