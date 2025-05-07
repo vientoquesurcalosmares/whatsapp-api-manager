@@ -4,6 +4,7 @@ namespace ScriptDevelop\WhatsappManager\Services;
 
 use ScriptDevelop\WhatsappManager\Enums\MessageStatus;
 use ScriptDevelop\WhatsappManager\Models\Contact;
+use ScriptDevelop\WhatsappManager\Models\MediaFile;
 use ScriptDevelop\WhatsappManager\Models\Message;
 use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
@@ -238,6 +239,98 @@ class MessageDispatcherService
             return $this->handleError($message, $e);
         }
     }
+    public function sendImageMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        \SplFileInfo $file
+    ): Message {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje de imagen.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'filePath' => $file->getRealPath(),
+            'fileName' => $file->getFilename(),
+            'fileType' => $file->getExtension(),
+        ]);
+
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+
+        // Validar el número de teléfono
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+
+
+        // Crear una sesión de subida
+        $fileLength = $file->getSize();
+        $fileType = mime_content_type($file->getRealPath());
+        $uploadSessionId = $this->createUploadSession($phoneNumberModel, $file->getFilename(), $fileType, $fileLength);
+
+        // Subir el archivo y obtener el ID del archivo subido
+        $fileId = $this->uploadFile($phoneNumberModel, $uploadSessionId, $file->getRealPath());
+
+        // Obtener la URL del archivo subido desde la API de WhatsApp
+        $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
+
+        // Descargar el archivo desde la URL proporcionada por la API
+        $localFilePath = $this->downloadMedia($mediaInfo['url'], $file->getFilename());
+
+
+        // Resolver el contacto
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+
+        // Crear el mensaje en la base de datos
+        $message = Message::create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'image',
+            'message_content' => $file->getFilename(),
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+        ]);
+
+        // Crear un registro del archivo en el modelo MediaFile
+        $mediaFile = MediaFile::create([
+            'message_id' => $message->id,
+            'file_name' => $file->getFilename(),
+            'file_path' => $localFilePath,
+            'mime_type' => $mediaInfo['mime_type'],
+            'file_size' => $mediaInfo['file_size'],
+            'sha256' => $mediaInfo['sha256'],
+        ]);
+
+        Log::channel('whatsapp')->info('Mensaje y archivo media creados en base de datos.', [
+            'message_id' => $message->id,
+            'media_file_id' => $mediaFile->id,
+        ]);
+
+        try {
+
+            // Preparar los parámetros para el envío
+            $parameters = [
+                'id' => $fileId,
+            ];
+
+            // Enviar el mensaje a través de la API
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'image', $parameters);
+
+            Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
+
+            // Manejar el éxito del envío
+            return $this->handleSuccess($message, $response);
+
+        } catch (WhatsappApiException $e) {
+            Log::channel('whatsapp')->error('Error al enviar mensaje por API WhatsApp.', [
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
+                'details' => $e->getDetails(),
+            ]);
+
+            // Manejar el error del envío
+            return $this->handleError($message, $e);
+        }
+    }
 
 
     private function validatePhoneNumber(string $phoneNumberId): WhatsappPhoneNumber
@@ -392,6 +485,105 @@ class MessageDispatcherService
                 'Content-Type' => 'application/json'
             ]
         );
+    }
+
+    private function createUploadSession(WhatsappPhoneNumber $phone,string $fileName, string $fileType, int $fileLength): string
+    {
+        $endpoint = Endpoints::build(Endpoints::CREATE_UPLOAD_SESSION, [
+            'version' => config('whatsapp.api.version'),
+        ]);
+
+        $queryParams = [
+            'file_name' => $fileName,
+            'file_type' => $fileType,
+            'file_length' => $fileLength,
+        ];
+
+        Log::info('Creando sesión de subida para archivo.', [
+            'endpoint' => $endpoint,
+            'queryParams' => $queryParams,
+        ]);
+
+        $response = $this->apiClient->request(
+            'POST',
+            $endpoint,
+            query: $queryParams,
+            headers: [
+                'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
+                'Content-Type' => 'application/json',
+            ]
+        );
+
+        return $response['id'] ?? throw new \RuntimeException('No se pudo crear la sesión de subida.');
+    }
+
+    private function uploadFile(WhatsappPhoneNumber $phone,string $uploadId, string $filePath): string
+    {
+        $endpoint = Endpoints::build(Endpoints::UPLOAD_FILE, [
+            'upload_id' => $uploadId,
+        ]);
+
+        Log::info('Subiendo archivo a la sesión.', [
+            'endpoint' => $endpoint,
+            'filePath' => $filePath,
+        ]);
+
+        $fileSize = filesize($filePath);
+        $fileStream = fopen($filePath, 'r');
+
+        $response = $this->apiClient->request(
+            'POST',
+            $endpoint,
+            headers: [
+                'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
+                'Content-Type' => mime_content_type($filePath),
+                'Content-Length' => $fileSize,
+            ],
+            data: $fileStream
+        );
+
+        fclose($fileStream);
+
+        return $response['h'] ?? throw new \RuntimeException('No se pudo subir el archivo.');
+    }
+
+    private function retrieveMediaInfo(WhatsappPhoneNumber $phone, string $fileId): array
+    {
+        $endpoint = Endpoints::build(Endpoints::RETRIEVE_MEDIA_URL, [
+            'version' => config('whatsapp.api.version'),
+            'media_id' => $fileId,
+        ]);
+
+        Log::info('Recuperando información del archivo subido.', ['endpoint' => $endpoint]);
+
+        $response = $this->apiClient->request(
+            'GET',
+            $endpoint,
+            headers: [
+                'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
+            ]
+        );
+
+        return $response;
+    }
+
+    private function downloadMedia(string $url, string $fileName): string
+    {
+        $localFilePath = storage_path('app/public/media/' . $fileName);
+
+        Log::info('Descargando archivo desde la URL.', ['url' => $url, 'localFilePath' => $localFilePath]);
+
+        $response = $this->apiClient->request(
+            'GET',
+            $url,
+            headers: [
+                'Accept' => '*/*',
+            ]
+        );
+
+        file_put_contents($localFilePath, $response);
+
+        return $localFilePath;
     }
 
     private function handleSuccess(Message $message, array $response): Message

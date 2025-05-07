@@ -34,7 +34,7 @@ class ApiClient
         string $method,
         string $endpoint,
         array $params = [],
-        array $data = [],
+        mixed $data = null, // Cambiado a mixed para soportar flujos
         array $query = [],
         array $headers = []
     ): array {
@@ -45,7 +45,12 @@ class ApiClient
             // Configurar opciones
             $options = ['headers' => $headers];
             
-            if (!empty($data)) {
+            // Manejar datos según el tipo
+            if (is_resource($data)) {
+                // Si los datos son un flujo (archivo)
+                $options['body'] = $data;
+            } elseif (!empty($data)) {
+                // Si los datos son un array (JSON)
                 $options['json'] = $data;
             }
 

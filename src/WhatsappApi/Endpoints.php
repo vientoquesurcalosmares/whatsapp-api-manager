@@ -17,6 +17,7 @@ class Endpoints
     const CREATE_UPLOAD_SESSION = 'app/uploads';
     const UPLOAD_FILE = '{upload_id}';
     const QUERY_UPLOAD_STATUS = '{upload_id}';
+    const RETRIEVE_MEDIA_URL = '{version}/{media_id}';
 
     // Helper method to build URLs with dynamic parameters
     public static function build(string $endpoint, array $params = []): string
