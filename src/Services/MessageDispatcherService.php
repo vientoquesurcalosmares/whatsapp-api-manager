@@ -528,21 +528,29 @@ class MessageDispatcherService
             'filePath' => $filePath,
         ]);
 
-        $fileSize = filesize($filePath);
+        // Intentar abrir el archivo
         $fileStream = fopen($filePath, 'r');
+        if ($fileStream === false) {
+            throw new \RuntimeException("No se pudo abrir el archivo en la ruta: $filePath");
+        }
 
-        $response = $this->apiClient->request(
-            'POST',
-            $endpoint,
-            headers: [
-                'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
-                'Content-Type' => mime_content_type($filePath),
-                'Content-Length' => $fileSize,
-            ],
-            data: $fileStream
-        );
-
-        fclose($fileStream);
+        $fileSize = filesize($filePath);
+        
+        try {
+            $response = $this->apiClient->request(
+                'POST',
+                $endpoint,
+                headers: [
+                    'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
+                    'Content-Type' => mime_content_type($filePath),
+                    'Content-Length' => $fileSize,
+                ],
+                data: $fileStream
+            );
+        } finally {
+            // Asegurarse de cerrar el archivo incluso si ocurre un error
+            fclose($fileStream);
+        }
 
         return $response['h'] ?? throw new \RuntimeException('No se pudo subir el archivo.');
     }
