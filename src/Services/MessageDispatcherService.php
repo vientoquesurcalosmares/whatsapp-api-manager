@@ -585,45 +585,70 @@ class MessageDispatcherService
 
         // Intentar abrir el archivo
         $fileStream = fopen($file->getRealPath(), 'r');
+
         if ($fileStream === false) {
             Log::error('No se pudo abrir el archivo.', ['filePath' => $file->getRealPath()]);
             throw new \RuntimeException("No se pudo abrir el archivo en la ruta: {$file->getRealPath()}");
+        } else {
+            Log::info('Archivo abierto correctamente.', ['filePath' => $file->getRealPath()]);
         }
+
+        $response = $this->apiClient->request(
+            'POST',
+            $endpoint,
+            headers: [
+                'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
+            ],
+            data: [
+                'messaging_product' => 'whatsapp',
+                'file' => new \CURLFile(
+                    $file->getRealPath(),
+                    mime_content_type($file->getRealPath()),
+                    $file->getFilename()
+                ),
+            ]
+        );
+
+        Log::info('Archivo subido exitosamente.', [
+            'response' => $response,
+        ]);
+
+        return $response['h'] ?? throw new \RuntimeException('No se pudo subir el archivo.');
         
-        try {
-            $response = $this->apiClient->request(
-                'POST',
-                $endpoint,
-                headers: [
-                    'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
-                ],
-                data: [
-                    'messaging_product' => 'whatsapp',
-                    'file' => new \CURLFile(
-                        $file->getRealPath(),
-                        mime_content_type($file->getRealPath()),
-                        $file->getFilename()
-                    ),
-                ]
-            );
+        // try {
+        //     $response = $this->apiClient->request(
+        //         'POST',
+        //         $endpoint,
+        //         headers: [
+        //             'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
+        //         ],
+        //         data: [
+        //             'messaging_product' => 'whatsapp',
+        //             'file' => new \CURLFile(
+        //                 $file->getRealPath(),
+        //                 mime_content_type($file->getRealPath()),
+        //                 $file->getFilename()
+        //             ),
+        //         ]
+        //     );
 
-            Log::info('Archivo subido exitosamente.', [
-                'response' => $response,
-            ]);
+        //     Log::info('Archivo subido exitosamente.', [
+        //         'response' => $response,
+        //     ]);
 
-            return $response['h'] ?? throw new \RuntimeException('No se pudo subir el archivo.');
-        } catch (\Exception $e) {
-            Log::error('Error al subir el archivo.', [
-                'error_message' => $e->getMessage(),
-                'filePath' => $file->getRealPath(),
-            ]);
-            throw $e;
-        } finally {
-            // Asegurarse de cerrar el archivo incluso si ocurre un error
-            if (is_resource($fileStream)) {
-                fclose($fileStream);
-            }
-        }
+        //     return $response['h'] ?? throw new \RuntimeException('No se pudo subir el archivo.');
+        // } catch (\Exception $e) {
+        //     Log::error('Error al subir el archivo.', [
+        //         'error_message' => $e->getMessage(),
+        //         'filePath' => $file->getRealPath(),
+        //     ]);
+        //     throw $e;
+        // } finally {
+        //     // Asegurarse de cerrar el archivo incluso si ocurre un error
+        //     if (is_resource($fileStream)) {
+        //         fclose($fileStream);
+        //     }
+        // }
     }
 
     private function retrieveMediaInfo(WhatsappPhoneNumber $phone, string $fileId): array
