@@ -504,17 +504,29 @@ class MessageDispatcherService
             'queryParams' => $queryParams,
         ]);
 
-        $response = $this->apiClient->request(
-            'POST',
-            $endpoint,
-            query: $queryParams,
-            headers: [
-                'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
-                'Content-Type' => 'application/json',
-            ]
-        );
-
-        return $response['id'] ?? throw new \RuntimeException('No se pudo crear la sesión de subida.');
+        try {
+            $response = $this->apiClient->request(
+                'POST',
+                $endpoint,
+                query: $queryParams,
+                headers: [
+                    'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
+                    'Content-Type' => 'application/json',
+                ]
+            );
+    
+            Log::info('Sesión de subida creada exitosamente.', [
+                'response' => $response,
+            ]);
+    
+            return $response['id'] ?? throw new \RuntimeException('No se pudo crear la sesión de subida.');
+        } catch (\Exception $e) {
+            Log::error('Error al crear la sesión de subida.', [
+                'error_message' => $e->getMessage(),
+                'queryParams' => $queryParams,
+            ]);
+            throw $e;
+        }
     }
 
     private function uploadFile(WhatsappPhoneNumber $phone,string $uploadId, string $filePath): string
@@ -531,6 +543,7 @@ class MessageDispatcherService
         // Intentar abrir el archivo
         $fileStream = fopen($filePath, 'r');
         if ($fileStream === false) {
+            Log::error('No se pudo abrir el archivo.', ['filePath' => $filePath]);
             throw new \RuntimeException("No se pudo abrir el archivo en la ruta: $filePath");
         }
 
@@ -547,10 +560,17 @@ class MessageDispatcherService
                 ],
                 data: $fileStream
             );
+
+            Log::info('Archivo subido exitosamente.', [
+                'response' => $response,
+            ]);
+
+            return $response['h'] ?? throw new \RuntimeException('No se pudo subir el archivo.');
         } catch (\Exception $e) {
             Log::error('Error al subir el archivo.', [
+                'error_message' => $e->getMessage(),
                 'filePath' => $filePath,
-                'error' => $e->getMessage(),
+                'uploadId' => $uploadId,
             ]);
             throw $e;
         } finally {
@@ -559,8 +579,6 @@ class MessageDispatcherService
                 fclose($fileStream);
             }
         }
-
-        return $response['h'] ?? throw new \RuntimeException('No se pudo subir el archivo.');
     }
 
     private function retrieveMediaInfo(WhatsappPhoneNumber $phone, string $fileId): array
