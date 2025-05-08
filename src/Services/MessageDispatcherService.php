@@ -243,7 +243,8 @@ class MessageDispatcherService
         string $phoneNumberId,
         string $countryCode,
         string $phoneNumber,
-        \SplFileInfo $file
+        \SplFileInfo $file,
+        string $caption = null
     ): Message {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de imagen.', [
             'phoneNumberId' => $phoneNumberId,
@@ -260,13 +261,8 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
 
-        // Crear una sesión de subida
-        $fileLength = $file->getSize();
-        $fileType = mime_content_type($file->getRealPath());
-        $uploadSessionId = $this->createUploadSession($phoneNumberModel, $file->getFilename(), $fileType, $fileLength);
-
         // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $uploadSessionId, $file->getRealPath());
+        $fileId = $this->uploadFile($phoneNumberModel, $file);
 
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
@@ -285,7 +281,7 @@ class MessageDispatcherService
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'image',
-            'message_content' => $file->getFilename(),
+            'message_content' => $caption !== null ? $caption : null,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
         ]);
@@ -293,11 +289,13 @@ class MessageDispatcherService
         // Crear un registro del archivo en el modelo MediaFile
         $mediaFile = MediaFile::create([
             'message_id' => $message->id,
+            'media_type' => 'image',
             'file_name' => $file->getFilename(),
-            'file_path' => $localFilePath,
             'mime_type' => $mediaInfo['mime_type'],
-            'file_size' => $mediaInfo['file_size'],
             'sha256' => $mediaInfo['sha256'],
+            'url' => $localFilePath,
+            'media_id' => $mediaInfo['id'],
+            'file_size' => $mediaInfo['file_size'],
         ]);
 
         Log::channel('whatsapp')->info('Mensaje y archivo media creados en base de datos.', [
@@ -489,7 +487,7 @@ class MessageDispatcherService
 
     private function createUploadSession(WhatsappPhoneNumber $phone,string $fileName, string $fileType, int $fileLength): string
     {
-        $endpoint = Endpoints::build(Endpoints::CREATE_UPLOAD_SESSION, [
+        $endpoint = Endpoints::build(Endpoints::CREATE_RESUMABLE_UPLOAD_SESSION, [
             'version' => config('whatsapp.api.version'),
         ]);
 
@@ -529,25 +527,23 @@ class MessageDispatcherService
         }
     }
 
-    private function uploadFile(WhatsappPhoneNumber $phone,string $uploadId, string $filePath): string
+    private function uploadFile(WhatsappPhoneNumber $phone, \SplFileInfo $file): string
     {
-        $endpoint = Endpoints::build(Endpoints::UPLOAD_FILE, [
-            'upload_id' => $uploadId,
+        $endpoint = Endpoints::build(Endpoints::UPLOAD_MEDIA, [
+            'phone_number_id' => $phone->api_phone_number_id,
         ]);
 
-        Log::info('Subiendo archivo a la sesión.', [
+        Log::info('Subiendo archivo a la API de WhatsApp.', [
             'endpoint' => $endpoint,
-            'filePath' => $filePath,
+            'filePath' => $file->getRealPath(),
         ]);
 
         // Intentar abrir el archivo
-        $fileStream = fopen($filePath, 'r');
+        $fileStream = fopen($file->getRealPath(), 'r');
         if ($fileStream === false) {
-            Log::error('No se pudo abrir el archivo.', ['filePath' => $filePath]);
-            throw new \RuntimeException("No se pudo abrir el archivo en la ruta: $filePath");
+            Log::error('No se pudo abrir el archivo.', ['filePath' => $file->getRealPath()]);
+            throw new \RuntimeException("No se pudo abrir el archivo en la ruta: {$file->getRealPath()}");
         }
-
-        $fileSize = filesize($filePath);
         
         try {
             $response = $this->apiClient->request(
@@ -555,10 +551,11 @@ class MessageDispatcherService
                 $endpoint,
                 headers: [
                     'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
-                    'Content-Type' => mime_content_type($filePath),
-                    'Content-Length' => $fileSize,
                 ],
-                data: $fileStream
+                data: [
+                    'messaging_product' => 'whatsapp',
+                    'file' => new \CURLFile($file->getRealPath(), mime_content_type($file->getRealPath()), $file->getFilename()),
+                ]
             );
 
             Log::info('Archivo subido exitosamente.', [
@@ -569,8 +566,7 @@ class MessageDispatcherService
         } catch (\Exception $e) {
             Log::error('Error al subir el archivo.', [
                 'error_message' => $e->getMessage(),
-                'filePath' => $filePath,
-                'uploadId' => $uploadId,
+                'filePath' => $file->getRealPath(),
             ]);
             throw $e;
         } finally {

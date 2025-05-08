@@ -14,10 +14,13 @@ class Endpoints
     const SEND_MESSAGE = '{phone_number_id}/messages';
 
     // Media Upload Endpoints
-    const CREATE_UPLOAD_SESSION = 'app/uploads';
-    const UPLOAD_FILE = '{upload_id}';
-    const QUERY_UPLOAD_STATUS = '{upload_id}';
+    const CREATE_RESUMABLE_UPLOAD_SESSION = 'app/uploads';
+    const RESUMABLE_UPLOAD_FILE = '{upload_id}';
+    const QUERY_RESUMABLE_UPLOAD_STATUS = '{upload_id}';
     const RETRIEVE_MEDIA_URL = '{media_id}';
+    const UPLOAD_MEDIA = '{phone_number_id}/media';
+    CONST DOWNLOAD_MEDIA = '{media_id}';
+    const DELETE_MEDIA = '{media_id}/?phone_number_id={phone_number_id}';
 
     // Helper method to build URLs with dynamic parameters
     public static function build(string $endpoint, array $params = []): string
