@@ -532,6 +532,15 @@ class MessageDispatcherService
         $maxFileSize = config("whatsapp.media.max_file_size.$mediaType");
         $allowedMimeTypes = config("whatsapp.media.allowed_types.$mediaType");
 
+        // Validar que los tipos MIME permitidos estén configurados
+        if (!is_array($allowedMimeTypes)) {
+            Log::error('La configuración de tipos MIME permitidos no es válida.', [
+                'mediaType' => $mediaType,
+                'allowedMimeTypes' => $allowedMimeTypes,
+            ]);
+            throw new \RuntimeException("La configuración de tipos MIME permitidos para '$mediaType' no es válida.");
+        }
+
         // Validar tamaño del archivo
         if ($file->getSize() > $maxFileSize) {
             Log::error('El archivo excede el tamaño máximo permitido.', [
