@@ -103,6 +103,12 @@ class ApiClient
             $statusCode = $response->getStatusCode();
             $body = json_decode($response->getBody(), true);
             $message = $body['error']['message'] ?? $message;
+
+            Log::channel('whatsapp')->error('Error en la respuesta de la API.', [
+                'status_code' => $statusCode,
+                'response_body' => $body,
+                'headers' => $response->getHeaders(),
+            ]);
         }
 
         return new ApiException($message, $statusCode, $body);
