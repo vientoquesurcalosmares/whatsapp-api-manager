@@ -244,7 +244,7 @@ class MessageDispatcherService
         string $countryCode,
         string $phoneNumber,
         \SplFileInfo $file,
-        string $caption = null
+        ?string $caption = null
     ): Message {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de imagen.', [
             'phoneNumberId' => $phoneNumberId,
@@ -527,6 +527,39 @@ class MessageDispatcherService
         }
     }
 
+    private function validateMediaFile(\SplFileInfo $file, string $mediaType): void
+    {
+        $maxFileSize = config("whatsapp.media.max_file_size.$mediaType");
+        $allowedMimeTypes = config("whatsapp.media.allowed_types.$mediaType");
+
+        // Validar tamaño del archivo
+        if ($file->getSize() > $maxFileSize) {
+            Log::error('El archivo excede el tamaño máximo permitido.', [
+                'filePath' => $file->getRealPath(),
+                'fileSize' => $file->getSize(),
+                'maxFileSize' => $maxFileSize,
+            ]);
+            throw new \RuntimeException('El archivo excede el tamaño máximo permitido.');
+        }
+
+        // Validar tipo MIME del archivo
+        $fileMimeType = mime_content_type($file->getRealPath());
+        if (!in_array($fileMimeType, $allowedMimeTypes)) {
+            Log::error('El tipo de archivo no es permitido.', [
+                'filePath' => $file->getRealPath(),
+                'fileMimeType' => $fileMimeType,
+                'allowedMimeTypes' => $allowedMimeTypes,
+            ]);
+            throw new \RuntimeException('El tipo de archivo no es permitido.');
+        }
+
+        Log::info('Archivo validado correctamente.', [
+            'filePath' => $file->getRealPath(),
+            'fileSize' => $file->getSize(),
+            'fileMimeType' => $fileMimeType,
+        ]);
+    }
+
     private function uploadFile(WhatsappPhoneNumber $phone, \SplFileInfo $file): string
     {
         $endpoint = Endpoints::build(Endpoints::UPLOAD_MEDIA, [
@@ -537,6 +570,9 @@ class MessageDispatcherService
             'endpoint' => $endpoint,
             'filePath' => $file->getRealPath(),
         ]);
+
+        // Validar el archivo antes de subirlo
+        $this->validateMediaFile($file, 'image');
 
         // Intentar abrir el archivo
         $fileStream = fopen($file->getRealPath(), 'r');
@@ -554,7 +590,11 @@ class MessageDispatcherService
                 ],
                 data: [
                     'messaging_product' => 'whatsapp',
-                    'file' => new \CURLFile($file->getRealPath(), mime_content_type($file->getRealPath()), $file->getFilename()),
+                    'file' => new \CURLFile(
+                        $file->getRealPath(),
+                        mime_content_type($file->getRealPath()),
+                        $file->getFilename()
+                    ),
                 ]
             );
 
