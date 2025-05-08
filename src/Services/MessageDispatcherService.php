@@ -593,27 +593,57 @@ class MessageDispatcherService
             Log::info('Archivo abierto correctamente.', ['filePath' => $file->getRealPath()]);
         }
 
-        $response = $this->apiClient->request(
-            'POST',
-            $endpoint,
-            headers: [
-                'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
-            ],
-            data: [
-                'messaging_product' => 'whatsapp',
-                'file' => new \CURLFile(
-                    $file->getRealPath(),
-                    mime_content_type($file->getRealPath()),
-                    $file->getFilename()
-                ),
-            ]
-        );
+        try {
 
-        Log::info('Archivo subido exitosamente.', [
-            'response' => $response,
-        ]);
-
-        return $response['h'] ?? throw new \RuntimeException('No se pudo subir el archivo.');
+            Log::info('Datos enviados en la solicitud.', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
+                ],
+                'data' => [
+                    'messaging_product' => 'whatsapp',
+                    'file' => [
+                        'path' => $file->getRealPath(),
+                        'mime_type' => mime_content_type($file->getRealPath()),
+                        'filename' => $file->getFilename(),
+                    ],
+                ],
+            ]);
+            
+            // Enviar la solicitud para subir el archivo
+            $response = $this->apiClient->request(
+                'POST',
+                $endpoint,
+                headers: [
+                    'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
+                ],
+                data: [
+                    'messaging_product' => 'whatsapp',
+                    'file' => new \CURLFile(
+                        $file->getRealPath(),
+                        mime_content_type($file->getRealPath()),
+                        $file->getFilename()
+                    ),
+                ]
+            );
+    
+            Log::info('Archivo subido exitosamente.', ['response' => $response]);
+    
+            // Verificar y devolver el ID del archivo subido
+            return $response['id'] ?? throw new \RuntimeException('No se pudo obtener el ID del archivo subido.');
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            // Capturar y registrar la respuesta de error
+            $responseBody = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : null;
+            $responseStatusCode = $e->getResponse() ? $e->getResponse()->getStatusCode() : null;
+    
+            Log::error('Error al subir el archivo.', [
+                'error_message' => $e->getMessage(),
+                'response_body' => $responseBody,
+                'response_status_code' => $responseStatusCode,
+                'filePath' => $file->getRealPath(),
+            ]);
+    
+            throw new \RuntimeException('Error al subir el archivo: ' . $e->getMessage(), $e->getCode(), $e);
+        }
         
         // try {
         //     $response = $this->apiClient->request(
