@@ -2003,6 +2003,171 @@ class MessageDispatcherService
         }
     }
 
+    public function sendLocationMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        float $latitude,
+        float $longitude,
+        ?string $name = null,
+        ?string $address = null
+    ): Message {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje de localización.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+            'name' => $name,
+            'address' => $address,
+        ]);
+    
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+    
+        // Validar el número de teléfono
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+    
+        // Resolver el contacto
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+    
+        // Crear el mensaje en la base de datos
+        $message = Message::create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'location',
+            'message_content' => json_encode([
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'name' => $name,
+                'address' => $address,
+            ]),
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+        ]);
+    
+        Log::channel('whatsapp')->info('Mensaje de localización creado en base de datos.', [
+            'message_id' => $message->message_id,
+        ]);
+    
+        try {
+            // Preparar los parámetros para el envío
+            $parameters = [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'name' => $name,
+                'address' => $address,
+            ];
+    
+            // Enviar el mensaje a través de la API
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'location', $parameters);
+    
+            Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
+    
+            // Manejar el éxito del envío
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            Log::channel('whatsapp')->error('Error al enviar mensaje de localización por API WhatsApp.', [
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
+                'details' => $e->getDetails(),
+            ]);
+    
+            // Manejar el error del envío
+            return $this->handleError($message, $e);
+        }
+    }
+
+    public function sendReplyLocationMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $contextMessageId,
+        float $latitude,
+        float $longitude,
+        ?string $name = null,
+        ?string $address = null
+    ): Message {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje de localización como respuesta.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'contextMessageId' => $contextMessageId,
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+            'name' => $name,
+            'address' => $address,
+        ]);
+    
+        // Verificar que el mensaje de contexto exista
+        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+    
+        if (!$contextMessage) {
+            Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
+                'contextMessageId' => $contextMessageId,
+            ]);
+            throw new \InvalidArgumentException('El mensaje de contexto no existe.');
+        }
+    
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+    
+        // Validar el número de teléfono
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+    
+        // Resolver el contacto
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+    
+        // Crear el mensaje en la base de datos
+        $message = Message::create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'location',
+            'message_content' => json_encode([
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'name' => $name,
+                'address' => $address,
+            ]),
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+            'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
+        ]);
+    
+        Log::channel('whatsapp')->info('Mensaje de localización creado en base de datos.', [
+            'message_id' => $message->message_id,
+        ]);
+    
+        try {
+            // Preparar los parámetros para el envío
+            $parameters = [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'name' => $name,
+                'address' => $address,
+            ];
+    
+            // Enviar el mensaje a través de la API
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'location', $parameters, $contextMessage->wa_id);
+    
+            Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
+    
+            // Manejar el éxito del envío
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            Log::channel('whatsapp')->error('Error al enviar mensaje de localización por API WhatsApp.', [
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
+                'details' => $e->getDetails(),
+            ]);
+    
+            // Manejar el error del envío
+            return $this->handleError($message, $e);
+        }
+    }
+
     private function validatePhoneNumber(string $phoneNumberId): WhatsappPhoneNumber
     {
         Log::channel('whatsapp')->info('Validando número de teléfono.', ['phone_number_id' => $phoneNumberId]);
