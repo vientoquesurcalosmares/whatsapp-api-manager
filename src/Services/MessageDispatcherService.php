@@ -288,7 +288,7 @@ class MessageDispatcherService
 
         // Crear un registro del archivo en el modelo MediaFile
         $mediaFile = MediaFile::create([
-            'message_id' => $message->id,
+            'message_id' => $message->message_id,
             'media_type' => 'image',
             'file_name' => $file->getFilename(),
             'mime_type' => $mediaInfo['mime_type'],
@@ -299,8 +299,8 @@ class MessageDispatcherService
         ]);
 
         Log::channel('whatsapp')->info('Mensaje y archivo media creados en base de datos.', [
-            'message_id' => $message->id,
-            'media_file_id' => $mediaFile->id,
+            'message_id' => $message->message_id,
+            'media_file_id' => $mediaFile->media_file_id,
         ]);
 
         try {
@@ -694,7 +694,7 @@ class MessageDispatcherService
     private function handleSuccess(Message $message, array $response): Message
     {
         Log::channel('whatsapp')->info('Mensaje enviado exitosamente.', [
-            'message_id' => $message->id,
+            'message_id' => $message->message_id,
             'api_response' => $response
         ]);
 
