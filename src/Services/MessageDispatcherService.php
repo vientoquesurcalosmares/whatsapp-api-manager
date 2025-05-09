@@ -439,6 +439,172 @@ class MessageDispatcherService
         }
     }
 
+    public function sendImageMessageByUrl(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $link
+    ): Message {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje de imagen por url.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'link' => $link,
+        ]);
+
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+
+        // Validar el número de teléfono
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+
+        // Validar que $link sea una URL válida
+        if (!filter_var($link, FILTER_VALIDATE_URL)) {
+            Log::channel('whatsapp')->error('El enlace proporcionado no es una URL válida.', [
+            'link' => $link,
+            ]);
+            throw new \InvalidArgumentException('El enlace proporcionado no es una URL válida.');
+        }
+       
+        // Resolver el contacto
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+
+        // Crear el mensaje en la base de datos
+        $message = Message::create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'image',
+            'message_content' => $link,
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+        ]);
+
+
+        Log::channel('whatsapp')->info('Mensaje y link creados en base de datos.', [
+            'message_id' => $message->message_id,
+            'link' => $link,
+        ]);
+
+        try {
+
+            // Preparar los parámetros para el envío
+            $parameters = [
+                'link' => $link,
+            ];
+
+            // Enviar el mensaje a través de la API
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'image', $parameters);
+
+            Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
+
+            // Manejar el éxito del envío
+            return $this->handleSuccess($message, $response);
+
+        } catch (WhatsappApiException $e) {
+            Log::channel('whatsapp')->error('Error al enviar mensaje por API WhatsApp.', [
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
+                'details' => $e->getDetails(),
+            ]);
+
+            // Manejar el error del envío
+            return $this->handleError($message, $e);
+        }
+    }
+
+    public function sendReplyImageMessageByUrl(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $contextMessageId,
+        string $link
+    ): Message {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje de imagen por url.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'link' => $link,
+        ]);
+
+        // Verificar que el mensaje de contexto exista
+        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+
+        Log::info('Mensaje de replica.', ['message' => $contextMessage, 'message_id' => $contextMessage->message_id, 'wa_id' => $contextMessage->wa_id]);
+
+        if (!$contextMessage) {
+            Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
+                'contextMessageId' => $contextMessageId,
+            ]);
+
+            Log::error('El mensaje de contexto no existe en la base de datos.', [
+                'contextMessageId' => $contextMessageId,
+            ]);
+            throw new \InvalidArgumentException('El mensaje de contexto no existe.');
+        }
+
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+
+        // Validar el número de teléfono
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+
+        // Validar que $link sea una URL válida
+        if (!filter_var($link, FILTER_VALIDATE_URL)) {
+            Log::channel('whatsapp')->error('El enlace proporcionado no es una URL válida.', [
+            'link' => $link,
+            ]);
+            throw new \InvalidArgumentException('El enlace proporcionado no es una URL válida.');
+        }
+       
+        // Resolver el contacto
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+
+        // Crear el mensaje en la base de datos
+        $message = Message::create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'image',
+            'message_content' => $link,
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+            'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
+        ]);
+
+
+        Log::channel('whatsapp')->info('Mensaje y link creados en base de datos.', [
+            'message_id' => $message->message_id,
+            'link' => $link,
+        ]);
+
+        try {
+
+            // Preparar los parámetros para el envío
+            $parameters = [
+                'link' => $link,
+            ];
+
+            // Enviar el mensaje a través de la API
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'image', $parameters, $contextMessageId);
+
+            Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
+
+            // Manejar el éxito del envío
+            return $this->handleSuccess($message, $response);
+
+        } catch (WhatsappApiException $e) {
+            Log::channel('whatsapp')->error('Error al enviar mensaje por API WhatsApp.', [
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
+                'details' => $e->getDetails(),
+            ]);
+
+            // Manejar el error del envío
+            return $this->handleError($message, $e);
+        }
+    }
+
 
     private function validatePhoneNumber(string $phoneNumberId): WhatsappPhoneNumber
     {
