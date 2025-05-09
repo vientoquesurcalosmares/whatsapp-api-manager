@@ -46,7 +46,6 @@ class TemplateService
             $response = $this->apiClient->request(
                 'GET',
                 $endpoint,
-                [],
                 $headers // Pasar los encabezados con el token
             );
 

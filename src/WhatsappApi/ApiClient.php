@@ -21,9 +21,6 @@ class ApiClient
         $this->client = new Client([
             'base_uri' => $this->baseUrl . '/',
             'timeout' => $timeout,
-            'headers' => [
-                'Accept' => 'application/json',
-            ]
         ]);
     }
 
@@ -43,12 +40,16 @@ class ApiClient
             $url = $this->buildUrl($endpoint, $params, $query);
             
             // Configurar opciones
-            $options = ['headers' => $headers];
+            $options = [
+                'headers' => array_merge([
+                    'Accept' => 'application/json',
+                ], $headers), // Combinar encabezados predeterminados con los proporcionados
+            ];
 
             Log::channel('whatsapp')->info('Enviando solicitud a la API de WhatsApp.', [
                 'method' => $method,
                 'url' => $url,
-                'headers' => $headers,
+                'headers' => $options['headers'], 
             ]);
             
             // Manejar datos según el tipo
