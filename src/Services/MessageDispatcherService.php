@@ -1451,7 +1451,321 @@ class MessageDispatcherService
             return $this->handleError($message, $e);
         }
     }
+
+    public function sendVideoMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        \SplFileInfo $file,
+        ?string $caption = null
+    ): Message {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje de video.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'filePath' => $file->getRealPath(),
+            'fileName' => $file->getFilename(),
+            'fileType' => $file->getExtension(),
+            'caption' => $caption,
+        ]);
     
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+    
+        // Validar el número de teléfono
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+    
+        // Subir el archivo y obtener el ID del archivo subido
+        $fileId = $this->uploadFile($phoneNumberModel, $file, 'video');
+    
+        // Resolver el contacto
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+    
+        // Crear el mensaje en la base de datos
+        $message = Message::create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'video',
+            'message_content' => $caption, // Puede ser null
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+        ]);
+    
+        Log::channel('whatsapp')->info('Mensaje de video creado en base de datos.', [
+            'message_id' => $message->message_id,
+        ]);
+    
+        try {
+            // Preparar los parámetros para el envío
+            $parameters = [
+                'id' => $fileId,
+                'caption' => $caption,
+            ];
+    
+            // Enviar el mensaje a través de la API
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'video', $parameters);
+    
+            Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
+    
+            // Manejar el éxito del envío
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            Log::channel('whatsapp')->error('Error al enviar mensaje de video por API WhatsApp.', [
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
+                'details' => $e->getDetails(),
+            ]);
+    
+            // Manejar el error del envío
+            return $this->handleError($message, $e);
+        }
+    }
+
+    public function sendReplyVideoMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $contextMessageId,
+        \SplFileInfo $file,
+        ?string $caption = null
+    ): Message {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje de video como respuesta.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'contextMessageId' => $contextMessageId,
+            'filePath' => $file->getRealPath(),
+            'fileName' => $file->getFilename(),
+            'fileType' => $file->getExtension(),
+            'caption' => $caption,
+        ]);
+    
+        // Verificar que el mensaje de contexto exista
+        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+    
+        if (!$contextMessage) {
+            Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
+                'contextMessageId' => $contextMessageId,
+            ]);
+            throw new \InvalidArgumentException('El mensaje de contexto no existe.');
+        }
+    
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+    
+        // Validar el número de teléfono
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+    
+        // Subir el archivo y obtener el ID del archivo subido
+        $fileId = $this->uploadFile($phoneNumberModel, $file, 'video');
+    
+        // Resolver el contacto
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+    
+        // Crear el mensaje en la base de datos
+        $message = Message::create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'video',
+            'message_content' => $caption, // Puede ser null
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+            'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
+        ]);
+    
+        Log::channel('whatsapp')->info('Mensaje de video creado en base de datos.', [
+            'message_id' => $message->message_id,
+        ]);
+    
+        try {
+            // Preparar los parámetros para el envío
+            $parameters = [
+                'id' => $fileId,
+                'caption' => $caption,
+            ];
+    
+            // Enviar el mensaje a través de la API
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'video', $parameters, $contextMessage->wa_id);
+    
+            Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
+    
+            // Manejar el éxito del envío
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            Log::channel('whatsapp')->error('Error al enviar mensaje de video por API WhatsApp.', [
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
+                'details' => $e->getDetails(),
+            ]);
+    
+            // Manejar el error del envío
+            return $this->handleError($message, $e);
+        }
+    }
+
+    public function sendVideoMessageByUrl(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $link,
+        ?string $caption = null
+    ): Message {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje de video por URL.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'link' => $link,
+            'caption' => $caption,
+        ]);
+    
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+    
+        // Validar el número de teléfono
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+    
+        // Validar que $link sea una URL válida
+        if (!filter_var($link, FILTER_VALIDATE_URL)) {
+            Log::channel('whatsapp')->error('El enlace proporcionado no es una URL válida.', [
+                'link' => $link,
+            ]);
+            throw new \InvalidArgumentException('El enlace proporcionado no es una URL válida.');
+        }
+    
+        // Resolver el contacto
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+    
+        // Crear el mensaje en la base de datos
+        $message = Message::create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'video',
+            'message_content' => $caption, // Puede ser null
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+        ]);
+    
+        Log::channel('whatsapp')->info('Mensaje de video creado en base de datos.', [
+            'message_id' => $message->message_id,
+            'link' => $link,
+        ]);
+    
+        try {
+            // Preparar los parámetros para el envío
+            $parameters = [
+                'link' => $link,
+                'caption' => $caption,
+            ];
+    
+            // Enviar el mensaje a través de la API
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'video', $parameters);
+    
+            Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
+    
+            // Manejar el éxito del envío
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            Log::channel('whatsapp')->error('Error al enviar mensaje de video por API WhatsApp.', [
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
+                'details' => $e->getDetails(),
+            ]);
+    
+            // Manejar el error del envío
+            return $this->handleError($message, $e);
+        }
+    }
+
+    public function sendReplyVideoMessageByUrl(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $contextMessageId,
+        string $link,
+        ?string $caption = null
+    ): Message {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje de video por URL como respuesta.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'contextMessageId' => $contextMessageId,
+            'link' => $link,
+            'caption' => $caption,
+        ]);
+    
+        // Verificar que el mensaje de contexto exista
+        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+    
+        if (!$contextMessage) {
+            Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
+                'contextMessageId' => $contextMessageId,
+            ]);
+            throw new \InvalidArgumentException('El mensaje de contexto no existe.');
+        }
+    
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+    
+        // Validar el número de teléfono
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+    
+        // Validar que $link sea una URL válida
+        if (!filter_var($link, FILTER_VALIDATE_URL)) {
+            Log::channel('whatsapp')->error('El enlace proporcionado no es una URL válida.', [
+                'link' => $link,
+            ]);
+            throw new \InvalidArgumentException('El enlace proporcionado no es una URL válida.');
+        }
+    
+        // Resolver el contacto
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+    
+        // Crear el mensaje en la base de datos
+        $message = Message::create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'video',
+            'message_content' => $caption, // Puede ser null
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+            'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
+        ]);
+    
+        Log::channel('whatsapp')->info('Mensaje de video creado en base de datos.', [
+            'message_id' => $message->message_id,
+            'link' => $link,
+        ]);
+    
+        try {
+            // Preparar los parámetros para el envío
+            $parameters = [
+                'link' => $link,
+                'caption' => $caption,
+            ];
+    
+            // Enviar el mensaje a través de la API
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'video', $parameters, $contextMessage->wa_id);
+    
+            Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
+    
+            // Manejar el éxito del envío
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            Log::channel('whatsapp')->error('Error al enviar mensaje de video por API WhatsApp.', [
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
+                'details' => $e->getDetails(),
+            ]);
+    
+            // Manejar el error del envío
+            return $this->handleError($message, $e);
+        }
+    }
+
     private function validatePhoneNumber(string $phoneNumberId): WhatsappPhoneNumber
     {
         Log::channel('whatsapp')->info('Validando número de teléfono.', ['phone_number_id' => $phoneNumberId]);
