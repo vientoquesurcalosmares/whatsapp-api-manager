@@ -7,12 +7,14 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
-use ScriptDevelop\WhatsappManager\Enums\MessageStatus;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use ScriptDevelop\WhatsappManager\Models\Contact;
 use ScriptDevelop\WhatsappManager\Models\Conversation;
 use ScriptDevelop\WhatsappManager\Models\Message;
 use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
+use ScriptDevelop\WhatsappManager\Models\MediaFile;
 
 class WhatsappWebhookController extends Controller
 {
@@ -73,9 +75,7 @@ class WhatsappWebhookController extends Controller
 
     protected function handleIncomingMessage(array $message, ?array $contact, ?array $metadata): void
     {
-        if (($message['type'] ?? '') !== 'text') {
-            return;
-        }
+        $messageType = $message['type'] ?? '';
 
         Log::channel('whatsapp')->warning('Handle Incoming Message: ', [
             'message' => $message,
@@ -94,11 +94,6 @@ class WhatsappWebhookController extends Controller
 
         if (empty($countryCode) || empty($phoneNumber)) {
             Log::channel('whatsapp')->warning('Unable to split phone number.', ['fullPhone' => $fullPhone]);
-            return;
-        }
-
-        if (empty($fullPhone)) {
-            Log::channel('whatsapp')->warning('Incoming message without a valid phone number.', $message);
             return;
         }
 
@@ -132,38 +127,144 @@ class WhatsappWebhookController extends Controller
             return;
         }
 
-        // Buscar el mensaje de contexto si existe
-        $contextMessageId = null;
-        if (!empty($message['context']['id'])) {
-            $contextMessage = Message::where('wa_id', $message['context']['id'])->first();
-            if ($contextMessage) {
-                $contextMessageId = $contextMessage->message_id;
-            } else {
-                Log::channel('whatsapp')->warning('Context message not found.', [
-                    'context_id' => $message['context']['id'],
-                ]);
-            }
+
+        // Manejar mensajes de texto
+        if ($messageType === 'text') {
+            $this->processTextMessage($message, $contactRecord, $whatsappPhone);
         }
 
-        $message_saved = Message::create([
-            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
-            'contact_id' => $contactRecord->contact_id,
-            'wa_id' => $message['id'] ?? null,
-            'message_from' => $contact['wa_id'],
-            'message_to' => $whatsappPhone->country_code.$whatsappPhone->phone_number,
-            'message_content' => $message['text']['body'] ?? '',
-            'message_type' => $message['type'],
-            'json_content' => $message,
-            'json' => json_encode($message),
-            'messaging_product' => 'whatsapp',
-            'message_context_id' => $contextMessageId, // Relación con el mensaje de contexto
-            'status' => MessageStatus::RECEIVED,
-            // 'received_at' => now(),
+
+        // Manejar mensajes de media
+        if (in_array($messageType, ['image', 'audio', 'video', 'document'])) {
+            $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
+        }
+    }
+
+    protected function processTextMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
+    {
+        $textContent = $message['text']['body'] ?? null;
+
+        if (!$textContent) {
+            Log::channel('whatsapp')->warning('No text content found in message.', $message);
+            return;
+        }
+
+        $messageRecord = Message::create([
+            'whatsapp_phone_id' => $whatsappPhone->whatsapp_phone_id,
+            'contact_id' => $contact->contact_id,
+            'wa_id' => $message['id'],
+            'conversation_id' => null, // Esto se puede actualizar más tarde si es necesario
+            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+            'message_from' => $message['from'],
+            'message_to' => $whatsappPhone->display_phone_number,
+            'message_type' => 'TEXT',
+            'message_content' => $textContent,
+            'json_content' => json_encode($message),
         ]);
 
-        Log::channel('whatsapp')->info('Message saved. ', [
-            'message' => $message_saved
+        Log::channel('whatsapp')->info('Text message processed and saved.', [
+            'message_id' => $messageRecord->message_id,
+            'wa_id' => $message['id'],
+            'content' => $textContent,
         ]);
+    }
+
+    protected function processMediaMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
+    {
+        $mediaId = $message[$message['type']]['id'] ?? null;
+        $caption = $message[$message['type']]['caption'] ?? strtoupper($message['type']);
+        $mimeType = $message[$message['type']]['mime_type'] ?? null;
+
+        if (!$mediaId) {
+            Log::channel('whatsapp')->warning('No media ID found in message.', $message);
+            return;
+        }
+
+        $mediaUrl = $this->getMediaUrl($mediaId, $whatsappPhone);
+
+        if (!$mediaUrl) {
+            Log::channel('whatsapp')->error('Failed to retrieve media URL.', ['media_id' => $mediaId]);
+            return;
+        }
+
+        $mediaContent = $this->downloadMedia($mediaUrl, $whatsappPhone);
+
+        if (!$mediaContent) {
+            Log::channel('whatsapp')->error('Failed to download media content.', ['media_url' => $mediaUrl]);
+            return;
+        }
+
+        $directory = storage_path("app/public/whatsapp/{$message['type']}s/");
+        if (!file_exists($directory)) {
+            mkdir($directory, 0777, true);
+        }
+
+        $fileName = "{$mediaId}.{$this->getFileExtension($mimeType)}";
+        $filePath = "{$directory}{$fileName}";
+        file_put_contents($filePath, $mediaContent);
+
+        $publicPath = Storage::url("public/whatsapp/{$message['type']}s/{$fileName}");
+
+        // Crear el registro del mensaje en la base de datos
+        $messageRecord = Message::create([
+            'whatsapp_phone_id' => $whatsappPhone->whatsapp_phone_id,
+            'contact_id' => $contact->contact_id,
+            'wa_id' => $message['id'],
+            'conversation_id' => null, // Esto se puede actualizar más tarde si es necesario
+            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+            'message_from' => $message['from'],
+            'message_to' => $whatsappPhone->display_phone_number,
+            'message_type' => strtoupper($message['type']),
+            'message_content' => $caption,
+            'json_content' => json_encode($message),
+        ]);
+
+        // Crear el registro del archivo multimedia en la base de datos
+        MediaFile::create([
+            'message_id' => $messageRecord->message_id,
+            'media_type' => $message['type'],
+            'file_name' => $fileName,
+            'url' => $publicPath,
+            'media_id' => $mediaId,
+            'mime_type' => $mimeType,
+            'sha256' => $message[$message['type']]['sha256'] ?? null,
+        ]);
+
+        Log::channel('whatsapp')->info('Media file and message saved.', [
+            'message_id' => $messageRecord->message_id,
+            'file_path' => $filePath,
+            'public_url' => $publicPath,
+        ]);
+    }
+
+    private function getMediaUrl(string $mediaId, WhatsappPhoneNumber $whatsappPhone): ?string
+    {
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $whatsappPhone->api_token,
+        ])->get(env('WHATSAPP_API_URL') . "/{$mediaId}");
+
+        return $response->json()['url'] ?? null;
+    }
+
+    private function downloadMedia(string $url, WhatsappPhoneNumber $whatsappPhone): ?string
+    {
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $whatsappPhone->api_token,
+        ])->get($url);
+
+        return $response->successful() ? $response->body() : null;
+    }
+
+    private function getFileExtension(?string $mimeType): string
+    {
+        return match ($mimeType) {
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'audio/ogg' => 'ogg',
+            'video/mp4' => 'mp4',
+            'application/pdf' => 'pdf',
+            default => 'bin',
+        };
     }
 
     protected function handleStatusUpdate(array $status): void
