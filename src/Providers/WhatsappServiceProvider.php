@@ -81,10 +81,13 @@ class WhatsappServiceProvider extends ServiceProvider
                 CheckUserModel::class,
             ]);
 
-            // Crear directorios necesarios
-            $this->createStorageDirectories();
+            // Crear directorios necesarios al publicar configuraciones
+            $this->publishes([], 'whatsapp-storage');
+        }
 
-            // Crear automáticamente el enlace simbólico
+        // Crear el enlace simbólico y directorios solo al publicar configuraciones
+        if ($this->app->runningInConsole() && $this->isPublishing()) {
+            $this->createStorageDirectories();
             $this->createStorageLink();
         }
     }
@@ -115,5 +118,17 @@ class WhatsappServiceProvider extends ServiceProvider
             Artisan::call('storage:link');
             $this->app['log']->info('Enlace simbólico de storage creado automáticamente.');
         }
+    }
+
+    /**
+     * Verifica si se está ejecutando una publicación.
+     */
+    protected function isPublishing(): bool
+    {
+        $argv = request()->server('argv', []);
+        return in_array('--tag=whatsapp-config', $argv) ||
+            in_array('--tag=whatsapp-migrations', $argv) ||
+            in_array('--tag=whatsapp-routes', $argv) ||
+            in_array('--tag=whatsapp-storage', $argv);
     }
 }
