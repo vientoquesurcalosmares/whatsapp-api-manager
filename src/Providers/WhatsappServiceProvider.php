@@ -9,6 +9,8 @@ use ScriptDevelop\WhatsappManager\Services\WhatsappService;
 use ScriptDevelop\WhatsappManager\Repositories\WhatsappBusinessAccountRepository;
 use ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
+use ScriptDevelop\WhatsappManager\Services\TemplateService;
+
 use Illuminate\Support\Facades\Artisan;
 
 class WhatsappServiceProvider extends ServiceProvider
@@ -46,6 +48,13 @@ class WhatsappServiceProvider extends ServiceProvider
         $this->app->singleton('whatsapp.account', function ($app) {
             return new AccountRegistrationService(
                 $app->make('whatsapp.phone')
+            );
+        });
+
+        // Registrar el servicio de plantillas
+        $this->app->singleton('whatsapp.template', function ($app) {
+            return new TemplateService(
+                $app->make(ApiClient::class)
             );
         });
     }

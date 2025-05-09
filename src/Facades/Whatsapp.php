@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \ScriptDevelop\WhatsappManager\Services\AccountRegistrationService account()
  * @method static \ScriptDevelop\WhatsappManager\Services\MessageDispatcherService message()
  * @method static \ScriptDevelop\WhatsappManager\Services\WhatsappService phone()
+ * @method static \ScriptDevelop\WhatsappManager\Services\TemplateService template()
  * @method static mixed getBusinessAccount(string $whatsappBusinessId)
  * @method static array getPhoneNumbers(string $whatsappBusinessId)
  * @method static array getPhoneNumberDetails(string $phoneNumberId)
@@ -45,5 +46,13 @@ class Whatsapp extends Facade
     public static function message()
     {
         return app('whatsapp.message');
+    }
+
+    /**
+     * Get the template service instance.
+     */
+    public static function template()
+    {
+        return app('whatsapp.template');
     }
 }
