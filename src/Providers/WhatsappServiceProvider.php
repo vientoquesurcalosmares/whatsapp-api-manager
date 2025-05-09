@@ -73,23 +73,25 @@ class WhatsappServiceProvider extends ServiceProvider
         ], 'whatsapp-routes');
 
         // Cargar rutas automáticamente
-        $this->loadRoutesFrom(__DIR__.'/../routes/whatsapp_webhook.php');
+        $this->loadRoutesFrom(__DIR__ . '/../routes/whatsapp_webhook.php');
 
         // Registrar comandos de consola
         if ($this->app->runningInConsole()) {
             $this->commands([
                 CheckUserModel::class,
-                // No necesitas MergeLoggingConfig, salvo que quieras hacer la fusión opcional de logging
             ]);
+
+            // Crear directorios necesarios
+            $this->createStorageDirectories();
+
+            // Crear automáticamente el enlace simbólico
+            $this->createStorageLink();
         }
-
-        // Crear directorios necesarios
-        $this->createStorageDirectories();
-
-        // Crear automáticamente el enlace simbólico
-        $this->createStorageLink();
     }
 
+    /**
+     * Crear los directorios necesarios para el almacenamiento.
+     */
     protected function createStorageDirectories()
     {
         $directories = [
