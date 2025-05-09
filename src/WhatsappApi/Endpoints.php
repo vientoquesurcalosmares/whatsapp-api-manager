@@ -22,7 +22,7 @@ class Endpoints
     CONST DOWNLOAD_MEDIA = '{media_id}';
     const DELETE_MEDIA = '{media_id}/?phone_number_id={phone_number_id}';
 
-    // tEMPLATES
+    // Templates Endpoints
     const GET_TEMPLATES = '{waba_id}/message_templates';
 
     // Helper method to build URLs with dynamic parameters

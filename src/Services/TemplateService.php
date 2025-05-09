@@ -8,6 +8,7 @@ use ScriptDevelop\WhatsappManager\Models\TemplateCategory;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+use Illuminate\Support\Facades\Log;
 
 class TemplateService
 {
@@ -27,15 +28,33 @@ class TemplateService
             'waba_id' => $account->whatsapp_business_id,
         ]);
 
-        $response = $this->apiClient->request(
-            'GET',
-            $endpoint
-        );
+        Log::channel('whatsapp')->info('Iniciando sincronización de plantillas.', [
+            'endpoint' => $endpoint,
+            'business_id' => $account->whatsapp_business_id,
+        ]);
 
-        $templates = $response['data'] ?? [];
+        try {
+            $response = $this->apiClient->request(
+                'GET',
+                $endpoint
+            );
 
-        foreach ($templates as $templateData) {
-            $this->storeOrUpdateTemplate($account->whatsapp_business_id, $templateData);
+            Log::channel('whatsapp')->info('Respuesta recibida de la API.', [
+                'response' => $response,
+            ]);
+
+            $templates = $response['data'] ?? [];
+
+            foreach ($templates as $templateData) {
+                $this->storeOrUpdateTemplate($account->whatsapp_business_id, $templateData);
+            }
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error al sincronizar plantillas.', [
+                'error_message' => $e->getMessage(),
+                'endpoint' => $endpoint,
+                'business_id' => $account->whatsapp_business_id,
+            ]);
+            throw $e;
         }
     }
 
@@ -44,6 +63,11 @@ class TemplateService
      */
     protected function storeOrUpdateTemplate(string $businessId, array $templateData): void
     {
+        Log::channel('whatsapp')->info('Procesando plantilla.', [
+            'template_id' => $templateData['id'],
+            'template_name' => $templateData['name'],
+        ]);
+
         $template = Template::updateOrCreate(
             [
                 'wa_template_id' => $templateData['id'],
@@ -58,6 +82,10 @@ class TemplateService
             ]
         );
 
+        Log::channel('whatsapp')->info('Plantilla guardada en la base de datos.', [
+            'template_id' => $template->template_id,
+        ]);
+
         // Sincronizar los componentes de la plantilla
         $this->syncTemplateComponents($template, $templateData['components'] ?? []);
     }
@@ -67,10 +95,19 @@ class TemplateService
      */
     protected function getCategoryId(string $categoryName): string
     {
+        Log::channel('whatsapp')->info('Obteniendo categoría.', [
+            'category_name' => $categoryName,
+        ]);
+
         $category = TemplateCategory::firstOrCreate(
             ['name' => $categoryName],
             ['description' => ucfirst($categoryName)]
         );
+
+        Log::channel('whatsapp')->info('Categoría procesada.', [
+            'category_id' => $category->category_id,
+            'category_name' => $category->name,
+        ]);
 
         return $category->category_id;
     }
@@ -80,7 +117,16 @@ class TemplateService
      */
     protected function syncTemplateComponents(Template $template, array $components): void
     {
+        Log::channel('whatsapp')->info('Sincronizando componentes de la plantilla.', [
+            'template_id' => $template->template_id,
+            'component_count' => count($components),
+        ]);
+
         foreach ($components as $componentData) {
+            Log::channel('whatsapp')->info('Procesando componente.', [
+                'component_type' => $componentData['type'],
+            ]);
+
             TemplateComponent::updateOrCreate(
                 [
                     'template_id' => $template->template_id,
@@ -92,6 +138,10 @@ class TemplateService
                 ]
             );
         }
+
+        Log::channel('whatsapp')->info('Componentes sincronizados.', [
+            'template_id' => $template->template_id,
+        ]);
     }
 
     /**
@@ -99,6 +149,10 @@ class TemplateService
      */
     protected function getComponentContent(array $componentData): ?array
     {
+        Log::channel('whatsapp')->info('Obteniendo contenido del componente.', [
+            'component_type' => $componentData['type'],
+        ]);
+        
         switch ($componentData['type']) {
             case 'HEADER':
                 return [
