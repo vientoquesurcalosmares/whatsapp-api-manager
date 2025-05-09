@@ -91,7 +91,7 @@ class TemplateService
                 'language' => $templateData['language'],
                 'category_id' => $this->getCategoryId($templateData['category']), // Usar 'category_id'
                 'status' => $templateData['status'],
-                'json' => $templateData,
+                'json' => json_encode($templateData),
             ]
         );
 

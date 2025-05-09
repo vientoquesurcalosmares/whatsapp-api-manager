@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('name', 250);
             $table->string('language', 45);
             $table->foreignUlid('category_id')->nullable()->constrained('whatsapp_template_categories', 'category_id');
-            $table->enum('status', ['ACTIVE', 'INACTIVE'])->default('ACTIVE');
+            $table->enum('status', ['APPROVED', 'PENDING', 'REJECTED'])->default('PENDING');
             $table->text('file')->nullable();
             $table->json('json');
             $table->timestamps();
