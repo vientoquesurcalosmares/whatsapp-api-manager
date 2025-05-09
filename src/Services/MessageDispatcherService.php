@@ -652,6 +652,13 @@ class MessageDispatcherService
     private function downloadMedia(WhatsappPhoneNumber $phone, string $url, string $fileName): string
     {
         $localFilePath = storage_path('app/public/media/' . $fileName);
+        $directoryPath = dirname($localFilePath);
+
+        // Verificar y crear el directorio si no existe
+        if (!is_dir($directoryPath)) {
+            Log::info('Creando directorio para guardar el archivo.', ['directoryPath' => $directoryPath]);
+            mkdir($directoryPath, 0755, true);
+        }
 
         Log::info('Descargando archivo desde la URL.', ['url' => $url, 'localFilePath' => $localFilePath]);
 
