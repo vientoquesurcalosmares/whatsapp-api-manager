@@ -46,7 +46,10 @@ class ApiClient
             $options = ['headers' => $headers];
             
             // Manejar datos según el tipo
-            if (is_resource($data)) {
+            if (isset($data['multipart'])) {
+                // Si los datos son de tipo multipart
+                $options['multipart'] = $data['multipart'];
+            } elseif (is_resource($data)) {
                 // Si los datos son un flujo (archivo)
                 $options['body'] = $data;
             } elseif (!empty($data)) {

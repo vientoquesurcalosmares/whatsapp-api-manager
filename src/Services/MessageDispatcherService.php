@@ -583,32 +583,7 @@ class MessageDispatcherService
         // Validar el archivo antes de subirlo
         $this->validateMediaFile($file, 'image');
 
-        // Intentar abrir el archivo
-        $fileStream = fopen($file->getRealPath(), 'r');
-
-        if ($fileStream === false) {
-            Log::error('No se pudo abrir el archivo.', ['filePath' => $file->getRealPath()]);
-            throw new \RuntimeException("No se pudo abrir el archivo en la ruta: {$file->getRealPath()}");
-        } else {
-            Log::info('Archivo abierto correctamente.', ['filePath' => $file->getRealPath()]);
-        }
-
         try {
-
-            Log::info('Datos enviados en la solicitud.', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
-                ],
-                'data' => [
-                    'messaging_product' => 'whatsapp',
-                    'file' => [
-                        'path' => $file->getRealPath(),
-                        'mime_type' => mime_content_type($file->getRealPath()),
-                        'filename' => $file->getFilename(),
-                    ],
-                ],
-            ]);
-            
             // Enviar la solicitud para subir el archivo
             $response = $this->apiClient->request(
                 'POST',
@@ -617,68 +592,41 @@ class MessageDispatcherService
                     'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
                 ],
                 data: [
-                    'messaging_product' => 'whatsapp',
-                    'file' => new \CURLFile(
-                        $file->getRealPath(),
-                        mime_content_type($file->getRealPath()),
-                        $file->getFilename()
-                    ),
+                    'multipart' => [
+                        [
+                            'name' => 'messaging_product',
+                            'contents' => 'whatsapp',
+                        ],
+                        [
+                            'name' => 'file',
+                            'contents' => fopen($file->getRealPath(), 'r'),
+                            'filename' => $file->getFilename(),
+                            'headers' => [
+                                'Content-Type' => mime_content_type($file->getRealPath()),
+                            ],
+                        ],
+                    ],
                 ]
             );
-    
+
             Log::info('Archivo subido exitosamente.', ['response' => $response]);
-    
+
             // Verificar y devolver el ID del archivo subido
             return $response['id'] ?? throw new \RuntimeException('No se pudo obtener el ID del archivo subido.');
         } catch (\GuzzleHttp\Exception\RequestException $e) {
             // Capturar y registrar la respuesta de error
             $responseBody = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : null;
             $responseStatusCode = $e->getResponse() ? $e->getResponse()->getStatusCode() : null;
-    
+
             Log::error('Error al subir el archivo.', [
                 'error_message' => $e->getMessage(),
                 'response_body' => $responseBody,
                 'response_status_code' => $responseStatusCode,
                 'filePath' => $file->getRealPath(),
             ]);
-    
+
             throw new \RuntimeException('Error al subir el archivo: ' . $e->getMessage(), $e->getCode(), $e);
         }
-        
-        // try {
-        //     $response = $this->apiClient->request(
-        //         'POST',
-        //         $endpoint,
-        //         headers: [
-        //             'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
-        //         ],
-        //         data: [
-        //             'messaging_product' => 'whatsapp',
-        //             'file' => new \CURLFile(
-        //                 $file->getRealPath(),
-        //                 mime_content_type($file->getRealPath()),
-        //                 $file->getFilename()
-        //             ),
-        //         ]
-        //     );
-
-        //     Log::info('Archivo subido exitosamente.', [
-        //         'response' => $response,
-        //     ]);
-
-        //     return $response['h'] ?? throw new \RuntimeException('No se pudo subir el archivo.');
-        // } catch (\Exception $e) {
-        //     Log::error('Error al subir el archivo.', [
-        //         'error_message' => $e->getMessage(),
-        //         'filePath' => $file->getRealPath(),
-        //     ]);
-        //     throw $e;
-        // } finally {
-        //     // Asegurarse de cerrar el archivo incluso si ocurre un error
-        //     if (is_resource($fileStream)) {
-        //         fclose($fileStream);
-        //     }
-        // }
     }
 
     private function retrieveMediaInfo(WhatsappPhoneNumber $phone, string $fileId): array
