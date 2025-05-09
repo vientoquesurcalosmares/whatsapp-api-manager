@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('message_from', 45);
             $table->string('message_to', 45);
             $table->string('message_type', 45);
-            $table->text('message_content');
+            $table->text('message_content')->nullable();
             $table->string('media_url', 512)->nullable();
             $table->text('message_context')->nullable();
             $table->string('message_context_id', 45)->nullable();
