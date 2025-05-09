@@ -34,9 +34,15 @@ class TemplateService
         ]);
 
         try {
+            $headers = [
+                'Authorization' => 'Bearer ' . $account->api_token,
+            ];
+
             $response = $this->apiClient->request(
                 'GET',
-                $endpoint
+                $endpoint,
+                [],
+                $headers // Pasar los encabezados con el token
             );
 
             Log::channel('whatsapp')->info('Respuesta recibida de la API.', [
@@ -152,7 +158,7 @@ class TemplateService
         Log::channel('whatsapp')->info('Obteniendo contenido del componente.', [
             'component_type' => $componentData['type'],
         ]);
-        
+
         switch ($componentData['type']) {
             case 'HEADER':
                 return [
