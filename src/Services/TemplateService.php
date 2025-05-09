@@ -136,14 +136,19 @@ class TemplateService
         ]);
 
         foreach ($components as $componentData) {
+            $type = strtolower($componentData['type']); // Convertir a minúsculas
+            if ($type === 'buttons') {
+                $type = 'button'; // Normalizar a singular
+            }
+
             Log::channel('whatsapp')->info('Procesando componente.', [
-                'component_type' => $componentData['type'],
+                'component_type' => $type,
             ]);
 
             TemplateComponent::updateOrCreate(
                 [
                     'template_id' => $template->template_id,
-                    'type' => $componentData['type'],
+                    'type' => $type,
                 ],
                 [
                     'content' => $this->getComponentContent($componentData),
