@@ -268,7 +268,7 @@ class MessageDispatcherService
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
 
         // Descargar el archivo desde la URL proporcionada por la API
-        $localFilePath = $this->downloadMedia($phoneNumberModel,$mediaInfo['url'], $file->getFilename());
+        $localFilePath = $this->downloadMedia($phoneNumberModel,$mediaInfo['url'], $file->getFilename(), 'images');
 
 
         // Resolver el contacto
@@ -376,7 +376,7 @@ class MessageDispatcherService
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
 
         // Descargar el archivo desde la URL proporcionada por la API
-        $localFilePath = $this->downloadMedia($phoneNumberModel,$mediaInfo['url'], $file->getFilename());
+        $localFilePath = $this->downloadMedia($phoneNumberModel,$mediaInfo['url'], $file->getFilename(), 'images');
 
 
         // Resolver el contacto
@@ -627,6 +627,15 @@ class MessageDispatcherService
     
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'audio');
+
+        // Subir el archivo y obtener el ID del archivo subido
+        $fileId = $this->uploadFile($phoneNumberModel, $file, 'audio');
+
+        // Obtener la URL del archivo subido desde la API de WhatsApp
+        $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
+
+        // Descargar el archivo desde la URL proporcionada por la API
+        $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $file->getFilename(), 'audio');
     
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
@@ -641,6 +650,18 @@ class MessageDispatcherService
             'message_content' => null,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
+        ]);
+
+        // Crear un registro del archivo en el modelo MediaFile
+        $mediaFile = MediaFile::create([
+            'message_id' => $message->message_id,
+            'media_type' => 'audio',
+            'file_name' => $file->getFilename(),
+            'mime_type' => $mediaInfo['mime_type'],
+            'sha256' => $mediaInfo['sha256'],
+            'url' => $localFilePath,
+            'media_id' => $mediaInfo['id'],
+            'file_size' => $mediaInfo['file_size'],
         ]);
     
         Log::channel('whatsapp')->info('Mensaje de audio creado en base de datos.', [
@@ -705,7 +726,13 @@ class MessageDispatcherService
     
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'audio');
-    
+
+        // Obtener la URL del archivo subido desde la API de WhatsApp
+        $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
+
+        // Descargar el archivo desde la URL proporcionada por la API
+        $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $file->getFilename(), 'audio');
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
     
@@ -720,6 +747,18 @@ class MessageDispatcherService
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
+        ]);
+
+        // Crear un registro del archivo en el modelo MediaFile
+        $mediaFile = MediaFile::create([
+            'message_id' => $message->message_id,
+            'media_type' => 'audio',
+            'file_name' => $file->getFilename(),
+            'mime_type' => $mediaInfo['mime_type'],
+            'sha256' => $mediaInfo['sha256'],
+            'url' => $localFilePath,
+            'media_id' => $mediaInfo['id'],
+            'file_size' => $mediaInfo['file_size'],
         ]);
     
         Log::channel('whatsapp')->info('Mensaje de audio creado en base de datos.', [
@@ -930,6 +969,12 @@ class MessageDispatcherService
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'document');
 
+        // Obtener la URL del archivo subido desde la API de WhatsApp
+        $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
+
+        // Descargar el archivo desde la URL proporcionada por la API
+        $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $file->getFilename(), 'documents');
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
@@ -943,6 +988,18 @@ class MessageDispatcherService
             'message_content' => $caption, // Puede ser null
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
+        ]);
+
+        // Crear un registro del archivo en el modelo MediaFile
+        $mediaFile = MediaFile::create([
+            'message_id' => $message->message_id,
+            'media_type' => 'document',
+            'file_name' => $file->getFilename(),
+            'mime_type' => $mediaInfo['mime_type'],
+            'sha256' => $mediaInfo['sha256'],
+            'url' => $localFilePath,
+            'media_id' => $mediaInfo['id'],
+            'file_size' => $mediaInfo['file_size'],
         ]);
 
         Log::channel('whatsapp')->info('Mensaje de documento creado en base de datos.', [
@@ -1013,6 +1070,16 @@ class MessageDispatcherService
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'document');
     
+        // Obtener la URL del archivo subido desde la API de WhatsApp
+        $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
+
+        // Descargar el archivo desde la URL proporcionada por la API
+        $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $file->getFilename(), 'documents');
+
+        // Resolver el contacto
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+
+    
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
     
@@ -1027,6 +1094,18 @@ class MessageDispatcherService
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
+        ]);
+
+        // Crear un registro del archivo en el modelo MediaFile
+        $mediaFile = MediaFile::create([
+            'message_id' => $message->message_id,
+            'media_type' => 'audio',
+            'file_name' => $file->getFilename(),
+            'mime_type' => $mediaInfo['mime_type'],
+            'sha256' => $mediaInfo['sha256'],
+            'url' => $localFilePath,
+            'media_id' => $mediaInfo['id'],
+            'file_size' => $mediaInfo['file_size'],
         ]);
     
         Log::channel('whatsapp')->info('Mensaje de documento creado en base de datos.', [
@@ -1244,6 +1323,12 @@ class MessageDispatcherService
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'sticker');
     
+        // Obtener la URL del archivo subido desde la API de WhatsApp
+        $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
+
+        // Descargar el archivo desde la URL proporcionada por la API
+        $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $file->getFilename(), 'stickers');
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
     
@@ -1257,6 +1342,18 @@ class MessageDispatcherService
             'message_content' => null,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
+        ]);
+
+        // Crear un registro del archivo en el modelo MediaFile
+        $mediaFile = MediaFile::create([
+            'message_id' => $message->message_id,
+            'media_type' => 'sticker',
+            'file_name' => $file->getFilename(),
+            'mime_type' => $mediaInfo['mime_type'],
+            'sha256' => $mediaInfo['sha256'],
+            'url' => $localFilePath,
+            'media_id' => $mediaInfo['id'],
+            'file_size' => $mediaInfo['file_size'],
         ]);
     
         Log::channel('whatsapp')->info('Mensaje de sticker creado en base de datos.', [
@@ -1322,6 +1419,12 @@ class MessageDispatcherService
     
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'sticker');
+
+        // Obtener la URL del archivo subido desde la API de WhatsApp
+        $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
+
+        // Descargar el archivo desde la URL proporcionada por la API
+        $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $file->getFilename(), 'stickers');
     
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
@@ -1337,6 +1440,18 @@ class MessageDispatcherService
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
+        ]);
+
+        // Crear un registro del archivo en el modelo MediaFile
+        $mediaFile = MediaFile::create([
+            'message_id' => $message->message_id,
+            'media_type' => 'audio',
+            'file_name' => $file->getFilename(),
+            'mime_type' => $mediaInfo['mime_type'],
+            'sha256' => $mediaInfo['sha256'],
+            'url' => $localFilePath,
+            'media_id' => $mediaInfo['id'],
+            'file_size' => $mediaInfo['file_size'],
         ]);
     
         Log::channel('whatsapp')->info('Mensaje de sticker creado en base de datos.', [
@@ -1477,6 +1592,12 @@ class MessageDispatcherService
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'video');
     
+        // Obtener la URL del archivo subido desde la API de WhatsApp
+        $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
+
+        // Descargar el archivo desde la URL proporcionada por la API
+        $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $file->getFilename(), 'videos');
+    
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
     
@@ -1490,6 +1611,18 @@ class MessageDispatcherService
             'message_content' => $caption, // Puede ser null
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
+        ]);
+
+        // Crear un registro del archivo en el modelo MediaFile
+        $mediaFile = MediaFile::create([
+            'message_id' => $message->message_id,
+            'media_type' => 'video',
+            'file_name' => $file->getFilename(),
+            'mime_type' => $mediaInfo['mime_type'],
+            'sha256' => $mediaInfo['sha256'],
+            'url' => $localFilePath,
+            'media_id' => $mediaInfo['id'],
+            'file_size' => $mediaInfo['file_size'],
         ]);
     
         Log::channel('whatsapp')->info('Mensaje de video creado en base de datos.', [
@@ -1559,6 +1692,12 @@ class MessageDispatcherService
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'video');
     
+        // Obtener la URL del archivo subido desde la API de WhatsApp
+        $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
+
+        // Descargar el archivo desde la URL proporcionada por la API
+        $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $file->getFilename(), 'videos');
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
     
@@ -1573,6 +1712,18 @@ class MessageDispatcherService
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
+        ]);
+
+        // Crear un registro del archivo en el modelo MediaFile
+        $mediaFile = MediaFile::create([
+            'message_id' => $message->message_id,
+            'media_type' => 'video',
+            'file_name' => $file->getFilename(),
+            'mime_type' => $mediaInfo['mime_type'],
+            'sha256' => $mediaInfo['sha256'],
+            'url' => $localFilePath,
+            'media_id' => $mediaInfo['id'],
+            'file_size' => $mediaInfo['file_size'],
         ]);
     
         Log::channel('whatsapp')->info('Mensaje de video creado en base de datos.', [
@@ -2486,8 +2637,15 @@ class MessageDispatcherService
         return $response;
     }
 
-    private function downloadMedia(WhatsappPhoneNumber $phone, string $url, string $fileName): string
+    private function downloadMedia(WhatsappPhoneNumber $phone, string $url, string $fileName, string $mediaType): string
     {
+        // Obtener la ruta de almacenamiento desde la configuración
+        $storagePath = config("whatsapp.media.storage_path.$mediaType");
+
+        if (!$storagePath) {
+            throw new \RuntimeException("No se ha configurado una ruta de almacenamiento para el tipo de media: $mediaType");
+        }
+        
         $localFilePath = storage_path('app/public/media/' . $fileName);
         $directoryPath = dirname($localFilePath);
 

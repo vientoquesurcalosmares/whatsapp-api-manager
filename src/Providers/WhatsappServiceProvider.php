@@ -97,9 +97,7 @@ class WhatsappServiceProvider extends ServiceProvider
      */
     protected function createStorageDirectories()
     {
-        $directories = [
-            storage_path('app/public/media'),
-        ];
+        $directories = config('whatsapp.media.storage_path', []);
 
         foreach ($directories as $directory) {
             if (!is_dir($directory)) {
@@ -114,9 +112,11 @@ class WhatsappServiceProvider extends ServiceProvider
      */
     protected function createStorageLink()
     {
-        if (!is_link(public_path('storage'))) {
-            Artisan::call('storage:link');
-            $this->app['log']->info('Enlace simbólico de storage creado automáticamente.');
+        $mediaBasePath = storage_path('app/public/media');
+
+        if (!is_link(public_path('storage/media'))) {
+            symlink($mediaBasePath, public_path('storage/media'));
+            $this->app['log']->info('Enlace simbólico de media creado automáticamente.');
         }
     }
 
