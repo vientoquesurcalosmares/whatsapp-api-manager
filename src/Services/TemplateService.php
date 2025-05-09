@@ -89,7 +89,7 @@ class TemplateService
                 'whatsapp_business_id' => $businessId,
                 'name' => $templateData['name'],
                 'language' => $templateData['language'],
-                'category' => $this->getCategoryId($templateData['category']),
+                'category_id' => $this->getCategoryId($templateData['category']), // Usar 'category_id'
                 'status' => $templateData['status'],
                 'json' => $templateData,
             ]

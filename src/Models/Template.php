@@ -23,7 +23,7 @@ class Template extends Model
         'wa_template_id',
         'name',
         'language',
-        'category',
+        'category_id',
         'status',
         'file',
         'json',
@@ -39,7 +39,7 @@ class Template extends Model
      */
     public function category()
     {
-        return $this->belongsTo(TemplateCategory::class, 'category', 'category_id');
+        return $this->belongsTo(TemplateCategory::class, 'category_id', 'category_id'); // Usar 'category_id'
     }
 
     public function components()
