@@ -44,6 +44,12 @@ class ApiClient
             
             // Configurar opciones
             $options = ['headers' => $headers];
+
+            Log::channel('whatsapp')->info('Enviando solicitud a la API de WhatsApp.', [
+                'method' => $method,
+                'url' => $url,
+                'headers' => $headers,
+            ]);
             
             // Manejar datos según el tipo
             if (isset($data['multipart'])) {
@@ -87,6 +93,8 @@ class ApiClient
         if (!empty($query)) {
             $url .= '?' . http_build_query($query);
         }
+
+        Log::channel('whatsapp')->info('URL construida:', ['url' => $url]);
 
         return $url;
     }

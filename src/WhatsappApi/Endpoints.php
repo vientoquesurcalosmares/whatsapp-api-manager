@@ -2,6 +2,8 @@
 
 namespace ScriptDevelop\WhatsappManager\WhatsappApi;
 
+use Illuminate\Support\Facades\Log;
+
 class Endpoints
 {
     // Business Account Endpoints
@@ -30,11 +32,15 @@ class Endpoints
     {
         $placeholders = array_map(fn($key) => "{{$key}}", array_keys($params));
 
-        return str_replace(
+        $url = str_replace(
             $placeholders,
             array_values($params),
             $endpoint
         );
+
+        Log::channel('whatsapp')->info('URL generada:', ['url' => $url]);
+
+        return $url;
     }
 
     // Helper methods for common parameters

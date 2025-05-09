@@ -33,11 +33,16 @@ class TemplateService
             'business_id' => $account->whatsapp_business_id,
         ]);
 
-        try {
-            $headers = [
-                'Authorization' => 'Bearer ' . $account->api_token,
-            ];
+        $headers = [
+            'Authorization' => 'Bearer ' . $account->api_token,
+        ];
 
+        Log::channel('whatsapp')->info('Iniciando sincronización de plantillas.', [
+            'endpoint' => $endpoint,
+            'headers' => $headers,
+        ]);
+
+        try {
             $response = $this->apiClient->request(
                 'GET',
                 $endpoint,

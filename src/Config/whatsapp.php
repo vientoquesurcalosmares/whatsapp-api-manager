@@ -38,7 +38,7 @@ return [
         'base_url' => env('WHATSAPP_API_URL', 'https://graph.facebook.com'),
 
         // Versión de la API de WhatsApp
-        'version' => env('WHATSAPP_API_VERSION', 'v21.0'),
+        'version' => env('WHATSAPP_API_VERSION', 'v22.0'),
 
         // Tiempo de espera para las solicitudes (en segundos)
         'timeout' => env('WHATSAPP_API_TIMEOUT', 30),
