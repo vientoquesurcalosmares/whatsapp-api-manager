@@ -46,7 +46,10 @@ class TemplateService
             $response = $this->apiClient->request(
                 'GET',
                 $endpoint,
-                $headers // Pasar los encabezados con el token
+                [],
+                null,
+                [],
+                $headers // Pasar los encabezados aquí
             );
 
             Log::channel('whatsapp')->info('Respuesta recibida de la API.', [
