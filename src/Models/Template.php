@@ -33,4 +33,33 @@ class Template extends Model
     {
         return $this->belongsTo(WhatsappBusinessAccount::class, 'whatsapp_business_id');
     }
+
+    /**
+     * Relación con la categoría de la plantilla.
+     */
+    public function category()
+    {
+        return $this->belongsTo(TemplateCategory::class, 'category', 'category_id');
+    }
+
+    public function components()
+    {
+        return $this->hasMany(TemplateComponent::class, 'template_id', 'template_id');
+    }
+
+    /**
+     * Scope para buscar plantillas activas.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'ACTIVE');
+    }
+
+    /**
+     * Método para obtener el contenido de la plantilla en un idioma específico.
+     */
+    public function getContentByLanguage(string $language): ?array
+    {
+        return $this->json['languages'][$language] ?? null;
+    }
 }

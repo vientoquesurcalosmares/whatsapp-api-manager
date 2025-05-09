@@ -17,12 +17,15 @@ return new class extends Migration
             $table->string('wa_template_id', 200)->unique();
             $table->string('name', 250);
             $table->string('language', 45);
-            $table->string('category', 45);
-            $table->string('status', 45)->nullable();
+            $table->foreignUlid('category_id')->nullable()->constrained('whatsapp_template_categories', 'category_id');
+            $table->enum('status', ['ACTIVE', 'INACTIVE'])->default('ACTIVE');
             $table->text('file')->nullable();
             $table->json('json');
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index('name');
+            $table->index('status');
 
             $table->foreign('whatsapp_business_id')
                   ->references('whatsapp_business_id')
