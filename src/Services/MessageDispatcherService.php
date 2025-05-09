@@ -268,7 +268,7 @@ class MessageDispatcherService
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
 
         // Descargar el archivo desde la URL proporcionada por la API
-        $localFilePath = $this->downloadMedia($mediaInfo['url'], $file->getFilename());
+        $localFilePath = $this->downloadMedia($phoneNumberModel,$mediaInfo['url'], $file->getFilename());
 
 
         // Resolver el contacto
@@ -649,23 +649,46 @@ class MessageDispatcherService
         return $response;
     }
 
-    private function downloadMedia(string $url, string $fileName): string
+    private function downloadMedia(WhatsappPhoneNumber $phone, string $url, string $fileName): string
     {
         $localFilePath = storage_path('app/public/media/' . $fileName);
 
         Log::info('Descargando archivo desde la URL.', ['url' => $url, 'localFilePath' => $localFilePath]);
 
-        $response = $this->apiClient->request(
-            'GET',
-            $url,
-            headers: [
-                'Accept' => '*/*',
-            ]
-        );
+        $attempts = 3; // Número de reintentos
+        $delay = 2; // Segundos entre reintentos
 
-        file_put_contents($localFilePath, $response);
+        for ($i = 0; $i < $attempts; $i++) {
+            try {
+                $response = $this->apiClient->request(
+                    'GET',
+                    $url,
+                    headers: [
+                        'Authorization' => 'Bearer ' . $phone->businessAccount->api_token,
+                    ]
+                );
 
-        return $localFilePath;
+                file_put_contents($localFilePath, $response);
+
+                Log::info('Archivo descargado exitosamente.', ['localFilePath' => $localFilePath]);
+
+                return $localFilePath;
+            } catch (\Exception $e) {
+                Log::error('Error al descargar el archivo.', [
+                    'attempt' => $i + 1,
+                    'error_message' => $e->getMessage(),
+                    'url' => $url,
+                ]);
+
+                if ($i < $attempts - 1) {
+                    sleep($delay); // Esperar antes de reintentar
+                } else {
+                    throw new \RuntimeException('Error al descargar el archivo después de varios intentos: ' . $e->getMessage(), $e->getCode(), $e);
+                }
+            }
+        }
+        // Si por alguna razón el bucle termina sin lanzar excepción, lanzar una excepción genérica
+        throw new \RuntimeException('No se pudo descargar el archivo después de varios intentos.');
     }
 
     private function handleSuccess(Message $message, array $response): Message
