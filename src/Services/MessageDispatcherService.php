@@ -330,6 +330,115 @@ class MessageDispatcherService
         }
     }
 
+    public function sendReplyImageMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $contextMessageId,
+        \SplFileInfo $file,
+        ?string $caption = null
+    ): Message {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje de imagen.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'filePath' => $file->getRealPath(),
+            'fileName' => $file->getFilename(),
+            'fileType' => $file->getExtension(),
+        ]);
+
+        // Verificar que el mensaje de contexto exista
+        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+
+        Log::info('Mensaje de replica.', ['message' => $contextMessage, 'message_id' => $contextMessage->message_id, 'wa_id' => $contextMessage->wa_id]);
+
+        if (!$contextMessage) {
+            Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
+                'contextMessageId' => $contextMessageId,
+            ]);
+
+            Log::error('El mensaje de contexto no existe en la base de datos.', [
+                'contextMessageId' => $contextMessageId,
+            ]);
+            throw new \InvalidArgumentException('El mensaje de contexto no existe.');
+        }
+
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+
+        // Validar el número de teléfono
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+
+
+        // Subir el archivo y obtener el ID del archivo subido
+        $fileId = $this->uploadFile($phoneNumberModel, $file);
+
+        // Obtener la URL del archivo subido desde la API de WhatsApp
+        $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
+
+        // Descargar el archivo desde la URL proporcionada por la API
+        $localFilePath = $this->downloadMedia($phoneNumberModel,$mediaInfo['url'], $file->getFilename());
+
+
+        // Resolver el contacto
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+
+        // Crear el mensaje en la base de datos
+        $message = Message::create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'image',
+            'message_content' => $caption !== null ? $caption : null,
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+            'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
+        ]);
+
+        // Crear un registro del archivo en el modelo MediaFile
+        $mediaFile = MediaFile::create([
+            'message_id' => $message->message_id,
+            'media_type' => 'image',
+            'file_name' => $file->getFilename(),
+            'mime_type' => $mediaInfo['mime_type'],
+            'sha256' => $mediaInfo['sha256'],
+            'url' => $localFilePath,
+            'media_id' => $mediaInfo['id'],
+            'file_size' => $mediaInfo['file_size'],
+        ]);
+
+        Log::channel('whatsapp')->info('Mensaje y archivo media creados en base de datos.', [
+            'message_id' => $message->message_id,
+            'media_file_id' => $mediaFile->media_file_id,
+        ]);
+
+        try {
+
+            // Preparar los parámetros para el envío
+            $parameters = [
+                'id' => $fileId,
+            ];
+
+            // Enviar el mensaje a través de la API
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'image', $parameters, $contextMessage->wa_id);
+
+            Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
+
+            // Manejar el éxito del envío
+            return $this->handleSuccess($message, $response);
+
+        } catch (WhatsappApiException $e) {
+            Log::channel('whatsapp')->error('Error al enviar mensaje por API WhatsApp.', [
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
+                'details' => $e->getDetails(),
+            ]);
+
+            // Manejar el error del envío
+            return $this->handleError($message, $e);
+        }
+    }
+
 
     private function validatePhoneNumber(string $phoneNumberId): WhatsappPhoneNumber
     {
