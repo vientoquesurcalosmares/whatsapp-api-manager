@@ -28,6 +28,18 @@ class Contact extends Model
         'middle_name',
         'suffix',
         'prefix',
+        'organization',
+        'department',
+        'title',
+        'email',
+        'address',
+        'city',
+        'state',
+        'zip',
+        'country',
+        'country_code',
+        'birthday',
+        'url', 
     ];
 
     public function messages()

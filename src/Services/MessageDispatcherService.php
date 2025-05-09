@@ -1766,6 +1766,243 @@ class MessageDispatcherService
         }
     }
 
+    public function sendContactMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $contactId
+    ): Message {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje de contacto.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'contactId' => $contactId,
+        ]);
+    
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+    
+        // Validar el número de teléfono del destinatario
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+    
+        // Validar que el contacto a enviar exista
+        $contact = Contact::findOrFail($contactId);
+    
+        // Resolver el contacto del destinatario
+        $recipientContact = $this->resolveContact($countryCode, $phoneNumber);
+    
+        // Crear el mensaje en la base de datos
+        $message = Message::create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $recipientContact->contact_id,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'contacts',
+            'message_content' => $contact->contact_id,
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+        ]);
+    
+        Log::channel('whatsapp')->info('Mensaje de contacto creado en base de datos.', [
+            'message_id' => $message->message_id,
+        ]);
+    
+        try {
+            // Preparar los parámetros para el envío
+            $parameters = [
+                'contacts' => [
+                    [
+                        'addresses' => [
+                            [
+                                'street' => $contact->address,
+                                'city' => $contact->city,
+                                'state' => $contact->state,
+                                'zip' => $contact->zip,
+                                'country' => $contact->country,
+                                'country_code' => $contact->country_code,
+                                'type' => 'HOME',
+                            ],
+                        ],
+                        'birthday' => $contact->birthday,
+                        'emails' => [
+                            [
+                                'email' => $contact->email,
+                                'type' => 'WORK',
+                            ],
+                        ],
+                        'name' => [
+                            'formatted_name' => $contact->full_name,
+                            'first_name' => $contact->first_name,
+                            'last_name' => $contact->last_name,
+                            'middle_name' => $contact->middle_name,
+                            'suffix' => $contact->suffix,
+                            'prefix' => $contact->prefix,
+                        ],
+                        'org' => [
+                            'company' => $contact->organization,
+                            'department' => $contact->department,
+                            'title' => $contact->title,
+                        ],
+                        'phones' => [
+                            [
+                                'phone' => $contact->phone_number,
+                                'wa_id' => $contact->wa_id,
+                                'type' => 'CELL',
+                            ],
+                        ],
+                        'urls' => [
+                            [
+                                'url' => $contact->url,
+                                'type' => 'WORK',
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+    
+            // Enviar el mensaje a través de la API
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'contacts', $parameters);
+    
+            Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
+    
+            // Manejar el éxito del envío
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            Log::channel('whatsapp')->error('Error al enviar mensaje de contacto por API WhatsApp.', [
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
+                'details' => $e->getDetails(),
+            ]);
+    
+            // Manejar el error del envío
+            return $this->handleError($message, $e);
+        }
+    }
+
+    public function sendReplyContactMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $contextMessageId,
+        string $contactId
+    ): Message {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje de contacto como respuesta.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'contextMessageId' => $contextMessageId,
+            'contactId' => $contactId,
+        ]);
+    
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+    
+        // Validar el número de teléfono del destinatario
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+    
+        // Validar que el contacto a enviar exista
+        $contact = Contact::findOrFail($contactId);
+    
+        // Verificar que el mensaje de contexto exista
+        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+    
+        if (!$contextMessage) {
+            Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
+                'contextMessageId' => $contextMessageId,
+            ]);
+            throw new \InvalidArgumentException('El mensaje de contexto no existe.');
+        }
+    
+        // Resolver el contacto del destinatario
+        $recipientContact = $this->resolveContact($countryCode, $phoneNumber);
+    
+        // Crear el mensaje en la base de datos
+        $message = Message::create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $recipientContact->contact_id,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'contacts',
+            'message_content' => $contact->contact_id,
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+            'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
+        ]);
+    
+        Log::channel('whatsapp')->info('Mensaje de contacto creado en base de datos.', [
+            'message_id' => $message->message_id,
+        ]);
+    
+        try {
+            // Preparar los parámetros para el envío
+            $parameters = [
+                'contacts' => [
+                    [
+                        'addresses' => [
+                            [
+                                'street' => $contact->address,
+                                'city' => $contact->city,
+                                'state' => $contact->state,
+                                'zip' => $contact->zip,
+                                'country' => $contact->country,
+                                'country_code' => $contact->country_code,
+                                'type' => 'HOME',
+                            ],
+                        ],
+                        'birthday' => $contact->birthday,
+                        'emails' => [
+                            [
+                                'email' => $contact->email,
+                                'type' => 'WORK',
+                            ],
+                        ],
+                        'name' => [
+                            'formatted_name' => $contact->full_name,
+                            'first_name' => $contact->first_name,
+                            'last_name' => $contact->last_name,
+                            'middle_name' => $contact->middle_name,
+                            'suffix' => $contact->suffix,
+                            'prefix' => $contact->prefix,
+                        ],
+                        'org' => [
+                            'company' => $contact->organization,
+                            'department' => $contact->department,
+                            'title' => $contact->title,
+                        ],
+                        'phones' => [
+                            [
+                                'phone' => $contact->phone_number,
+                                'wa_id' => $contact->wa_id,
+                                'type' => 'CELL',
+                            ],
+                        ],
+                        'urls' => [
+                            [
+                                'url' => $contact->url,
+                                'type' => 'WORK',
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+    
+            // Enviar el mensaje a través de la API
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'contacts', $parameters, $contextMessage->wa_id);
+    
+            Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
+    
+            // Manejar el éxito del envío
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            Log::channel('whatsapp')->error('Error al enviar mensaje de contacto por API WhatsApp.', [
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
+                'details' => $e->getDetails(),
+            ]);
+    
+            // Manejar el error del envío
+            return $this->handleError($message, $e);
+        }
+    }
+
     private function validatePhoneNumber(string $phoneNumberId): WhatsappPhoneNumber
     {
         Log::channel('whatsapp')->info('Validando número de teléfono.', ['phone_number_id' => $phoneNumberId]);

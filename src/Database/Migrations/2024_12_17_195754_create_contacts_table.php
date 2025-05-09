@@ -22,6 +22,18 @@ return new class extends Migration
             $table->string('middle_name', 45)->nullable();
             $table->string('suffix', 45)->nullable();
             $table->string('prefix', 45)->nullable();
+            $table->string('organization')->nullable();
+            $table->string('department')->nullable();
+            $table->string('title')->nullable();
+            $table->string('email')->nullable();
+            $table->text('address')->nullable();
+            $table->string('city')->nullable();
+            $table->string('state')->nullable();
+            $table->string('zip')->nullable();
+            $table->string('country')->nullable();
+            $table->string('country_code')->nullable();
+            $table->date('birthday')->nullable();
+            $table->string('url')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
