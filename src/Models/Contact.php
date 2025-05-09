@@ -37,7 +37,6 @@ class Contact extends Model
         'state',
         'zip',
         'country',
-        'country_code',
         'birthday',
         'url', 
     ];

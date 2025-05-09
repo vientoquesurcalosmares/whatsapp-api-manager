@@ -37,32 +37,6 @@ LARAVEL WHatsapp Manager
 
    Configuración principal (config/whatsapp.php):
       
-      ```php
-      return [
-
-         'api' => [
-            'base_url' => env('WHATSAPP_API_URL', 'https://graph.facebook.com'),
-            'version' => env('WHATSAPP_API_VERSION', 'v19.0'),
-            'timeout' => env('WHATSAPP_API_TIMEOUT', 30),
-            'retry' => [
-                  'attempts' => 3,
-                  'delay' => 500,
-            ],
-         ],
-
-         'models' => [
-            'business_account' => \ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount::class,
-            'user_model' => env('AUTH_MODEL', App\Models\User::class),
-            'user_table' => env('AUTH_TABLE', 'users'),
-         ],
-
-         'webhook' => [
-            'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
-         ],
-
-         'load_migrations' => true, // Control para migraciones automáticas
-      ];
-      ```
    Configuración de logs (config/logging.php):
 
    Configuración principal del paquete:
@@ -106,10 +80,10 @@ LARAVEL WHatsapp Manager
 
 5. **Configura tus credenciales en .env**:
    ```bash
-   WHATSAPP_USER_MODEL=\App\Models\User::class
-   WHATSAPP_API_URL='https://graph.facebook.com/'
-   WHATSAPP_API_VERSION="v19.0"
-   WHATSAPP_SYNC_ON_QUERY=true
+   WHATSAPP_API_URL=https://graph.facebook.com
+   WHATSAPP_API_VERSION=v21.0
+   WHATSAPP_VERIFY_TOKEN=your-verify-token
+   WHATSAPP_USER_MODEL=App\Models\User
 
 
 🔄 Personalizar el Modelo User
@@ -119,7 +93,7 @@ Si usas un modelo User personalizado:
    Si estás utilizando un modelo User personalizado, asegúrate de especificarlo en tu archivo `.env`:
 
    ```env
-   WHATSAPP_USER_MODEL=App\Modules\Auth\Models\Admin
+   WHATSAPP_USER_MODEL=App\Models\YourCustomUserModel
    ```
 
 Además, verifica que el modelo implementa las interfaces necesarias o extiende el modelo base esperado por el paquete. Por ejemplo:
@@ -187,18 +161,14 @@ Tablas incluidas:
 - flow_conditions ⚙️  
 
 
-📦 Publicar elementos adicionales (opcional)
-
-```bash
-php artisan vendor:publish --tag=whatsapp-migrations  # Publicar migraciones
-```
-
 Este comando publicará las migraciones del paquete en tu directorio `database/migrations`. Puedes personalizarlas según tus necesidades antes de ejecutarlas.
 
 📡 Configuración de Webhooks en Meta
 Ir a Meta Developers
 
 Configurar Webhook:
+- Define la URL del webhook en la consola de Meta Developers.
+- La URL debe apuntar a la ruta publicada por el paquete, por ejemplo
 
 URL: https://tudominio.com/whatsapp-webhook
 
@@ -211,28 +181,254 @@ Tambien puedes usar la herramienta nrock
 
 ```bash
 whatsapp-manager/
-├── src/
-│   ├── Models/               # Modelos Eloquent
-│   ├── Services/             # Lógica de negocio y API
+├── .env.testing              # Archivo de configuración para pruebas
+├── composer.json             # Configuración de dependencias del paquete
+├── composer.lock             # Archivo de bloqueo de dependencias
+├── LICENSE                   # Licencia del paquete
+├── phpunit.xml               # Configuración de PHPUnit para pruebas
+├── README.md                 # Documentación principal del paquete
+├── .vscode/
+│   └── settings.json         # Configuración específica para Visual Studio Code
+├── assets/                   # Archivos de recursos
+│   ├── 2394384167581644.ogg  # Archivo de audio de ejemplo
+│   ├── LARAVEL WHATSAPP MANEGER.pdf # Documento PDF de ejemplo
+│   └── laravel-whatsapp-manager.png # Imagen de ejemplo
+├── src/                      # Código fuente principal del paquete
+│   ├── Config/               # Archivos de configuración
 │   ├── Console/              # Comandos Artisan personalizados
-│   ├── Database/
+│   ├── Database/             # Migraciones y seeders
 │   │   ├── Migrations/       # Migraciones de base de datos
 │   │   └── Seeders/          # Seeders opcionales
-│   ├── Http/
+│   ├── Enums/                # Enumeraciones del sistema
+│   ├── Exceptions/           # Excepciones personalizadas
+│   ├── Facades/              # Facades del paquete
+│   ├── Helpers/              # Funciones y utilidades auxiliares
+│   ├── Http/                 # Lógica HTTP
 │   │   ├── Controllers/      # Controladores HTTP y Webhook
 │   │   └── Middleware/       # Middleware personalizados
-│   ├── Events/               # Eventos del sistema
-│   ├── Listeners/            # Listeners para eventos
-│   ├── Notifications/        # Notificaciones y canales
 │   ├── Logging/              # Personalización de logs
-│   └── Support/              # Utilidades y helpers
-├── routes/
-│   └── whatsapp.php          # Rutas del paquete (webhook, API)
-├── config/
-│   └── whatsapp.php          # Configuración principal
-└── resources/
-   └── views/                 # Vistas opcionales para panel o notificaciones
+│   ├── Models/               # Modelos Eloquent
+│   ├── Providers/            # Proveedores de servicios del paquete
+│   ├── Repositories/         # Repositorios para acceso a datos
+│   ├── routes/               # Rutas del paquete
+│   ├── Services/             # Lógica de negocio y API
+│   ├── Traits/               # Traits reutilizables
+│   └── WhatsappApi/          # Cliente API y endpoints
+├── tests/                    # Pruebas del paquete
+│   ├── TestCase.php          # Clase base para pruebas
+│   ├── Feature/              # Pruebas funcionales
+│   └── Unit/                 # Pruebas unitarias
+└── vendor/                   # Dependencias instaladas por Composer
 ```
+
+
+📖 Guía de Usuario
+
+1. Registro de Cuentas de Negocios
+Registra una cuenta de negocios en WhatsApp Business API.
+
+```bash
+<?php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+$account = Whatsapp::account()->register([
+   'api_token' => '***********************',
+   'business_id' => '1243432234423'
+]);
+```
+
+
+2. Obtener Detalles de Números de Teléfono
+Obtén información detallada sobre un número de teléfono registrado.
+
+```bash
+<?php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+$phoneDetails = Whatsapp::phone()->getPhoneNumberDetails('564565346546');
+```
+
+
+3. Obtener Cuentas de Negocios
+Obtén información sobre una cuenta de negocios específica.
+
+```bash
+<?php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+$account = Whatsapp::phone()->getBusinessAccount('356456456456');
+```
+
+
+4. Enviar Mensajes de Texto
+Envía mensajes de texto simples.
+
+```bash
+<?php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+$message = Whatsapp::message()->sendTextMessage(
+    '01JTKF55PCNNWTNEKCGMJAZV93', // ID del número de teléfono
+    '57',                        // Código de país
+    '3237121901',                // Número de teléfono
+    'Hola, este es un mensaje de prueba.' // Contenido del mensaje
+);
+```
+
+
+Enviar Mensajes de Texto con Enlaces
+Envía mensajes de texto simples.
+
+```bash
+<?php
+$message = Whatsapp::message()->sendTextMessage(
+    '01JTKF55PCNNWTNEKCGMJAZV93',
+    '57',
+    '3237121901',
+    'Visítanos en YouTube: http://youtube.com',
+    true // Habilitar vista previa de enlaces
+);
+```
+
+
+5. Enviar Respuestas a Mensajes
+Responde a un mensaje existente.
+
+```bash
+<?php
+$message = Whatsapp::message()->sendReplyTextMessage(
+    '01JTKF55PCNNWTNEKCGMJAZV93',
+    '57',
+    '3237121901',
+    'wamid.HBgMNTczMTM3MTgxOTA4FQIAEhggNzVCNUQzRDMxRjhEMUJEM0JERjAzNkZCNDk5RDcyQjQA', // ID del mensaje de contexto
+    'Esta es una respuesta al mensaje anterior.'
+);
+```
+
+
+
+6. Reacciones a Mensajes
+Envía una reacción a un mensaje existente.
+
+```bash
+<?php
+$message = Whatsapp::message()->sendReplyReactionMessage(
+    '01JTKF55PCNNWTNEKCGMJAZV93',
+    '57',
+    '3237121901',
+    'wamid.HBgMNTczMTM3MTgxOTA4FQIAEhggNzZENDMzMEI0MDRFQzg0OUUwRTI1M0JBQjEzMUZFRUYA', // ID del mensaje de contexto
+    '😂' // Emoji de reacción
+);
+```
+
+
+
+7. Enviar Mensajes Multimedia
+Enviar Imágenes
+
+```bash
+<?php
+$filePath = storage_path('app/public/laravel-whatsapp-manager.png');
+$file = new \SplFileInfo($filePath);
+
+$message = Whatsapp::message()->sendImageMessage(
+    '01JTKF55PCNNWTNEKCGMJAZV93',
+    '57',
+    '3237121901',
+    $file
+);
+```
+
+Enviar Imágenes por URL
+
+```bash
+<?php
+$message = Whatsapp::message()->sendImageMessageByUrl(
+    '01JTKF55PCNNWTNEKCGMJAZV93',
+    '57',
+    '3237121901',
+    'https://example.com/image.png'
+);
+```
+
+Enviar Audio
+
+```bash
+<?php
+$filePath = storage_path('app/public/audio.ogg');
+$file = new \SplFileInfo($filePath);
+
+$message = Whatsapp::message()->sendAudioMessage(
+    '01JTKF55PCNNWTNEKCGMJAZV93',
+    '57',
+    '3237121901',
+    $file
+);
+```
+
+Enviar Audio por URL
+
+```bash
+<?php
+$message = Whatsapp::message()->sendAudioMessageByUrl(
+    '01JTKF55PCNNWTNEKCGMJAZV93',
+    '57',
+    '3237121901',
+    'https://example.com/audio.ogg'
+);
+```
+
+Enviar Documentos
+
+```bash
+<?php
+$filePath = storage_path('app/public/document.pdf');
+$file = new \SplFileInfo($filePath);
+
+$message = Whatsapp::message()->sendDocumentMessage(
+    '01JTKF55PCNNWTNEKCGMJAZV93',
+    '57',
+    '3237121901',
+    $file
+);
+```
+
+Enviar Documentos por URL
+
+```bash
+<?php
+$message = Whatsapp::message()->sendDocumentMessageByUrl(
+    '01JTKF55PCNNWTNEKCGMJAZV93',
+    '57',
+    '3237121901',
+    'https://example.com/document.pdf'
+);
+```
+
+8. Enviar Mensajes de Ubicación
+Envía un mensaje con coordenadas de ubicación.
+
+```bash
+<?php
+<?php
+$message = Whatsapp::message()->sendLocationMessage(
+    '01JTKF55PCNNWTNEKCGMJAZV93',
+    '57',
+    '3237121901',
+    4.7110, // Latitud
+    -74.0721, // Longitud
+    'Bogotá', // Nombre del lugar
+    'Colombia' // Dirección
+);
+```
+
+
+
+
+
+
+
+
 
 🤝 Contribuir
 ¡Tu ayuda es bienvenida! Sigue estos pasos:
