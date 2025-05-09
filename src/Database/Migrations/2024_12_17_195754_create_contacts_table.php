@@ -31,7 +31,6 @@ return new class extends Migration
             $table->string('state')->nullable();
             $table->string('zip')->nullable();
             $table->string('country')->nullable();
-            $table->string('country_code')->nullable();
             $table->date('birthday')->nullable();
             $table->string('url')->nullable();
             $table->timestamps();
