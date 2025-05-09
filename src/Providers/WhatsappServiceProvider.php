@@ -9,6 +9,7 @@ use ScriptDevelop\WhatsappManager\Services\WhatsappService;
 use ScriptDevelop\WhatsappManager\Repositories\WhatsappBusinessAccountRepository;
 use ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
+use Illuminate\Support\Facades\Artisan;
 
 class WhatsappServiceProvider extends ServiceProvider
 {
@@ -80,6 +81,37 @@ class WhatsappServiceProvider extends ServiceProvider
                 CheckUserModel::class,
                 // No necesitas MergeLoggingConfig, salvo que quieras hacer la fusión opcional de logging
             ]);
+        }
+
+        // Crear directorios necesarios
+        $this->createStorageDirectories();
+
+        // Crear automáticamente el enlace simbólico
+        $this->createStorageLink();
+    }
+
+    protected function createStorageDirectories()
+    {
+        $directories = [
+            storage_path('app/public/media'),
+        ];
+
+        foreach ($directories as $directory) {
+            if (!is_dir($directory)) {
+                mkdir($directory, 0755, true);
+                $this->app['log']->info("Directorio creado: {$directory}");
+            }
+        }
+    }
+
+    /**
+     * Crear el enlace simbólico para storage.
+     */
+    protected function createStorageLink()
+    {
+        if (!is_link(public_path('storage'))) {
+            Artisan::call('storage:link');
+            $this->app['log']->info('Enlace simbólico de storage creado automáticamente.');
         }
     }
 }
