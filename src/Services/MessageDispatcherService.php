@@ -683,7 +683,7 @@ class MessageDispatcherService
                 break;
 
             case 'image':
-                $data['image'] = $parameters['id'] 
+                $data['image'] = isset($parameters['id']) && $parameters['id'] 
                     ? ['id' => $parameters['id']] 
                     : ['link' => $parameters['link'] ?? ''];
                 break;
