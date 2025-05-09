@@ -22,7 +22,7 @@ class TemplateService
     /**
      * Sincronizar todas las plantillas desde la API de WhatsApp.
      */
-    public function syncTemplates(WhatsappBusinessAccount $account): void
+    public function getTemplates(WhatsappBusinessAccount $account): void
     {
         $endpoint = Endpoints::build(Endpoints::GET_TEMPLATES, [
             'waba_id' => $account->whatsapp_business_id,
@@ -71,10 +71,222 @@ class TemplateService
         }
     }
 
+    public function getTemplateById(WhatsappBusinessAccount $account, string $templateId): Template
+    {
+        $endpoint = Endpoints::build(Endpoints::GET_TEMPLATE, [
+            'template_id' => $templateId,
+        ]);
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $account->api_token,
+        ];
+
+        Log::channel('whatsapp')->info('Obteniendo plantilla desde la API.', [
+            'endpoint' => $endpoint,
+            'headers' => $headers,
+        ]);
+
+        try {
+            $response = $this->apiClient->request(
+                'GET',
+                $endpoint,
+                [],
+                null,
+                [],
+                $headers
+            );
+
+            Log::channel('whatsapp')->info('Respuesta recibida de la API.', [
+                'response' => $response,
+            ]);
+
+            // Almacenar o actualizar la plantilla en la base de datos
+            return $this->storeOrUpdateTemplate($account->whatsapp_business_id, $response);
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error al obtener la plantilla.', [
+                'error_message' => $e->getMessage(),
+                'endpoint' => $endpoint,
+                'template_id' => $templateId,
+            ]);
+            throw $e;
+        }
+    }
+
+    public function getTemplateByName(WhatsappBusinessAccount $account, string $templateName): ?Template
+    {
+        $endpoint = Endpoints::build(Endpoints::GET_TEMPLATES, [
+            'waba_id' => $account->whatsapp_business_id,
+        ]);
+
+        $query = [
+            'name' => $templateName,
+        ];
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $account->api_token,
+        ];
+
+        Log::channel('whatsapp')->info('Obteniendo plantilla por nombre desde la API.', [
+            'endpoint' => $endpoint,
+            'query' => $query,
+            'headers' => $headers,
+        ]);
+
+        try {
+            $response = $this->apiClient->request(
+                'GET',
+                $endpoint,
+                [],
+                null,
+                $query,
+                $headers
+            );
+
+            Log::channel('whatsapp')->info('Respuesta recibida de la API.', [
+                'response' => $response,
+            ]);
+
+            $templateData = $response['data'][0] ?? null;
+
+            if (!$templateData) {
+                Log::channel('whatsapp')->warning('No se encontró la plantilla con el nombre especificado.', [
+                    'template_name' => $templateName,
+                ]);
+                return null;
+            }
+
+            // Almacenar o actualizar la plantilla en la base de datos
+            return $this->storeOrUpdateTemplate($account->whatsapp_business_id, $templateData);
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error al obtener la plantilla por nombre.', [
+                'error_message' => $e->getMessage(),
+                'endpoint' => $endpoint,
+                'template_name' => $templateName,
+            ]);
+            throw $e;
+        }
+    }
+
+    public function deleteTemplateById(WhatsappBusinessAccount $account, string $templateId, bool $hardDelete = false): bool
+    {
+        $endpoint = Endpoints::build(Endpoints::DELETE_TEMPLATE, [
+            'waba_id' => $account->whatsapp_business_id,
+        ]);
+
+        $query = [
+            'hsm_id' => $templateId,
+        ];
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $account->api_token,
+        ];
+
+        Log::channel('whatsapp')->info('Eliminando plantilla por ID desde la API.', [
+            'endpoint' => $endpoint,
+            'query' => $query,
+            'headers' => $headers,
+        ]);
+
+        try {
+            $response = $this->apiClient->request(
+                'DELETE',
+                $endpoint,
+                [],
+                null,
+                $query,
+                $headers
+            );
+
+            Log::channel('whatsapp')->info('Respuesta recibida de la API.', [
+                'response' => $response,
+            ]);
+
+            if ($response['success'] ?? false) {
+                $template = Template::where('wa_template_id', $templateId)->first();
+
+                if ($template) {
+                    if ($hardDelete) {
+                        $template->forceDelete(); // Hard delete
+                    } else {
+                        $template->delete(); // Soft delete
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error al eliminar la plantilla por ID.', [
+                'error_message' => $e->getMessage(),
+                'template_id' => $templateId,
+            ]);
+            throw $e;
+        }
+    }
+
+    public function deleteTemplateByName(WhatsappBusinessAccount $account, string $templateName, bool $hardDelete = false): bool
+    {
+        $endpoint = Endpoints::build(Endpoints::DELETE_TEMPLATE, [
+            'waba_id' => $account->whatsapp_business_id,
+        ]);
+
+        $query = [
+            'name' => $templateName,
+        ];
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $account->api_token,
+        ];
+
+        Log::channel('whatsapp')->info('Eliminando plantilla por nombre desde la API.', [
+            'endpoint' => $endpoint,
+            'query' => $query,
+            'headers' => $headers,
+        ]);
+
+        try {
+            $response = $this->apiClient->request(
+                'DELETE',
+                $endpoint,
+                [],
+                null,
+                $query,
+                $headers
+            );
+
+            Log::channel('whatsapp')->info('Respuesta recibida de la API.', [
+                'response' => $response,
+            ]);
+
+            if ($response['success'] ?? false) {
+                $template = Template::where('name', $templateName)->first();
+
+                if ($template) {
+                    if ($hardDelete) {
+                        $template->forceDelete(); // Hard delete
+                    } else {
+                        $template->delete(); // Soft delete
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error al eliminar la plantilla por nombre.', [
+                'error_message' => $e->getMessage(),
+                'template_name' => $templateName,
+            ]);
+            throw $e;
+        }
+    }
+
     /**
      * Crear o actualizar una plantilla en la base de datos.
      */
-    protected function storeOrUpdateTemplate(string $businessId, array $templateData): void
+    protected function storeOrUpdateTemplate(string $businessId, array $templateData): Template
     {
         Log::channel('whatsapp')->info('Procesando plantilla.', [
             'template_id' => $templateData['id'],
@@ -89,7 +301,7 @@ class TemplateService
                 'whatsapp_business_id' => $businessId,
                 'name' => $templateData['name'],
                 'language' => $templateData['language'],
-                'category_id' => $this->getCategoryId($templateData['category']), // Usar 'category_id'
+                'category_id' => $this->getCategoryId($templateData['category']),
                 'status' => $templateData['status'],
                 'json' => json_encode($templateData),
             ]
@@ -101,6 +313,8 @@ class TemplateService
 
         // Sincronizar los componentes de la plantilla
         $this->syncTemplateComponents($template, $templateData['components'] ?? []);
+
+        return $template;
     }
 
     /**
