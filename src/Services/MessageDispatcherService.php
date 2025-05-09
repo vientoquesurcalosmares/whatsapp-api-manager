@@ -262,7 +262,7 @@ class MessageDispatcherService
 
 
         // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $file);
+        $fileId = $this->uploadFile($phoneNumberModel, $file, 'image');
 
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
@@ -370,7 +370,7 @@ class MessageDispatcherService
 
 
         // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $file);
+        $fileId = $this->uploadFile($phoneNumberModel, $file, 'image');
 
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
@@ -626,7 +626,7 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
     
         // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $file);
+        $fileId = $this->uploadFile($phoneNumberModel, $file, 'audio');
     
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
@@ -704,7 +704,7 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
     
         // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $file);
+        $fileId = $this->uploadFile($phoneNumberModel, $file, 'audio');
     
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
@@ -1144,7 +1144,7 @@ class MessageDispatcherService
         ]);
     }
 
-    private function uploadFile(WhatsappPhoneNumber $phone, \SplFileInfo $file): string
+    private function uploadFile(WhatsappPhoneNumber $phone, \SplFileInfo $file, string $type_file): string
     {
         $endpoint = Endpoints::build(Endpoints::UPLOAD_MEDIA, [
             'phone_number_id' => $phone->api_phone_number_id,
@@ -1156,7 +1156,7 @@ class MessageDispatcherService
         ]);
 
         // Validar el archivo antes de subirlo
-        $this->validateMediaFile($file, 'image');
+        $this->validateMediaFile($file, $type_file);
 
         try {
             // Enviar la solicitud para subir el archivo
