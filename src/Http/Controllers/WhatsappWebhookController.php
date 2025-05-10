@@ -150,7 +150,7 @@ class WhatsappWebhookController extends Controller
         }
 
         $messageRecord = Message::create([
-            'whatsapp_phone_id' => $whatsappPhone->whatsapp_phone_id,
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
             'contact_id' => $contact->contact_id,
             'wa_id' => $message['id'],
             'conversation_id' => null, // Esto se puede actualizar más tarde si es necesario
@@ -207,7 +207,7 @@ class WhatsappWebhookController extends Controller
 
         // Crear el registro del mensaje en la base de datos
         $messageRecord = Message::create([
-            'whatsapp_phone_id' => $whatsappPhone->whatsapp_phone_id,
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
             'contact_id' => $contact->contact_id,
             'wa_id' => $message['id'],
             'conversation_id' => null, // Esto se puede actualizar más tarde si es necesario
