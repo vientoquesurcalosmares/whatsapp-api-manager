@@ -92,7 +92,7 @@ Si usas un modelo User personalizado:
 
    Si estás utilizando un modelo User personalizado, asegúrate de especificarlo en tu archivo `.env`:
 
-   ```env
+   ```bash
    WHATSAPP_USER_MODEL=App\Models\YourCustomUserModel
    ```
 
@@ -229,8 +229,7 @@ Registra una cuenta de negocios en WhatsApp Business API.
 Se hace la peticion a la API de whatsapp, se obtienen los datos de la cuenta y se almacenan en la base de datos. Este metodo obtiene los datos de la cuenta, los telefonos de whatsapp asociados a la cuenta y el perfil de cada numero de telefono.
 - Se usa para Obtener los datos desde la API y alojarlos en la base de datos.
 
-```bash
-<?php
+```php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
 $account = Whatsapp::account()->register([
@@ -244,8 +243,7 @@ $account = Whatsapp::account()->register([
 Obtén información detallada sobre un número de teléfono registrado.
 Se hace la peticion a la API de whatsapp para obtener detalles del numero de whatsapp y se almacenan en la base de datos, si el numero ya existe actualiza la informacion.
 
-```bash
-<?php
+```php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
 $phoneDetails = Whatsapp::phone()->getPhoneNumberDetails('564565346546');
@@ -256,8 +254,7 @@ $phoneDetails = Whatsapp::phone()->getPhoneNumberDetails('564565346546');
 Obtén información sobre una cuenta de negocios específica.
 Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuenta en especifico, se almacenan los datos en la base de datos.
 
-```bash
-<?php
+```php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
 $account = Whatsapp::phone()->getBusinessAccount('356456456456');
@@ -267,8 +264,7 @@ $account = Whatsapp::phone()->getBusinessAccount('356456456456');
 4. Enviar Mensajes de Texto
 Envía mensajes de texto simples.
 
-```bash
-<?php
+```php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
 $message = Whatsapp::message()->sendTextMessage(
@@ -283,8 +279,7 @@ $message = Whatsapp::message()->sendTextMessage(
 Enviar Mensajes de Texto con Enlaces
 Envía mensajes de texto simples.
 
-```bash
-<?php
+```php
 $message = Whatsapp::message()->sendTextMessage(
     '01JTKF55PCNNWTNEKCGMJAZV93',
     '57',
@@ -298,8 +293,7 @@ $message = Whatsapp::message()->sendTextMessage(
 5. Enviar Respuestas a Mensajes
 Responde a un mensaje existente.
 
-```bash
-<?php
+```php
 $message = Whatsapp::message()->sendReplyTextMessage(
     '01JTKF55PCNNWTNEKCGMJAZV93',
     '57',
@@ -314,8 +308,7 @@ $message = Whatsapp::message()->sendReplyTextMessage(
 6. Reacciones a Mensajes
 Envía una reacción a un mensaje existente.
 
-```bash
-<?php
+```php
 $message = Whatsapp::message()->sendReplyReactionMessage(
     '01JTKF55PCNNWTNEKCGMJAZV93',
     '57',
@@ -330,8 +323,7 @@ $message = Whatsapp::message()->sendReplyReactionMessage(
 7. Enviar Mensajes Multimedia
 Enviar Imágenes
 
-```bash
-<?php
+```php
 $filePath = storage_path('app/public/laravel-whatsapp-manager.png');
 $file = new \SplFileInfo($filePath);
 
@@ -345,8 +337,7 @@ $message = Whatsapp::message()->sendImageMessage(
 
 Enviar Imágenes por URL
 
-```bash
-<?php
+```php
 $message = Whatsapp::message()->sendImageMessageByUrl(
     '01JTKF55PCNNWTNEKCGMJAZV93',
     '57',
@@ -357,8 +348,7 @@ $message = Whatsapp::message()->sendImageMessageByUrl(
 
 Enviar Audio
 
-```bash
-<?php
+```php
 $filePath = storage_path('app/public/audio.ogg');
 $file = new \SplFileInfo($filePath);
 
@@ -372,8 +362,7 @@ $message = Whatsapp::message()->sendAudioMessage(
 
 Enviar Audio por URL
 
-```bash
-<?php
+```php
 $message = Whatsapp::message()->sendAudioMessageByUrl(
     '01JTKF55PCNNWTNEKCGMJAZV93',
     '57',
@@ -384,8 +373,7 @@ $message = Whatsapp::message()->sendAudioMessageByUrl(
 
 Enviar Documentos
 
-```bash
-<?php
+```php
 $filePath = storage_path('app/public/document.pdf');
 $file = new \SplFileInfo($filePath);
 
@@ -399,8 +387,7 @@ $message = Whatsapp::message()->sendDocumentMessage(
 
 Enviar Documentos por URL
 
-```bash
-<?php
+```php
 $message = Whatsapp::message()->sendDocumentMessageByUrl(
     '01JTKF55PCNNWTNEKCGMJAZV93',
     '57',
@@ -412,8 +399,7 @@ $message = Whatsapp::message()->sendDocumentMessageByUrl(
 8. Enviar Mensajes de Ubicación
 Envía un mensaje con coordenadas de ubicación.
 
-```bash
-<?php
+```php
 $message = Whatsapp::message()->sendLocationMessage(
     '01JTKF55PCNNWTNEKCGMJAZV93',
     '57',
@@ -430,8 +416,7 @@ $message = Whatsapp::message()->sendLocationMessage(
 Se obtienen todas las plantillas de una cuenta de whatsapp y se almacenan en la base de datos.
 Se hace la peticion a la API de whatsapp para obtener todas las plantillas que estan asociadas a la cuenta de whatsapp.
 
-```bash
-<?php
+```php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
@@ -445,8 +430,7 @@ Whatsapp::template()->getTemplates($account);
 - Obtener una plantilla por el nombre.
   Se hace la peticion a la API de whatsapp para obtener una plantilla por el nombre y se almacena en la base de datos.
 
-   ```bash
-   <?php
+   ```php
    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
@@ -461,8 +445,7 @@ Whatsapp::template()->getTemplates($account);
 - Obtener una plantilla por el ID.
   Se hace la peticion a la API de whatsapp para obtener una plantilla por el ID y se almacena en la base de datos.
 
-   ```bash
-   <?php
+   ```php
    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
@@ -476,8 +459,7 @@ Whatsapp::template()->getTemplates($account);
 - Eliminar plantilla de la API y de la base de datos al mismo tiempo.
   Se hace la peticion a la API de whatsapp para obtener una plantilla por el ID y se almacena en la base de datos.
 
-   ```bash
-   <?php
+   ```php
    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
