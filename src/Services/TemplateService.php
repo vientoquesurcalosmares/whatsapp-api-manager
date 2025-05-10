@@ -2,6 +2,7 @@
 
 namespace ScriptDevelop\WhatsappManager\Services;
 
+use InvalidArgumentException;
 use ScriptDevelop\WhatsappManager\Models\Template;
 use ScriptDevelop\WhatsappManager\Models\TemplateComponent;
 use ScriptDevelop\WhatsappManager\Models\TemplateCategory;
@@ -73,6 +74,10 @@ class TemplateService
 
     public function getTemplateById(WhatsappBusinessAccount $account, string $templateId): Template
     {
+        if (empty($templateId)) {
+            throw new InvalidArgumentException('El ID de la plantilla es obligatorio.');
+        }
+
         $endpoint = Endpoints::build(Endpoints::GET_TEMPLATE, [
             'template_id' => $templateId,
         ]);
@@ -165,6 +170,24 @@ class TemplateService
             ]);
             throw $e;
         }
+    }
+
+    public function createTransactionalTemplate(WhatsappBusinessAccount $account): TemplateBuilder
+    {
+        return (new TemplateBuilder($this->apiClient, $account))
+            ->setCategory('UTILITY'); // Categoría específica para plantillas transaccionales
+    }
+
+    public function createMarketingTemplate(WhatsappBusinessAccount $account): TemplateBuilder
+    {
+        return (new TemplateBuilder($this->apiClient, $account))
+            ->setCategory('MARKETING'); // Categoría específica para plantillas de marketing
+    }
+
+    public function createAuthenticationTemplate(WhatsappBusinessAccount $account): TemplateBuilder
+    {
+        return (new TemplateBuilder($this->apiClient, $account))
+            ->setCategory('AUTHENTICATION'); // Categoría específica para plantillas de autenticación
     }
 
     public function deleteTemplateById(WhatsappBusinessAccount $account, string $templateId, bool $hardDelete = false): bool
@@ -349,31 +372,39 @@ class TemplateService
             'component_count' => count($components),
         ]);
 
-        foreach ($components as $componentData) {
-            $type = strtolower($componentData['type']); // Convertir a minúsculas
-            if ($type === 'buttons') {
-                $type = 'button'; // Normalizar a singular
-            }
+        try {
+            foreach ($components as $componentData) {
+                $type = strtolower($componentData['type']);
+                if ($type === 'buttons') {
+                    $type = 'button';
+                }
 
-            Log::channel('whatsapp')->info('Procesando componente.', [
-                'component_type' => $type,
-            ]);
+                Log::channel('whatsapp')->info('Procesando componente.', [
+                    'component_type' => $type,
+                ]);
+    
+                TemplateComponent::updateOrCreate(
+                    [
+                        'template_id' => $template->template_id,
+                        'type' => $type,
+                    ],
+                    [
+                        'content' => $this->getComponentContent($componentData),
+                        'parameters' => $componentData['parameters'] ?? [],
+                    ]
+                );
 
-            TemplateComponent::updateOrCreate(
-                [
+                Log::channel('whatsapp')->info('Componentes sincronizados.', [
                     'template_id' => $template->template_id,
-                    'type' => $type,
-                ],
-                [
-                    'content' => $this->getComponentContent($componentData),
-                    'parameters' => $componentData['parameters'] ?? [],
-                ]
-            );
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error al sincronizar componentes.', [
+                'template_id' => $template->template_id,
+                'error_message' => $e->getMessage(),
+            ]);
+            throw $e;
         }
-
-        Log::channel('whatsapp')->info('Componentes sincronizados.', [
-            'template_id' => $template->template_id,
-        ]);
     }
 
     /**
@@ -403,6 +434,25 @@ class TemplateService
                 ];
             default:
                 return null;
+        }
+    }
+
+    protected function validateTemplateData(array $templateData): void
+    {
+        if (empty($templateData['name'])) {
+            throw new InvalidArgumentException('El nombre de la plantilla es obligatorio.');
+        }
+
+        if (empty($templateData['language'])) {
+            throw new InvalidArgumentException('El idioma de la plantilla es obligatorio.');
+        }
+
+        if (empty($templateData['category'])) {
+            throw new InvalidArgumentException('La categoría de la plantilla es obligatoria.');
+        }
+
+        if (empty($templateData['components']) || !is_array($templateData['components'])) {
+            throw new InvalidArgumentException('Los componentes de la plantilla son obligatorios.');
         }
     }
 }
