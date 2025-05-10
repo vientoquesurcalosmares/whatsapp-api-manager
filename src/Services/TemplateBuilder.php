@@ -68,6 +68,8 @@ class TemplateBuilder
             throw new InvalidArgumentException('El texto del HEADER no puede exceder los 60 caracteres.');
         }
 
+        $this->validateParameters($content, $example, 'HEADER');
+
         $formattedExample = null;
         if ($example !== null) {
             $formattedExample = [
@@ -92,8 +94,10 @@ class TemplateBuilder
         }
 
         if (strlen($text) > 1024) {
-            throw new InvalidArgumentException('El texto del BODY no puede exceder los 1024 caracteres.');
+            throw new InvalidArgumentException('El texto del BODY no puede exceder los 1028 caracteres.');
         }
+
+        $this->validateParameters($text, $example, 'BODY');
 
         $formattedExample = null;
         if ($example !== null) {
@@ -120,6 +124,8 @@ class TemplateBuilder
         if (strlen($text) > 60) {
             throw new InvalidArgumentException('El texto del FOOTER no puede exceder los 60 caracteres.');
         }
+
+        $this->validateParameters($text, null, 'FOOTER');
 
         $this->templateData['components'][] = [
             'type' => 'FOOTER',
@@ -187,6 +193,46 @@ class TemplateBuilder
             }
         }
         return false;
+    }
+
+    protected function validateParameters(string $text, ?array $example, string $type): void
+    {
+        // Extraer los parámetros del texto ({{1}}, {{num_order}}, etc.)
+        preg_match_all('/{{(.*?)}}/', $text, $matches);
+        $placeholders = $matches[1] ?? [];
+
+        if ($type === 'HEADER') {
+            // Validar que el HEADER tenga exactamente un parámetro
+            if (count($placeholders) > 1) {
+                throw new InvalidArgumentException('El HEADER solo puede tener un único parámetro.');
+            }
+
+            if ($example === null || count($placeholders) !== count($example)) {
+                throw new InvalidArgumentException('Los parámetros en el HEADER no coinciden con los ejemplos proporcionados.');
+            }
+        }
+
+        if ($type === 'BODY') {
+            // Validar que el BODY pueda tener múltiples parámetros
+            if ($example === null || count($placeholders) !== count($example)) {
+                throw new InvalidArgumentException('Los parámetros en el BODY no coinciden con los ejemplos proporcionados.');
+            }
+        }
+
+        if ($type === 'FOOTER') {
+            // Validar que el FOOTER no tenga parámetros
+            if (!empty($placeholders)) {
+                throw new InvalidArgumentException('El FOOTER no puede tener parámetros.');
+            }
+        }
+
+        // Validar secuencia estricta para parámetros numéricos
+        if (ctype_digit(implode('', $placeholders))) {
+            $expectedSequence = range(1, count($placeholders));
+            if ($placeholders !== array_map('strval', $expectedSequence)) {
+                throw new InvalidArgumentException('Los parámetros numéricos deben seguir una secuencia estricta ({{1}}, {{2}}, etc.).');
+            }
+        }
     }
 
     public function build(): array
