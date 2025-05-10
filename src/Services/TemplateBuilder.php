@@ -68,11 +68,18 @@ class TemplateBuilder
             throw new InvalidArgumentException('El texto del HEADER no puede exceder los 60 caracteres.');
         }
 
+        $formattedExample = null;
+        if ($example !== null) {
+            $formattedExample = [
+                'header_text' => $example
+            ];
+        }
+
         $this->templateData['components'][] = [
             'type' => 'HEADER',
             'format' => $format,
             'text' => $content,
-            'example' => $example,
+            'example' => $formattedExample,
         ];
 
         return $this;
@@ -81,17 +88,24 @@ class TemplateBuilder
     public function addBody(string $text, ?array $example = null): self
     {
         if ($this->componentExists('BODY')) {
-            throw new InvalidArgumentException('Solo se permite un componente HEADER por plantilla.');
+            throw new InvalidArgumentException('Solo se permite un componente BODY por plantilla.');
         }
 
         if (strlen($text) > 1024) {
             throw new InvalidArgumentException('El texto del BODY no puede exceder los 1024 caracteres.');
         }
 
+        $formattedExample = null;
+        if ($example !== null) {
+            $formattedExample = [
+                'body_text' => $example
+            ];
+        }
+
         $this->templateData['components'][] = [
             'type' => 'BODY',
             'text' => $text,
-            'example' => $example,
+            'example' => $formattedExample,
         ];
 
         return $this;
@@ -100,7 +114,7 @@ class TemplateBuilder
     public function addFooter(string $text): self
     {
         if ($this->componentExists('FOOTER')) {
-            throw new InvalidArgumentException('Solo se permite un componente HEADER por plantilla.');
+            throw new InvalidArgumentException('Solo se permite un componente FOOTER por plantilla.');
         }
 
         if (strlen($text) > 60) {
@@ -120,7 +134,7 @@ class TemplateBuilder
         $existingButtons = array_filter($this->templateData['components'], fn($c) => $c['type'] === 'BUTTONS');
         $buttonCount = count($existingButtons);
 
-        if ($this->buttonCount >= 10) {
+        if ($this->buttonCount >= 3) {
             throw new InvalidArgumentException('No se pueden agregar más de 10 botones a una plantilla.');
         }
 
@@ -154,7 +168,15 @@ class TemplateBuilder
             'buttons' => [$button],
         ];
 
-        $this->buttonCount++;
+        if (empty($existingButtons)) {
+            $this->templateData['components'][] = [
+                'type' => 'BUTTONS',
+                'buttons' => [$button],
+            ];
+        } else {
+            $this->templateData['components'][array_key_first($existingButtons)]['buttons'][] = $button;
+        }
+        
         return $this;
     }
 
