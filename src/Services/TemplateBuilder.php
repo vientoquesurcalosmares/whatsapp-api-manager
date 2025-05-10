@@ -131,13 +131,12 @@ class TemplateBuilder
 
     public function addButton(string $type, string $text, ?string $urlOrPhone = null): self
     {
-        $existingButtons = array_filter($this->templateData['components'], fn($c) => $c['type'] === 'BUTTONS');
-        $buttonCount = count($existingButtons);
-
+        // Validar el número máximo de botones
         if ($this->buttonCount >= 3) {
-            throw new InvalidArgumentException('No se pueden agregar más de 10 botones a una plantilla.');
+            throw new InvalidArgumentException('No se pueden agregar más de 3 botones a una plantilla.');
         }
 
+        // Validar el texto y otros parámetros según el tipo de botón
         if ($type === 'QUICK_REPLY' && strlen($text) > 25) {
             throw new InvalidArgumentException('El texto del botón QUICK_REPLY no puede exceder los 25 caracteres.');
         }
@@ -150,10 +149,7 @@ class TemplateBuilder
             throw new InvalidArgumentException('El número de teléfono no puede exceder los 20 caracteres.');
         }
 
-        if ($buttonCount >= 3) {
-            throw new InvalidArgumentException('No se pueden agregar más de 3 botones a una plantilla.');
-        }
-
+        // Crear el botón
         $button = [
             'type' => $type,
             'text' => $text,
@@ -163,20 +159,23 @@ class TemplateBuilder
             $button[strtolower($type)] = $urlOrPhone;
         }
 
-        $this->templateData['components'][] = [
-            'type' => 'BUTTONS',
-            'buttons' => [$button],
-        ];
+        // Buscar el componente BUTTONS existente
+        $existingButtons = $this->getComponentsByType('BUTTONS');
 
         if (empty($existingButtons)) {
+            // Si no existe un componente BUTTONS, crearlo
             $this->templateData['components'][] = [
                 'type' => 'BUTTONS',
                 'buttons' => [$button],
             ];
         } else {
-            $this->templateData['components'][array_key_first($existingButtons)]['buttons'][] = $button;
+            // Si ya existe, agregar el botón al componente existente
+            $index = array_search('BUTTONS', array_column($this->templateData['components'], 'type'));
+            $this->templateData['components'][$index]['buttons'][] = $button;
         }
-        
+
+        $this->buttonCount++;
+
         return $this;
     }
 
