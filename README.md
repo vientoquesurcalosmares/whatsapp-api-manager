@@ -433,6 +433,7 @@ Se hace la peticion a la API de whatsapp para obtener todas las plantillas que e
 ```bash
 <?php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
 // Obtener una instancia de WhatsApp Business Account
 $account = WhatsappBusinessAccount::find($accountId);
@@ -447,6 +448,7 @@ Whatsapp::template()->getTemplates($account);
    ```bash
    <?php
    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+   use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
    // Obtener una instancia de WhatsApp Business Account
    $account = WhatsappBusinessAccount::find($accountId);
@@ -462,6 +464,7 @@ Whatsapp::template()->getTemplates($account);
    ```bash
    <?php
    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+   use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
    // Obtener una instancia de WhatsApp Business Account
    $account = WhatsappBusinessAccount::find($accountId);
@@ -476,6 +479,7 @@ Whatsapp::template()->getTemplates($account);
    ```bash
    <?php
    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+   use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
    // Obtener una instancia de WhatsApp Business Account
    $account = WhatsappBusinessAccount::find($accountId);
@@ -495,6 +499,58 @@ Whatsapp::template()->getTemplates($account);
    // Eliminar plantilla por su Nombre
    $template = Whatsapp::template()->deleteTemplateByName($account, 'order_confirmation', true);
    ```
+
+#### Crear Plantillas Transaccionales
+
+Las plantillas transaccionales son ideales para notificaciones como confirmaciones de pedidos, actualizaciones de envío, etc.
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+
+// Obtener la cuenta empresarial
+$account = WhatsappBusinessAccount::first();
+
+// Crear una plantilla transaccional
+$template = Whatsapp::template()
+    ->createTransactionalTemplate($account)
+    ->setName('order_confirmation_3')
+    ->setLanguage('en_US')
+    ->addHeader('TEXT', 'Order Confirmation')
+    ->addBody('Your order {{1}} has been confirmed.', ['12345'])
+    ->addFooter('Thank you for shopping with us!')
+    ->addButton('QUICK_REPLY', 'Track Order')
+    ->addButton('QUICK_REPLY', 'Contact Support')
+    ->save();
+```
+
+#### Crear Plantillas de Marketing
+
+Las plantillas de marketing son útiles para promociones, descuentos y campañas masivas.
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+
+// Obtener la cuenta empresarial
+$account = WhatsappBusinessAccount::first();
+
+// Crear una plantilla de marketing
+$template = Whatsapp::template()
+    ->createMarketingTemplate($account)
+    ->setName('personal_promotion_text_only')
+    ->setLanguage('en')
+    ->addHeader('TEXT', 'Our {{1}} is on!', ['Summer Sale'])
+    ->addBody(
+        'Shop now through {{1}} and use code {{2}} to get {{3}} off of all merchandise.',
+        ['the end of August', '25OFF', '25%']
+    )
+    ->addFooter('Use the buttons below to manage your marketing subscriptions')
+    ->addButton('QUICK_REPLY', 'Unsubscribe from Promos')
+    ->addButton('QUICK_REPLY', 'Unsubscribe from All')
+    ->save();
+```
+
 
 
 🤝 Contribuir
