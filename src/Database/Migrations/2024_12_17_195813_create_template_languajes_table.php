@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('languages', function (Blueprint $table) {
+        Schema::create('whatsapp_template_languages', function (Blueprint $table) {
             // ID personalizado (ej: "en_US")
             $table->string('id', 10)->primary();
             
