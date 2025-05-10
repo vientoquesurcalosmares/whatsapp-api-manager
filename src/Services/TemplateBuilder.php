@@ -56,6 +56,10 @@ class TemplateBuilder
 
     public function addHeader(string $format, string $content, ?array $example = null): self
     {
+        Log::channel('whatsapp')->info('Estado actual de los componentes antes de agregar HEADER.', [
+            'components' => $this->templateData['components'],
+        ]);
+        
         if ($this->componentExists('HEADER')) {
             throw new InvalidArgumentException('Solo se permite un componente HEADER por plantilla.');
         }
@@ -229,7 +233,7 @@ class TemplateBuilder
                 'response' => $response,
             ]);
 
-            return Template::create([
+            $template = Template::create([
                 'whatsapp_business_id' => $this->account->whatsapp_business_id,
                 'wa_template_id' => $response['id'] ?? null,
                 'name' => $this->templateData['name'],
@@ -238,7 +242,12 @@ class TemplateBuilder
                 'status' => 'PENDING',
                 'json' => json_encode($this->templateData),
             ]);
-
+    
+            // Reiniciar el estado del builder
+            $this->templateData = ['components' => []];
+            $this->buttonCount = 0;
+    
+            return $template;
         } catch (\Exception $e) {
             Log::channel('whatsapp')->error('Error al guardar la plantilla.', [
                 'error_message' => $e->getMessage(),
@@ -276,7 +285,7 @@ class TemplateBuilder
         if (empty($categoryName)) {
             throw new InvalidArgumentException('El nombre de la categoría es obligatorio.');
         }
-        
+
         $category = TemplateCategory::firstOrCreate(
             ['name' => $categoryName],
             ['description' => ucfirst($categoryName)]
