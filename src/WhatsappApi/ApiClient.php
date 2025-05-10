@@ -43,7 +43,7 @@ class ApiClient
             $options = [
                 'headers' => array_merge([
                     'Accept' => 'application/json',
-                ], $headers), // Combinar encabezados predeterminados con los proporcionados
+                ], $headers),
             ];
 
             Log::channel('whatsapp')->info('Enviando solicitud a la API de WhatsApp.', [
@@ -67,8 +67,25 @@ class ApiClient
             // Enviar petición
             $response = $this->client->request($method, $url, $options);
             
-            // Decodificar respuesta
-            return json_decode($response->getBody(), true) ?: [];
+            // Verificar el código de estado HTTP
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 300) {
+                // Respuesta exitosa
+                Log::channel('whatsapp')->info('Respuesta exitosa de la API.', [
+                    'status_code' => $statusCode,
+                    'response_body' => $response->getBody()->getContents(),
+                ]);
+
+                return json_decode($response->getBody(), true) ?: [];
+            }
+
+            // Manejar códigos de estado no exitosos
+            Log::channel('whatsapp')->warning('ERROR sta no exitosa de la API.', [
+                'status_code' => $statusCode,
+                'response_body' => $response->getBody()->getContents(),
+            ]);
+
+            throw new ApiException('Respuesta no exitosa de la API.', $statusCode);
 
         } catch (GuzzleException $e) {
             Log::channel('whatsapp')->error('API Error', [
