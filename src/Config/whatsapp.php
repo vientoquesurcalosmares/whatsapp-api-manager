@@ -76,11 +76,11 @@ return [
     'media' => [
         // Directorios de almacenamiento para cada tipo de archivo
         'storage_path' => [
-            'images' => storage_path('app/public/media/images'),
-            'audio' => storage_path('app/public/media/audio'),
-            'documents' => storage_path('app/public/media/documents'),
-            'videos' => storage_path('app/public/media/videos'),
-            'stickers' => storage_path('app/public/media/stickers'),
+            'images' => storage_path('app/public/whatsapp/images'),
+            'audio' => storage_path('app/public/whatsapp/audio'),
+            'documents' => storage_path('app/public/whatsapp/documents'),
+            'videos' => storage_path('app/public/whatsapp/videos'),
+            'stickers' => storage_path('app/public/whatsapp/stickers'),
         ],
         // Tamaño máximo permitido para cada tipo de archivo (en bytes)
         'max_file_size' => [
