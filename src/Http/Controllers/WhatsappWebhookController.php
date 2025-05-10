@@ -239,9 +239,11 @@ class WhatsappWebhookController extends Controller
 
     private function getMediaUrl(string $mediaId, WhatsappPhoneNumber $whatsappPhone): ?string
     {
+        $url = env('WHATSAPP_API_URL') . env('WHATSAPP_API_VERSION') . "/$mediaId?phone_number_id=" . $whatsappPhone->api_phone_number_id;
+
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $whatsappPhone->api_token,
-        ])->get(env('WHATSAPP_API_URL') . "/{$mediaId}");
+            'Authorization' => 'Bearer ' . $whatsappPhone->businessAccount->api_token,
+        ])->get(env($url));
 
         return $response->json()['url'] ?? null;
     }
@@ -249,7 +251,7 @@ class WhatsappWebhookController extends Controller
     private function downloadMedia(string $url, WhatsappPhoneNumber $whatsappPhone): ?string
     {
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $whatsappPhone->api_token,
+            'Authorization' => 'Bearer ' . $whatsappPhone->businessAccount->api_token,
         ])->get($url);
 
         return $response->successful() ? $response->body() : null;
