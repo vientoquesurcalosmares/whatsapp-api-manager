@@ -56,15 +56,11 @@ class TemplateBuilder
 
     public function addHeader(string $format, string $content, ?array $example = null): self
     {
-        Log::channel('whatsapp')->info('Estado actual de los componentes antes de agregar HEADER.', [
+        Log::info('Estado actual de los componentes antes de agregar HEADER.', [
             'components' => $this->templateData['components'],
         ]);
-        
-        if ($this->componentExists('HEADER')) {
-            throw new InvalidArgumentException('Solo se permite un componente HEADER por plantilla.');
-        }
 
-        if (count($this->getComponentsByType('HEADER')) > 0) {
+        if ($this->componentExists('HEADER')) {
             throw new InvalidArgumentException('Solo se permite un componente HEADER por plantilla.');
         }
 
@@ -215,7 +211,7 @@ class TemplateBuilder
                 'Content-Type' => 'application/json',
             ];
 
-            Log::channel('whatsapp')->info('Enviando plantilla a la API de WhatsApp.', [
+            Log::info('Enviando plantilla a la API de WhatsApp.', [
                 'endpoint' => $endpoint,
                 'template_data' => $this->templateData,
             ]);
@@ -229,7 +225,7 @@ class TemplateBuilder
                 $headers
             );
 
-            Log::channel('whatsapp')->info('Respuesta recibida de la API al crear plantilla.', [
+            Log::info('Respuesta recibida de la API al crear plantilla.', [
                 'response' => $response,
             ]);
 
@@ -249,7 +245,7 @@ class TemplateBuilder
     
             return $template;
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error al guardar la plantilla.', [
+            Log::error('Error al guardar la plantilla.', [
                 'error_message' => $e->getMessage(),
             ]);
             throw $e;
