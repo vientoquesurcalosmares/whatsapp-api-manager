@@ -226,6 +226,8 @@ whatsapp-manager/
 
 1. Registro de Cuentas de Negocios
 Registra una cuenta de negocios en WhatsApp Business API.
+Se hace la peticion a la API de whatsapp, se obtienen los datos de la cuenta y se almacenan en la base de datos. Este metodo obtiene los datos de la cuenta, los telefonos de whatsapp asociados a la cuenta y el perfil de cada numero de telefono.
+- Se usa para Obtener los datos desde la API y alojarlos en la base de datos.
 
 ```bash
 <?php
@@ -240,6 +242,7 @@ $account = Whatsapp::account()->register([
 
 2. Obtener Detalles de Números de Teléfono
 Obtén información detallada sobre un número de teléfono registrado.
+Se hace la peticion a la API de whatsapp para obtener detalles del numero de whatsapp y se almacenan en la base de datos, si el numero ya existe actualiza la informacion.
 
 ```bash
 <?php
@@ -251,6 +254,7 @@ $phoneDetails = Whatsapp::phone()->getPhoneNumberDetails('564565346546');
 
 3. Obtener Cuentas de Negocios
 Obtén información sobre una cuenta de negocios específica.
+Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuenta en especifico, se almacenan los datos en la base de datos.
 
 ```bash
 <?php
@@ -410,7 +414,6 @@ Envía un mensaje con coordenadas de ubicación.
 
 ```bash
 <?php
-<?php
 $message = Whatsapp::message()->sendLocationMessage(
     '01JTKF55PCNNWTNEKCGMJAZV93',
     '57',
@@ -423,11 +426,75 @@ $message = Whatsapp::message()->sendLocationMessage(
 ```
 
 
+9. Obtener todas las plantillas de una cuenta de whatsapp
+Se obtienen todas las plantillas de una cuenta de whatsapp y se almacenan en la base de datos.
+Se hace la peticion a la API de whatsapp para obtener todas las plantillas que estan asociadas a la cuenta de whatsapp.
+
+```bash
+<?php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+// Obtener una instancia de WhatsApp Business Account
+$account = WhatsappBusinessAccount::find($accountId);
+
+// Obtener todas las plantillas de la cuenta
+Whatsapp::template()->getTemplates($account);
+```
+
+- Obtener una plantilla por el nombre.
+  Se hace la peticion a la API de whatsapp para obtener una plantilla por el nombre y se almacena en la base de datos.
+
+   ```bash
+   <?php
+   use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+   // Obtener una instancia de WhatsApp Business Account
+   $account = WhatsappBusinessAccount::find($accountId);
+
+   // Obtener plantilla por su nombre
+   $template = Whatsapp::template()->getTemplateByName($account, 'order_confirmation');
+   ```
 
 
+- Obtener una plantilla por el ID.
+  Se hace la peticion a la API de whatsapp para obtener una plantilla por el ID y se almacena en la base de datos.
+
+   ```bash
+   <?php
+   use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+   // Obtener una instancia de WhatsApp Business Account
+   $account = WhatsappBusinessAccount::find($accountId);
+
+   // Obtener plantilla por su ID
+   $template = Whatsapp::template()->getTemplateById($account, '559947779843204');
+   ```
+
+- Eliminar plantilla de la API y de la base de datos al mismo tiempo.
+  Se hace la peticion a la API de whatsapp para obtener una plantilla por el ID y se almacena en la base de datos.
+
+   ```bash
+   <?php
+   use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+   // Obtener una instancia de WhatsApp Business Account
+   $account = WhatsappBusinessAccount::find($accountId);
+
+   // Soft delete
+   // Eliminar plantilla por su ID
+   $template = Whatsapp::template()->gdeleteTemplateById($account, $templateId);
+
+   // Eliminar plantilla por su Nombre
+   $template = Whatsapp::template()->deleteTemplateByName($account, 'order_confirmation');
 
 
+   // Hard delete
+   // Eliminar plantilla por su ID
+   $template = Whatsapp::template()->gdeleteTemplateById($account, $templateId, true);
 
+   // Eliminar plantilla por su Nombre
+   $template = Whatsapp::template()->deleteTemplateByName($account, 'order_confirmation', true);
+   ```
 
 
 🤝 Contribuir
