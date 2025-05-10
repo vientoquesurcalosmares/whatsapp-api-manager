@@ -80,12 +80,8 @@ class TemplateBuilder
 
     public function addBody(string $text, ?array $example = null): self
     {
-        if ($this->componentExists('HEADER')) {
+        if ($this->componentExists('BODY')) {
             throw new InvalidArgumentException('Solo se permite un componente HEADER por plantilla.');
-        }
-
-        if (count($this->getComponentsByType('BODY')) > 0) {
-            throw new InvalidArgumentException('Solo se permite un componente BODY por plantilla.');
         }
 
         if (strlen($text) > 1024) {
@@ -103,12 +99,8 @@ class TemplateBuilder
 
     public function addFooter(string $text): self
     {
-        if ($this->componentExists('HEADER')) {
+        if ($this->componentExists('FOOTER')) {
             throw new InvalidArgumentException('Solo se permite un componente HEADER por plantilla.');
-        }
-
-        if (count($this->getComponentsByType('FOOTER')) > 0) {
-            throw new InvalidArgumentException('Solo se permite un componente FOOTER por plantilla.');
         }
 
         if (strlen($text) > 60) {
