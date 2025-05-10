@@ -94,7 +94,7 @@ class TemplateBuilder
         }
 
         if (strlen($text) > 1024) {
-            throw new InvalidArgumentException('El texto del BODY no puede exceder los 1028 caracteres.');
+            throw new InvalidArgumentException('El texto del BODY no puede exceder los 1024 caracteres.');
         }
 
         $this->validateParameters($text, $example, 'BODY');
@@ -102,7 +102,7 @@ class TemplateBuilder
         $formattedExample = null;
         if ($example !== null) {
             $formattedExample = [
-                'body_text' => $example
+                'body_text' => [$example]
             ];
         }
 
