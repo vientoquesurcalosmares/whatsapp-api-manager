@@ -202,19 +202,19 @@ class TemplateBuilder
         $placeholders = $matches[1] ?? [];
 
         if ($type === 'HEADER') {
-            // Validar que el HEADER tenga exactamente un parámetro
+            // Validar que el HEADER tenga exactamente un parámetro o ninguno
             if (count($placeholders) > 1) {
                 throw new InvalidArgumentException('El HEADER solo puede tener un único parámetro.');
             }
 
-            if ($example === null || count($placeholders) !== count($example)) {
+            if (!empty($placeholders) && ($example === null || count($placeholders) !== count($example))) {
                 throw new InvalidArgumentException('Los parámetros en el HEADER no coinciden con los ejemplos proporcionados.');
             }
         }
 
         if ($type === 'BODY') {
-            // Validar que el BODY pueda tener múltiples parámetros
-            if ($example === null || count($placeholders) !== count($example)) {
+            // Validar que el BODY pueda tener múltiples parámetros o ninguno
+            if (!empty($placeholders) && ($example === null || count($placeholders) !== count($example))) {
                 throw new InvalidArgumentException('Los parámetros en el BODY no coinciden con los ejemplos proporcionados.');
             }
         }
