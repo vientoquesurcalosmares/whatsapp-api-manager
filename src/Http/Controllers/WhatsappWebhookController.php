@@ -243,7 +243,7 @@ class WhatsappWebhookController extends Controller
 
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $whatsappPhone->businessAccount->api_token,
-        ])->get(env($url));
+        ])->get($url);
 
         return $response->json()['url'] ?? null;
     }
