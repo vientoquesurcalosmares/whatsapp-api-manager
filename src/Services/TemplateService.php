@@ -499,7 +499,7 @@ class TemplateService
         }
 
         $headers = [
-            'Authorization' => "Bearer {$account->api_token}",
+            'Authorization' => "OAuth {$account->api_token}",
             'file_offset' => '0',
             'Content-Type' => $mimeType,
         ];
