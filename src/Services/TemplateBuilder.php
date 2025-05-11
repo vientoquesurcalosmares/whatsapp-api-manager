@@ -171,36 +171,54 @@ class TemplateBuilder
         return $this;
     }
 
-    public function addButton(string $type, string $text, ?string $urlOrPhone = null): self
+    public function addButton(string $type, string $text, ?string $urlOrPhone = null, ?array $example = null): self
     {
         // Validar el número máximo de botones
-        if ($this->buttonCount >= 3) {
-            throw new InvalidArgumentException('No se pueden agregar más de 3 botones a una plantilla.');
+        if ($this->buttonCount >= 10) {
+            throw new InvalidArgumentException('No se pueden agregar más de 10 botones a una plantilla.');
         }
 
-        // Validar el texto y otros parámetros según el tipo de botón
-        if ($type === 'QUICK_REPLY' && strlen($text) > 25) {
-            throw new InvalidArgumentException('El texto del botón QUICK_REPLY no puede exceder los 25 caracteres.');
+        // Validar el texto del botón
+        if (strlen($text) > 25) {
+            throw new InvalidArgumentException('El texto del botón no puede exceder los 25 caracteres.');
         }
 
-        if ($type === 'URL' && strlen($urlOrPhone) > 2000) {
-            throw new InvalidArgumentException('La URL del botón no puede exceder los 2000 caracteres.');
-        }
-
-        if ($type === 'PHONE_NUMBER') {
-            if (!preg_match('/^\+?[1-9]\d{1,14}$/', $urlOrPhone)) {
-                throw new InvalidArgumentException('El número de teléfono no es válido. Debe estar en formato internacional, como +1234567890.');
-            }
-        }
-
-        // Crear el botón
+        // Crear el botón base
         $button = [
             'type' => $type,
             'text' => $text,
         ];
 
-        if ($type === 'URL' || $type === 'PHONE_NUMBER') {
-            $button[strtolower($type)] = $urlOrPhone;
+        // Validar y agregar propiedades específicas según el tipo de botón
+        switch ($type) {
+            case 'PHONE_NUMBER':
+                if (!preg_match('/^\+?[1-9]\d{1,14}$/', $urlOrPhone)) {
+                    throw new InvalidArgumentException('El número de teléfono no es válido. Debe estar en formato internacional, como +1234567890.');
+                }
+                $button['phone_number'] = $urlOrPhone;
+                break;
+
+            case 'URL':
+                if (strlen($urlOrPhone) > 2000) {
+                    throw new InvalidArgumentException('La URL no puede exceder los 2000 caracteres.');
+                }
+                $button['url'] = $urlOrPhone;
+
+                // Validar y agregar el campo `example` si la URL contiene un parámetro
+                if (strpos($urlOrPhone, '{{1}}') !== false) {
+                    if (empty($example) || count($example) !== 1) {
+                        throw new InvalidArgumentException('El campo "example" es obligatorio y debe contener exactamente un valor cuando la URL incluye un parámetro.');
+                    }
+                    $button['example'] = $example;
+                }
+                break;
+
+            case 'QUICK_REPLY':
+                // No se requiere validación adicional
+                break;
+
+            default:
+                throw new InvalidArgumentException('Tipo de botón no válido. Debe ser uno de: PHONE_NUMBER, URL, QUICK_REPLY.');
         }
 
         // Buscar el componente BUTTONS existente
