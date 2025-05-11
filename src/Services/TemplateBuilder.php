@@ -84,20 +84,18 @@ class TemplateBuilder
         }
 
         if (in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
-            // Subir el archivo multimedia
-            $filePath = $content; // Ruta del archivo local
+            $filePath = $content;
             $fileSize = filesize($filePath);
             $mimeType = mime_content_type($filePath);
-
+        
             $sessionId = $this->templateService->createUploadSession($this->account);
             $mediaId = $this->templateService->uploadMedia($this->account, $sessionId, $filePath, $mimeType);
-
+        
             if (!mb_check_encoding($mediaId, 'UTF-8')) {
                 Log::warning('Corrigiendo codificación de mediaId no UTF-8.', ['mediaId' => $mediaId]);
                 $mediaId = mb_convert_encoding($mediaId, 'UTF-8', 'auto');
             }
-
-            // Asignar el ID del archivo subido al campo `example`
+        
             $example = [
                 'header_handle' => [$mediaId],
             ];
@@ -148,7 +146,7 @@ class TemplateBuilder
                     $value = mb_convert_encoding($value, 'UTF-8', 'auto');
                 }
             }
-            
+
             $formattedExample = [
                 'body_text' => [$example]
             ];
@@ -331,9 +329,13 @@ class TemplateBuilder
 
             // Validar que todos los datos estén en UTF-8
             array_walk_recursive($this->templateData, function (&$value) {
-                if (is_string($value) && !mb_check_encoding($value, 'UTF-8')) {
-                    Log::warning('Corrigiendo codificación de un valor no UTF-8.', ['value' => $value]);
-                    $value = mb_convert_encoding($value, 'UTF-8', 'auto');
+                if (is_string($value)) {
+                    if (!mb_check_encoding($value, 'UTF-8')) {
+                        Log::warning('Corrigiendo codificación de un valor no UTF-8.', ['value' => $value]);
+                        $value = mb_convert_encoding($value, 'UTF-8', 'auto');
+                    }
+                    // Eliminar caracteres invisibles o no imprimibles
+                    $value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value);
                 }
             });
 
