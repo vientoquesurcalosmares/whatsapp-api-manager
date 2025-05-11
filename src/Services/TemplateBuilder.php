@@ -92,7 +92,9 @@ class TemplateBuilder
             $sessionId = $this->templateService->createUploadSession($this->account);
             $mediaId = $this->templateService->uploadMedia($this->account, $sessionId, $filePath, $mimeType);
 
-            $content = $mediaId; // Reemplazar el contenido con el ID del archivo subido
+            $example = [
+                'header_handle' => [$mediaId],
+            ];
         }
 
         if ($format === 'LOCATION' && !empty($content)) {
