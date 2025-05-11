@@ -493,10 +493,15 @@ class TemplateService
             'session_id' => $sessionId,
         ]);
 
+        // Validar que el archivo exista
+        if (!file_exists($filePath)) {
+            throw new InvalidArgumentException("El archivo no existe: $filePath");
+        }
+
         $headers = [
+            'Authorization' => "Bearer {$account->api_token}",
             'file_offset' => '0',
             'Content-Type' => $mimeType,
-            'Authorization' => 'Bearer ' . $account->api_token,
         ];
 
         $fileContents = file_get_contents($filePath);
