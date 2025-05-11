@@ -498,38 +498,48 @@ class TemplateService
             throw new InvalidArgumentException("El archivo no existe: $filePath");
         }
 
-        // Validar el archivo según la configuración
-        $this->validateMediaFile($filePath, $mimeType);
-
         $fileContents = file_get_contents($filePath);
+        $fileSize = strlen($fileContents);
+        $currentOffset = 0;
 
-        // Validar y convertir a UTF-8 si es necesario
-        if (!mb_check_encoding($fileContents, 'UTF-8')) {
-            $fileContents = mb_convert_encoding($fileContents, 'UTF-8', 'auto');
-        }
-
-        $headers = [
-            'Authorization' => "OAuth {$account->api_token}",
-            'file_offset' => '0',
-            'Content-Type' => $mimeType,
-        ];
-
-        Log::info('Subiendo archivo.', [
-            'endpoint' => $endpoint,
+        Log::info('Iniciando carga resumible.', [
             'file_path' => $filePath,
+            'file_size' => $fileSize,
+            'mime_type' => $mimeType,
         ]);
 
-        $response = $this->apiClient->request(
-            'POST',
-            $endpoint,
-            [],
-            $fileContents,
-            [],
-            $headers
-        );
+        while ($currentOffset < $fileSize) {
+            $chunk = substr($fileContents, $currentOffset, 1024 * 1024); // Subir en bloques de 1 MB
+            $headers = [
+                'Authorization' => "OAuth {$account->api_token}",
+                'file_offset' => (string) $currentOffset,
+                'Content-Type' => $mimeType,
+            ];
 
-        Log::info('Archivo subido.', [
-            'response' => $response,
+            Log::info('Subiendo bloque de archivo.', [
+                'current_offset' => $currentOffset,
+                'chunk_size' => strlen($chunk),
+            ]);
+
+            $response = $this->apiClient->request(
+                'POST',
+                $endpoint,
+                [],
+                $chunk,
+                [],
+                $headers
+            );
+
+            Log::info('Bloque subido.', [
+                'response' => $response,
+            ]);
+
+            $currentOffset += strlen($chunk);
+        }
+
+        Log::info('Carga completada.', [
+            'file_size' => $fileSize,
+            'current_offset' => $currentOffset,
         ]);
 
         return $response['h'] ?? throw new \Exception('No se pudo obtener el identificador del archivo.');
