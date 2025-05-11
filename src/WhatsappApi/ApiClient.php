@@ -81,7 +81,7 @@ class ApiClient
             }
 
             // Manejar códigos de estado no exitosos
-            Log::channel('whatsapp')->warning('ERROR sta no exitosa de la API.', [
+            Log::channel('whatsapp')->warning('ERROR Respuesta no exitosa de la API.', [
                 'status_code' => $statusCode,
                 'response_body' => $response->getBody()->getContents(),
             ]);

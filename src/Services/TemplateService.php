@@ -463,6 +463,8 @@ class TemplateService
             'app_id' => $account->app_id,
         ]);
 
+        $endpoint = 'https://graph.facebook.com/v22.0/'.$account->app_id.'/media';
+
         $headers = [
             'Authorization' => 'Bearer ' . $account->api_token,
             'Content-Type' => 'application/json',
