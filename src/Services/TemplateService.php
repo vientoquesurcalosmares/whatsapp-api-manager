@@ -459,11 +459,11 @@ class TemplateService
 
     public function createUploadSession(WhatsappBusinessAccount $account, string $fileName, string $mimeType): string
     {
-        $endpoint = Endpoints::build(Endpoints::CREATE_UPLOAD_SESSION, [
-            'app_id' => $account->app_id,
-        ]);
+        // $endpoint = Endpoints::build(Endpoints::CREATE_UPLOAD_SESSION, [
+        //     'app_id' => $account->app_id,
+        // ]);
 
-        $endpoint = 'https://graph.facebook.com/v22.0/'.$account->app_id.'/media';
+        $endpoint = 'https://graph.facebook.com/v22.0/'.$account->app_id.'/uploads';
 
         $headers = [
             'Authorization' => 'Bearer ' . $account->api_token,
