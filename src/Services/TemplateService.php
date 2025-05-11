@@ -498,13 +498,18 @@ class TemplateService
             throw new InvalidArgumentException("El archivo no existe: $filePath");
         }
 
+        $fileContents = file_get_contents($filePath);
+
+        // Validar y convertir a UTF-8 si es necesario
+        if (!mb_check_encoding($fileContents, 'UTF-8')) {
+            $fileContents = mb_convert_encoding($fileContents, 'UTF-8', 'auto');
+        }
+
         $headers = [
             'Authorization' => "OAuth {$account->api_token}",
             'file_offset' => '0',
             'Content-Type' => $mimeType,
         ];
-
-        $fileContents = file_get_contents($filePath);
 
         Log::info('Subiendo archivo.', [
             'endpoint' => $endpoint,

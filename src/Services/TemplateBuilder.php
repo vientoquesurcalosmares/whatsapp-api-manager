@@ -294,6 +294,13 @@ class TemplateBuilder
         try {
             $this->validateTemplate();
 
+            // Validar que todos los datos estén en UTF-8
+            array_walk_recursive($this->templateData, function (&$value) {
+                if (is_string($value) && !mb_check_encoding($value, 'UTF-8')) {
+                    $value = mb_convert_encoding($value, 'UTF-8', 'auto');
+                }
+            });
+
             $endpoint = Endpoints::build(Endpoints::CREATE_TEMPLATE, [
                 'waba_id' => $this->account->whatsapp_business_id,
             ]);
@@ -328,7 +335,7 @@ class TemplateBuilder
                 'language' => $this->templateData['language'],
                 'category_id' => $this->getCategoryId($this->templateData['category']),
                 'status' => 'PENDING',
-                'json' => json_encode($this->templateData),
+                'json' => json_encode($this->templateData, JSON_UNESCAPED_UNICODE),
             ]);
     
             // Reiniciar el estado del builder
