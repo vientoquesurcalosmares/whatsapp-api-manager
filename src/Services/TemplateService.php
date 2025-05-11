@@ -513,7 +513,7 @@ class TemplateService
             $headers = [
                 'Authorization' => "OAuth {$account->api_token}",
                 'file_offset' => (string) $currentOffset,
-                'Content-Type' => $mimeType,
+                'Content-Type' => 'application/octet-stream', // Cambiar a application/octet-stream
             ];
 
             Log::info('Subiendo bloque de archivo.', [
@@ -525,7 +525,7 @@ class TemplateService
                 'POST',
                 $endpoint,
                 [],
-                $chunk,
+                $chunk, // Enviar el contenido del archivo directamente
                 [],
                 $headers
             );
