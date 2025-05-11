@@ -76,49 +76,55 @@ class TemplateBuilder
         }
 
         if ($format === 'TEXT') {
-            $this->validateParameters($content, $example, 'HEADER');
-        }
-
-        if ($format !== 'TEXT' && $example !== null) {
-            throw new InvalidArgumentException('Los ejemplos solo están permitidos para headers de tipo TEXT.');
-        }
-
-        if (in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
+            // Validar parámetros en el texto del HEADER
+            preg_match_all('/{{(.*?)}}/', $content, $matches);
+            $placeholders = $matches[1] ?? [];
+    
+            if (count($placeholders) > 1) {
+                throw new InvalidArgumentException('El HEADER solo puede tener un único parámetro o ninguno.');
+            }
+    
+            // Validar el ejemplo si hay un parámetro
+            if (!empty($placeholders)) {
+                if ($example === null || count($example) !== 1) {
+                    throw new InvalidArgumentException('El campo "example" es obligatorio y debe contener exactamente un valor para headers con un parámetro.');
+                }
+            }
+    
+            $headerComponent = [
+                'type' => 'HEADER',
+                'format' => $format,
+                'text' => $content,
+                'example' => !empty($placeholders) ? ['header_text' => $example] : null,
+            ];
+        } elseif (in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
             $filePath = $content;
             $fileSize = filesize($filePath);
             $mimeType = mime_content_type($filePath);
-        
+    
             $sessionId = $this->templateService->createUploadSession($this->account);
             $mediaId = $this->templateService->uploadMedia($this->account, $sessionId, $filePath, $mimeType);
-        
+    
             if (!mb_check_encoding($mediaId, 'UTF-8')) {
                 Log::warning('Corrigiendo codificación de mediaId no UTF-8.', ['mediaId' => $mediaId]);
                 $mediaId = mb_convert_encoding($mediaId, 'UTF-8', 'auto');
             }
-        
-            $example = [
-                'header_handle' => [$mediaId],
+    
+            $headerComponent = [
+                'type' => 'HEADER',
+                'format' => $format,
+                'example' => ['header_handle' => [$mediaId]],
             ];
-        }
-
-        if ($format === 'LOCATION' && !empty($content)) {
-            throw new InvalidArgumentException('El HEADER de tipo LOCATION no debe tener contenido.');
-        }
-
-        $headerComponent = [
-            'type' => 'HEADER',
-            'format' => $format,
-        ];
-
-        if ($format === 'TEXT') {
-            $headerComponent['text'] = $content;
-            $headerComponent['example'] = [
-                'header_text' => $example,
-            ];
-        } elseif (in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
-            $headerComponent['example'] = $example; // Usar `example` como objeto JSON
         } elseif ($format === 'LOCATION') {
-            $headerComponent['location'] = true; // Indica que es un header de ubicación
+            if (!empty($content)) {
+                throw new InvalidArgumentException('El HEADER de tipo LOCATION no debe tener contenido.');
+            }
+    
+            $headerComponent = [
+                'type' => 'HEADER',
+                'format' => $format,
+                'location' => true,
+            ];
         }
 
         $this->templateData['components'][] = $headerComponent;
