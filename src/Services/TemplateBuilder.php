@@ -320,6 +320,7 @@ class TemplateBuilder
             // Validar que todos los datos estén en UTF-8
             array_walk_recursive($this->templateData, function (&$value) {
                 if (is_string($value) && !mb_check_encoding($value, 'UTF-8')) {
+                    Log::warning('Corrigiendo codificación de un valor no UTF-8.', ['value' => $value]);
                     $value = mb_convert_encoding($value, 'UTF-8', 'auto');
                 }
             });
