@@ -494,9 +494,17 @@ class TemplateService
             throw new InvalidArgumentException("El archivo no existe: $filePath");
         }
 
+        // Construir la URL completa
+        $baseUrl = config('whatsapp.api.base_url', 'https://graph.facebook.com');
+        $version = config('whatsapp.api.version', 'v22.0');
         $endpoint = Endpoints::build(Endpoints::SESSION_UPLOAD_MEDIA, [
             'session_id' => $sessionId,
         ]);
+
+        // Asegurarse de que la URL tenga el esquema completo
+        $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . '/' . ltrim($endpoint, '/');
+
+        Log::info('URL final para la carga de medios:', ['url' => $url]);
 
         $fileSize = filesize($filePath);
         $fileHandle = fopen($filePath, 'r');
@@ -511,6 +519,7 @@ class TemplateService
             'file_path' => $filePath,
             'file_size' => $fileSize,
             'mime_type' => $mimeType,
+            'url' => $url,
         ]);
 
         try {
@@ -524,7 +533,7 @@ class TemplateService
                 $curl = curl_init();
 
                 curl_setopt_array($curl, [
-                    CURLOPT_URL => $endpoint,
+                    CURLOPT_URL => $url,
                     CURLOPT_RETURNTRANSFER => true,
                     CURLOPT_CUSTOMREQUEST => 'POST',
                     CURLOPT_POSTFIELDS => $chunk,
@@ -569,9 +578,18 @@ class TemplateService
 
             $responseData = json_decode($response, true);
 
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \RuntimeException('Error al decodificar la respuesta JSON: ' . json_last_error_msg());
+            }
+
             return $responseData['h'] ?? throw new \Exception('No se pudo obtener el identificador del archivo.');
         } catch (\Exception $e) {
             fclose($fileHandle);
+            Log::error('Error durante la carga del archivo.', [
+                'error_message' => $e->getMessage(),
+                'file_path' => $filePath,
+                'current_offset' => $currentOffset,
+            ]);
             throw $e;
         }
     }
