@@ -489,60 +489,91 @@ class TemplateService
 
     public function uploadMedia(WhatsappBusinessAccount $account, string $sessionId, string $filePath, string $mimeType): string
     {
-        $endpoint = Endpoints::build(Endpoints::SESSION_UPLOAD_MEDIA, [
-            'session_id' => $sessionId,
-        ]);
-
         // Validar que el archivo exista
         if (!file_exists($filePath)) {
             throw new InvalidArgumentException("El archivo no existe: $filePath");
         }
 
-        $fileContents = file_get_contents($filePath);
-        $fileSize = strlen($fileContents);
+        $endpoint = Endpoints::build(Endpoints::SESSION_UPLOAD_MEDIA, [
+            'session_id' => $sessionId,
+        ]);
+
+        $fileSize = filesize($filePath);
+        $fileHandle = fopen($filePath, 'r');
+
+        if (!$fileHandle) {
+            throw new \RuntimeException("No se pudo abrir el archivo: $filePath");
+        }
+
         $currentOffset = 0;
 
-        Log::info('Iniciando carga resumible.', [
+        Log::info('Iniciando carga resumible con cURL.', [
             'file_path' => $filePath,
             'file_size' => $fileSize,
             'mime_type' => $mimeType,
         ]);
 
-        while ($currentOffset < $fileSize) {
-            $chunk = substr($fileContents, $currentOffset, 1024 * 1024); // Subir en bloques de 1 MB
-            $headers = [
-                'Authorization' => "OAuth {$account->api_token}",
-                'file_offset' => (string) $currentOffset,
-                'Content-Type' => 'application/octet-stream', // Cambiar a application/octet-stream
-            ];
+        try {
+            while ($currentOffset < $fileSize) {
+                $chunk = fread($fileHandle, 1024 * 1024); // Leer 1 MB por iteración
 
-            Log::info('Subiendo bloque de archivo.', [
+                if ($chunk === false) {
+                    throw new \RuntimeException("Error al leer el archivo en la posición $currentOffset");
+                }
+
+                $curl = curl_init();
+
+                curl_setopt_array($curl, [
+                    CURLOPT_URL => $endpoint,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_CUSTOMREQUEST => 'POST',
+                    CURLOPT_POSTFIELDS => $chunk,
+                    CURLOPT_HTTPHEADER => [
+                        "Authorization: OAuth {$account->api_token}",
+                        "file_offset: $currentOffset",
+                        "Content-Type: application/octet-stream",
+                    ],
+                ]);
+
+                $response = curl_exec($curl);
+                $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+                if (curl_errno($curl)) {
+                    $error = curl_error($curl);
+                    curl_close($curl);
+                    throw new \RuntimeException("Error en cURL: $error");
+                }
+
+                curl_close($curl);
+
+                Log::info('Bloque subido con cURL.', [
+                    'current_offset' => $currentOffset,
+                    'chunk_size' => strlen($chunk),
+                    'response' => $response,
+                    'http_code' => $httpCode,
+                ]);
+
+                if ($httpCode !== 200) {
+                    throw new \RuntimeException("Error al subir el archivo. Código HTTP: $httpCode. Respuesta: $response");
+                }
+
+                $currentOffset += strlen($chunk);
+            }
+
+            fclose($fileHandle);
+
+            Log::info('Carga completada con cURL.', [
+                'file_size' => $fileSize,
                 'current_offset' => $currentOffset,
-                'chunk_size' => strlen($chunk),
             ]);
 
-            $response = $this->apiClient->request(
-                'POST',
-                $endpoint,
-                [],
-                $chunk, // Enviar el contenido del archivo directamente
-                [],
-                $headers
-            );
+            $responseData = json_decode($response, true);
 
-            Log::info('Bloque subido.', [
-                'response' => $response,
-            ]);
-
-            $currentOffset += strlen($chunk);
+            return $responseData['h'] ?? throw new \Exception('No se pudo obtener el identificador del archivo.');
+        } catch (\Exception $e) {
+            fclose($fileHandle);
+            throw $e;
         }
-
-        Log::info('Carga completada.', [
-            'file_size' => $fileSize,
-            'current_offset' => $currentOffset,
-        ]);
-
-        return $response['h'] ?? throw new \Exception('No se pudo obtener el identificador del archivo.');
     }
 
     protected function validateMediaFile(string $filePath, string $mimeType): void
