@@ -348,11 +348,20 @@ class TemplateBuilder
                 'Content-Type' => 'application/json',
             ];
 
-            Log::info('Enviando plantilla a la API de WhatsApp.', [
-                'endpoint' => $endpoint,
+            // Registrar los datos antes de codificar en JSON
+            Log::info('Datos de la plantilla antes de codificar en JSON.', [
                 'template_data' => $this->templateData,
             ]);
 
+            // Codificar los datos en JSON
+            $jsonData = json_encode($this->templateData, JSON_UNESCAPED_UNICODE);
+            if ($jsonData === false) {
+                $error = json_last_error_msg();
+                Log::error('Error al codificar JSON.', ['error' => $error, 'data' => $this->templateData]);
+                throw new \Exception('Error al codificar JSON: ' . $error);
+            }
+
+            // Enviar la solicitud a la API
             $response = $this->apiClient->request(
                 'POST',
                 $endpoint,
@@ -366,6 +375,7 @@ class TemplateBuilder
                 'response' => $response,
             ]);
 
+            // Crear el registro de la plantilla en la base de datos
             $template = Template::create([
                 'whatsapp_business_id' => $this->account->whatsapp_business_id,
                 'wa_template_id' => $response['id'] ?? null,
@@ -375,11 +385,11 @@ class TemplateBuilder
                 'status' => 'PENDING',
                 'json' => json_encode($this->templateData, JSON_UNESCAPED_UNICODE),
             ]);
-    
+
             // Reiniciar el estado del builder
             $this->templateData = ['components' => []];
             $this->buttonCount = 0;
-    
+
             return $template;
         } catch (\Exception $e) {
             Log::error('Error al guardar la plantilla.', [
