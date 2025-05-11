@@ -495,7 +495,7 @@ $account = WhatsappBusinessAccount::first();
 
 // Crear una plantilla transaccional
 $template = Whatsapp::template()
-    ->createTransactionalTemplate($account)
+    ->createUtilityTemplate($account)
     ->setName('order_confirmation_3')
     ->setLanguage('en_US')
     ->addHeader('TEXT', 'Order Confirmation')
