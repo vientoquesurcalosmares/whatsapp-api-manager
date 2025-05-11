@@ -72,6 +72,7 @@ class ApiClient
             if ($statusCode >= 200 && $statusCode < 300) {
                 // Respuesta exitosa
                 Log::channel('whatsapp')->info('Respuesta exitosa de la API.', [
+                    'URL' => $url,
                     'status_code' => $statusCode,
                     'response_body' => $response->getBody()->getContents(),
                 ]);
