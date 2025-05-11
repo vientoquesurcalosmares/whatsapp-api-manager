@@ -112,7 +112,7 @@ class TemplateBuilder
                 'header_text' => $example,
             ];
         } elseif (in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
-            $headerComponent['media'] = $content; // ID del archivo subido
+            $headerComponent['example'] = $content; // ID del archivo subido
         } elseif ($format === 'LOCATION') {
             $headerComponent['location'] = true; // Indica que es un header de ubicación
         }
