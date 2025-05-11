@@ -489,60 +489,82 @@ class TemplateService
 
     public function uploadMedia(WhatsappBusinessAccount $account, string $sessionId, string $filePath, string $mimeType): string
     {
-        $endpoint = Endpoints::build(Endpoints::SESSION_UPLOAD_MEDIA, [
-            'session_id' => $sessionId,
-        ]);
-
         // Validar que el archivo exista
         if (!file_exists($filePath)) {
             throw new InvalidArgumentException("El archivo no existe: $filePath");
         }
 
-        $fileContents = file_get_contents($filePath);
-        $fileSize = strlen($fileContents);
-        $currentOffset = 0;
+        // Construir la URL completa
+        $baseUrl = config('whatsapp.api.base_url', 'https://graph.facebook.com');
+        $version = config('whatsapp.api.version', 'v22.0');
+        $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . "/$sessionId";
 
-        Log::info('Iniciando carga resumible.', [
-            'file_path' => $filePath,
-            'file_size' => $fileSize,
-            'mime_type' => $mimeType,
+        Log::info('URL final para la carga de medios:', ['url' => $url]);
+
+        // Leer el contenido del archivo
+        $fileContents = file_get_contents($filePath);
+
+        // Configurar cURL
+        $curl = curl_init();
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => $fileContents,
+            CURLOPT_HTTPHEADER => [
+                'file_offset: 0',
+                'Content-Type: application/octet-stream',
+                'Authorization: OAuth ' . $account->api_token,
+            ],
         ]);
 
-        while ($currentOffset < $fileSize) {
-            $chunk = substr($fileContents, $currentOffset, 1024 * 1024); // Subir en bloques de 1 MB
-            $headers = [
-                'Authorization' => "OAuth {$account->api_token}",
-                'file_offset' => (string) $currentOffset,
-                'Content-Type' => 'application/octet-stream', // Cambiar a application/octet-stream
-            ];
+        // Ejecutar la solicitud
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
-            Log::info('Subiendo bloque de archivo.', [
-                'current_offset' => $currentOffset,
-                'chunk_size' => strlen($chunk),
-            ]);
-
-            $response = $this->apiClient->request(
-                'POST',
-                $endpoint,
-                [],
-                $chunk, // Enviar el contenido del archivo directamente
-                [],
-                $headers
-            );
-
-            Log::info('Bloque subido.', [
-                'response' => $response,
-            ]);
-
-            $currentOffset += strlen($chunk);
+        // Manejar errores de cURL
+        if (curl_errno($curl)) {
+            $error = curl_error($curl);
+            curl_close($curl);
+            throw new \RuntimeException("Error en cURL: $error");
         }
 
-        Log::info('Carga completada.', [
-            'file_size' => $fileSize,
-            'current_offset' => $currentOffset,
+        curl_close($curl);
+
+        // Registrar la respuesta
+        Log::info('Respuesta de la API después de subir el archivo.', [
+            'response' => $response,
+            'http_code' => $httpCode,
         ]);
 
-        return $response['h'] ?? throw new \Exception('No se pudo obtener el identificador del archivo.');
+        // Validar el código de respuesta HTTP
+        if ($httpCode !== 200) {
+            throw new \RuntimeException("Error al subir el archivo. Código HTTP: $httpCode. Respuesta: $response");
+        }
+
+        // Decodificar la respuesta JSON
+        $responseData = json_decode($response, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \RuntimeException('Error al decodificar la respuesta JSON: ' . json_last_error_msg());
+        }
+
+        // Obtener el identificador del archivo
+        $handle = $responseData['h'] ?? null;
+
+        if (!$handle) {
+            throw new \Exception('No se pudo obtener el identificador del archivo.');
+        }
+
+        Log::info('Archivo subido exitosamente.', ['handle' => $handle]);
+
+        return $handle;
     }
 
     protected function validateMediaFile(string $filePath, string $mimeType): void
