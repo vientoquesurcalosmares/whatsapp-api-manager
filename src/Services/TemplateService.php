@@ -498,6 +498,9 @@ class TemplateService
             throw new InvalidArgumentException("El archivo no existe: $filePath");
         }
 
+        // Validar el archivo según la configuración
+        $this->validateMediaFile($filePath, $mimeType);
+
         $fileContents = file_get_contents($filePath);
 
         // Validar y convertir a UTF-8 si es necesario
@@ -530,5 +533,60 @@ class TemplateService
         ]);
 
         return $response['h'] ?? throw new \Exception('No se pudo obtener el identificador del archivo.');
+    }
+
+    protected function validateMediaFile(string $filePath, string $mimeType): void
+    {
+        $fileSize = filesize($filePath);
+        $mediaType = $this->getMediaTypeFromMimeType($mimeType);
+
+        // Obtener configuraciones desde whatsapp.php
+        $maxFileSize = config("whatsapp.media.max_file_size.$mediaType");
+        $allowedMimeTypes = config("whatsapp.media.allowed_types.$mediaType");
+
+        // Validar tamaño del archivo
+        if ($fileSize > $maxFileSize) {
+            throw new InvalidArgumentException("El archivo excede el tamaño máximo permitido de " . ($maxFileSize / 1024 / 1024) . " MB.");
+        }
+
+        // Validar tipo MIME del archivo
+        if (!in_array($mimeType, $allowedMimeTypes)) {
+            throw new InvalidArgumentException("El tipo de archivo no es permitido. Tipo recibido: $mimeType.");
+        }
+
+        Log::info('Archivo validado correctamente.', [
+            'file_path' => $filePath,
+            'file_size' => $fileSize,
+            'mime_type' => $mimeType,
+        ]);
+    }
+
+    protected function getMediaTypeFromMimeType(string $mimeType): string
+    {
+        // Mapear tipos MIME a categorías de medios
+        $mediaTypes = [
+            'image' => ['image/jpeg', 'image/png'],
+            'audio' => ['audio/aac', 'audio/mp4', 'audio/mpeg', 'audio/amr', 'audio/ogg'],
+            'video' => ['video/mp4', 'video/3gp'],
+            'document' => [
+                'text/plain',
+                'application/pdf',
+                'application/vnd.ms-powerpoint',
+                'application/msword',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ],
+            'sticker' => ['image/webp'],
+        ];
+
+        foreach ($mediaTypes as $type => $mimeTypes) {
+            if (in_array($mimeType, $mimeTypes)) {
+                return $type;
+            }
+        }
+
+        throw new InvalidArgumentException("No se pudo determinar el tipo de media para el MIME: $mimeType.");
     }
 }
