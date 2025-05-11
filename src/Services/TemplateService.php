@@ -3,7 +3,6 @@
 namespace ScriptDevelop\WhatsappManager\Services;
 
 use InvalidArgumentException;
-use Illuminate\Support\Facades\Http;
 use ScriptDevelop\WhatsappManager\Models\Template;
 use ScriptDevelop\WhatsappManager\Models\TemplateComponent;
 use ScriptDevelop\WhatsappManager\Models\TemplateCategory;
@@ -457,129 +456,117 @@ class TemplateService
         }
     }
 
-    public function createUploadSession(WhatsappBusinessAccount $account, string $fileName, string $mimeType): string
+    public function createUploadSession(WhatsappBusinessAccount $account): string
     {
-        // $endpoint = Endpoints::build(Endpoints::CREATE_UPLOAD_SESSION, [
-        //     'app_id' => $account->app_id,
-        // ]);
-
-        $endpoint = 'https://graph.facebook.com/v22.0/'.$account->app_id.'/uploads';
+        $endpoint = Endpoints::build(Endpoints::CREATE_UPLOAD_SESSION, [
+            'app_id' => $account->app_id,
+        ]);
 
         $headers = [
             'Authorization' => 'Bearer ' . $account->api_token,
-            'Content-Type' => 'application/json',
-        ];
-
-        $body = [
-            'file_name' => $fileName,
-            'file_type' => $mimeType,
         ];
 
         Log::info('Creando sesión de carga.', [
             'endpoint' => $endpoint,
-            'body' => $body,
+            'app_id' => $account->app_id,
         ]);
 
-        $response = Http::withHeaders($headers)->post($endpoint, $body);
+        $response = $this->apiClient->request(
+            'POST',
+            $endpoint,
+            [],
+            null,
+            [],
+            $headers
+        );
 
-        if (!$response->successful()) {
-            Log::error('Error al crear la sesión de carga.', ['response' => $response->body()]);
-            throw new \Exception('No se pudo crear la sesión de carga.');
-        }
+        Log::info('Sesión de carga creada.', [
+            'response' => $response,
+        ]);
 
-        $uploadSessionId = $response->json()['id'] ?? null;
-
-        if (!$uploadSessionId) {
-            throw new \Exception('No se pudo obtener el ID de la sesión de carga.');
-        }
-
-        Log::info('Sesión de carga creada.', ['uploadSessionId' => $uploadSessionId]);
-
-        return $uploadSessionId;
+        return $response['id'] ?? throw new \Exception('No se pudo obtener el ID de la sesión de carga.');
     }
 
     public function uploadMedia(WhatsappBusinessAccount $account, string $sessionId, string $filePath, string $mimeType): string
     {
+        $endpoint = Endpoints::build(Endpoints::SESSION_UPLOAD_MEDIA, [
+            'session_id' => $sessionId,
+        ]);
+
         // Validar que el archivo exista
         if (!file_exists($filePath)) {
             throw new InvalidArgumentException("El archivo no existe: $filePath");
         }
 
-        $url = config('whatsapp.api.base_url') . '/' . config('whatsapp.api.version') . "/$sessionId";
-
-        Log::info('URL final para la carga de medios:', ['url' => $url]);
-
         $fileContents = file_get_contents($filePath);
-        $fileName = basename($filePath);
+        $fileSize = strlen($fileContents);
+        $currentOffset = 0;
 
-        $headers = [
-            'Authorization' => "OAuth {$account->api_token}",
-            'file_offset' => 0,
-        ];
-
-        Log::info('Iniciando carga de archivo.', [
+        Log::info('Iniciando carga resumible.', [
             'file_path' => $filePath,
-            'file_size' => strlen($fileContents),
+            'file_size' => $fileSize,
             'mime_type' => $mimeType,
-            'url' => $url,
         ]);
 
-        $response = Http::withHeaders($headers)
-            ->attach('file', $fileContents, $fileName)
-            ->post($url);
+        while ($currentOffset < $fileSize) {
+            $chunk = substr($fileContents, $currentOffset, 1024 * 1024); // Subir en bloques de 1 MB
+            $headers = [
+                'Authorization' => "OAuth {$account->api_token}",
+                'file_offset' => (string) $currentOffset,
+                'Content-Type' => 'application/octet-stream', // Cambiar a application/octet-stream
+            ];
 
-        if (!$response->successful()) {
-            Log::error('Error al subir el archivo.', ['response' => $response->body()]);
-            throw new \Exception('Error al subir el archivo: ' . $response->body());
+            Log::info('Subiendo bloque de archivo.', [
+                'current_offset' => $currentOffset,
+                'chunk_size' => strlen($chunk),
+            ]);
+
+            $response = $this->apiClient->request(
+                'POST',
+                $endpoint,
+                [],
+                $chunk, // Enviar el contenido del archivo directamente
+                [],
+                $headers
+            );
+
+            Log::info('Bloque subido.', [
+                'response' => $response,
+            ]);
+
+            $currentOffset += strlen($chunk);
         }
 
-        $handle = $response->json()['h'] ?? null;
+        Log::info('Carga completada.', [
+            'file_size' => $fileSize,
+            'current_offset' => $currentOffset,
+        ]);
 
-        if (!$handle) {
-            throw new \Exception('No se pudo obtener el identificador del archivo.');
-        }
-
-        Log::info('Archivo subido exitosamente.', ['handle' => $handle]);
-
-        return $handle;
+        return $response['h'] ?? throw new \Exception('No se pudo obtener el identificador del archivo.');
     }
-
-    // protected function validateMediaFile(string $filePath, string $mimeType): void
-    // {
-    //     $fileSize = filesize($filePath);
-    //     $mediaType = $this->getMediaTypeFromMimeType($mimeType);
-
-    //     // Obtener configuraciones desde whatsapp.php
-    //     $maxFileSize = config("whatsapp.media.max_file_size.$mediaType");
-    //     $allowedMimeTypes = config("whatsapp.media.allowed_types.$mediaType");
-
-    //     // Validar tamaño del archivo
-    //     if ($fileSize > $maxFileSize) {
-    //         throw new InvalidArgumentException("El archivo excede el tamaño máximo permitido de " . ($maxFileSize / 1024 / 1024) . " MB.");
-    //     }
-
-    //     // Validar tipo MIME del archivo
-    //     if (!in_array($mimeType, $allowedMimeTypes)) {
-    //         throw new InvalidArgumentException("El tipo de archivo no es permitido. Tipo recibido: $mimeType.");
-    //     }
-
-    //     Log::info('Archivo validado correctamente.', [
-    //         'file_path' => $filePath,
-    //         'file_size' => $fileSize,
-    //         'mime_type' => $mimeType,
-    //     ]);
-    // }
 
     protected function validateMediaFile(string $filePath, string $mimeType): void
     {
-        $allowedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf', 'video/mp4', 'video/quicktime'];
+        $fileSize = filesize($filePath);
+        $mediaType = $this->getMediaTypeFromMimeType($mimeType);
 
+        // Obtener configuraciones desde whatsapp.php
+        $maxFileSize = config("whatsapp.media.max_file_size.$mediaType");
+        $allowedMimeTypes = config("whatsapp.media.allowed_types.$mediaType");
+
+        // Validar tamaño del archivo
+        if ($fileSize > $maxFileSize) {
+            throw new InvalidArgumentException("El archivo excede el tamaño máximo permitido de " . ($maxFileSize / 1024 / 1024) . " MB.");
+        }
+
+        // Validar tipo MIME del archivo
         if (!in_array($mimeType, $allowedMimeTypes)) {
             throw new InvalidArgumentException("El tipo de archivo no es permitido. Tipo recibido: $mimeType.");
         }
 
         Log::info('Archivo validado correctamente.', [
             'file_path' => $filePath,
+            'file_size' => $fileSize,
             'mime_type' => $mimeType,
         ]);
     }
