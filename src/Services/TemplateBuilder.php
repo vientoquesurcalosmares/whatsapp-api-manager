@@ -187,8 +187,10 @@ class TemplateBuilder
             throw new InvalidArgumentException('La URL del botón no puede exceder los 2000 caracteres.');
         }
 
-        if ($type === 'PHONE_NUMBER' && strlen($urlOrPhone) > 20) {
-            throw new InvalidArgumentException('El número de teléfono no puede exceder los 20 caracteres.');
+        if ($type === 'PHONE_NUMBER') {
+            if (!preg_match('/^\+?[1-9]\d{1,14}$/', $urlOrPhone)) {
+                throw new InvalidArgumentException('El número de teléfono no es válido. Debe estar en formato internacional, como +1234567890.');
+            }
         }
 
         // Crear el botón
