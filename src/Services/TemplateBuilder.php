@@ -18,12 +18,14 @@ class TemplateBuilder
 
     protected int $buttonCount = 0;
     protected ApiClient $apiClient;
+    protected TemplateService $templateService;
     protected WhatsappBusinessAccount $account;
 
-    public function __construct(ApiClient $apiClient, WhatsappBusinessAccount $account)
+    public function __construct(ApiClient $apiClient, WhatsappBusinessAccount $account, TemplateService $templateService)
     {
         $this->apiClient = $apiClient;
         $this->account = $account;
+        $this->templateService = $templateService;
     }
 
 
@@ -64,25 +66,56 @@ class TemplateBuilder
             throw new InvalidArgumentException('Solo se permite un componente HEADER por plantilla.');
         }
 
+        $validFormats = ['TEXT', 'IMAGE', 'VIDEO', 'DOCUMENT', 'LOCATION'];
+        if (!in_array($format, $validFormats)) {
+            throw new InvalidArgumentException('Formato inválido para el HEADER. Debe ser uno de: TEXT, IMAGE, VIDEO, DOCUMENT, LOCATION.');
+        }
+
         if ($format === 'TEXT' && strlen($content) > 60) {
             throw new InvalidArgumentException('El texto del HEADER no puede exceder los 60 caracteres.');
         }
 
-        $this->validateParameters($content, $example, 'HEADER');
-
-        $formattedExample = null;
-        if ($example !== null) {
-            $formattedExample = [
-                'header_text' => $example
-            ];
+        if ($format === 'TEXT') {
+            $this->validateParameters($content, $example, 'HEADER');
         }
 
-        $this->templateData['components'][] = [
+        if ($format !== 'TEXT' && $example !== null) {
+            throw new InvalidArgumentException('Los ejemplos solo están permitidos para headers de tipo TEXT.');
+        }
+
+        if (in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
+            // Subir el archivo multimedia
+            $filePath = $content; // Ruta del archivo local
+            $fileSize = filesize($filePath);
+            $mimeType = mime_content_type($filePath);
+
+            $sessionId = $this->templateService->createUploadSession($this->account, $fileSize, $mimeType);
+            $mediaId = $this->templateService->uploadMedia($this->account, $sessionId, $filePath, $mimeType);
+
+            $content = $mediaId; // Reemplazar el contenido con el ID del archivo subido
+        }
+
+        if ($format === 'LOCATION' && !empty($content)) {
+            throw new InvalidArgumentException('El HEADER de tipo LOCATION no debe tener contenido.');
+        }
+
+        $headerComponent = [
             'type' => 'HEADER',
             'format' => $format,
-            'text' => $content,
-            'example' => $formattedExample,
         ];
+
+        if ($format === 'TEXT') {
+            $headerComponent['text'] = $content;
+            $headerComponent['example'] = [
+                'header_text' => $example,
+            ];
+        } elseif (in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
+            $headerComponent['media'] = $content; // ID del archivo subido
+        } elseif ($format === 'LOCATION') {
+            $headerComponent['location'] = true; // Indica que es un header de ubicación
+        }
+
+        $this->templateData['components'][] = $headerComponent;
 
         return $this;
     }

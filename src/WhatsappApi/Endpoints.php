@@ -18,6 +18,8 @@ class Endpoints
     // Media Upload Endpoints
     const CREATE_RESUMABLE_UPLOAD_SESSION = 'app/uploads';
     const RESUMABLE_UPLOAD_FILE = '{upload_id}';
+    const CREATE_UPLOAD_SESSION = '{app_id}/uploads';
+    const SESSION_UPLOAD_MEDIA = '{session_id}';
     const QUERY_RESUMABLE_UPLOAD_STATUS = '{upload_id}';
     const RETRIEVE_MEDIA_URL = '{media_id}';
     const UPLOAD_MEDIA = '{phone_number_id}/media';

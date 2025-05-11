@@ -172,21 +172,21 @@ class TemplateService
         }
     }
 
-    public function createTransactionalTemplate(WhatsappBusinessAccount $account): TemplateBuilder
+    public function createUtilityTemplate(WhatsappBusinessAccount $account): TemplateBuilder
     {
-        return (new TemplateBuilder($this->apiClient, $account))
+        return (new TemplateBuilder($this->apiClient, $account, $this))
             ->setCategory('UTILITY'); // Categoría específica para plantillas transaccionales
     }
 
     public function createMarketingTemplate(WhatsappBusinessAccount $account): TemplateBuilder
     {
-        return (new TemplateBuilder($this->apiClient, $account))
+        return (new TemplateBuilder($this->apiClient, $account, $this))
             ->setCategory('MARKETING'); // Categoría específica para plantillas de marketing
     }
 
     public function createAuthenticationTemplate(WhatsappBusinessAccount $account): TemplateBuilder
     {
-        return (new TemplateBuilder($this->apiClient, $account))
+        return (new TemplateBuilder($this->apiClient, $account, $this))
             ->setCategory('AUTHENTICATION'); // Categoría específica para plantillas de autenticación
     }
 
@@ -454,5 +454,76 @@ class TemplateService
         if (empty($templateData['components']) || !is_array($templateData['components'])) {
             throw new InvalidArgumentException('Los componentes de la plantilla son obligatorios.');
         }
+    }
+
+    public function createUploadSession(WhatsappBusinessAccount $account, int $fileLength, string $fileType): string
+    {
+        $endpoint = Endpoints::build(Endpoints::CREATE_UPLOAD_SESSION, [
+            'app_id' => $account->app_id,
+        ]);
+
+        $query = [
+            'file_length' => $fileLength,
+            'file_type' => $fileType,
+        ];
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $account->api_token,
+        ];
+
+        Log::info('Creando sesión de carga.', [
+            'endpoint' => $endpoint,
+            'query' => $query,
+        ]);
+
+        $response = $this->apiClient->request(
+            'POST',
+            $endpoint,
+            [],
+            null,
+            $query,
+            $headers
+        );
+
+        Log::info('Sesión de carga creada.', [
+            'response' => $response,
+        ]);
+
+        return $response['id'] ?? throw new \Exception('No se pudo obtener el ID de la sesión de carga.');
+    }
+
+    public function uploadMedia(WhatsappBusinessAccount $account, string $sessionId, string $filePath, string $mimeType): string
+    {
+        $endpoint = Endpoints::build(Endpoints::SESSION_UPLOAD_MEDIA, [
+            'session_id' => $sessionId,
+        ]);
+
+        $headers = [
+            'file_offset' => '0',
+            'Content-Type' => $mimeType,
+            'Authorization' => 'Bearer ' . $account->api_token,
+        ];
+
+        $fileContents = file_get_contents($filePath);
+
+        Log::info('Subiendo archivo.', [
+            'endpoint' => $endpoint,
+            'file_path' => $filePath,
+        ]);
+
+        $response = $this->apiClient->request(
+            'POST',
+            $endpoint,
+            [],
+            $fileContents,
+            [],
+            $headers
+        );
+
+        Log::info('Archivo subido.', [
+            'response' => $response,
+        ]);
+
+        return $response['h'] ?? throw new \Exception('No se pudo obtener el identificador del archivo.');
     }
 }
