@@ -456,16 +456,11 @@ class TemplateService
         }
     }
 
-    public function createUploadSession(WhatsappBusinessAccount $account, int $fileLength, string $fileType): string
+    public function createUploadSession(WhatsappBusinessAccount $account): string
     {
         $endpoint = Endpoints::build(Endpoints::CREATE_UPLOAD_SESSION, [
             'app_id' => $account->app_id,
         ]);
-
-        $query = [
-            'file_length' => $fileLength,
-            'file_type' => $fileType,
-        ];
 
         $headers = [
             'Authorization' => 'Bearer ' . $account->api_token,
@@ -473,7 +468,7 @@ class TemplateService
 
         Log::info('Creando sesión de carga.', [
             'endpoint' => $endpoint,
-            'query' => $query,
+            'app_id' => $account->app_id,
         ]);
 
         $response = $this->apiClient->request(
@@ -481,7 +476,7 @@ class TemplateService
             $endpoint,
             [],
             null,
-            $query,
+            [],
             $headers
         );
 

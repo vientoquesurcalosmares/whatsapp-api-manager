@@ -89,7 +89,7 @@ class TemplateBuilder
             $fileSize = filesize($filePath);
             $mimeType = mime_content_type($filePath);
 
-            $sessionId = $this->templateService->createUploadSession($this->account, $fileSize, $mimeType);
+            $sessionId = $this->templateService->createUploadSession($this->account);
             $mediaId = $this->templateService->uploadMedia($this->account, $sessionId, $filePath, $mimeType);
 
             $content = $mediaId; // Reemplazar el contenido con el ID del archivo subido
