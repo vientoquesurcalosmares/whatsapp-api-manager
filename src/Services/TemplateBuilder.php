@@ -92,6 +92,7 @@ class TemplateBuilder
             $sessionId = $this->templateService->createUploadSession($this->account);
             $mediaId = $this->templateService->uploadMedia($this->account, $sessionId, $filePath, $mimeType);
 
+            // Asignar el ID del archivo subido al campo `example`
             $example = [
                 'header_handle' => [$mediaId],
             ];
@@ -112,7 +113,7 @@ class TemplateBuilder
                 'header_text' => $example,
             ];
         } elseif (in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
-            $headerComponent['example'] = $content; // ID del archivo subido
+            $headerComponent['example'] = $example; // Usar `example` como objeto JSON
         } elseif ($format === 'LOCATION') {
             $headerComponent['location'] = true; // Indica que es un header de ubicación
         }
