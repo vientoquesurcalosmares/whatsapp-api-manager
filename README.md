@@ -1,3 +1,6 @@
+![Ejemplo de plantilla de marketing](assets/laravel-whatsapp-manager.png "Plantilla de Marketing")
+
+
 # 📱 WhatsApp Business API Manager for Laravel
 
 LARAVEL WHatsapp Manager
@@ -506,36 +509,13 @@ $template = Whatsapp::template()
     ->save();
 ```
 
-#### Crear Plantillas de Marketing
-
-Las plantillas de marketing son útiles para promociones, descuentos y campañas masivas.
-
-```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
-
-// Obtener la cuenta empresarial
-$account = WhatsappBusinessAccount::first();
-
-// Crear una plantilla de marketing
-$template = Whatsapp::template()
-    ->createMarketingTemplate($account)
-    ->setName('personal_promotion_text_only')
-    ->setLanguage('en')
-    ->addHeader('TEXT', 'Our {{1}} is on!', ['Summer Sale'])
-    ->addBody(
-        'Shop now through {{1}} and use code {{2}} to get {{3}} off of all merchandise.',
-        ['the end of August', '25OFF', '25%']
-    )
-    ->addFooter('Use the buttons below to manage your marketing subscriptions')
-    ->addButton('QUICK_REPLY', 'Unsubscribe from Promos')
-    ->addButton('QUICK_REPLY', 'Unsubscribe from All')
-    ->save();
-```
+---
 
 ### Crear Plantillas de Marketing
 
 Las plantillas de marketing son útiles para promociones, descuentos y campañas masivas.
+
+![Ejemplo de plantilla de marketing](assets/template_2.png "Plantilla de Marketing")
 
 ```php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
@@ -565,6 +545,8 @@ $template = Whatsapp::template()
 ### Crear Plantillas de Marketing con Imágenes
 
 Las plantillas de marketing también pueden incluir imágenes en el encabezado para hacerlas más atractivas.
+
+![Ejemplo de plantilla de marketing](assets/template_1.png "Plantilla de Marketing")
 
 ```php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
@@ -596,6 +578,8 @@ $template = Whatsapp::template()
 
 Puedes agregar botones de URL personalizados para redirigir a los usuarios a páginas específicas.
 
+![Ejemplo de plantilla de marketing](assets/template_3.png "Plantilla de Marketing")
+
 ```php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
@@ -625,6 +609,8 @@ $template = Whatsapp::template()
 ### Crear Variaciones de Plantillas de Marketing
 
 Puedes crear múltiples variaciones de plantillas para diferentes propósitos.
+
+![Ejemplo de plantilla de marketing](assets/template_4.png "Plantilla de Marketing")
 
 ```php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
