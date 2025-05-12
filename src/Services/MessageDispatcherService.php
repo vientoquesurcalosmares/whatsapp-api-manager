@@ -12,12 +12,35 @@ use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Exceptions\WhatsappApiException;
 use Illuminate\Support\Facades\Log; // <-- Agregamos esto
 
+/**
+ * Servicio para enviar mensajes a través de WhatsApp Business API
+ * 
+ * Maneja diferentes tipos de mensajes (texto, multimedia, reacciones, ubicación)
+ * incluyendo respuestas a mensajes existentes, con registro en base de datos y
+ * manejo de archivos multimedia.
+ */
 class MessageDispatcherService
 {
+    /**
+     * Constructor del servicio
+     *
+     * @param ApiClient $apiClient Cliente para comunicación con la API de WhatsApp
+     */
     public function __construct(
         protected ApiClient $apiClient
     ) {}
 
+    /**
+     * Envía un mensaje de texto
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $text Contenido del mensaje
+     * @param bool $previewUrl Habilitar vista previa de enlaces
+     * @return Message Modelo del mensaje creado
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendTextMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -81,6 +104,19 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de texto como respuesta a otro mensaje
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $contextMessageId ID del mensaje original (WA)
+     * @param string $text Contenido del mensaje
+     * @param bool $previewUrl Habilitar vista previa de enlaces
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si el mensaje de contexto no existe
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendReplyTextMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -159,6 +195,18 @@ class MessageDispatcherService
         }
     }
     
+    /**
+     * Envía una reacción (emoji) como respuesta a un mensaje
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $contextMessageId ID del mensaje original (WA)
+     * @param string $emoji Emoji a enviar
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si el emoji está vacío o no existe el contexto
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendReplyReactionMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -239,6 +287,19 @@ class MessageDispatcherService
             return $this->handleError($message, $e);
         }
     }
+
+    /**
+     * Envía un mensaje con imagen desde archivo local
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param \SplFileInfo $file Archivo de imagen
+     * @param string|null $caption Texto descriptivo opcional
+     * @return Message Modelo del mensaje creado
+     * @throws \RuntimeException Si falla la subida del archivo
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendImageMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -330,6 +391,19 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje con imagen como respuesta desde archivo local
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $contextMessageId ID del mensaje original (WA)
+     * @param \SplFileInfo $file Archivo de imagen
+     * @param string|null $caption Texto descriptivo opcional
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si no existe el mensaje de contexto
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendReplyImageMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -439,6 +513,17 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje con imagen desde URL pública
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $link URL de la imagen
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si la URL no es válida
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendImageMessageByUrl(
         string $phoneNumberId,
         string $countryCode,
@@ -513,6 +598,18 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje con imagen como respuesta desde URL pública
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $contextMessageId ID del mensaje original (WA)
+     * @param string $link URL de la imagen
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si no existe el contexto o URL inválida
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendReplyImageMessageByUrl(
         string $phoneNumberId,
         string $countryCode,
@@ -605,6 +702,17 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de audio desde archivo local
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param \SplFileInfo $file Archivo de audio
+     * @return Message Modelo del mensaje creado
+     * @throws \RuntimeException Si falla la subida del archivo
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendAudioMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -693,6 +801,18 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de audio como respuesta desde archivo local
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $contextMessageId ID del mensaje original (WA)
+     * @param \SplFileInfo $file Archivo de audio
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si no existe el mensaje de contexto
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendReplyAudioMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -790,6 +910,17 @@ class MessageDispatcherService
         }
     }
     
+    /**
+     * Envía un mensaje de audio desde URL pública
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $link URL del audio
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si la URL no es válida
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendAudioMessageByUrl(
         string $phoneNumberId,
         string $countryCode,
@@ -861,6 +992,18 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de audio como respuesta desde URL pública
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $contextMessageId ID del mensaje original (WA)
+     * @param string $link URL del audio
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si no existe el contexto o URL inválida
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendReplyAudioMessageByUrl(
         string $phoneNumberId,
         string $countryCode,
@@ -944,6 +1087,17 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de documento desde archivo local
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param \SplFileInfo $file Archivo de documento
+     * @param string|null $caption Texto descriptivo opcional
+     * @return Message Modelo del mensaje creado
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendDocumentMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -1033,6 +1187,19 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de documento como respuesta desde archivo local
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $contextMessageId ID del mensaje original (WA)
+     * @param \SplFileInfo $file Archivo de documento
+     * @param string|null $caption Texto descriptivo opcional
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si no existe el mensaje de contexto
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendReplyDocumentMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -1139,6 +1306,18 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de documento desde URL pública
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $link URL del documento
+     * @param string|null $caption Texto descriptivo opcional
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si la URL no es válida
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendDocumentMessageByUrl(
         string $phoneNumberId,
         string $countryCode,
@@ -1213,6 +1392,19 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de documento como respuesta desde URL pública
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $contextMessageId ID del mensaje original (WA)
+     * @param string $link URL del documento
+     * @param string|null $caption Texto descriptivo opcional
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si no existe el contexto o URL inválida
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendReplyDocumentMessageByUrl(
         string $phoneNumberId,
         string $countryCode,
@@ -1300,6 +1492,16 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de sticker desde archivo local
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param \SplFileInfo $file Archivo de sticker
+     * @return Message Modelo del mensaje creado
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendStickerMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -1385,6 +1587,18 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de sticker como respuesta desde archivo local
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $contextMessageId ID del mensaje original (WA)
+     * @param \SplFileInfo $file Archivo de sticker
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si no existe el mensaje de contexto
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendReplyStickerMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -1483,6 +1697,17 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de sticker desde URL pública
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $link URL del sticker
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si la URL no es válida
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendReplyStickerMessageByUrl(
         string $phoneNumberId,
         string $countryCode,
@@ -1567,6 +1792,17 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de video desde archivo local
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param \SplFileInfo $file Archivo de video
+     * @param string|null $caption Texto descriptivo opcional
+     * @return Message Modelo del mensaje creado
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendVideoMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -1655,6 +1891,19 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de video como respuesta desde archivo local
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $contextMessageId ID del mensaje original (WA)
+     * @param \SplFileInfo $file Archivo de video
+     * @param string|null $caption Texto descriptivo opcional
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si no existe el mensaje de contexto
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendReplyVideoMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -1756,6 +2005,18 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de video desde URL pública
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $link URL del video
+     * @param string|null $caption Texto descriptivo opcional
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si la URL no es válida
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendVideoMessageByUrl(
         string $phoneNumberId,
         string $countryCode,
@@ -1830,6 +2091,19 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de video como respuesta desde URL pública
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $contextMessageId ID del mensaje original (WA)
+     * @param string $link URL del video
+     * @param string|null $caption Texto descriptivo opcional
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si la URL no es válida o el mensaje de contexto no existe
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendReplyVideoMessageByUrl(
         string $phoneNumberId,
         string $countryCode,
@@ -1917,6 +2191,16 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de contacto
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $contactId ID del contacto a enviar
+     * @return Message Modelo del mensaje creado
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendContactMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -2029,6 +2313,18 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de contacto como respuesta
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $contextMessageId ID del mensaje original (WA)
+     * @param string $contactId ID del contacto a enviar
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si no existe el mensaje de contexto o el contacto
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendReplyContactMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -2154,6 +2450,19 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de localización
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param float $latitude Latitud de la ubicación
+     * @param float $longitude Longitud de la ubicación
+     * @param string|null $name Nombre opcional del lugar
+     * @param string|null $address Dirección opcional del lugar
+     * @return Message Modelo del mensaje creado
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendLocationMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -2230,6 +2539,21 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Envía un mensaje de localización como respuesta
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $contextMessageId ID del mensaje original (WA)
+     * @param float $latitude Latitud de la ubicación
+     * @param float $longitude Longitud de la ubicación
+     * @param string|null $name Nombre opcional del lugar
+     * @param string|null $address Dirección opcional del lugar
+     * @return Message Modelo del mensaje creado
+     * @throws \InvalidArgumentException Si no existe el mensaje de contexto
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
     public function sendReplyLocationMessage(
         string $phoneNumberId,
         string $countryCode,
@@ -2319,6 +2643,13 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Valida el número de teléfono y verifica que tenga un token API válido
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @return WhatsappPhoneNumber Modelo del número telefónico
+     * @throws \InvalidArgumentException Si el número no tiene un token API válido asociado
+     */
     private function validatePhoneNumber(string $phoneNumberId): WhatsappPhoneNumber
     {
         Log::channel('whatsapp')->info('Validando número de teléfono.', ['phone_number_id' => $phoneNumberId]);
@@ -2334,6 +2665,13 @@ class MessageDispatcherService
         return $phone;
     }
 
+    /**
+     * Resuelve el contacto del destinatario o lo crea si no existe
+     *
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @return Contact Modelo del contacto
+     */
     private function resolveContact(string $countryCode, string $phoneNumber): Contact
     {
         $fullPhoneNumber = $countryCode . $phoneNumber;
@@ -2352,6 +2690,16 @@ class MessageDispatcherService
         return $contact;
     }
 
+    /**
+     * Envía un mensaje a través de la API de WhatsApp
+     *
+     * @param WhatsappPhoneNumber $phone Número telefónico registrado
+     * @param string $to Número de teléfono del destinatario
+     * @param string $type Tipo de mensaje (text, image, video, etc.)
+     * @param array $parameters Parámetros específicos del tipo de mensaje
+     * @param string|null $contextMessageId ID del mensaje de contexto (opcional)
+     * @return array Respuesta de la API
+     */
     private function sendViaApi(
         WhatsappPhoneNumber $phone,
         string $to,
@@ -2473,6 +2821,15 @@ class MessageDispatcherService
         );
     }
 
+    /**
+     * Crea una sesión de subida para archivos grandes
+     *
+     * @param WhatsappPhoneNumber $phone Número telefónico registrado
+     * @param string $fileName Nombre del archivo
+     * @param string $fileType Tipo MIME del archivo
+     * @param int $fileLength Tamaño del archivo en bytes
+     * @return string ID de la sesión de subida
+     */
     private function createUploadSession(WhatsappPhoneNumber $phone,string $fileName, string $fileType, int $fileLength): string
     {
         $endpoint = Endpoints::build(Endpoints::CREATE_RESUMABLE_UPLOAD_SESSION, [
@@ -2515,6 +2872,13 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Valida el archivo de medios antes de subirlo
+     *
+     * @param \SplFileInfo $file Archivo a validar
+     * @param string $mediaType Tipo de medio (image, video, document, etc.)
+     * @throws \RuntimeException Si el archivo no es válido
+     */
     private function validateMediaFile(\SplFileInfo $file, string $mediaType): void
     {
         $maxFileSize = config("whatsapp.media.max_file_size.$mediaType");
@@ -2557,6 +2921,15 @@ class MessageDispatcherService
         ]);
     }
 
+    /**
+     * Sube un archivo a la API de WhatsApp
+     *
+     * @param WhatsappPhoneNumber $phone Número telefónico registrado
+     * @param \SplFileInfo $file Archivo a subir
+     * @param string $type_file Tipo de archivo (image, video, document, etc.)
+     * @return string ID del archivo subido
+     * @throws \RuntimeException Si falla la subida del archivo
+     */
     private function uploadFile(WhatsappPhoneNumber $phone, \SplFileInfo $file, string $type_file): string
     {
         $endpoint = Endpoints::build(Endpoints::UPLOAD_MEDIA, [
@@ -2617,6 +2990,13 @@ class MessageDispatcherService
         }
     }
 
+    /**
+     * Recupera la información de un archivo subido
+     *
+     * @param WhatsappPhoneNumber $phone Número telefónico registrado
+     * @param string $fileId ID del archivo subido
+     * @return array Información del archivo
+     */
     private function retrieveMediaInfo(WhatsappPhoneNumber $phone, string $fileId): array
     {
         $endpoint = Endpoints::build(Endpoints::RETRIEVE_MEDIA_URL, [
@@ -2637,6 +3017,15 @@ class MessageDispatcherService
         return $response;
     }
 
+    /**
+     * Descarga un archivo de medios desde la URL proporcionada
+     *
+     * @param WhatsappPhoneNumber $phone Número telefónico registrado
+     * @param string $url URL del archivo a descargar
+     * @param string $fileName Nombre del archivo local
+     * @param string $mediaType Tipo de medio (image, video, document, etc.)
+     * @return string Ruta local del archivo descargado
+     */
     private function downloadMedia(WhatsappPhoneNumber $phone, string $url, string $fileName, string $mediaType): string
     {
         // Obtener la ruta de almacenamiento desde la configuración
@@ -2693,6 +3082,13 @@ class MessageDispatcherService
         throw new \RuntimeException('No se pudo descargar el archivo después de varios intentos.');
     }
 
+    /**
+     * Maneja el éxito del envío de un mensaje
+     *
+     * @param Message $message Modelo del mensaje
+     * @param array $response Respuesta de la API
+     * @return Message Modelo del mensaje actualizado
+     */
     private function handleSuccess(Message $message, array $response): Message
     {
         Log::channel('whatsapp')->info('Mensaje enviado exitosamente.', [
@@ -2710,6 +3106,13 @@ class MessageDispatcherService
         return $message;
     }
 
+    /**
+     * Maneja el error del envío de un mensaje
+     *
+     * @param Message $message Modelo del mensaje
+     * @param WhatsappApiException $e Excepción lanzada por la API
+     * @return Message Modelo del mensaje actualizado
+     */
     private function handleError(Message $message, WhatsappApiException $e): Message
     {
         Log::channel('whatsapp')->error('Error al manejar envío de mensaje.', [

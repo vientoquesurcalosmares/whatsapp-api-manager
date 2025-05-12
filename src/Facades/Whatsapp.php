@@ -17,7 +17,9 @@ use Illuminate\Support\Facades\Facade;
 class Whatsapp extends Facade
 {
     /**
-     * The facade accessor for the primary WhatsApp service.
+     * Get the registered name of the component.
+     *
+     * @return string
      */
     protected static function getFacadeAccessor()
     {
@@ -25,7 +27,7 @@ class Whatsapp extends Facade
     }
 
     /**
-     * Get the phone service instance from the container.
+     * Get the business account service instance.
      */
     public static function phone()
     {
@@ -33,7 +35,7 @@ class Whatsapp extends Facade
     }
 
     /**
-     * Get the account registration service instance.
+     * Get the business account service instance.
      */
     public static function account()
     {

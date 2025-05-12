@@ -11,16 +11,35 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 use ScriptDevelop\WhatsappManager\Traits\GeneratesUlid;
 
+/**
+ * Campaign Model
+ *
+ * @property string $campaign_id
+ * @property string $whatsapp_business_account_id
+ * @property string $template_id
+ * @property string $name
+ * @property string $message_content
+ * @property string $type
+ * @property \Illuminate\Support\Carbon|null $scheduled_at
+ * @property string $status
+ * @property int $total_recipients
+ * @property array|null $filters
+ */
 class Campaign extends Model
 {
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
+    // Definición de la tabla y la clave primaria
     protected $table = 'whatsapp_campaigns';
+    // Definición de la clave primaria
     protected $primaryKey = 'campaign_id';
+    // Definición de la clave primaria como no autoincremental
     public $incrementing = false;
+    // Definición del tipo de la clave primaria
     protected $keyType = 'string';
 
+    // Definición de los campos que se pueden asignar masivamente
     protected $fillable = [
         'whatsapp_business_account_id',
         'template_id',
@@ -33,12 +52,18 @@ class Campaign extends Model
         'filters'
     ];
 
+    // Definición de los campos que se deben tratar como fechas
     protected $casts = [
         'scheduled_at' => 'datetime',
         'filters' => 'json'
     ];
 
     // Relaciones
+    /**
+     * Relación con la cuenta de WhatsApp Business.
+     *
+     * @return BelongsTo
+     */
     public function businessAccount(): BelongsTo
     {
         return $this->belongsTo(
@@ -48,11 +73,21 @@ class Campaign extends Model
         );
     }
 
+    /**
+     * Relación con la plantilla.
+     *
+     * @return BelongsTo
+     */
     public function template(): BelongsTo
     {
         return $this->belongsTo(Template::class, 'template_id', 'template_id');
     }
 
+    /**
+     * Relación con los contactos.
+     *
+     * @return BelongsToMany
+     */
     public function contacts(): BelongsToMany
     {
         return $this->belongsToMany(Contact::class, 'campaign_contact')
@@ -71,12 +106,16 @@ class Campaign extends Model
         return $this->hasOne(CampaignMetric::class, 'campaign_id');
     }
 
-    // Métodos de negocio
     public function scopeActive($query)
     {
         return $query->where('status', 'ACTIVE');
     }
 
+    /**
+     * Método para actualizar las métricas de la campaña.
+     *
+     * @return void
+     */
     public function updateMetrics(): void
     {
         $this->load('contacts');
@@ -92,6 +131,11 @@ class Campaign extends Model
         );
     }
 
+    /**
+     * Método para programar los mensajes de la campaña.
+     *
+     * @return void
+     */
     public function scheduleMessages(): void
     {
         $this->contacts()->each(function ($contact) {

@@ -10,17 +10,38 @@ use Illuminate\Support\Facades\Log;
 use ScriptDevelop\WhatsappManager\Models\TemplateCategory;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
+/**
+ * Constructor de plantillas para mensajes de WhatsApp Business API
+ * 
+ * Permite crear y configurar plantillas con diferentes componentes,
+ * validando los requisitos de la API y manejando la comunicación con el servicio.
+ */
 class TemplateBuilder
 {
+    /** @var array Datos de la plantilla en construcción */
     protected array $templateData = [
         'components' => [],
     ];
 
+    /** @var int Contador de botones agregados */
     protected int $buttonCount = 0;
+
+    /** @var ApiClient Cliente para comunicación con la API */
     protected ApiClient $apiClient;
+
+    /** @var TemplateService Servicio auxiliar para plantillas */
     protected TemplateService $templateService;
+
+    /** @var WhatsappBusinessAccount Cuenta empresarial asociada */
     protected WhatsappBusinessAccount $account;
 
+    /**
+     * Constructor de la clase
+     *
+     * @param ApiClient $apiClient
+     * @param WhatsappBusinessAccount $account
+     * @param TemplateService $templateService
+     */
     public function __construct(ApiClient $apiClient, WhatsappBusinessAccount $account, TemplateService $templateService)
     {
         $this->apiClient = $apiClient;
@@ -29,6 +50,13 @@ class TemplateBuilder
     }
 
 
+    /**
+     * Establece el nombre de la plantilla
+     *
+     * @param string $name
+     * @return self
+     * @throws InvalidArgumentException Si el nombre excede 512 caracteres
+     */
     public function setName(string $name): self
     {
         if (strlen($name) > 512) {
@@ -39,12 +67,25 @@ class TemplateBuilder
         return $this;
     }
 
+    /**
+     * Establece el idioma de la plantilla
+     *
+     * @param string $language
+     * @return self
+     */
     public function setLanguage(string $language): self
     {
         $this->templateData['language'] = $language;
         return $this;
     }
 
+    /**
+     * Establece la categoría de la plantilla
+     *
+     * @param string $category
+     * @return self
+     * @throws InvalidArgumentException Si la categoría no es válida
+     */
     public function setCategory(string $category): self
     {
         $validCategories = ['AUTHENTICATION', 'MARKETING', 'UTILITY'];
@@ -56,6 +97,15 @@ class TemplateBuilder
         return $this;
     }
 
+    /**
+     * Agrega un componente HEADER a la plantilla
+     *
+     * @param string $format Formato del header (TEXT, IMAGE, etc)
+     * @param string $content Contenido o ruta del archivo
+     * @param array|null $example Ejemplos para parámetros
+     * @return self
+     * @throws InvalidArgumentException Para formatos o contenidos inválidos
+     */
     public function addHeader(string $format, string $content, ?array $example = null): self
     {
         Log::info('Estado actual de los componentes antes de agregar HEADER.', [
@@ -133,6 +183,14 @@ class TemplateBuilder
         return $this;
     }
 
+    /**
+     * Agrega un componente BODY a la plantilla
+     *
+     * @param string $text Texto principal con parámetros opcionales
+     * @param array|null $example Ejemplos para parámetros dinámicos
+     * @return self
+     * @throws InvalidArgumentException Para textos o parámetros inválidos
+     */
     public function addBody(string $text, ?array $example = null): self
     {
         if ($this->componentExists('BODY')) {
@@ -168,6 +226,14 @@ class TemplateBuilder
         return $this;
     }
 
+
+    /**
+     * Agrega un componente FOOTER a la plantilla
+     *
+     * @param string $text Texto del footer
+     * @return self
+     * @throws InvalidArgumentException Si excede longitud máxima o tiene parámetros
+     */
     public function addFooter(string $text): self
     {
         if ($this->componentExists('FOOTER')) {
@@ -188,6 +254,17 @@ class TemplateBuilder
         return $this;
     }
 
+
+    /**
+     * Agrega un botón a la plantilla
+     *
+     * @param string $type Tipo de botón (PHONE_NUMBER, URL, QUICK_REPLY)
+     * @param string $text Texto visible del botón
+     * @param string|null $urlOrPhone URL o número de teléfono según el tipo
+     * @param array|null $example Ejemplos para parámetros en URL
+     * @return self
+     * @throws InvalidArgumentException Para tipos inválidos o límites excedidos
+     */
     public function addButton(string $type, string $text, ?string $urlOrPhone = null, ?array $example = null): self
     {
         // Validar el número máximo de botones
@@ -258,6 +335,12 @@ class TemplateBuilder
         return $this;
     }
 
+    /**
+     * Verifica si un tipo de componente ya existe
+     *
+     * @param string $type Tipo de componente a verificar
+     * @return bool
+     */
     protected function componentExists(string $type): bool
     {
         foreach ($this->templateData['components'] as $component) {
@@ -268,6 +351,15 @@ class TemplateBuilder
         return false;
     }
 
+    /**
+     * Valida parámetros dinámicos en el texto contra ejemplos proporcionados
+     *
+     * @param string $text Texto con placeholders
+     * @param array|null $example Valores de ejemplo
+     * @param string $type Tipo de componente (HEADER, BODY, FOOTER)
+     * @return void
+     * @throws InvalidArgumentException Por parámetros inválidos
+     */
     protected function validateParameters(string $text, ?array $example, string $type): void
     {
         // Extraer los parámetros del texto ({{1}}, {{num_order}}, etc.)
@@ -308,6 +400,12 @@ class TemplateBuilder
         }
     }
 
+    /**
+     * Construye y valida la estructura final de la plantilla
+     *
+     * @return array
+     * @throws InvalidArgumentException Si faltan datos requeridos
+     */
     public function build(): array
     {
         if (empty($this->templateData['name'])) {
@@ -329,6 +427,12 @@ class TemplateBuilder
         return $this->templateData;
     }
 
+    /**
+     * Guarda la plantilla en la API y la base de datos
+     *
+     * @return Template Modelo de plantilla creado
+     * @throws \Exception En caso de error durante el proceso
+     */
     public function save(): Template
     {
         try {
@@ -406,6 +510,12 @@ class TemplateBuilder
         }
     }
 
+    /**
+     * Valida los datos requeridos para la plantilla
+     *
+     * @return void
+     * @throws InvalidArgumentException Si faltan campos obligatorios
+     */
     protected function validateTemplate(): void
     {
         if (empty($this->templateData['name'])) {
@@ -425,11 +535,24 @@ class TemplateBuilder
         }
     }
 
+    /**
+     * Obtiene componentes por tipo
+     *
+     * @param string $type Tipo de componente a filtrar
+     * @return array Componentes coincidentes
+     */
     protected function getComponentsByType(string $type): array
     {
         return array_filter($this->templateData['components'], fn($component) => $component['type'] === $type);
     }
 
+    /**
+     * Obtiene o crea el ID de categoría desde la base de datos
+     *
+     * @param string $categoryName Nombre de la categoría
+     * @return string ID de la categoría
+     * @throws InvalidArgumentException Si el nombre está vacío
+     */
     protected function getCategoryId(string $categoryName): string
     {
         if (empty($categoryName)) {

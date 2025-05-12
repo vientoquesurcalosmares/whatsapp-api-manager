@@ -8,11 +8,25 @@ use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 use ScriptDevelop\WhatsappManager\Repositories\WhatsappBusinessAccountRepository;
 
-
+/**
+ * Servicio para interactuar con la API de WhatsApp Business.
+ * Proporciona métodos para gestionar cuentas empresariales, números de teléfono y perfiles.
+ */
 class WhatsappService
 {
+    /**
+     * La cuenta empresarial de WhatsApp actualmente configurada.
+     *
+     * @var WhatsappBusinessAccount|null
+     */
     protected ?WhatsappBusinessAccount $businessAccount = null;
 
+    /**
+     * Constructor de la clase.
+     *
+     * @param ApiClient $apiClient Cliente para realizar solicitudes a la API de WhatsApp.
+     * @param WhatsappBusinessAccountRepository $accountRepo Repositorio para gestionar cuentas empresariales.
+     */
     public function __construct(
         protected ApiClient $apiClient,
         protected WhatsappBusinessAccountRepository $accountRepo
@@ -20,6 +34,9 @@ class WhatsappService
 
     /**
      * Establece la cuenta empresarial a usar.
+     *
+     * @param string $accountId El ID de la cuenta empresarial.
+     * @return self
      */
     public function forAccount(string $accountId): self
     {
@@ -28,7 +45,10 @@ class WhatsappService
     }
 
     /**
-     * Asegura que una cuenta esté configurada.
+     * Asegura que una cuenta empresarial esté configurada.
+     *
+     * @return void
+     * @throws \RuntimeException Si no se ha configurado una cuenta empresarial.
      */
     protected function ensureAccountIsSet(): void
     {
@@ -38,7 +58,9 @@ class WhatsappService
     }
 
     /**
-     * Headers de autenticación.
+     * Obtiene los headers de autenticación para las solicitudes a la API.
+     *
+     * @return array Los headers de autenticación.
      */
     protected function getAuthHeaders(): array
     {
@@ -47,6 +69,12 @@ class WhatsappService
         ];
     }
 
+    /**
+     * Obtiene información de una cuenta empresarial de WhatsApp.
+     *
+     * @param string $whatsappBusinessId El ID de la cuenta empresarial de WhatsApp.
+     * @return array La respuesta de la API con los detalles de la cuenta empresarial.
+     */
     public function getBusinessAccount(string $whatsappBusinessId): array
     {
         $response = $this->apiClient->request(
@@ -60,6 +88,12 @@ class WhatsappService
         return $response;
     }
 
+    /**
+     * Obtiene los números de teléfono asociados a una cuenta empresarial.
+     *
+     * @param string $whatsappBusinessId El ID de la cuenta empresarial de WhatsApp.
+     * @return array La respuesta de la API con los números de teléfono.
+     */
     public function getPhoneNumbers(string $whatsappBusinessId): array
     {
         $response = $this->apiClient->request(
@@ -73,13 +107,18 @@ class WhatsappService
         return $response['data'] ?? $response;
     }
 
+    /**
+     * Obtiene los detalles de un número de teléfono específico.
+     *
+     * @param string $phoneNumberId El ID del número de teléfono.
+     * @return array La respuesta de la API con los detalles del número de teléfono.
+     */
     public function getPhoneNumberDetails(string $phoneNumberId): array
     {
-        // Construir URL con versión y parámetros
         $url = Endpoints::build(
             Endpoints::GET_PHONE_DETAILS,
             [
-                'version' => config('whatsapp-manager.api.version'), // Obtener versión del config
+                'version' => config('whatsapp-manager.api.version'),
                 'phone_number_id' => $phoneNumberId
             ]
         ) . '?fields=' . urlencode('verified_name,code_verification_status,display_phone_number,quality_rating,platform_type,throughput,webhook_configuration');
@@ -89,13 +128,18 @@ class WhatsappService
         return $this->apiClient->request(
             'GET',
             $url,
-            headers: $this->getAuthHeaders() // ✅ Incluir token de autenticación
+            headers: $this->getAuthHeaders()
         );
     }
-    
+
+    /**
+     * Obtiene el perfil empresarial asociado a un número de teléfono.
+     *
+     * @param string $phoneNumberId El ID del número de teléfono.
+     * @return array La respuesta de la API con los detalles del perfil empresarial.
+     */
     public function getBusinessProfile(string $phoneNumberId): array
     {
-        // Construir URL con parámetros de campos
         $url = Endpoints::build(Endpoints::GET_BUSINESS_PROFILE, [
             'phone_number_id' => $phoneNumberId
         ]) . '?' . http_build_query([
@@ -113,6 +157,12 @@ class WhatsappService
         return $response;
     }
 
+    /**
+     * Configura un token temporal para realizar solicitudes a la API.
+     *
+     * @param string $token El token temporal.
+     * @return self
+     */
     public function withTempToken(string $token): self
     {
         $this->businessAccount = new WhatsappBusinessAccount([
@@ -120,5 +170,4 @@ class WhatsappService
         ]);
         return $this;
     }
-
 }

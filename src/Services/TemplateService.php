@@ -11,17 +11,34 @@ use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Servicio para gestionar las plantillas de WhatsApp.
+ * Proporciona métodos para sincronizar, crear, actualizar, eliminar y enviar plantillas.
+ */
 class TemplateService
 {
+    /**
+     * Cliente para realizar solicitudes a la API de WhatsApp.
+     *
+     * @var ApiClient
+     */
     protected ApiClient $apiClient;
 
+    /**
+     * Constructor de la clase.
+     *
+     * @param ApiClient $apiClient Cliente para realizar solicitudes a la API de WhatsApp.
+     */
     public function __construct(ApiClient $apiClient)
     {
         $this->apiClient = $apiClient;
     }
 
     /**
-     * Sincronizar todas las plantillas desde la API de WhatsApp.
+     * Sincroniza todas las plantillas desde la API de WhatsApp.
+     *
+     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @return void
      */
     public function getTemplates(WhatsappBusinessAccount $account): void
     {
@@ -72,7 +89,14 @@ class TemplateService
         }
     }
 
-    public function getTemplateById(WhatsappBusinessAccount $account, string $templateId): Template
+    /**
+     * Obtiene una plantilla por su ID desde la API de WhatsApp.
+     *
+     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param string $templateId El ID de la plantilla.
+     * @return Template La plantilla obtenida.
+     * @throws InvalidArgumentException Si el ID de la plantilla no es válido.
+     */    public function getTemplateById(WhatsappBusinessAccount $account, string $templateId): Template
     {
         if (empty($templateId)) {
             throw new InvalidArgumentException('El ID de la plantilla es obligatorio.');
@@ -117,6 +141,13 @@ class TemplateService
         }
     }
 
+    /**
+     * Obtiene una plantilla por su nombre desde la API de WhatsApp.
+     *
+     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param string $templateName El nombre de la plantilla.
+     * @return Template|null La plantilla obtenida o null si no existe.
+     */
     public function getTemplateByName(WhatsappBusinessAccount $account, string $templateName): ?Template
     {
         $endpoint = Endpoints::build(Endpoints::GET_TEMPLATES, [
@@ -172,24 +203,50 @@ class TemplateService
         }
     }
 
+    /**
+     * Crea una plantilla de utilidad.
+     *
+     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @return TemplateBuilder El constructor de plantillas.
+     */
     public function createUtilityTemplate(WhatsappBusinessAccount $account): TemplateBuilder
     {
         return (new TemplateBuilder($this->apiClient, $account, $this))
             ->setCategory('UTILITY'); // Categoría específica para plantillas transaccionales
     }
 
+    /**
+     * Crea una plantilla de marketing.
+     *
+     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @return TemplateBuilder El constructor de plantillas.
+     */
     public function createMarketingTemplate(WhatsappBusinessAccount $account): TemplateBuilder
     {
         return (new TemplateBuilder($this->apiClient, $account, $this))
             ->setCategory('MARKETING'); // Categoría específica para plantillas de marketing
     }
 
+    /**
+     * Crea una plantilla de autenticación.
+     *
+     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @return TemplateBuilder El constructor de plantillas.
+     */
     public function createAuthenticationTemplate(WhatsappBusinessAccount $account): TemplateBuilder
     {
         return (new TemplateBuilder($this->apiClient, $account, $this))
             ->setCategory('AUTHENTICATION'); // Categoría específica para plantillas de autenticación
     }
 
+    /**
+     * Elimina una plantilla por su ID.
+     *
+     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param string $templateId El ID de la plantilla.
+     * @param bool $hardDelete Indica si se debe realizar un borrado permanente.
+     * @return bool True si la plantilla fue eliminada, false en caso contrario.
+     */
     public function deleteTemplateById(WhatsappBusinessAccount $account, string $templateId, bool $hardDelete = false): bool
     {
         $endpoint = Endpoints::build(Endpoints::DELETE_TEMPLATE, [
@@ -248,6 +305,14 @@ class TemplateService
         }
     }
 
+    /**
+     * Elimina una plantilla por su nombre.
+     *
+     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param string $templateName El nombre de la plantilla.
+     * @param bool $hardDelete Indica si se debe realizar un borrado permanente.
+     * @return bool True si la plantilla fue eliminada, false en caso contrario.
+     */
     public function deleteTemplateByName(WhatsappBusinessAccount $account, string $templateName, bool $hardDelete = false): bool
     {
         $endpoint = Endpoints::build(Endpoints::DELETE_TEMPLATE, [
@@ -306,13 +371,23 @@ class TemplateService
         }
     }
 
+    /**
+     * Crea un mensaje de plantilla para enviar.
+     *
+     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @return TemplateMessageBuilder El constructor del mensaje de plantilla.
+     */
     public function sendTemplateMessage(WhatsappBusinessAccount $account): TemplateMessageBuilder
     {
         return new TemplateMessageBuilder($account);
     }
 
     /**
-     * Crear o actualizar una plantilla en la base de datos.
+     * Crea o actualiza una plantilla en la base de datos.
+     *
+     * @param string $businessId El ID de la cuenta empresarial.
+     * @param array $templateData Los datos de la plantilla.
+     * @return Template La plantilla creada o actualizada.
      */
     protected function storeOrUpdateTemplate(string $businessId, array $templateData): Template
     {
@@ -346,7 +421,10 @@ class TemplateService
     }
 
     /**
-     * Obtener el ID de la categoría o crearla si no existe.
+     * Obtiene el ID de la categoría o la crea si no existe.
+     *
+     * @param string $categoryName El nombre de la categoría.
+     * @return string El ID de la categoría.
      */
     protected function getCategoryId(string $categoryName): string
     {
@@ -368,7 +446,11 @@ class TemplateService
     }
 
     /**
-     * Sincronizar los componentes de una plantilla.
+     * Sincroniza los componentes de una plantilla.
+     *
+     * @param Template $template La plantilla a sincronizar.
+     * @param array $components Los componentes de la plantilla.
+     * @return void
      */
     protected function syncTemplateComponents(Template $template, array $components): void
     {
@@ -413,7 +495,10 @@ class TemplateService
     }
 
     /**
-     * Obtener el contenido del componente según su tipo.
+     * Obtiene el contenido de un componente según su tipo.
+     *
+     * @param array $componentData Los datos del componente.
+     * @return array|null El contenido del componente o null si no aplica.
      */
     protected function getComponentContent(array $componentData): ?array
     {
@@ -442,6 +527,13 @@ class TemplateService
         }
     }
 
+    /**
+     * Valida los datos de una plantilla.
+     *
+     * @param array $templateData Los datos de la plantilla.
+     * @return void
+     * @throws InvalidArgumentException Si los datos no son válidos.
+     */
     protected function validateTemplateData(array $templateData): void
     {
         if (empty($templateData['name'])) {
@@ -461,6 +553,15 @@ class TemplateService
         }
     }
 
+    /**
+     * Crea una sesión de carga para un archivo.
+     *
+     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param string $filePath La ruta del archivo.
+     * @param string $mimeType El tipo MIME del archivo.
+     * @return string El ID de la sesión de carga.
+     * @throws \RuntimeException Si ocurre un error durante la creación de la sesión.
+     */
     public function createUploadSession(WhatsappBusinessAccount $account, string $filePath, string $mimeType): string
     {
         // Extraer solo el nombre del archivo
@@ -545,6 +646,17 @@ class TemplateService
         return $uploadSessionId;
     }
 
+    /**
+     * Sube un archivo a la sesión de carga.
+     *
+     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param string $sessionId El ID de la sesión de carga.
+     * @param string $filePath La ruta del archivo.
+     * @param string $mimeType El tipo MIME del archivo.
+     * @return string El identificador del archivo subido.
+     * @throws InvalidArgumentException Si el archivo no existe.
+     * @throws \RuntimeException Si ocurre un error durante la carga.
+     */
     public function uploadMedia(WhatsappBusinessAccount $account, string $sessionId, string $filePath, string $mimeType): string
     {
         // Validar que el archivo exista
@@ -625,6 +737,14 @@ class TemplateService
         return $handle;
     }
 
+    /**
+     * Valida un archivo multimedia antes de subirlo.
+     *
+     * @param string $filePath La ruta del archivo.
+     * @param string $mimeType El tipo MIME del archivo.
+     * @return void
+     * @throws InvalidArgumentException Si el archivo no es válido.
+     */
     protected function validateMediaFile(string $filePath, string $mimeType): void
     {
         $fileSize = filesize($filePath);
@@ -651,6 +771,13 @@ class TemplateService
         ]);
     }
 
+    /**
+     * Obtiene el tipo de medio a partir del tipo MIME.
+     *
+     * @param string $mimeType El tipo MIME del archivo.
+     * @return string El tipo de medio (por ejemplo, "image", "audio").
+     * @throws InvalidArgumentException Si no se puede determinar el tipo de medio.
+     */
     protected function getMediaTypeFromMimeType(string $mimeType): string
     {
         // Mapear tipos MIME a categorías de medios

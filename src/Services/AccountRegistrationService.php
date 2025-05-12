@@ -12,14 +12,35 @@ use ScriptDevelop\WhatsappManager\WhatsappApi\Exceptions\ApiException;
 use ScriptDevelop\WhatsappManager\Exceptions\InvalidApiResponseException;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Validators\BusinessProfileValidator;
 
+/**
+ * Servicio para registrar cuentas empresariales de WhatsApp y gestionar sus números telefónicos.
+ * Este servicio se encarga de validar la entrada, registrar o actualizar cuentas empresariales,
+ * registrar números telefónicos y vincular perfiles empresariales a los números.
+ */
 class AccountRegistrationService
 {
+    /**
+     * @var WhatsappService
+     */
     use GeneratesUlid;
 
+    /**
+     * Constructor del servicio de registro de cuentas empresariales.
+     *
+     * @param WhatsappService $whatsappService Servicio de WhatsApp.
+     */
     public function __construct(
         protected WhatsappService $whatsappService
     ) {}
 
+    /**
+     * Registra una cuenta empresarial de WhatsApp y sus números telefónicos.
+     *
+     * @param array $data Datos de la cuenta empresarial.
+     * @return WhatsappBusinessAccount La cuenta empresarial registrada o actualizada.
+     * @throws ApiException Si ocurre un error al interactuar con la API de WhatsApp.
+     * @throws InvalidApiResponseException Si la respuesta de la API es inválida.
+     */
     public function register(array $data): WhatsappBusinessAccount
     {
         Log::channel('whatsapp')->info('Iniciando registro de cuenta', ['business_id' => $data['business_id']]);
@@ -45,6 +66,12 @@ class AccountRegistrationService
         }
     }
 
+    /**
+     * Valida la entrada de datos para el registro de la cuenta empresarial.
+     *
+     * @param array $data Datos de la cuenta empresarial.
+     * @throws \InvalidArgumentException Si los datos son inválidos.
+     */
     private function validateInput(array $data): void
     {
         if (empty($data['api_token']) || empty($data['business_id'])) {
@@ -52,6 +79,13 @@ class AccountRegistrationService
         }
     }
 
+    /**
+     * Obtiene los datos de la cuenta empresarial desde la API de WhatsApp.
+     *
+     * @param array $data Datos de la cuenta empresarial.
+     * @return array Datos de la cuenta empresarial.
+     * @throws ApiException Si ocurre un error al interactuar con la API de WhatsApp.
+     */
     protected function fetchAccountData(array $data): array
     {
         // Usa el token temporal SIN encriptar para la verificación inicial
@@ -67,6 +101,13 @@ class AccountRegistrationService
         return $response;
     }
 
+    /**
+     * Registra o actualiza la cuenta empresarial en la base de datos.
+     *
+     * @param string $apiToken Token de la API.
+     * @param array $apiData Datos de la cuenta empresarial.
+     * @return WhatsappBusinessAccount La cuenta empresarial registrada o actualizada.
+     */
     private function upsertBusinessAccount(string $apiToken, array $apiData): WhatsappBusinessAccount
     {
         // El token se encripta automáticamente al guardar (vía mutador)
@@ -82,6 +123,12 @@ class AccountRegistrationService
         );
     }
 
+    /**
+     * Registra los números telefónicos asociados a la cuenta empresarial.
+     *
+     * @param WhatsappBusinessAccount $account La cuenta empresarial.
+     * @throws ApiException Si ocurre un error al interactuar con la API de WhatsApp.
+     */
     private function registerPhoneNumbers(WhatsappBusinessAccount $account): void
     {
         try {
@@ -99,6 +146,14 @@ class AccountRegistrationService
         }
     }
 
+    /**
+     * Actualiza o crea un número telefónico en la base de datos.
+     *
+     * @param WhatsappBusinessAccount $account La cuenta empresarial.
+     * @param array $phoneData Datos del número telefónico.
+     * @return WhatsappPhoneNumber El número telefónico registrado o actualizado.
+     * @throws ApiException Si ocurre un error al interactuar con la API de WhatsApp.
+     */
     private function updateOrCreatePhoneNumber(WhatsappBusinessAccount $account, array $phoneData): WhatsappPhoneNumber
     {
         try {
@@ -134,6 +189,12 @@ class AccountRegistrationService
         }
     }
 
+    /**
+     * Vincula los perfiles empresariales a los números telefónicos.
+     *
+     * @param WhatsappBusinessAccount $account La cuenta empresarial.
+     * @throws ApiException Si ocurre un error al interactuar con la API de WhatsApp.
+     */
     private function linkBusinessProfilesToPhones(WhatsappBusinessAccount $account): void
     {
         foreach ($account->phoneNumbers as $phone) {
@@ -141,6 +202,13 @@ class AccountRegistrationService
         }
     }
 
+    /**
+     * Procesa el perfil empresarial de un número telefónico.
+     *
+     * @param WhatsappPhoneNumber $phone El número telefónico.
+     * @throws ApiException Si ocurre un error al interactuar con la API de WhatsApp.
+     * @throws InvalidApiResponseException Si la respuesta de la API es inválida.
+     */
     private function processPhoneNumberProfile(WhatsappPhoneNumber $phone): void
     {
         try {
@@ -159,6 +227,13 @@ class AccountRegistrationService
         }
     }
 
+    /**
+     * Actualiza o crea un perfil empresarial en la base de datos.
+     *
+     * @param WhatsappPhoneNumber $phone El número telefónico.
+     * @param array $profileData Datos del perfil empresarial.
+     * @throws InvalidApiResponseException Si la respuesta de la API es inválida.
+     */
     private function upsertBusinessProfile(WhatsappPhoneNumber $phone, array $profileData): void
     {
         try {
@@ -186,6 +261,12 @@ class AccountRegistrationService
         }
     }
 
+    /**
+     * Convierte los datos de los sitios web a un formato adecuado para la base de datos.
+     *
+     * @param array $apiWebsites Datos de los sitios web desde la API.
+     * @return array Datos de los sitios web convertidos.
+     */
     private function parseWebsites(array $apiWebsites): array
     {
         return array_map(fn($website) => [
@@ -193,6 +274,12 @@ class AccountRegistrationService
         ], $apiWebsites);
     }
 
+    /**
+     * Sincroniza los sitios web del perfil empresarial en la base de datos.
+     *
+     * @param WhatsappBusinessProfile $profile El perfil empresarial.
+     * @param array $websites Datos de los sitios web.
+     */
     private function syncWebsites(WhatsappBusinessProfile $profile, array $websites): void
     {
         $profile->websites()->delete();
