@@ -124,25 +124,25 @@ class WhatsappServiceProvider extends ServiceProvider
         $mediaBasePath = storage_path('app/public/whatsapp');
         $mediaLinkPath = public_path('storage/whatsapp');
 
-        $parentDir = dirname($mediaLinkPath);
-        if (!is_dir($parentDir)) {
-            mkdir($parentDir, 0755, true);
-            $this->app['log']->info("Directorio padre creado: {$parentDir}");
-        }
-
-        // Crear el enlace simbólico solo si no existe
-        if (!is_link($mediaLinkPath)) {
-            try {
-                symlink($mediaBasePath, $mediaLinkPath);
-                $this->app['log']->info('Enlace simbólico de media creado.');
-            } catch (\Exception $e) {
-                $this->app['log']->error("Error al crear el enlace: {$e->getMessage()}");
+        try {
+            // Asegurar directorio padre
+            $parentDir = dirname($mediaLinkPath);
+            if (!is_dir($parentDir) && !@mkdir($parentDir, 0755, true) && !is_dir($parentDir)) {
+                throw new \RuntimeException("No se pudo crear el directorio: {$parentDir}");
             }
+
+            // Crear enlace solo si no existe
+            if (!file_exists($mediaLinkPath)) {
+                if (@symlink($mediaBasePath, $mediaLinkPath)) {
+                    $this->app['log']->info('Enlace simbólico creado exitosamente.');
+                } else {
+                    $this->app['log']->warning("Falló la creación automática del enlace. Ejecuta manualmente: php artisan storage:link");
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->app['log']->error("Error en storage link: {$e->getMessage()}");
+            $this->app['log']->warning("El paquete se instaló correctamente, pero debes ejecutar MANUALMENTE: php artisan storage:link");
         }
-        // if (!is_link(public_path('storage/whatsapp'))) {
-        //     symlink($mediaBasePath, public_path('storage/whatsapp'));
-        //     $this->app['log']->info('Enlace simbólico de media creado automáticamente.');
-        // }
     }
 
     /**
