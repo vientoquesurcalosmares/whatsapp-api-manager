@@ -121,10 +121,10 @@ class WhatsappServiceProvider extends ServiceProvider
      */
     protected function createStorageLink()
     {
-        $mediaBasePath = storage_path('app/public/media');
+        $mediaBasePath = storage_path('app/public/whatsapp');
 
-        if (!is_link(public_path('storage/media'))) {
-            symlink($mediaBasePath, public_path('storage/media'));
+        if (!is_link(public_path('storage/whatsapp'))) {
+            symlink($mediaBasePath, public_path('storage/whatsapp'));
             $this->app['log']->info('Enlace simbólico de media creado automáticamente.');
         }
     }

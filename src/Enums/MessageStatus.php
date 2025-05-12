@@ -10,6 +10,7 @@ enum MessageStatus: string
     case READ = 'read';
     case FAILED = 'failed';
     case RECEIVED = 'received';
+    case DELETED = 'deleted';
     
     public static function fromApiStatus(string $apiStatus): self
     {
@@ -19,6 +20,7 @@ enum MessageStatus: string
             'read' => self::READ,
             'failed' => self::FAILED,
             'received' => self::RECEIVED,
+            'deleted' => self::DELETED,
             default => self::PENDING
         };
     }
