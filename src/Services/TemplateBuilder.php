@@ -103,7 +103,7 @@ class TemplateBuilder
             $mimeType = mime_content_type($filePath);
     
             // Asumiendo que createUploadSession requiere $account, $filePath, $mimeType como argumentos
-            $sessionId = $this->templateService->createUploadSession($this->account);
+            $sessionId = $this->templateService->createUploadSession($this->account, $filePath, $mimeType);
             $mediaId = $this->templateService->uploadMedia($this->account, $sessionId, $filePath, $mimeType);
     
             if (!mb_check_encoding($mediaId, 'UTF-8')) {

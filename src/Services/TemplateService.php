@@ -456,35 +456,88 @@ class TemplateService
         }
     }
 
-    public function createUploadSession(WhatsappBusinessAccount $account): string
+    public function createUploadSession(WhatsappBusinessAccount $account, string $filePath, string $mimeType): string
     {
-        $endpoint = Endpoints::build(Endpoints::CREATE_UPLOAD_SESSION, [
-            'app_id' => $account->app_id,
-        ]);
+        // Extraer solo el nombre del archivo
+        $fileName = basename($filePath);
+
+        // Construir la URL completa
+        $baseUrl = config('whatsapp.api.base_url', 'https://graph.facebook.com');
+        $version = config('whatsapp.api.version', 'v22.0');
+        $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . '/' . $account->app_id . '/uploads';
 
         $headers = [
-            'Authorization' => 'Bearer ' . $account->api_token,
+            'Authorization: Bearer ' . $account->api_token,
+            'Content-Type: application/json',
+        ];
+
+        $body = [
+            'file_name' => $fileName,
+            'file_type' => $mimeType,
         ];
 
         Log::info('Creando sesión de carga.', [
-            'endpoint' => $endpoint,
-            'app_id' => $account->app_id,
+            'url' => $url,
+            'body' => $body,
         ]);
 
-        $response = $this->apiClient->request(
-            'POST',
-            $endpoint,
-            [],
-            null,
-            [],
-            $headers
-        );
+        // Configurar cURL
+        $curl = curl_init();
 
-        Log::info('Sesión de carga creada.', [
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => json_encode($body),
+            CURLOPT_HTTPHEADER => $headers,
+        ]);
+
+        // Ejecutar la solicitud
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+        // Manejar errores de cURL
+        if (curl_errno($curl)) {
+            $error = curl_error($curl);
+            curl_close($curl);
+            throw new \RuntimeException("Error en cURL: $error");
+        }
+
+        curl_close($curl);
+
+        // Registrar la respuesta
+        Log::info('Respuesta de la API al crear la sesión de carga.', [
             'response' => $response,
+            'http_code' => $httpCode,
         ]);
 
-        return $response['id'] ?? throw new \Exception('No se pudo obtener el ID de la sesión de carga.');
+        // Validar el código de respuesta HTTP
+        if ($httpCode !== 200) {
+            throw new \RuntimeException("Error al crear la sesión de carga. Código HTTP: $httpCode. Respuesta: $response");
+        }
+
+        // Decodificar la respuesta JSON
+        $responseData = json_decode($response, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \RuntimeException('Error al decodificar la respuesta JSON: ' . json_last_error_msg());
+        }
+
+        // Obtener el ID de la sesión de carga
+        $uploadSessionId = $responseData['id'] ?? null;
+
+        if (!$uploadSessionId) {
+            throw new \Exception('No se pudo obtener el ID de la sesión de carga.');
+        }
+
+        Log::info('Sesión de carga creada exitosamente.', ['uploadSessionId' => $uploadSessionId]);
+
+        return $uploadSessionId;
     }
 
     public function uploadMedia(WhatsappBusinessAccount $account, string $sessionId, string $filePath, string $mimeType): string
