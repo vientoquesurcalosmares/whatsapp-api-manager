@@ -306,6 +306,11 @@ class TemplateService
         }
     }
 
+    public function sendTemplateMessage(WhatsappBusinessAccount $account): TemplateMessageBuilder
+    {
+        return new TemplateMessageBuilder($account);
+    }
+
     /**
      * Crear o actualizar una plantilla en la base de datos.
      */
