@@ -17,6 +17,9 @@ return new class extends Migration
             $table->char('name', 250);
             $table->text('api_token')->nullable();
             $table->char('app_id', 20)->unique()->nullable();
+            $table->char('app_name', 250)->nullable();
+            $table->text('app_link')->nullable();
+            $table->string('currency', 10)->nullable();
             $table->string('webhook_token', 200)->nullable();
             $table->integer('timezone_id');
             $table->text('message_template_namespace');

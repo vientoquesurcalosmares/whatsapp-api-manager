@@ -20,6 +20,9 @@ class WhatsappBusinessAccount extends Model
         'name',
         'api_token',
         'app_id',
+        'app_name',
+        'app_link',
+        'currency',
         'webhook_token',
         'timezone_id',
         'message_template_namespace'

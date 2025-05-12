@@ -50,7 +50,9 @@ class AccountRegistrationService
         try {
             // 1. Registrar/Actualizar cuenta empresarial (el token se encripta automáticamente)
             $accountData = $this->fetchAccountData($data);
-            $account = $this->upsertBusinessAccount($data['api_token'], $accountData);
+            $suscriptions = $this->fetchAccountDataSuscriptions($data);
+
+            $account = $this->upsertBusinessAccount($data['api_token'], $accountData, $suscriptions);
             
             // 2. Registrar números telefónicos
             $this->registerPhoneNumbers($account);
@@ -101,6 +103,21 @@ class AccountRegistrationService
         return $response;
     }
 
+    protected function fetchAccountDataSuscriptions(array $data): array
+    {
+        // Usa el token temporal SIN encriptar para la verificación inicial
+        $response = $this->whatsappService
+            ->withTempToken($data['api_token']) 
+            ->getBusinessAccountApp($data['business_id']);
+
+        Log::channel('whatsapp')->debug('RESPUESTA API BUSINESS ACCOUNT SUSCRIPTIONS:', [
+            'business_id' => $data['business_id'],
+            'response' => $response
+        ]);
+        
+        return $response;
+    }
+
     /**
      * Registra o actualiza la cuenta empresarial en la base de datos.
      *
@@ -108,8 +125,14 @@ class AccountRegistrationService
      * @param array $apiData Datos de la cuenta empresarial.
      * @return WhatsappBusinessAccount La cuenta empresarial registrada o actualizada.
      */
-    private function upsertBusinessAccount(string $apiToken, array $apiData): WhatsappBusinessAccount
+    private function upsertBusinessAccount(string $apiToken, array $apiData, $subscriptions = null): WhatsappBusinessAccount
     {
+        $appData = [];
+    
+        if (!empty($subscriptions['data'][0]['whatsapp_business_api_data'])) {
+            $appData = $subscriptions['data'][0]['whatsapp_business_api_data'];
+        }
+        
         // El token se encripta automáticamente al guardar (vía mutador)
         return WhatsappBusinessAccount::updateOrCreate(
             ['whatsapp_business_id' => $apiData['id']],
@@ -118,6 +141,9 @@ class AccountRegistrationService
                 'api_token' => $apiToken, // Se encripta aquí
                 'phone_number_id' => $apiData['phone_number_id'] ?? $apiData['id'],
                 'timezone_id' => $apiData['timezone_id'] ?? 0,
+                'app_id' => $appData['id'] ?? null,          // ID de la primera app
+                'app_name' => $appData['name'] ?? null,      // Nombre de la primera app
+                'app_link' => $appData['link'] ?? null,      // Link de la primera app
                 'message_template_namespace' => $apiData['message_template_namespace'] ?? null
             ]
         );

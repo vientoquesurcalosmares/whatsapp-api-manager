@@ -89,6 +89,25 @@ class WhatsappService
     }
 
     /**
+     * Obtiene las aplicaciones suscritas a una cuenta empresarial de WhatsApp.
+     *
+     * @param string $whatsappBusinessId El ID de la cuenta empresarial de WhatsApp.
+     * @return array La respuesta de la API con las aplicaciones suscritas.
+     */
+    public function getBusinessAccountApp(string $whatsappBusinessId): array
+    {
+        $response = $this->apiClient->request(
+            'GET',
+            Endpoints::GET_BUSINESS_ACCOUNT_SUSCRIPTIONS,
+            ['whatsapp_business_id' => $whatsappBusinessId],
+            headers: $this->getAuthHeaders()
+        );
+
+        Log::channel('whatsapp')->debug('Respuesta de getBusinessAccountaPP:', $response);
+        return $response;
+    }
+
+    /**
      * Obtiene los números de teléfono asociados a una cuenta empresarial.
      *
      * @param string $whatsappBusinessId El ID de la cuenta empresarial de WhatsApp.
