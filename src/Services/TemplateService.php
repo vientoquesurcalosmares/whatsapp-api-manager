@@ -38,9 +38,9 @@ class TemplateService
      * Sincroniza todas las plantillas desde la API de WhatsApp.
      *
      * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
-     * @return void
+     * @return \Illuminate\Database\Eloquent\Collection Colección de plantillas sincronizadas.
      */
-    public function getTemplates(WhatsappBusinessAccount $account): void
+    public function getTemplates(WhatsappBusinessAccount $account)
     {
         $endpoint = Endpoints::build(Endpoints::GET_TEMPLATES, [
             'waba_id' => $account->whatsapp_business_id,
@@ -79,6 +79,11 @@ class TemplateService
             foreach ($templates as $templateData) {
                 $this->storeOrUpdateTemplate($account->whatsapp_business_id, $templateData);
             }
+
+            return Template::where('whatsapp_business_id', $account->whatsapp_business_id)
+                ->with(['category', 'components'])
+                ->get();
+
         } catch (\Exception $e) {
             Log::channel('whatsapp')->error('Error al sincronizar plantillas.', [
                 'error_message' => $e->getMessage(),
