@@ -122,11 +122,27 @@ class WhatsappServiceProvider extends ServiceProvider
     protected function createStorageLink()
     {
         $mediaBasePath = storage_path('app/public/whatsapp');
+        $mediaLinkPath = public_path('storage/whatsapp');
 
-        if (!is_link(public_path('storage/whatsapp'))) {
-            symlink($mediaBasePath, public_path('storage/whatsapp'));
-            $this->app['log']->info('Enlace simbólico de media creado automáticamente.');
+        $parentDir = dirname($mediaLinkPath);
+        if (!is_dir($parentDir)) {
+            mkdir($parentDir, 0755, true);
+            $this->app['log']->info("Directorio padre creado: {$parentDir}");
         }
+
+        // Crear el enlace simbólico solo si no existe
+        if (!is_link($mediaLinkPath)) {
+            try {
+                symlink($mediaBasePath, $mediaLinkPath);
+                $this->app['log']->info('Enlace simbólico de media creado.');
+            } catch (\Exception $e) {
+                $this->app['log']->error("Error al crear el enlace: {$e->getMessage()}");
+            }
+        }
+        // if (!is_link(public_path('storage/whatsapp'))) {
+        //     symlink($mediaBasePath, public_path('storage/whatsapp'));
+        //     $this->app['log']->info('Enlace simbólico de media creado automáticamente.');
+        // }
     }
 
     /**
