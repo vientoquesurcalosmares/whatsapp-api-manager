@@ -482,7 +482,7 @@ Whatsapp::template()->getTemplates($account);
    $template = Whatsapp::template()->deleteTemplateByName($account, 'order_confirmation', true);
    ```
 
-#### Crear Plantillas Transaccionales
+#### Crear Plantillas de Utilidad
 
 Las plantillas transaccionales son ideales para notificaciones como confirmaciones de pedidos, actualizaciones de envío, etc.
 
@@ -532,6 +532,130 @@ $template = Whatsapp::template()
     ->addButton('QUICK_REPLY', 'Unsubscribe from All')
     ->save();
 ```
+
+### Crear Plantillas de Marketing
+
+Las plantillas de marketing son útiles para promociones, descuentos y campañas masivas.
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+
+// Obtener la cuenta empresarial
+$account = WhatsappBusinessAccount::first();
+
+// Crear una plantilla de marketing con texto
+$template = Whatsapp::template()
+    ->createMarketingTemplate($account)
+    ->setName('personal_promotion_text_only')
+    ->setLanguage('en')
+    ->addHeader('TEXT', 'Our {{1}} is on!', ['Summer Sale'])
+    ->addBody(
+        'Shop now through {{1}} and use code {{2}} to get {{3}} off of all merchandise.',
+        ['the end of August', '25OFF', '25%']
+    )
+    ->addFooter('Use the buttons below to manage your marketing subscriptions')
+    ->addButton('QUICK_REPLY', 'Unsubscribe from Promos')
+    ->addButton('QUICK_REPLY', 'Unsubscribe from All')
+    ->save();
+```
+
+---
+
+### Crear Plantillas de Marketing con Imágenes
+
+Las plantillas de marketing también pueden incluir imágenes en el encabezado para hacerlas más atractivas.
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+
+// Obtener la cuenta empresarial
+$account = WhatsappBusinessAccount::first();
+
+// Ruta de la imagen
+$imagePath = storage_path('app/public/laravel-whatsapp-manager.png');
+
+// Crear una plantilla de marketing con imagen
+$template = Whatsapp::template()
+    ->createMarketingTemplate($account)
+    ->setName('image_template_test')
+    ->setLanguage('en_US')
+    ->setCategory('MARKETING')
+    ->addHeader('IMAGE', $imagePath)
+    ->addBody('Hi {{1}}, your order {{2}} has been shipped!', ['John', '12345'])
+    ->addFooter('Thank you for your purchase!')
+    ->addButton('PHONE_NUMBER', 'Call Us', '+573234262686')
+    ->addButton('QUICK_REPLY', 'Contact Support')
+    ->save();
+```
+
+---
+
+### Crear Plantillas de Marketing con Botones de URL
+
+Puedes agregar botones de URL personalizados para redirigir a los usuarios a páginas específicas.
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+
+// Obtener la cuenta empresarial
+$account = WhatsappBusinessAccount::first();
+
+// Ruta de la imagen
+$imagePath = storage_path('app/public/laravel-whatsapp-manager.png');
+
+// Crear una plantilla de marketing con imagen y botones de URL
+$template = Whatsapp::template()
+    ->createMarketingTemplate($account)
+    ->setName('image_template_test_2')
+    ->setLanguage('en_US')
+    ->setCategory('MARKETING')
+    ->addHeader('IMAGE', $imagePath)
+    ->addBody('Hi {{1}}, your order {{2}} has been shipped!', ['John', '12345'])
+    ->addFooter('Thank you for your purchase!')
+    ->addButton('PHONE_NUMBER', 'Call Us', '+573234262686')
+    ->addButton('URL', 'Track Order', 'https://example.com/track?order={{1}}', ['12345'])
+    ->save();
+```
+
+---
+
+### Crear Variaciones de Plantillas de Marketing
+
+Puedes crear múltiples variaciones de plantillas para diferentes propósitos.
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+
+// Obtener la cuenta empresarial
+$account = WhatsappBusinessAccount::first();
+
+// Crear una variación de plantilla de marketing
+$template = Whatsapp::template()
+    ->createMarketingTemplate($account)
+    ->setName('personal_promotion_text_only_22')
+    ->setLanguage('en')
+    ->addHeader('TEXT', 'Our {{1}} is on!', ['Summer Sale'])
+    ->addBody(
+        'Shop now through {{1}} and use code {{2}} to get {{3}} off of all merchandise.',
+        ['the end of August', '25OFF', '25%']
+    )
+    ->addFooter('Use the buttons below to manage your marketing subscriptions')
+    ->addButton('QUICK_REPLY', 'Unsubscribe from Promos')
+    ->addButton('QUICK_REPLY', 'Unsubscribe from All')
+    ->save();
+```
+
+---
+
+### Notas
+
+- Asegúrate de que las imágenes utilizadas en las plantillas cumplan con los requisitos de la API de WhatsApp (tamaño y formato).
+- Los botones de URL pueden incluir parámetros dinámicos utilizando las variables de las plantillas (`{{1}}`, `{{2}}`, etc.).
+- Revisa los logs para depurar cualquier problema durante la creación de plantillas.
 
 
 
