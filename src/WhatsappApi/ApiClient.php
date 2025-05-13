@@ -7,12 +7,35 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Exceptions\ApiException;
 
+/**
+ * Clase ApiClient para interactuar con la API de WhatsApp Business.
+ * Proporciona métodos para realizar solicitudes HTTP a la API.
+ */
+/**
+ * @package ScriptDevelop\WhatsappManager\WhatsappApi
+ */
 class ApiClient
 {
+    /**
+     * @var Client Guzzle HTTP client.
+     */
     protected Client $client;
+    /**
+     * @var string Base URL de la API.
+     */
     protected string $baseUrl;
+    /**
+     * @var string Versión de la API.
+     */
     protected string $version;
 
+    /**
+     * Constructor de la clase ApiClient.
+     *
+     * @param string $baseUrl URL base de la API.
+     * @param string $version Versión de la API.
+     * @param int $timeout Tiempo de espera para las solicitudes (en segundos).
+     */
     public function __construct(string $baseUrl, string $version, int $timeout = 30)
     {
         $this->baseUrl = rtrim($baseUrl, '/');
@@ -26,6 +49,22 @@ class ApiClient
 
     /**
      * Ejecuta una petición genérica a la API.
+     */
+    /**
+     * @param string $method Método HTTP (GET, POST, etc.).
+     * @param string $endpoint Endpoint de la API.
+     * @param array $params Parámetros de la URL.
+     * @param mixed $data Datos a enviar (puede ser un array, JSON o un flujo).
+     * @param array $query Parámetros de consulta adicionales.
+     * @param array $headers Encabezados HTTP adicionales.
+     * @return array Respuesta de la API decodificada como array.
+     * @throws ApiException Si ocurre un error durante la solicitud.
+     */
+    /**
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    /**
+     * @throws \RuntimeException
      */
     public function request(
         string $method,
@@ -99,7 +138,12 @@ class ApiClient
     }
 
     /**
-     * Construye la URL reemplazando placeholders.
+     * Construye la URL final para la solicitud.
+     *
+     * @param string $endpoint Endpoint de la API.
+     * @param array $params Parámetros de la URL.
+     * @param array $query Parámetros de consulta adicionales.
+     * @return string URL construida.
      */
     protected function buildUrl(string $endpoint, array $params, array $query = []): string
     {
@@ -119,7 +163,10 @@ class ApiClient
     }
 
     /**
-     * Maneja errores de la API.
+     * Maneja excepciones de Guzzle y las convierte en ApiException.
+     *
+     * @param GuzzleException $e Excepción de Guzzle.
+     * @return ApiException Excepción personalizada.
      */
     protected function handleException(GuzzleException $e): ApiException
     {

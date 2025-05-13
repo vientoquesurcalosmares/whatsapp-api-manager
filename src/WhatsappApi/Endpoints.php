@@ -4,6 +4,14 @@ namespace ScriptDevelop\WhatsappManager\WhatsappApi;
 
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Class Endpoints
+ * Define los endpoints de la API de WhatsApp Business.
+ * Proporciona métodos para construir URLs con parámetros dinámicos.
+ */
+/**
+ * @package ScriptDevelop\WhatsappManager\WhatsappApi
+ */
 class Endpoints
 {
     // Business Account Endpoints
@@ -34,6 +42,13 @@ class Endpoints
     const DELETE_TEMPLATE = '{waba_id}/message_templates';
 
     // Helper method to build URLs with dynamic parameters
+    /**
+     * Construye una URL a partir de un endpoint y parámetros.
+     *
+     * @param string $endpoint El endpoint base.
+     * @param array $params Parámetros para reemplazar en el endpoint.
+     * @return string La URL generada.
+     */
     public static function build(string $endpoint, array $params = []): string
     {
         $placeholders = array_map(fn($key) => "{{$key}}", array_keys($params));
@@ -50,11 +65,23 @@ class Endpoints
     }
 
     // Helper methods for common parameters
+    /**
+     * Genera un array con el ID de la cuenta empresarial de WhatsApp.
+     *
+     * @param string $whatsappBusinessId El ID de la cuenta empresarial.
+     * @return array El array con el ID de la cuenta empresarial.
+     */
     public static function phoneNumber(string $phoneNumberId): array
     {
         return ['phone_number_id' => $phoneNumberId];
     }
 
+    /**
+     * Genera un array con el ID de la aplicación.
+     *
+     * @param string $appId El ID de la aplicación.
+     * @return array El array con el ID de la aplicación.
+     */
     public static function uploadId(string $uploadId): array
     {
         return ['upload_id' => $uploadId];

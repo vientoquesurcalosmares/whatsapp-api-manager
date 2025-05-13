@@ -192,9 +192,32 @@ class TemplateMessageBuilder
      * @return void
      * @throws InvalidArgumentException Si la plantilla no existe en la base de datos.
      */
+    // protected function fetchTemplateStructure(): void
+    // {
+    //     // Buscar la plantilla en la base de datos
+    //     $template = Template::with('components')
+    //         ->where('name', $this->templateIdentifier)
+    //         ->where('whatsapp_business_id', $this->account->whatsapp_business_id)
+    //         ->first();
+
+    //     if (!$template) {
+    //         throw new InvalidArgumentException("La plantilla '{$this->templateIdentifier}' no existe en la base de datos.");
+    //     }
+
+    //     // Construir la estructura de la plantilla a partir de los componentes
+    //     $this->templateStructure = [
+    //         'language' => $template->language,
+    //         'HEADER' => $template->components->where('type', 'header')->first(),
+    //         'BODY' => $template->components->where('type', 'body')->first(),
+    //         'FOOTER' => $template->components->where('type', 'footer')->first(),
+    //         'BUTTONS' => $template->components->where('type', 'button')->all(),
+    //     ];
+
+    //     Log::info('Estructura de la plantilla obtenida.', ['templateStructure' => $this->templateStructure]);
+    // }
+
     protected function fetchTemplateStructure(): void
     {
-        // Buscar la plantilla en la base de datos
         $template = Template::with('components')
             ->where('name', $this->templateIdentifier)
             ->where('whatsapp_business_id', $this->account->whatsapp_business_id)
@@ -204,14 +227,31 @@ class TemplateMessageBuilder
             throw new InvalidArgumentException("La plantilla '{$this->templateIdentifier}' no existe en la base de datos.");
         }
 
-        // Construir la estructura de la plantilla a partir de los componentes
-        $this->templateStructure = [
+        // Normalizar tipos a mayúsculas
+        $structure = [
             'language' => $template->language,
-            'HEADER' => $template->components->where('type', 'header')->first(),
-            'BODY' => $template->components->where('type', 'body')->first(),
-            'FOOTER' => $template->components->where('type', 'footer')->first(),
-            'BUTTONS' => $template->components->where('type', 'button')->all(),
+            'HEADER' => null,
+            'BODY' => null,
+            'FOOTER' => null,
+            'BUTTONS' => [],
         ];
+
+        foreach ($template->components as $component) {
+            $type = strtoupper($component->type);
+            switch ($type) {
+                case 'HEADER':
+                case 'BODY':
+                case 'FOOTER':
+                    $structure[$type] = $component;
+                    break;
+                case 'BUTTON':
+                case 'BUTTONS':
+                    $structure['BUTTONS'][] = $component;
+                    break;
+            }
+        }
+
+        $this->templateStructure = $structure;
 
         Log::info('Estructura de la plantilla obtenida.', ['templateStructure' => $this->templateStructure]);
     }

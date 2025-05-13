@@ -198,18 +198,29 @@ whatsapp-manager/
 │   └── laravel-whatsapp-manager.png # Imagen de ejemplo
 ├── src/                      # Código fuente principal del paquete
 │   ├── Config/               # Archivos de configuración
+│   │   ├── logging.php
+│   │   ├── whatsapp.php
 │   ├── Console/              # Comandos Artisan personalizados
+│   │   ├── CheckUserModel.php
+│   │   ├── MergeLoggingConfig.php
 │   ├── Database/             # Migraciones y seeders
 │   │   ├── Migrations/       # Migraciones de base de datos
 │   │   └── Seeders/          # Seeders opcionales
 │   ├── Enums/                # Enumeraciones del sistema
+│   │   ├── MessageStatus.php
 │   ├── Exceptions/           # Excepciones personalizadas
+│   │   ├── InvalidApiResponseException.php
+│   │   ├── WhatsappApiException.php
 │   ├── Facades/              # Facades del paquete
-│   ├── Helpers/              # Funciones y utilidades auxiliares
+│   │   ├── whatsapp.php
+│   ├── Helpers/              # Funciones y utilidades auxiliares   
+│   │   ├── CountryCodes.php
 │   ├── Http/                 # Lógica HTTP
 │   │   ├── Controllers/      # Controladores HTTP y Webhook
+│   │   │   ├── WhatsappWebhookController.php
 │   │   └── Middleware/       # Middleware personalizados
-│   ├── Logging/              # Personalización de logs
+│   ├── Logging/              # Personalización de logs  
+│   │   ├── CustomizeFormatter.php
 │   ├── Models/               # Modelos Eloquent
 │   ├── Providers/            # Proveedores de servicios del paquete
 │   ├── Repositories/         # Repositorios para acceso a datos
