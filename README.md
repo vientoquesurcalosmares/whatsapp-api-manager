@@ -222,12 +222,31 @@ whatsapp-manager/
 │   ├── Logging/              # Personalización de logs  
 │   │   ├── CustomizeFormatter.php
 │   ├── Models/               # Modelos Eloquent
-│   ├── Providers/            # Proveedores de servicios del paquete
+│   ├── Providers/            # Proveedores de servicios del paquete  
+│   │   ├── WhatsappServiceProvider.php
 │   ├── Repositories/         # Repositorios para acceso a datos
+│   │   ├── WhatsappBusinessAccountRepository.php
 │   ├── routes/               # Rutas del paquete
+│   │   ├── whatsapp_webhook.php
 │   ├── Services/             # Lógica de negocio y API
+│   │   ├── AccountRegistrationService.php
+│   │   ├── MessageDispatcherService.php
+│   │   ├── TemplateBuilder.php
+│   │   ├── TemplateMessageBuilder.php
+│   │   ├── TemplateService.php
+│   │   ├── WhatsappManager.php
+│   │   ├── WhatsappService.php
 │   ├── Traits/               # Traits reutilizables
+│   │   ├── GeneratesUlid.php
 │   └── WhatsappApi/          # Cliente API y endpoints
+│   │   ├── DataTransferObjects/
+│   │   │   ├── ApiErrorResponse.php
+│   │   │   ├── BusinessAccountResponse.php
+│   │   │   ├── MessageResponse.php
+│   │   ├── Exceptions/
+│   │   │   ├── BusinessProfileValidator.php
+│   │   ├── ApiClient.php
+│   │   ├── Endpoints.php     
 ├── tests/                    # Pruebas del paquete
 │   ├── TestCase.php          # Clase base para pruebas
 │   ├── Feature/              # Pruebas funcionales

@@ -1,6 +1,7 @@
 <?php
 namespace ScriptDevelop\WhatsappManager\Services;
 
+use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 use InvalidArgumentException;
 use Illuminate\Support\Facades\Http;
@@ -14,6 +15,7 @@ use ScriptDevelop\WhatsappManager\Models\Template;
 class TemplateMessageBuilder
 {
     protected WhatsappBusinessAccount $account;
+    protected WhatsappPhoneNumber $phone;
     protected ApiClient $apiClient;
     protected TemplateService $templateService;
     protected string $phoneNumber;
@@ -27,9 +29,9 @@ class TemplateMessageBuilder
      *
      * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
      */
-    public function __construct(ApiClient $apiClient, WhatsappBusinessAccount $account, TemplateService $templateService)
+    public function __construct(ApiClient $apiClient, WhatsappPhoneNumber $phone, TemplateService $templateService)
     {
-        $this->account = $account;
+        $this->phone = $phone;
         $this->apiClient = $apiClient;
         $this->templateService = $templateService;
     }
@@ -317,7 +319,11 @@ class TemplateMessageBuilder
      */
     protected function sendMessage(array $payload): array
     {
-        $endpoint = Endpoints::build(Endpoints::SEND_MESSAGE);
+        // $endpoint = Endpoints::build(Endpoints::SEND_MESSAGE);
+
+        $endpoint = Endpoints::build(Endpoints::SEND_MESSAGE, [
+            'phone_number_id' => $this->phone->api_phone_number_id,
+        ]);
 
         Log::info('Enviando mensaje de plantilla.', [
             'endpoint' => $endpoint,
@@ -329,7 +335,7 @@ class TemplateMessageBuilder
             $endpoint,
             data: $payload,
             headers: [
-                'Authorization' => 'Bearer ' . $this->account->api_token,
+                'Authorization' => 'Bearer ' . $this->phone->businessAccount()->api_token,
                 'Content-Type' => 'application/json',
             ]
         );

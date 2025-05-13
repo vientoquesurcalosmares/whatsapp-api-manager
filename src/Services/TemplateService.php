@@ -9,6 +9,7 @@ use ScriptDevelop\WhatsappManager\Models\TemplateCategory;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -382,9 +383,9 @@ class TemplateService
      * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
      * @return TemplateMessageBuilder El constructor del mensaje de plantilla.
      */
-    public function sendTemplateMessage(WhatsappBusinessAccount $account): TemplateMessageBuilder
+    public function sendTemplateMessage(WhatsappPhoneNumber $phone): TemplateMessageBuilder
     {
-        return new TemplateMessageBuilder($this->apiClient, $account, $this);
+        return new TemplateMessageBuilder($this->apiClient, $phone, $this);
     }
 
     /**
