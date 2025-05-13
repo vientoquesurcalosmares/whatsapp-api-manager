@@ -27,8 +27,6 @@ class TemplateMessageBuilder
     public function __construct(WhatsappBusinessAccount $account)
     {
         $this->account = $account;
-
-        $this->fetchTemplateStructure();
     }
 
     /**
@@ -67,6 +65,7 @@ class TemplateMessageBuilder
     public function usingTemplate(string $templateIdentifier): self
     {
         $this->templateIdentifier = $templateIdentifier;
+        $this->fetchTemplateStructure();
         return $this;
     }
 
@@ -80,6 +79,7 @@ class TemplateMessageBuilder
      */
     public function addHeader(string $type, $content): self
     {
+        $this->ensureTemplateStructureLoaded();
         $this->validateComponent('HEADER', $type);
         $this->components['HEADER'] = [
             'type' => $type,
@@ -97,6 +97,7 @@ class TemplateMessageBuilder
      */
     public function addBody(array $parameters): self
     {
+        $this->ensureTemplateStructureLoaded();
         $this->validateComponent('BODY');
         $this->components['BODY'] = [
             'parameters' => $parameters,
@@ -113,6 +114,7 @@ class TemplateMessageBuilder
      */
     public function addFooter(string $text): self
     {
+        $this->ensureTemplateStructureLoaded();
         $this->validateComponent('FOOTER');
         $this->components['FOOTER'] = [
             'text' => $text,
@@ -132,6 +134,7 @@ class TemplateMessageBuilder
      */
     public function addButton(string $type, string $text, string $url = null, array $parameters = []): self
     {
+        $this->ensureTemplateStructureLoaded();
         $this->validateComponent('BUTTONS');
         $button = ['type' => $type, 'text' => $text];
         if ($type === 'URL') {
@@ -339,5 +342,12 @@ class TemplateMessageBuilder
         Log::info('Mensaje enviado exitosamente.', ['response' => $response]);
 
         return $response;
+    }
+
+    protected function ensureTemplateStructureLoaded(): void
+    {
+        if (empty($this->templateStructure)) {
+            throw new InvalidArgumentException("Debes establecer la plantilla usando ->usingTemplate(...) antes de agregar componentes.");
+        }
     }
 }
