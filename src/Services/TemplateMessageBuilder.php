@@ -27,6 +27,8 @@ class TemplateMessageBuilder
     public function __construct(WhatsappBusinessAccount $account)
     {
         $this->account = $account;
+
+        $this->fetchTemplateStructure();
     }
 
     /**
@@ -37,7 +39,7 @@ class TemplateMessageBuilder
      * @return self
      * @throws InvalidArgumentException Si el número de teléfono o el código de país no son válidos.
      */
-    public function to(string $phoneNumber, string $countryCode): self
+    public function to(string $countryCode, string $phoneNumber,): self
     {
         $codes = CountryCodes::list();
 
