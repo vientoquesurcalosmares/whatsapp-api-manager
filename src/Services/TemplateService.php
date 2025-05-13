@@ -380,7 +380,7 @@ class TemplateService
     /**
      * Crea un mensaje de plantilla para enviar.
      *
-     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param WhatsappPhoneNumber $phone Numero de telefono de WhatsApp.
      * @return TemplateMessageBuilder El constructor del mensaje de plantilla.
      */
     public function sendTemplateMessage(WhatsappPhoneNumber $phone): TemplateMessageBuilder
