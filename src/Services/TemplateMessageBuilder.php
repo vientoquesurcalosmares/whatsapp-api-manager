@@ -173,41 +173,17 @@ class TemplateMessageBuilder
     ): self {
         $this->ensureTemplateStructureLoaded();
         $this->validateComponent('BUTTONS');
-
+    
         $button = [
-            'type' => $type,
-            'text' => $text
+            'type' => strtoupper($type),
+            'text' => $text,
+            'url' => $url
         ];
-
-        if ($type === 'URL') {
-            // Validar y formatear parámetros para URL
-            $formattedParams = [];
-            foreach ($parameters as $param) {
-                $formattedParams[] = is_array($param) 
-                    ? $param 
-                    : ['type' => 'text', 'text' => $param];
-            }
-            
-            $button['url'] = $url;
-            $button['parameters'] = $formattedParams;
-        }
-        elseif ($type === 'QUICK_REPLY') {
-            // Formatear parámetros para quick reply
-            $button['parameters'] = array_map(function($param) {
-                return is_array($param)
-                    ? $param
-                    : ['type' => 'payload', 'payload' => $param];
-            }, $parameters);
-        }
-
-        // Inicializar estructura de botones si no existe
+    
         if (!isset($this->components['BUTTONS'])) {
-            $this->components['BUTTONS'] = [
-                'type' => 'BUTTONS',
-                'buttons' => []
-            ];
+            $this->components['BUTTONS'] = ['buttons' => []];
         }
-
+    
         $this->components['BUTTONS']['buttons'][] = $button;
         
         return $this;
@@ -375,20 +351,35 @@ class TemplateMessageBuilder
         $components = [];
         
         foreach ($this->components as $componentType => $component) {
-            $formattedComponent = [
-                'type' => strtolower($componentType), // Los tipos deben ser en minúsculas
-                'parameters' => $component['parameters'] ?? []
-            ];
-            
-            // Manejar estructura especial para botones
             if ($componentType === 'BUTTONS') {
-                $formattedComponent['sub_type'] = 'quick_reply'; // o 'url' según corresponda
-                $formattedComponent['index'] = 0; // Índice requerido para botones
-                $formattedComponent['buttons'] = $component['buttons'];
-                unset($formattedComponent['parameters']);
+                // Procesar botones como componentes individuales
+                foreach ($component['buttons'] as $index => $button) {
+                    $buttonComponent = [
+                        'type' => 'button',
+                        'sub_type' => strtolower($button['type']),
+                        'index' => $index,
+                        'parameters' => [
+                            [
+                                'type' => 'text',
+                                'text' => $button['text']
+                            ]
+                        ]
+                    ];
+                    
+                    if ($button['type'] === 'URL') {
+                        $buttonComponent['parameters'][0]['type'] = 'payload';
+                        $buttonComponent['parameters'][0]['payload'] = $button['url'];
+                    }
+                    
+                    $components[] = $buttonComponent;
+                }
+            } else {
+                // Otros componentes
+                $components[] = [
+                    'type' => strtolower($componentType),
+                    'parameters' => $component['parameters'] ?? []
+                ];
             }
-            
-            $components[] = $formattedComponent;
         }
 
         $payload = [
