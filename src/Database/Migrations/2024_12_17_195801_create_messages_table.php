@@ -63,6 +63,7 @@ return new class extends Migration
                   ->on('whatsapp_messages')
                   ->onDelete('set null'); // Si el mensaje de contexto se elimina, se establece como null
 
+            $table->index(['message_from', 'message_to', 'created_at']);
             $table->index('wa_id');
             $table->index('status');
             $table->index('message_type');

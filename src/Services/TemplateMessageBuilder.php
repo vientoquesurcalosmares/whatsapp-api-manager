@@ -149,11 +149,11 @@ class TemplateMessageBuilder
      */
     public function send(): array
     {
-        // Validar los datos
-        $this->validate();
-
         // Consultar la estructura de la plantilla si es necesario
         $this->fetchTemplateStructure();
+
+        // Validar los datos
+        $this->validate();
 
         // Establecer el idioma desde la estructura de la plantilla
         $this->language = $this->templateStructure['language'] ?? throw new InvalidArgumentException('El idioma no está definido en la estructura de la plantilla.');
@@ -222,6 +222,8 @@ class TemplateMessageBuilder
             ->where('name', $this->templateIdentifier)
             ->where('whatsapp_business_id', $this->account->whatsapp_business_id)
             ->first();
+
+        Log::info('Plantilla obtenida de la base de datos.', ['template' => $template]);
 
         if (!$template) {
             throw new InvalidArgumentException("La plantilla '{$this->templateIdentifier}' no existe en la base de datos.");
