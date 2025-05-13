@@ -232,7 +232,7 @@ class TemplateMessageBuilder
     {
         $template = Template::with('components')
             ->where('name', $this->templateIdentifier)
-            ->where('whatsapp_business_id', $this->account->whatsapp_business_id)
+            ->where('whatsapp_business_id', $this->phone->businessAccount->whatsapp_business_id)
             ->first();
 
         Log::info('Plantilla obtenida de la base de datos.', ['template' => $template]);
@@ -297,6 +297,7 @@ class TemplateMessageBuilder
     protected function buildPayload(): array
     {
         $payload = [
+            'messaging_product' => 'whatsapp',
             'to' => $this->phoneNumber,
             'template' => [
                 'name' => $this->templateIdentifier,
@@ -335,7 +336,7 @@ class TemplateMessageBuilder
             $endpoint,
             data: $payload,
             headers: [
-                'Authorization' => 'Bearer ' . $this->phone->businessAccount()->api_token,
+                'Authorization' => 'Bearer ' . $this->phone->businessAccount->api_token,
                 'Content-Type' => 'application/json',
             ]
         );
