@@ -20,8 +20,6 @@ return new class extends Migration
             $table->enum('on_failure', ['assign_agent', 'notify'])->default('assign_agent'); // Acción si falla el flujo
             $table->timestamps();
             $table->softDeletes();
-
-            $table->foreign('default_flow_id')->references('flow_id')->on('flows')->onDelete('set null');
         });
     }
 
