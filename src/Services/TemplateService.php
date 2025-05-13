@@ -384,7 +384,7 @@ class TemplateService
      */
     public function sendTemplateMessage(WhatsappBusinessAccount $account): TemplateMessageBuilder
     {
-        return new TemplateMessageBuilder($this->apiClient, $account);
+        return new TemplateMessageBuilder($this->apiClient, $account, $this);
     }
 
     /**

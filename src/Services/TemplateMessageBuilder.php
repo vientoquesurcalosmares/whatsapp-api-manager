@@ -15,6 +15,7 @@ class TemplateMessageBuilder
 {
     protected WhatsappBusinessAccount $account;
     protected ApiClient $apiClient;
+    protected TemplateService $templateService;
     protected string $phoneNumber;
     protected string $templateIdentifier; // Puede ser nombre o ID
     protected ?string $language = null; // Opcional
@@ -26,10 +27,11 @@ class TemplateMessageBuilder
      *
      * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
      */
-    public function __construct(ApiClient $apiClient, WhatsappBusinessAccount $account)
+    public function __construct(ApiClient $apiClient, WhatsappBusinessAccount $account, TemplateService $templateService)
     {
         $this->account = $account;
         $this->apiClient = $apiClient;
+        $this->templateService = $templateService;
     }
 
     /**
