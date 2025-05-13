@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('bot_name', 45);
             $table->text('description')->nullable();
             $table->boolean('is_enabled')->default(true); // Habilitar/deshabilitar bot
-            $table->foreignUlid('default_flow_id')->nullable(); // Flujo por defecto
             $table->enum('on_failure', ['assign_agent', 'notify'])->default('assign_agent'); // Acción si falla el flujo
             $table->timestamps();
             $table->softDeletes();
@@ -31,10 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('whatsapp_bots', function (Blueprint $table) {
-            $table->dropForeign(['default_flow_id']); // Eliminar clave foránea
-        });
-        
         Schema::dropIfExists('whatsapp_bots');
     }
 };
