@@ -88,10 +88,24 @@ class TemplateMessageBuilder
     {
         $this->ensureTemplateStructureLoaded();
         $this->validateComponent('HEADER', $type);
+        
+        $formattedParams = [];
+        if (!is_array($content)) {
+            $content = [$content];
+        }
+        
+        foreach ($content as $item) {
+            $formattedParams[] = [
+                'type' => 'text', // Ajustar según el tipo (ej: imagen, documento)
+                'text' => $item
+            ];
+        }
+        
         $this->components['HEADER'] = [
             'type' => $type,
-            'parameters' => is_array($content) ? $content : [$content],
+            'parameters' => $formattedParams
         ];
+        
         return $this;
     }
 
@@ -106,9 +120,21 @@ class TemplateMessageBuilder
     {
         $this->ensureTemplateStructureLoaded();
         $this->validateComponent('BODY');
+        
+        // Formatear cada parámetro como objeto
+        $formattedParams = [];
+        foreach ($parameters as $param) {
+            $formattedParams[] = [
+                'type' => 'text', // Asumiendo que todos son texto
+                'text' => $param
+            ];
+        }
+        
         $this->components['BODY'] = [
-            'parameters' => $parameters,
+            'type' => 'BODY',
+            'parameters' => $formattedParams
         ];
+        
         return $this;
     }
 
@@ -132,23 +158,58 @@ class TemplateMessageBuilder
     /**
      * Agrega un botón a la plantilla.
      *
-     * @param string $type El tipo de botón (por ejemplo, "QUICK_REPLY", "URL").
-     * @param string $text El texto del botón.
-     * @param string|null $url La URL asociada al botón (si aplica).
-     * @param array $parameters Los parámetros dinámicos para el botón (si aplica).
+     * @param string $type El tipo de botón ("QUICK_REPLY" o "URL")
+     * @param string $text El texto del botón
+     * @param string|null $url URL (solo para tipo URL)
+     * @param array $parameters Parámetros dinámicos (formato correcto para la API)
      * @return self
-     * @throws InvalidArgumentException Si el componente no es válido.
+     * @throws InvalidArgumentException
      */
-    public function addButton(string $type, string $text, string $url = null, array $parameters = []): self
-    {
+    public function addButton(
+        string $type, 
+        string $text, 
+        string $url = null, 
+        array $parameters = []
+    ): self {
         $this->ensureTemplateStructureLoaded();
         $this->validateComponent('BUTTONS');
-        $button = ['type' => $type, 'text' => $text];
+
+        $button = [
+            'type' => $type,
+            'text' => $text
+        ];
+
         if ($type === 'URL') {
+            // Validar y formatear parámetros para URL
+            $formattedParams = [];
+            foreach ($parameters as $param) {
+                $formattedParams[] = is_array($param) 
+                    ? $param 
+                    : ['type' => 'text', 'text' => $param];
+            }
+            
             $button['url'] = $url;
-            $button['parameters'] = $parameters;
+            $button['parameters'] = $formattedParams;
         }
-        $this->components['BUTTONS'][] = $button;
+        elseif ($type === 'QUICK_REPLY') {
+            // Formatear parámetros para quick reply
+            $button['parameters'] = array_map(function($param) {
+                return is_array($param)
+                    ? $param
+                    : ['type' => 'payload', 'payload' => $param];
+            }, $parameters);
+        }
+
+        // Inicializar estructura de botones si no existe
+        if (!isset($this->components['BUTTONS'])) {
+            $this->components['BUTTONS'] = [
+                'type' => 'BUTTONS',
+                'buttons' => []
+            ];
+        }
+
+        $this->components['BUTTONS']['buttons'][] = $button;
+        
         return $this;
     }
 
