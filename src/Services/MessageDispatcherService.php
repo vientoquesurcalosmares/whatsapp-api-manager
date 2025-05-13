@@ -70,7 +70,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'text',
+            'message_type' => 'TEXT',
             'message_content' => $text,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING
@@ -160,7 +160,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'text',
+            'message_type' => 'TEXT',
             'message_content' => $text,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -253,7 +253,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'reaction',
+            'message_type' => 'REACTION',
             'message_content' => $emoji,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -341,7 +341,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'image',
+            'message_type' => 'IMAGE',
             'message_content' => $caption !== null ? $caption : null,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -350,7 +350,7 @@ class MessageDispatcherService
         // Crear un registro del archivo en el modelo MediaFile
         $mediaFile = MediaFile::create([
             'message_id' => $message->message_id,
-            'media_type' => 'image',
+            'media_type' => 'IMAGE',
             'file_name' => $file->getFilename(),
             'mime_type' => $mediaInfo['mime_type'],
             'sha256' => $mediaInfo['sha256'],
@@ -462,7 +462,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'image',
+            'message_type' => 'IMAGE',
             'message_content' => $caption !== null ? $caption : null,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -472,7 +472,7 @@ class MessageDispatcherService
         // Crear un registro del archivo en el modelo MediaFile
         $mediaFile = MediaFile::create([
             'message_id' => $message->message_id,
-            'media_type' => 'image',
+            'media_type' => 'IMAGE',
             'file_name' => $file->getFilename(),
             'mime_type' => $mediaInfo['mime_type'],
             'sha256' => $mediaInfo['sha256'],
@@ -559,7 +559,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'image',
+            'message_type' => 'IMAGE',
             'message_content' => $link,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -662,7 +662,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'image',
+            'message_type' => 'IMAGE',
             'message_content' => $link,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -754,7 +754,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'audio',
+            'message_type' => 'AUDIO',
             'message_content' => null,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -763,7 +763,7 @@ class MessageDispatcherService
         // Crear un registro del archivo en el modelo MediaFile
         $mediaFile = MediaFile::create([
             'message_id' => $message->message_id,
-            'media_type' => 'audio',
+            'media_type' => 'AUDIO',
             'file_name' => $file->getFilename(),
             'mime_type' => $mediaInfo['mime_type'],
             'sha256' => $mediaInfo['sha256'],
@@ -862,7 +862,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'audio',
+            'message_type' => 'AUDIO',
             'message_content' => null,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -872,7 +872,7 @@ class MessageDispatcherService
         // Crear un registro del archivo en el modelo MediaFile
         $mediaFile = MediaFile::create([
             'message_id' => $message->message_id,
-            'media_type' => 'audio',
+            'media_type' => 'AUDIO',
             'file_name' => $file->getFilename(),
             'mime_type' => $mediaInfo['mime_type'],
             'sha256' => $mediaInfo['sha256'],
@@ -956,7 +956,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'audio',
+            'message_type' => 'AUDIO',
             'message_content' => $link,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -1050,7 +1050,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'audio',
+            'message_type' => 'AUDIO',
             'message_content' => $link,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -1138,7 +1138,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'document',
+            'message_type' => 'DOCUMENT',
             'message_content' => $caption, // Puede ser null
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -1147,7 +1147,7 @@ class MessageDispatcherService
         // Crear un registro del archivo en el modelo MediaFile
         $mediaFile = MediaFile::create([
             'message_id' => $message->message_id,
-            'media_type' => 'document',
+            'media_type' => 'DOCUMENT',
             'file_name' => $file->getFilename(),
             'mime_type' => $mediaInfo['mime_type'],
             'sha256' => $mediaInfo['sha256'],
@@ -1256,7 +1256,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'document',
+            'message_type' => 'DOCUMENT',
             'message_content' => $caption, // Puede ser null
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -1266,7 +1266,7 @@ class MessageDispatcherService
         // Crear un registro del archivo en el modelo MediaFile
         $mediaFile = MediaFile::create([
             'message_id' => $message->message_id,
-            'media_type' => 'audio',
+            'media_type' => 'DOCUMENT',
             'file_name' => $file->getFilename(),
             'mime_type' => $mediaInfo['mime_type'],
             'sha256' => $mediaInfo['sha256'],
@@ -1355,7 +1355,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'document',
+            'message_type' => 'DOCUMENT',
             'message_content' => $caption.' '.$link, // Puede ser null
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -1454,7 +1454,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'document',
+            'message_type' => 'DOCUMENT',
             'message_content' => $caption . ' ' . $link, // Puede ser null
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -1540,7 +1540,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'sticker',
+            'message_type' => 'STICKER',
             'message_content' => null,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -1549,7 +1549,7 @@ class MessageDispatcherService
         // Crear un registro del archivo en el modelo MediaFile
         $mediaFile = MediaFile::create([
             'message_id' => $message->message_id,
-            'media_type' => 'sticker',
+            'media_type' => 'STICKER',
             'file_name' => $file->getFilename(),
             'mime_type' => $mediaInfo['mime_type'],
             'sha256' => $mediaInfo['sha256'],
@@ -1649,7 +1649,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'sticker',
+            'message_type' => 'STICKER',
             'message_content' => null,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -1659,7 +1659,7 @@ class MessageDispatcherService
         // Crear un registro del archivo en el modelo MediaFile
         $mediaFile = MediaFile::create([
             'message_id' => $message->message_id,
-            'media_type' => 'audio',
+            'media_type' => 'STICKER',
             'file_name' => $file->getFilename(),
             'mime_type' => $mediaInfo['mime_type'],
             'sha256' => $mediaInfo['sha256'],
@@ -1755,7 +1755,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'sticker',
+            'message_type' => 'STICKER',
             'message_content' => $link,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -1843,7 +1843,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'video',
+            'message_type' => 'VIDEO',
             'message_content' => $caption, // Puede ser null
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -1852,7 +1852,7 @@ class MessageDispatcherService
         // Crear un registro del archivo en el modelo MediaFile
         $mediaFile = MediaFile::create([
             'message_id' => $message->message_id,
-            'media_type' => 'video',
+            'media_type' => 'VIDEO',
             'file_name' => $file->getFilename(),
             'mime_type' => $mediaInfo['mime_type'],
             'sha256' => $mediaInfo['sha256'],
@@ -1956,7 +1956,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'video',
+            'message_type' => 'VIDEO',
             'message_content' => $caption, // Puede ser null
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -1966,7 +1966,7 @@ class MessageDispatcherService
         // Crear un registro del archivo en el modelo MediaFile
         $mediaFile = MediaFile::create([
             'message_id' => $message->message_id,
-            'media_type' => 'video',
+            'media_type' => 'VIDEO',
             'file_name' => $file->getFilename(),
             'mime_type' => $mediaInfo['mime_type'],
             'sha256' => $mediaInfo['sha256'],
@@ -2054,7 +2054,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'video',
+            'message_type' => 'VIDEO',
             'message_content' => $caption, // Puede ser null
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -2153,7 +2153,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'video',
+            'message_type' => 'VIDEO',
             'message_content' => $caption, // Puede ser null
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -2231,7 +2231,7 @@ class MessageDispatcherService
             'contact_id' => $recipientContact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'contacts',
+            'message_type' => 'CONTACTS',
             'message_content' => $contact->contact_id,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -2367,7 +2367,7 @@ class MessageDispatcherService
             'contact_id' => $recipientContact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'contacts',
+            'message_type' => 'CONTACTS',
             'message_content' => $contact->contact_id,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
@@ -2496,7 +2496,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'location',
+            'message_type' => 'LOCATION',
             'message_content' => json_encode([
                 'latitude' => $latitude,
                 'longitude' => $longitude,
@@ -2599,7 +2599,7 @@ class MessageDispatcherService
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
-            'message_type' => 'location',
+            'message_type' => 'LOCATION',
             'message_content' => json_encode([
                 'latitude' => $latitude,
                 'longitude' => $longitude,

@@ -10,7 +10,9 @@ use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\Exceptions\WhatsappApiException;
 use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
+use ScriptDevelop\WhatsappManager\Models\Message;
 use ScriptDevelop\WhatsappManager\Models\Template;
+use ScriptDevelop\WhatsappManager\Enums\MessageStatus;
 
 class TemplateMessageBuilder
 {
@@ -417,6 +419,20 @@ class TemplateMessageBuilder
             'endpoint' => $endpoint,
             'payload' => $payload,
         ]);
+
+        $contact = $this->phone->contacts()->where('wa_id', $this->phoneNumber)->first();
+
+        $message = Message::create([
+            'whatsapp_phone_id' => $this->phone->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => $this->phone->display_phone_number,
+            'message_to' => $contact->wa_id,
+            'message_type' => 'TEMPLATE',
+            'message_content' => NULL,
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING
+        ]);
+
 
         $response = $this->apiClient->request(
             'POST',
