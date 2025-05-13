@@ -315,6 +315,13 @@ class TemplateMessageBuilder
             $type = strtoupper($component->type);
             switch ($type) {
                 case 'HEADER':
+                    $structure['HEADER'] = [
+                        'type' => 'HEADER',
+                        'formats' => isset($component->content['format']) 
+                            ? (array)$component->content['format'] 
+                            : ['TEXT'] // Valor por defecto si no hay formato
+                    ];
+                    break;
                 case 'BODY':
                 case 'FOOTER':
                     $structure[$type] = $component;
@@ -341,12 +348,20 @@ class TemplateMessageBuilder
      */
     protected function validateComponent(string $componentType, ?string $subType = null): void
     {
+        $componentType = strtoupper($componentType);
+        
         if (!isset($this->templateStructure[$componentType])) {
-            throw new InvalidArgumentException("El componente '$componentType' no está definido en la plantilla '{$this->templateIdentifier}'.");
+            throw new InvalidArgumentException("Componente '$componentType' no definido en la plantilla.");
         }
 
-        if ($subType && isset($this->templateStructure[$componentType]['type']) && !in_array($subType, $this->templateStructure[$componentType]['type'])) {
-            throw new InvalidArgumentException("El tipo '$subType' no es válido para el componente '$componentType' en la plantilla '{$this->templateIdentifier}'.");
+        // Validación especial para headers
+        if ($componentType === 'HEADER' && $subType) {
+            $allowedFormats = $this->templateStructure['HEADER']['formats'] ?? [];
+            $allowedFormats = array_map('strtoupper', (array)$allowedFormats);
+            
+            if (!in_array(strtoupper($subType), $allowedFormats)) {
+                throw new InvalidArgumentException("Formato '$subType' no permitido para el header. Formatos válidos: " . implode(', ', $allowedFormats));
+            }
         }
     }
 
