@@ -5,6 +5,7 @@ use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 use InvalidArgumentException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\Exceptions\WhatsappApiException;
 use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
@@ -13,6 +14,7 @@ use ScriptDevelop\WhatsappManager\Models\Template;
 class TemplateMessageBuilder
 {
     protected WhatsappBusinessAccount $account;
+    protected ApiClient $apiClient;
     protected string $phoneNumber;
     protected string $templateIdentifier; // Puede ser nombre o ID
     protected ?string $language = null; // Opcional
@@ -24,9 +26,10 @@ class TemplateMessageBuilder
      *
      * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
      */
-    public function __construct(WhatsappBusinessAccount $account)
+    public function __construct(ApiClient $apiClient, WhatsappBusinessAccount $account)
     {
         $this->account = $account;
+        $this->apiClient = $apiClient;
     }
 
     /**
@@ -319,7 +322,7 @@ class TemplateMessageBuilder
             'payload' => $payload,
         ]);
 
-        $response = $this->account->apiClient->request(
+        $response = $this->apiClient->request(
             'POST',
             $endpoint,
             data: $payload,
