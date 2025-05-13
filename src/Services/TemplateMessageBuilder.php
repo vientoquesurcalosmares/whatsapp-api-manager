@@ -357,14 +357,34 @@ class TemplateMessageBuilder
      */
     protected function buildPayload(): array
     {
+        $components = [];
+        
+        foreach ($this->components as $componentType => $component) {
+            $formattedComponent = [
+                'type' => strtolower($componentType), // Los tipos deben ser en minúsculas
+                'parameters' => $component['parameters'] ?? []
+            ];
+            
+            // Manejar estructura especial para botones
+            if ($componentType === 'BUTTONS') {
+                $formattedComponent['sub_type'] = 'quick_reply'; // o 'url' según corresponda
+                $formattedComponent['index'] = 0; // Índice requerido para botones
+                $formattedComponent['buttons'] = $component['buttons'];
+                unset($formattedComponent['parameters']);
+            }
+            
+            $components[] = $formattedComponent;
+        }
+
         $payload = [
             'messaging_product' => 'whatsapp',
             'to' => $this->phoneNumber,
+            'type' => 'template',
             'template' => [
                 'name' => $this->templateIdentifier,
                 'language' => ['code' => $this->language],
-                'components' => array_values($this->components),
-            ],
+                'components' => $components
+            ]
         ];
 
         Log::info('Payload construido para el mensaje de plantilla.', ['payload' => $payload]);
