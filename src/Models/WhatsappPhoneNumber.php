@@ -39,9 +39,9 @@ class WhatsappPhoneNumber extends Model
         'webhook_configuration' => 'array',
     ];
 
-    public function bot()
+    public function bots()
     {
-        return $this->belongsTo(WhatsappBot::class, 'whatsapp_bot_id', 'whatsapp_bot_id');
+        return $this->hasMany(WhatsappBot::class, 'phone_number_id', 'phone_number_id');
     }
 
     public function messages()

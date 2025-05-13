@@ -26,9 +26,9 @@ class WhatsappBot extends Model
         'on_failure',
     ];
 
-    public function phoneNumbers()
+    public function phoneNumber()
     {
-        return $this->hasMany(WhatsappPhoneNumber::class, 'whatsapp_bot_id', 'whatsapp_bot_id');
+        return $this->belongsTo(WhatsappPhoneNumber::class, 'phone_number_id', 'phone_number_id');
     }
 
     // Relación con Flujos

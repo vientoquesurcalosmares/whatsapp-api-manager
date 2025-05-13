@@ -15,7 +15,6 @@ return new class extends Migration
             $table->ulid('phone_number_id')->primary();
             $table->string('whatsapp_business_account_id', 255);
             $table->ulid('whatsapp_business_profile_id')->nullable();
-            $table->ulid('whatsapp_bot_id')->nullable();
             $table->string('display_phone_number', 45)->unique();
             $table->string('country_code', 45);
             $table->string('phone_number', 45);
@@ -38,11 +37,6 @@ return new class extends Migration
             $table->foreign('whatsapp_business_profile_id')
                   ->references('whatsapp_business_profile_id')
                   ->on('whatsapp_business_profiles')
-                  ->onDelete('cascade');
-
-            $table->foreign('whatsapp_bot_id')
-                  ->references('whatsapp_bot_id')
-                  ->on('whatsapp_bots')
                   ->onDelete('cascade');
         });
     }
