@@ -22,6 +22,7 @@ class UserResponse extends Model
         'flow_step_id',
         'field_name',
         'field_value',
+        'contact_id',
     ];
 
     protected $casts = [
@@ -40,5 +41,10 @@ class UserResponse extends Model
     public function flowStep()
     {
         return $this->belongsTo(FlowStep::class, 'flow_step_id', 'step_id');
+    }
+
+    public function contact()
+    {
+        return $this->belongsTo(Contact::class, 'contact_id', 'contact_id');
     }
 }

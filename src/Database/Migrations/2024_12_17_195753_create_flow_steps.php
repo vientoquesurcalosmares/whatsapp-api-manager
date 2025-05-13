@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('flow_steps', function (Blueprint $table) {
             $table->ulid('step_id')->primary();
-            $table->foreignUuid('flow_id')->constrained('flows', 'flow_id');
+            $table->foreignUlid('flow_id')->constrained('flows', 'flow_id')->onDelete('cascade');
             $table->integer('order'); // Orden de ejecución
             $table->enum('type', ['text', 'menu', 'input', 'media', 'location', 'document']);
             $table->json('content'); // { "body": "Hola", "buttons": [...] }

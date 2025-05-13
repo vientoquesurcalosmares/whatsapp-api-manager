@@ -665,6 +665,140 @@ $template = Whatsapp::template()
     ->save();
 ```
 
+
+1. Whatsapp (Facade)
+Métodos Principales:
+
+account(): Acceso a AccountRegistrationService
+
+message(): Acceso a MessageDispatcherService
+
+phone(): Acceso a WhatsappService
+
+template(): Acceso a TemplateService
+
+getBusinessAccount(): Obtiene datos de una cuenta empresarial
+
+getPhoneNumbers(): Lista números asociados a una cuenta
+
+getPhoneNumberDetails(): Detalles técnicos de un número
+
+getBusinessProfile(): Perfil comercial vinculado a un número
+
+2. WhatsappService
+Métodos Clave:
+
+forAccount(): Establece la cuenta activa para operaciones
+
+getBusinessAccount(): Datos de cuenta (nombre, timezone, IDs)
+
+getPhoneNumbers(): Listado de números telefónicos
+
+getPhoneNumberDetails(): Verificación, rating de calidad, configuración
+
+getBusinessProfile(): Descripción, email, logo, dirección
+
+withTempToken(): Autenticación temporal para operaciones
+
+3. TemplateService
+Gestión de Plantillas:
+
+getTemplates(): Sincroniza plantillas desde la API
+
+getTemplateById()/getTemplateByName(): Búsqueda específica
+
+createUtilityTemplate()/createMarketingTemplate()/createAuthenticationTemplate(): Builders para tipos de plantillas
+
+deleteTemplateById()/deleteTemplateByName(): Eliminación (soft/hard delete)
+
+sendTemplateMessage(): Constructor para enviar plantillas
+
+createUploadSession()/uploadMedia(): Manejo de archivos multimedia
+
+TemplateBuilder (Subservicio):
+
+setName()/setLanguage()/setCategory(): Configuración básica
+
+addHeader(): Texto, imágenes o ubicación
+
+addBody(): Texto con parámetros dinámicos
+
+addFooter(): Texto estático
+
+addButton(): URL, teléfono o quick reply
+
+save(): Crea/actualiza plantillas en la API y DB
+
+4. AccountRegistrationService
+Métodos Clave:
+
+register(): Flujo completo de registro (cuenta + números + perfiles)
+
+validateInput(): Verifica token y business ID
+
+fetchAccountData(): Obtiene metadata de la API
+
+upsertBusinessAccount(): Crea/actualiza cuenta en DB
+
+registerPhoneNumbers(): Sincroniza números telefónicos
+
+linkBusinessProfilesToPhones(): Vincula perfiles comerciales
+
+5. MessageDispatcherService
+Envío de Mensajes:
+
+sendTextMessage(): Mensaje básico con vista previa opcional
+
+sendReplyTextMessage(): Respuesta a mensaje existente
+
+sendImageMessage()/sendAudioMessage()/sendVideoMessage(): Multimedia desde archivo
+
+sendDocumentMessage(): PDF, Excel, Word con caption
+
+sendStickerMessage(): Stickers estáticos/animados
+
+sendContactMessage(): Comparte tarjeta de contacto
+
+sendLocationMessage(): Coordenadas + dirección
+
+Métodos de Soporte:
+
+uploadFile(): Sube archivos a la API
+
+downloadMedia(): Descarga medios a almacenamiento local
+
+validateMediaFile(): Verifica formatos y tamaños
+
+resolveContact(): Crea/recupera contactos en DB
+
+Manejo de Respuestas:
+
+Todos los métodos tienen versión sendReply...Message() para respuestas contextuales.
+
+6. TemplateMessageBuilder
+Construcción Dinámica:
+
+to(): Define destinatario (país + número)
+
+usingTemplate(): Selecciona plantilla por ID/nombre
+
+addHeader()/addBody()/addFooter(): Componentes estáticos
+
+addButton(): Hasta 10 botones por mensaje
+
+send(): Valida y envía el mensaje estructurado
+
+Flujos Técnicos Destacados
+Registro de Cuenta:
+register() -> validateInput() -> fetchAccountData() -> upsertBusinessAccount() -> registerPhoneNumbers()
+
+Envío de Multimedia:
+validateMediaFile() -> createUploadSession() -> uploadMedia() -> send...Message()
+
+Plantillas con Parámetros:
+TemplateBuilder -> addHeader()/addBody() -> storeOrUpdateTemplate() -> syncTemplateComponents()
+
+
 ---
 
 ### Notas

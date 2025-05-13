@@ -18,9 +18,12 @@ class WhatsappBot extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'phone_number_id',
         'bot_name',
-        'port',
-        'url',
+        'description',
+        'is_enable',
+        'default_flow_id',
+        'on_failure',
     ];
 
     public function phoneNumbers()
@@ -28,27 +31,9 @@ class WhatsappBot extends Model
         return $this->hasMany(WhatsappPhoneNumber::class, 'whatsapp_bot_id', 'whatsapp_bot_id');
     }
 
-    public static function getBotsConfig()
-    {
-        return self::with('phoneNumbers.businessAccount')->get()->map(function ($bot) {
-            return [
-                'flows' => ['dxFlow', 'welcomeFlow', 'registerFlow', 'fullSamplesFlow'],
-                'jwtToken' => $bot->phoneNumbers->first()->businessAccount->api_token,
-                'numberId' => $bot->phoneNumbers->first()->phone_number_id,
-                'verifyToken' => config('whatsapp-manager.webhook.verify_token'),
-                'version' => env('WHATSAPP_API_VERSION'),
-                'dbHost' => env('DB_HOST'),
-                'dbUser' => env('DB_USERNAME'),
-                'dbName' => env('DB_DATABASE'),
-                'dbPassword' => env('DB_PASSWORD'),
-                'port' => $bot->port,
-            ];
-        })->toArray();
-    }
-
     // Relación con Flujos
     public function flows()
     {
-        return $this->hasMany(Flow::class, 'bot_id');
+        return $this->hasMany(Flow::class, 'whatsapp_bot_id');
     }
 }

@@ -28,6 +28,7 @@ class FlowStep extends Model
 
     protected $casts = [
         'content' => 'array',
+        'is_terminal' => 'boolean',
     ];
 
     // Relaciones
@@ -47,7 +48,7 @@ class FlowStep extends Model
     // Relación con Respuestas de usuario
     public function userResponses()
     {
-        return $this->hasMany(UserResponse::class, 'flow_step_id');
+        return $this->hasMany(UserResponse::class, 'flow_step_id', 'step_id');
     }
 
     // Validación para pasos terminales

@@ -79,9 +79,9 @@ class Contact extends Model
     }
 
     // Relación con Respuestas de usuario
-    public function userResponses()
+    public function responses()
     {
-        return $this->hasMany(UserResponse::class, 'contact_id');
+        return $this->hasMany(UserResponse::class, 'contact_id', 'contact_id');
     }
 
     public function getFullNameAttribute(): string {

@@ -19,11 +19,13 @@ class Flow extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'bot_id',
+        'whatsapp_bot_id',
         'name',
+        'description',
         'trigger_keywords',       // Nuevo: almacena un arreglo de palabras clave
         'is_case_sensitive', // Nuevo: define si la comparación es sensible a mayúsculas/minúsculas
         'is_default',
+        'active',
     ];
 
     protected $casts = [
@@ -80,5 +82,15 @@ class Flow extends Model
     public function getInitialStepAttribute()
     {
         return $this->steps()->orderBy('order')->first();
+    }
+
+    public function triggers()
+    {
+        return $this->hasMany(FlowTrigger::class, 'flow_id', 'flow_id');
+    }
+
+    public function variables()
+    {
+        return $this->hasMany(FlowVariable::class, 'flow_id', 'flow_id');
     }
 }

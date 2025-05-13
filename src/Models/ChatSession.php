@@ -80,4 +80,9 @@ class ChatSession extends Model
     {
         return $this->belongsTo(FlowStep::class, 'current_step_id', 'step_id');
     }
+
+    public function responses()
+    {
+        return $this->hasMany(UserResponse::class, 'session_id', 'session_id');
+    }
 }

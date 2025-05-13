@@ -13,15 +13,15 @@ return new class extends Migration
     {
         Schema::create('flows', function (Blueprint $table) {
             $table->ulid('flow_id')->primary();
-            $table->foreignUlid('bot_id'); // Bot asociado
+            $table->foreignUlid('whatsapp_bot_id')->constrained('whatsapp_bots', 'whatsapp_bot_id')->onDelete('cascade');
             $table->string('name');
-            $table->json('trigger_keywords')->nullable();
+            $table->text('description')->nullable();
+            $table->json('trigger_keywords')->nullable(); // Palabra clave o palabras claves para activar el flujo o respuestas.
             $table->boolean('is_case_sensitive')->default(false);
             $table->boolean('is_default')->default(false); // Flujo por defecto
+            $table->boolean('active')->default(true);
             $table->timestamps();
             $table->softDeletes();
-
-            $table->unique(['bot_id', 'is_default'], 'one_default_per_bot');
         });
     }
 
@@ -30,6 +30,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('flows', function (Blueprint $table) {
+            $table->dropForeign(['whatsapp_bot_id']); // Eliminar clave foránea
+        });
+        
         Schema::dropIfExists('flows');
     }
 };
