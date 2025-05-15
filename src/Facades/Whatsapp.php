@@ -57,4 +57,12 @@ class Whatsapp extends Facade
     {
         return app('whatsapp.template');
     }
+
+    /**
+     * Get the bot builder service instance.
+     */
+    public static function bot()
+    {
+        return app('whatsapp.bot');
+    }
 }

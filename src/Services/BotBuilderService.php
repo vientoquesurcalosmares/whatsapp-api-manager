@@ -1,0 +1,70 @@
+<?php
+
+namespace ScriptDevelop\WhatsappManager\Services;
+
+use ScriptDevelop\WhatsappManager\Models\WhatsappBot;
+use Illuminate\Support\Str;
+
+class BotBuilderService
+{
+    /**
+     * Crea un nuevo bot de WhatsApp.
+     */
+    public function create(array $data): WhatsappBot
+    {
+        $data['whatsapp_bot_id'] = Str::ulid()->toBase32(); // Usa tu trait GeneratesUlid
+        return WhatsappBot::create($data);
+    }
+
+    /**
+     * Recupera un bot por ID.
+     */
+    public function getById(string $botId): ?WhatsappBot
+    {
+        return WhatsappBot::find($botId);
+    }
+
+    /**
+     * Lista todos los bots activos.
+     */
+    public function getActiveBots()
+    {
+        return WhatsappBot::where('is_enable', true)->get();
+    }
+
+    /**
+     * Activa o desactiva un bot.
+     */
+    public function setStatus(string $botId, bool $status): bool
+    {
+        $bot = $this->getById($botId);
+        if (!$bot) return false;
+
+        $bot->is_enable = $status;
+        return $bot->save();
+    }
+
+    /**
+     * Asigna un flujo por defecto.
+     */
+    public function setDefaultFlow(string $botId, string $flowId): bool
+    {
+        $bot = $this->getById($botId);
+        if (!$bot) return false;
+
+        $bot->default_flow_id = $flowId;
+        return $bot->save();
+    }
+
+    /**
+     * Actualiza la respuesta por defecto en caso de error.
+     */
+    public function setFailureResponse(string $botId, string $response): bool
+    {
+        $bot = $this->getById($botId);
+        if (!$bot) return false;
+
+        $bot->on_failure = $response;
+        return $bot->save();
+    }
+}

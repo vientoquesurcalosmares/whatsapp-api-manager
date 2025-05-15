@@ -37,4 +37,14 @@ class WhatsappManager
     {
         return app('whatsapp.account');
     }
+
+    /**
+     * Obtiene el servicio del bot de WhatsApp.
+     *
+     * @return mixed El servicio del bot.
+     */
+    public function bot()
+    {
+        return app('whatsapp.bot');
+    }
 }

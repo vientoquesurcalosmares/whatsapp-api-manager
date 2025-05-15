@@ -8,6 +8,7 @@ use ScriptDevelop\WhatsappManager\Services\AccountRegistrationService;
 use ScriptDevelop\WhatsappManager\Services\WhatsappService;
 use ScriptDevelop\WhatsappManager\Repositories\WhatsappBusinessAccountRepository;
 use ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel;
+use ScriptDevelop\WhatsappManager\Services\BotBuilderService;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
 use ScriptDevelop\WhatsappManager\Services\TemplateService;
 
@@ -56,6 +57,10 @@ class WhatsappServiceProvider extends ServiceProvider
             return new TemplateService(
                 $app->make(ApiClient::class)
             );
+        });
+
+        $this->app->singleton('whatsapp.bot', function ($app) {
+            return new BotBuilderService();
         });
     }
 
