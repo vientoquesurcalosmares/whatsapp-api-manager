@@ -23,7 +23,7 @@ class Whatsapp extends Facade
      */
     protected static function getFacadeAccessor()
     {
-        return 'whatsapp.phone';
+        return 'whatsapp.manager';
     }
 
     /**

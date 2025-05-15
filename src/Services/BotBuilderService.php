@@ -10,10 +10,16 @@ class BotBuilderService
     /**
      * Crea un nuevo bot de WhatsApp.
      */
-    public function create(array $data): WhatsappBot
+    public function createBot(array $data): WhatsappBot
     {
-        $data['whatsapp_bot_id'] = Str::ulid()->toBase32(); // Usa tu trait GeneratesUlid
-        return WhatsappBot::create($data);
+        return WhatsappBot::create([
+            'bot_name'         => $data['name'],
+            'phone_number_id'  => $data['phone_number_id'],
+            'description'      => $data['description'] ?? null,
+            'on_failure'       => $data['failure_message'] ?? 'Disculpa, no entendí tu mensaje.',
+            'is_enable'        => true,
+            'default_flow_id'  => $data['default_flow_id'] ?? null,
+        ]);
     }
 
     /**

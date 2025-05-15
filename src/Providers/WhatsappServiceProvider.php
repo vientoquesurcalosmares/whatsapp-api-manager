@@ -33,6 +33,10 @@ class WhatsappServiceProvider extends ServiceProvider
 
         $this->app->singleton(WhatsappBusinessAccountRepository::class);
 
+        $this->app->singleton('whatsapp.manager', function($app){
+            return new \ScriptDevelop\WhatsappManager\Services\WhatsappManager;
+        });
+
         $this->app->singleton('whatsapp.phone', function ($app) {
             return new WhatsappService(
                 $app->make(ApiClient::class),
