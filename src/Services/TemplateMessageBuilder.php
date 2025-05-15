@@ -28,9 +28,11 @@ class TemplateMessageBuilder
     protected array $templateStructure = []; // Estructura de la plantilla
 
     /**
-     * Constructor de la clase.
+     * Constructor de la clase TemplateMessageBuilder.
      *
-     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param ApiClient $apiClient Cliente API para realizar solicitudes.
+     * @param WhatsappPhoneNumber $phone Número de teléfono de WhatsApp.
+     * @param TemplateService $templateService Servicio para gestionar plantillas.
      */
     public function __construct(ApiClient $apiClient, WhatsappPhoneNumber $phone, TemplateService $templateService)
     {
@@ -99,7 +101,7 @@ class TemplateMessageBuilder
         
         foreach ($content as $item) {
             $formattedParams[] = [
-                'type' => 'text', // Ajustar según el tipo (ej: imagen, documento)
+                'type' => 'text',
                 'text' => $item
             ];
         }
