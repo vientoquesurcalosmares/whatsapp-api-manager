@@ -173,7 +173,7 @@ class TemplateMessageBuilder
     public function addButton(
         string $type, 
         string $text, 
-        string $url = null, 
+        ?string $url = null, 
         array $parameters = []
     ): self {
         $this->ensureTemplateStructureLoaded();
@@ -448,14 +448,17 @@ class TemplateMessageBuilder
             ]
         );
 
-        if (!$response['success']) {
+        if (!isset($response['messages'][0]['message_status']) || $response['messages'][0]['message_status'] !== 'accepted') {
             Log::error('Error al enviar el mensaje de plantilla.', [
                 'endpoint' => $endpoint,
                 'payload' => $payload,
                 'response' => $response,
             ]);
 
-            throw new WhatsappApiException('Error al enviar el mensaje.', $response['error'] ?? []);
+            $errorData = $response['error'] ?? ['message' => 'Estado desconocido o mensaje no creado'];
+            throw new WhatsappApiException('Error al enviar el mensaje.', $errorData);
+
+            // throw new WhatsappApiException('Error al enviar el mensaje.', $response['error'] ?? []);
         }
 
         Log::info('Mensaje enviado exitosamente.', ['response' => $response]);

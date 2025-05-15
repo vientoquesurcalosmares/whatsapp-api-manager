@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->boolean('is_enabled')->default(true); // Habilitar/deshabilitar bot
             $table->enum('on_failure', ['assign_agent', 'notify'])->default('assign_agent'); // Acción si falla el flujo
+            $table->text('failure_message')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

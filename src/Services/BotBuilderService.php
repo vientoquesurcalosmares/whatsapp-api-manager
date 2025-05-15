@@ -16,8 +16,9 @@ class BotBuilderService
             'bot_name'         => $data['name'],
             'phone_number_id'  => $data['phone_number_id'],
             'description'      => $data['description'] ?? null,
-            'on_failure'       => $data['failure_message'] ?? 'Disculpa, no entendí tu mensaje.',
-            'is_enable'        => true,
+            'on_failure'       => $data['on_failure_action'] ?? 'assign_agent',
+            'failure_message' => $data['failure_message'] ?? null, 
+            'is_enabled'        => true,
             'default_flow_id'  => $data['default_flow_id'] ?? null,
         ]);
     }

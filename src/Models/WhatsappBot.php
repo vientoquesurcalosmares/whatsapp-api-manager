@@ -24,6 +24,7 @@ class WhatsappBot extends Model
         'is_enable',
         'default_flow_id',
         'on_failure',
+        'failure_message',
     ];
 
     public function phoneNumber()
