@@ -666,6 +666,71 @@ $template = Whatsapp::template()
 ```
 
 
+### Enviar mensajes de plantillas
+
+Puedes enviar diferentes mensajes de plantillas segun la estructura de la plantilla.
+
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+
+// Obtener la cuenta empresarial
+$account = WhatsappBusinessAccount::first();
+$phone = WhatsappPhoneNumber::first();
+
+// Enviar plantilla 1
+$message = Whatsapp::template()
+    ->sendTemplateMessage($phone)
+    ->to('57', '3137181908')
+    ->usingTemplate('order_confirmation_4')
+    ->addBody(['12345'])
+    ->send();
+
+// Enviar plantilla 2
+$message = Whatsapp::template()
+    ->sendTemplateMessage($phone)
+    ->to('57', '3135694227')
+    ->usingTemplate('link_de_pago')
+    ->addHeader('TEXT', '123456')
+    ->addBody(['20000'])
+    ->addButton('URL', 'Pagar', 'https://mpago.li/1QFwRV', ['1QFwRV'])
+    ->send();
+
+```
+
+### Crear BOTS de Whatsapp
+
+Puedes diferentes tipos de Bots para whatsapp.
+
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+
+// Obtener la cuenta empresarial
+$account = WhatsappBusinessAccount::first();
+$phone = WhatsappPhoneNumber::first();
+
+// Crear Bot de whatsapp
+$bot = Whatsapp::bot()
+    ->createBot(
+        [
+            'name' => 'Soporte Técnico',
+            'phone_number_id' => $phone->phone_number_id,
+            'trigger_keywords' => ['soporte', 'ayuda'],
+        ]);
+
+// Ver detalle de un Bot de whatsapp
+$botDetail = Whatsapp::bot()->getById($bot->whatsapp_bot_id);
+
+```
+
+
+
+
 1. Whatsapp (Facade)
 Métodos Principales:
 
@@ -676,6 +741,8 @@ message(): Acceso a MessageDispatcherService
 phone(): Acceso a WhatsappService
 
 template(): Acceso a TemplateService
+
+bot(): Accesoa BotBuilderService
 
 getBusinessAccount(): Obtiene datos de una cuenta empresarial
 
