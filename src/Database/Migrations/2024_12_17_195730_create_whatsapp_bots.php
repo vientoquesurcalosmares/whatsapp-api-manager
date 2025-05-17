@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignUlid('phone_number_id')->constrained('whatsapp_phone_numbers', 'phone_number_id')->onDelete('cascade');
             $table->string('bot_name', 45);
             $table->text('description')->nullable();
-            $table->boolean('is_enabled')->default(true); // Habilitar/deshabilitar bot
+            $table->boolean('is_enabled')->default(false); // Habilitar/deshabilitar bot
             $table->enum('on_failure', ['assign_agent', 'notify'])->default('assign_agent'); // Acción si falla el flujo
             $table->text('failure_message')->nullable();
             $table->timestamps();

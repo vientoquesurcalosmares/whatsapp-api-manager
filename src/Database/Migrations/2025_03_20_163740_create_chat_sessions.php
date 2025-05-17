@@ -44,6 +44,10 @@ return new class extends Migration
             $table->foreign('current_step_id')->references('step_id')->on('flow_steps');
 
             $table->index('flow_status');
+            $table->index('assigned_agent_id');
+            $table->index('contact_id');
+            $table->index('whatsapp_phone_id');
+            $table->index('flow_id');
         });
     }
 

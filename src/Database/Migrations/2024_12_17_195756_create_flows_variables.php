@@ -15,10 +15,11 @@ return new class extends Migration
             $table->ulid('variable_id')->primary();
             $table->foreignUlid('flow_id')->constrained('flows', 'flow_id')->onDelete('cascade');
             $table->string('name');
-            $table->string('type')->default('string'); // 'string', 'number', 'boolean'
+            $table->enum('type', ['string','number','boolean'])->default('string');
             $table->json('default_value')->nullable(); // Valor inicial opcional
         
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

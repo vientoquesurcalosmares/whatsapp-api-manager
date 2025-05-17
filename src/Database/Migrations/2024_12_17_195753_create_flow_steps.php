@@ -17,7 +17,7 @@ return new class extends Migration
             $table->integer('order'); // Orden de ejecución
             $table->enum('type', ['text', 'menu', 'input', 'media', 'location', 'document']);
             $table->json('content'); // { "body": "Hola", "buttons": [...] }
-            $table->uuid('next_step_id')->nullable(); // Paso siguiente
+            $table->foreignUlid('next_step_id')->nullable()->references('step_id')->on('flow_steps')->onDelete('set null'); // Paso siguiente
             $table->boolean('is_terminal')->default(false); // Finaliza el flujo
             $table->timestamps();
             $table->softDeletes();

@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('flows', function (Blueprint $table) {
             $table->ulid('flow_id')->primary();
-            $table->foreignUlid('whatsapp_bot_id')->constrained('whatsapp_bots', 'whatsapp_bot_id')->onDelete('cascade');
+            // $table->foreignUlid('whatsapp_bot_id')->constrained('whatsapp_bots', 'whatsapp_bot_id')->onDelete('cascade');
             $table->string('name');
             $table->text('description')->nullable();
             $table->json('trigger_keywords')->nullable(); // Palabra clave o palabras claves para activar el flujo o respuestas.
             $table->boolean('is_case_sensitive')->default(false);
             $table->boolean('is_default')->default(false); // Flujo por defecto
-            $table->boolean('active')->default(true);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
         });

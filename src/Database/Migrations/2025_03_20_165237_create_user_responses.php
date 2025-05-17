@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('user_responses', function (Blueprint $table) {
             $table->ulid('response_id')->primary();
-            $table->foreignUuid('session_id')->constrained('whatsapp_chat_sessions', 'session_id');
-            $table->foreignUuid('flow_step_id')->constrained('flow_steps', 'step_id');
+            $table->foreignUlid('session_id')->constrained('whatsapp_chat_sessions', 'session_id');
+            $table->foreignUlid('flow_step_id')->constrained('flow_steps', 'step_id');
             $table->string('field_name'); // Ej: "nombre", "telefono"
             $table->text('field_value'); // Valor proporcionado
-            $table->foreignUuid('contact_id')->constrained('whatsapp_contacts', 'contact_id');
+            $table->foreignUlid('contact_id')->constrained('whatsapp_contacts', 'contact_id');
             $table->timestamps();
             $table->softDeletes();
         });
