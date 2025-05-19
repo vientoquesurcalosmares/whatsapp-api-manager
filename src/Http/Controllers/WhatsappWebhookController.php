@@ -14,6 +14,7 @@ use ScriptDevelop\WhatsappManager\Services\SessionManager;
 use ScriptDevelop\WhatsappManager\Models\Contact;
 use ScriptDevelop\WhatsappManager\Models\Conversation;
 use ScriptDevelop\WhatsappManager\Models\ChatSession;
+use ScriptDevelop\WhatsappManager\Models\Flow;
 use ScriptDevelop\WhatsappManager\Models\FlowStep;
 use ScriptDevelop\WhatsappManager\Models\Message;
 use ScriptDevelop\WhatsappManager\Models\UserResponse;
@@ -175,7 +176,7 @@ class WhatsappWebhookController extends Controller
                 Log::channel('whatsapp')->warning('Flujo no determinado', [
                     'text' => $textContent
                 ]);
-                $flowId = $bot->default_flow_id; // Usar flujo por defecto
+                return;
             }
 
             // 3. Gestionar sesión
@@ -515,14 +516,32 @@ class WhatsappWebhookController extends Controller
             : $step->flow->failure_step;
     }
 
-    private function determineFlow(WhatsappBot $bot, string $text): ?string
+    protected function determineFlow(WhatsappBot $bot, string $text): ?string
     {
         foreach ($bot->flows as $flow) {
             if ($flow->matchesTrigger($text)) {
                 return $flow->flow_id;
             }
         }
-        return $bot->default_flow_id; // Retorna el flujo por defecto
+        
+        // A. Validar existencia del flujo por defecto
+        if (!$bot->default_flow_id) {
+            Log::channel('whatsapp')->error('Flujo por defecto no configurado para el bot', [
+                'bot' => $bot->bot_name
+            ]);
+            return null;
+        }
+        
+        // B. Verificar que el flujo exista
+        $defaultFlowExists = Flow::where('flow_id', $bot->default_flow_id)->exists();
+        if (!$defaultFlowExists) {
+            Log::channel('whatsapp')->error('Flujo por defecto no existe', [
+                'flow_id' => $bot->default_flow_id
+            ]);
+            return null;
+        }
+        
+        return $bot->default_flow_id;
     }
 
     /**

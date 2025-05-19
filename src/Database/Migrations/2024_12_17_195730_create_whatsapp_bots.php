@@ -14,6 +14,10 @@ return new class extends Migration
         Schema::create('whatsapp_bots', function (Blueprint $table) {
             $table->ulid('whatsapp_bot_id')->primary();
             $table->foreignUlid('phone_number_id')->constrained('whatsapp_phone_numbers', 'phone_number_id')->onDelete('cascade');
+            $table->foreignUlid('default_flow_id')
+                  ->nullable()
+                  ->constrained('flows', 'flow_id')
+                  ->nullOnDelete();
             $table->string('bot_name', 45);
             $table->text('description')->nullable();
             $table->boolean('is_enable')->default(false); // Habilitar/deshabilitar bot

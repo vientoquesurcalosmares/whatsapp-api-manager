@@ -47,4 +47,9 @@ class WhatsappManager
     {
         return app('whatsapp.bot');
     }
+
+    public function flow()
+    {
+        return app('whatsapp.flow');
+    }
 }
