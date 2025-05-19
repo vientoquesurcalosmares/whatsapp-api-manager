@@ -16,8 +16,8 @@ return new class extends Migration
             $table->ulid('contact_id');
             $table->ulid('whatsapp_phone_id'); // Número de WhatsApp usado
             $table->ulid('assigned_bot_id')->nullable();
-            $table->foreignUuid('flow_id')->nullable(); // Flujo activo
-            $table->ulid('current_step_id')->nullable(); 
+            $table->foreignUlid('flow_id')->nullable()->constrained('flows', 'flow_id')->onDelete('set null'); // Flujo activo
+            $table->ulid('current_step_id')->nullable()->constrained('flow_steps', 'step_id')->onDelete('set null');
             $table->enum('status', ['active', 'paused', 'completed'])->default('active');
             $table->json('context')->nullable(); 
             $table->timestamp('assigned_at')->nullable(); 
@@ -32,7 +32,13 @@ return new class extends Migration
                 )
                 ->onDelete('set null');
             
-            $table->enum('flow_status', ['PENDING', 'IN_PROGRESS', 'FINALIZED'])->default('IN_PROGRESS');
+            $table->enum('flow_status', [
+                    'started',      // Iniciado
+                    'in_progress',  // En progreso
+                    'completed',    // Completado
+                    'failed',       // Fallido
+                    'transferred'   // Transferido a agente
+                ])->default('started');
             $table->timestamps();
             $table->softDeletes();
 

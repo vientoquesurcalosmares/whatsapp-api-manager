@@ -136,7 +136,7 @@ class WhatsappWebhookController extends Controller
 
         // Manejar mensajes de texto
         if ($messageType === 'text') {
-            $this->processTextMessage($message, $contactRecord, $whatsappPhone);
+            $textContent = $this->processTextMessage($message, $contactRecord, $whatsappPhone);
         }
 
         // Manejar mensajes de media
@@ -145,8 +145,15 @@ class WhatsappWebhookController extends Controller
         }
 
 
-        
 
+        Log::channel('whatsapp')->info('Incoming message processed.', [
+            'message_id' => $message['id'],
+            'contact_id' => $contactRecord->contact_id,
+            'phone_number' => $fullPhone,
+            'message_type' => $messageType,
+            'Message' => $message['text']['body'],
+            'Text Content' => $textContent,
+        ]);
 
         // Solo procesar flujos si es un mensaje de texto válido
         if ($textContent) {
@@ -158,7 +165,7 @@ class WhatsappWebhookController extends Controller
 
             // 3. Gestionar sesión
             $session = app(SessionManager::class)->getOrCreateSession(
-                $contactRecord, 
+                $contactRecord,
                 $bot,
                 $flowId
             );
@@ -181,13 +188,20 @@ class WhatsappWebhookController extends Controller
 
     }
 
-    protected function processTextMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?string 
+    protected function processTextMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?string
     {
         $textContent = $message['text']['body'] ?? null;
 
+        Log::channel('whatsapp')->info('Processing text message.', [
+            'message' => $message,
+            'contact' => $contact,
+            'whatsappPhone' => $whatsappPhone,
+            'textContent' => $textContent,
+        ]);
+
         if (!$textContent) {
             Log::channel('whatsapp')->warning('No text content found in message.', $message);
-            return;
+            return null;
         }
 
         $messageRecord = Message::create([
@@ -332,7 +346,7 @@ class WhatsappWebhookController extends Controller
 
         // 1. Actualizar estado del mensaje
         $this->updateMessageStatus($messageRecord, $statusValue, $timestamp);
-        
+
         // 2. Procesar datos de conversación y métricas
         if (isset($status['conversation'])) {
             $this->processConversationData($messageRecord, $status);
@@ -365,10 +379,10 @@ class WhatsappWebhookController extends Controller
     private function updateMessageStatus(Message $message, string $status, ?string $timestamp): void
     {
         $updateData = ['status' => $status];
-        
+
         if ($timestamp) {
             $date = \Carbon\Carbon::createFromTimestamp($timestamp);
-            
+
             match($status) {
                 'sent' => $updateData['sent_at'] = $date,
                 'delivered' => $updateData['delivered_at'] = $date,
@@ -387,7 +401,7 @@ class WhatsappWebhookController extends Controller
 
         // Validar expiration_timestamp
         $expirationTimestamp = null;
-        if (isset($conversationData['expiration_timestamp']) 
+        if (isset($conversationData['expiration_timestamp'])
             && is_numeric($conversationData['expiration_timestamp'])) {
             $expirationTimestamp = \Carbon\Carbon::createFromTimestamp(
                 $conversationData['expiration_timestamp']
@@ -475,12 +489,12 @@ class WhatsappWebhookController extends Controller
         $selectedOption = collect($step->content['options'])
             ->first(fn($o) => $o['label'] === $input || $o['value'] === $input);
 
-        return $selectedOption 
+        return $selectedOption
             ? FlowStep::find($selectedOption['next_step_id'])
             : $step->flow->failure_step;
     }
 
-    private function determineFlow(WhatsappBot $bot, string $text): ?string 
+    private function determineFlow(WhatsappBot $bot, string $text): ?string
     {
         foreach ($bot->flows as $flow) {
             if ($flow->matchesTrigger($text)) {

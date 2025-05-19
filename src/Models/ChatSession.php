@@ -36,7 +36,7 @@ class ChatSession extends Model
         'assigned_at' => 'datetime',
     ];
 
-    public function getCurrentStepAttribute() {
+    public function getCurrentStepAttribute(): ?FlowStep {
         return $this->currentStep ?? $this->flow->initialStep ?? null;
     }
 
