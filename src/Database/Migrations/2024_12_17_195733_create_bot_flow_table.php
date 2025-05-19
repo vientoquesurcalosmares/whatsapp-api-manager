@@ -9,7 +9,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('bot_flow', function (Blueprint $table) {
-            $table->ulid('bot_flow_id')->primary();
             $table->foreignUlid('whatsapp_bot_id')
                   ->constrained('whatsapp_bots', 'whatsapp_bot_id')
                   ->cascadeOnDelete();
@@ -18,7 +17,8 @@ return new class extends Migration
                   ->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['whatsapp_bot_id', 'flow_id']);
+            // Clave primaria compuesta
+            $table->primary(['whatsapp_bot_id', 'flow_id']);
         });
     }
 

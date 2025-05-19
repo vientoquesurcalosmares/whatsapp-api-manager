@@ -19,7 +19,6 @@ class BotBuilderService
             'on_failure'       => $data['on_failure_action'] ?? 'assign_agent',
             'failure_message' => $data['failure_message'] ?? null, 
             'is_enable'        => true,
-            'default_flow_id'  => $data['default_flow_id'] ?? null,
         ]);
     }
 
