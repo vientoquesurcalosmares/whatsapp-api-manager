@@ -97,7 +97,7 @@ class SessionManager {
             throw new \RuntimeException("Flujo $flowId no existe en la base de datos");
         }
 
-        if (!$flow->bots()->where('whatsapp_bot_id', $bot->whatsapp_bot_id)->exists()) {
+        if (!$flow->bots()->where('bot_flow.whatsapp_bot_id', $bot->whatsapp_bot_id)->exists()) {
             throw new \RuntimeException("Flujo no asociado al bot");
         }
 
