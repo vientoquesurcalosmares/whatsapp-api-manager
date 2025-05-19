@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Facade;
  * @method static \ScriptDevelop\WhatsappManager\Services\MessageDispatcherService message()
  * @method static \ScriptDevelop\WhatsappManager\Services\WhatsappService phone()
  * @method static \ScriptDevelop\WhatsappManager\Services\TemplateService template()
+ * @method static \ScriptDevelop\WhatsappManager\Services\BotBuilderService bot()
+ * @method static \ScriptDevelop\WhatsappManager\Services\FlowBuilderService flow()
  * @method static mixed getBusinessAccount(string $whatsappBusinessId)
  * @method static array getPhoneNumbers(string $whatsappBusinessId)
  * @method static array getPhoneNumberDetails(string $phoneNumberId)
@@ -64,5 +66,13 @@ class Whatsapp extends Facade
     public static function bot()
     {
         return app('whatsapp.bot');
+    }
+
+    /**
+     * Get the flow builder service instance.
+     */
+    public static function flow()
+    {
+        return app('whatsapp.flow');
     }
 }

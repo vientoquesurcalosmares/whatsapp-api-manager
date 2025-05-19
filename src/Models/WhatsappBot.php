@@ -35,6 +35,6 @@ class WhatsappBot extends Model
     // Relación con Flujos
     public function flows()
     {
-        return $this->hasMany(Flow::class, 'whatsapp_bot_id');
+        return $this->belongsToMany(Flow::class, 'whatsapp_bot_id');
     }
 }

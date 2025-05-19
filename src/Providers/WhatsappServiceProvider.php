@@ -9,6 +9,7 @@ use ScriptDevelop\WhatsappManager\Services\WhatsappService;
 use ScriptDevelop\WhatsappManager\Repositories\WhatsappBusinessAccountRepository;
 use ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel;
 use ScriptDevelop\WhatsappManager\Services\BotBuilderService;
+use ScriptDevelop\WhatsappManager\Services\FlowBuilderService;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
 use ScriptDevelop\WhatsappManager\Services\TemplateService;
 
@@ -63,8 +64,14 @@ class WhatsappServiceProvider extends ServiceProvider
             );
         });
 
+        // Registrar el BotBuilderService
         $this->app->singleton('whatsapp.bot', function ($app) {
             return new BotBuilderService();
+        });
+
+        // Registrar el FlowBuilderService
+        $this->app->singleton('whatsapp.flow', function ($app) {
+            return new FlowBuilderService();
         });
     }
 

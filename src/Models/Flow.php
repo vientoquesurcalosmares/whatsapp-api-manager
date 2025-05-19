@@ -69,7 +69,7 @@ class Flow extends Model
     // Flow pertenece a un bot
     public function bot()
     {
-        return $this->belongsTo(WhatsappBot::class, 'bot_id', 'whatsapp_bot_id');
+        return $this->belongsToMany(WhatsappBot::class, 'bot_id', 'whatsapp_bot_id');
     }
 
     // Flow tiene muchos pasos
