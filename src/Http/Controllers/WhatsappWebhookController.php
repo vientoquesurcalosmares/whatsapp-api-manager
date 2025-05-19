@@ -9,9 +9,14 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use ScriptDevelop\WhatsappManager\Services\SessionManager;
 use ScriptDevelop\WhatsappManager\Models\Contact;
 use ScriptDevelop\WhatsappManager\Models\Conversation;
+use ScriptDevelop\WhatsappManager\Models\ChatSession;
+use ScriptDevelop\WhatsappManager\Models\FlowStep;
 use ScriptDevelop\WhatsappManager\Models\Message;
+use ScriptDevelop\WhatsappManager\Models\UserResponse;
+use ScriptDevelop\WhatsappManager\Models\WhatsappBot;
 use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
 use ScriptDevelop\WhatsappManager\Models\MediaFile;
@@ -77,6 +82,8 @@ class WhatsappWebhookController extends Controller
     {
         $messageType = $message['type'] ?? '';
 
+        $textContent = null;
+
         Log::channel('whatsapp')->warning('Handle Incoming Message: ', [
             'message' => $message,
             'contact' => $contact,
@@ -127,20 +134,54 @@ class WhatsappWebhookController extends Controller
             return;
         }
 
-
         // Manejar mensajes de texto
         if ($messageType === 'text') {
             $this->processTextMessage($message, $contactRecord, $whatsappPhone);
         }
 
-
         // Manejar mensajes de media
         if (in_array($messageType, ['image', 'audio', 'video', 'document'])) {
             $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
         }
+
+
+        
+
+
+        // Solo procesar flujos si es un mensaje de texto válido
+        if ($textContent) {
+            // 1. Obtener bot asociado
+            $bot = $whatsappPhone->bots()->firstWhere('is_enable', true);
+
+            // 2. Determinar flujo a ejecutar
+            $flowId = $this->determineFlow($bot, $textContent);
+
+            // 3. Gestionar sesión
+            $session = app(SessionManager::class)->getOrCreateSession(
+                $contactRecord, 
+                $bot,
+                $flowId
+            );
+
+            // 4. Procesar paso actual
+            $this->processFlowStep($session, $textContent);
+
+            Log::channel('whatsapp')->info('Flow step processed.', [
+                'bot_id' => $bot->name,
+                'session_id' => $session->session_id,
+                'current_step' => $session->currentStep->step_id,
+                'flow_status' => $session->flow_status,
+            ]);
+
+            // 5. Transferir a agente si es necesario
+            if ($session->flow_status === 'completed' && $bot->on_failure === 'assign_agent') {
+                $this->assignToAgent($session);
+            }
+        }
+
     }
 
-    protected function processTextMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
+    protected function processTextMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?string 
     {
         $textContent = $message['text']['body'] ?? null;
 
@@ -167,6 +208,8 @@ class WhatsappWebhookController extends Controller
             'wa_id' => $message['id'],
             'content' => $textContent,
         ]);
+
+        return $textContent; // Retorna el contenido
     }
 
     protected function processMediaMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
@@ -373,5 +416,77 @@ class WhatsappWebhookController extends Controller
             $message->conversation()->associate($conversation);
             $message->save();
         }
+    }
+
+    protected function processFlowStep(
+        ChatSession $session,
+        string $messageContent
+    ): void {
+        $currentStep = $session->currentStep;
+
+        // 1. Si es paso de entrada de datos, guardar respuesta
+        if ($currentStep->type === 'input') {
+            UserResponse::create([
+                'session_id' => $session->session_id,
+                'flow_step_id' => $currentStep->step_id,
+                'field_name' => $currentStep->content['field_name'],
+                'field_value' => $messageContent,
+                'contact_id' => $session->contact_id
+            ]);
+        }
+
+        // 2. Determinar siguiente paso
+        $nextStep = $this->determineNextStep($currentStep, $messageContent);
+
+        // 3. Actualizar sesión
+        $session->update([
+            'current_step_id' => $nextStep?->step_id,
+            'flow_status' => $nextStep ? 'in_progress' : 'completed'
+        ]);
+
+        // 4. Enviar respuesta automática
+        if ($nextStep && $nextStep->type !== 'input') {
+            $this->sendStepResponse($nextStep, $session->contact);
+        }
+    }
+
+    private function determineNextStep(
+        ?FlowStep $currentStep,
+        string $userInput
+    ): ?FlowStep {
+        if (!$currentStep) return null;
+
+        // 1. Verificar si es paso terminal
+        if ($currentStep->is_terminal) return null;
+
+        // 2. Lógica de menús/buttons
+        if ($currentStep->type === 'menu') {
+            return $this->handleMenuTransition($currentStep, $userInput);
+        }
+
+        // 3. Transición lineal
+        return $currentStep->nextStep ?? $currentStep->flow->steps()
+            ->where('order', '>', $currentStep->order)
+            ->orderBy('order')
+            ->first();
+    }
+
+    private function handleMenuTransition(FlowStep $step, string $input): ?FlowStep {
+        $selectedOption = collect($step->content['options'])
+            ->first(fn($o) => $o['label'] === $input || $o['value'] === $input);
+
+        return $selectedOption 
+            ? FlowStep::find($selectedOption['next_step_id'])
+            : $step->flow->failure_step;
+    }
+
+    private function determineFlow(WhatsappBot $bot, string $text): ?string 
+    {
+        foreach ($bot->flows as $flow) {
+            if ($flow->matchesTrigger($text)) {
+                return $flow->flow_id;
+            }
+        }
+        return $bot->default_flow_id; // Retorna el flujo por defecto
     }
 }

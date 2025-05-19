@@ -85,4 +85,15 @@ class ChatSession extends Model
     {
         return $this->hasMany(UserResponse::class, 'session_id', 'session_id');
     }
+
+    public function getIsActiveAttribute(): bool {
+        return $this->status === 'active';
+    }
+
+    public function getProgressPercentageAttribute(): float {
+        $totalSteps = $this->flow->steps()->count();
+        return $totalSteps > 0 
+            ? ($this->completed_steps / $totalSteps) * 100 
+            : 0;
+    }
 }
