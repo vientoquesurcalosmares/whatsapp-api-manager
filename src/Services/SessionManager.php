@@ -19,8 +19,10 @@ class SessionManager {
         return DB::transaction(function () use ($contact, $bot, $flowId) {
             $session = ChatSession::where('contact_id', $contact->contact_id)
                 ->where('assigned_bot_id', $bot->whatsapp_bot_id)
+                ->where('status', 'active')
                 ->whereNull('assigned_agent_id')
                 ->whereIn('flow_status', ['started', 'in_progress'])
+                ->latest() // Tomar la más reciente
                 ->first();
 
             if (!$session) {

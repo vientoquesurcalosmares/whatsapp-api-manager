@@ -161,8 +161,22 @@ class WhatsappWebhookController extends Controller
             // 1. Obtener bot asociado
             $bot = $whatsappPhone->bots()->firstWhere('is_enable', true);
 
+            if (!$bot) {
+                Log::channel('whatsapp')->error('Bot no encontrado para el número', [
+                    'phone' => $whatsappPhone->display_phone_number
+                ]);
+                return; // Detener ejecución
+            }
+
             // 2. Determinar flujo a ejecutar
             $flowId = $this->determineFlow($bot, $textContent);
+
+            if (!$flowId) {
+                Log::channel('whatsapp')->warning('Flujo no determinado', [
+                    'text' => $textContent
+                ]);
+                $flowId = $bot->default_flow_id; // Usar flujo por defecto
+            }
 
             // 3. Gestionar sesión
             $session = app(SessionManager::class)->getOrCreateSession(
@@ -175,7 +189,7 @@ class WhatsappWebhookController extends Controller
             $this->processFlowStep($session, $textContent);
 
             Log::channel('whatsapp')->info('Flow step processed.', [
-                'bot_id' => $bot->name,
+                'bot_id' => $bot->bot_name,
                 'session_id' => $session->session_id,
                 'current_step' => $session->currentStep->step_id,
                 'flow_status' => $session->flow_status,
@@ -183,10 +197,9 @@ class WhatsappWebhookController extends Controller
 
             // 5. Transferir a agente si es necesario
             if ($session->flow_status === 'completed' && $bot->on_failure === 'assign_agent') {
-                $this->assignToAgent($session);
+                // $this->assignToAgent($session);
             }
         }
-
     }
 
     protected function processTextMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?string

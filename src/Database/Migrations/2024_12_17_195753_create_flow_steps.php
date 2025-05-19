@@ -15,7 +15,7 @@ return new class extends Migration
             $table->ulid('step_id')->primary();
             $table->foreignUlid('flow_id')->constrained('flows', 'flow_id')->onDelete('cascade');
             $table->integer('order'); // Orden de ejecución
-            $table->enum('type', ['text', 'menu', 'input', 'media', 'location', 'document']);
+            $table->enum('type', ['text','media', 'location','document','message','menu','input','condition','api_call']);
             $table->json('content'); // { "body": "Hola", "buttons": [...] }
             $table->foreignUlid('next_step_id')->nullable()->constrained('flow_steps', 'step_id')->onDelete('set null');
             $table->boolean('is_terminal')->default(false); // Finaliza el flujo
