@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+USE ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
 use ScriptDevelop\WhatsappManager\Services\SessionManager;
 use ScriptDevelop\WhatsappManager\Models\Contact;
 use ScriptDevelop\WhatsappManager\Models\Conversation;
@@ -436,31 +437,38 @@ class WhatsappWebhookController extends Controller
         ChatSession $session,
         string $messageContent
     ): void {
-        $currentStep = $session->currentStep;
+        try {
+            $currentStep = $session->currentStep ?? $session->flow->initialStep;
+            
+            if (!$currentStep) {
+                throw new \RuntimeException("No initial step defined for flow");
+            }
 
-        // 1. Si es paso de entrada de datos, guardar respuesta
-        if ($currentStep->type === 'input') {
-            UserResponse::create([
-                'session_id' => $session->session_id,
-                'flow_step_id' => $currentStep->step_id,
-                'field_name' => $currentStep->content['field_name'],
-                'field_value' => $messageContent,
-                'contact_id' => $session->contact_id
+            // Guardar respuesta si es paso de entrada
+            if ($currentStep->type === 'input') {
+                $this->saveUserResponse($session, $currentStep, $messageContent);
+            }
+
+            // Determinar siguiente paso
+            $nextStep = $this->determineNextStep($currentStep, $messageContent);
+            
+            // Actualizar sesión
+            $session->update([
+                'current_step_id' => $nextStep?->step_id,
+                'flow_status' => $nextStep ? 'in_progress' : 'completed'
             ]);
-        }
 
-        // 2. Determinar siguiente paso
-        $nextStep = $this->determineNextStep($currentStep, $messageContent);
+            // Enviar respuesta automática
+            if ($nextStep && $nextStep->type !== 'input') {
+                $this->sendStepResponse($nextStep, $session->contact);
+            }
 
-        // 3. Actualizar sesión
-        $session->update([
-            'current_step_id' => $nextStep?->step_id,
-            'flow_status' => $nextStep ? 'in_progress' : 'completed'
-        ]);
-
-        // 4. Enviar respuesta automática
-        if ($nextStep && $nextStep->type !== 'input') {
-            $this->sendStepResponse($nextStep, $session->contact);
+        } catch (\Exception $e) {
+            Log::channel('flows')->error("Error processing flow step", [
+                'session' => $session->id,
+                'error' => $e->getMessage()
+            ]);
+            $session->update(['flow_status' => 'failed']);
         }
     }
 
@@ -502,5 +510,29 @@ class WhatsappWebhookController extends Controller
             }
         }
         return $bot->default_flow_id; // Retorna el flujo por defecto
+    }
+
+    /**
+     * Envía respuesta según tipo de paso
+     */
+    private function sendStepResponse(FlowStep $step, Contact $contact): void
+    {
+        $service = app(MessageDispatcherService::class);
+        $phoneNumber = $step->flow->bots()->first()?->phoneNumber;
+
+        if (!$phoneNumber) {
+            Log::channel('flows')->error('No se encontró número de teléfono asociado al bot');
+            return;
+        }
+
+        [$countryCode, $contactNumber] = $this->splitPhoneNumber($contact->full_phone);
+
+        $service->sendTextMessage(
+            $phoneNumber->phone_number_id, // phoneNumberId
+            $countryCode,                  // countryCode
+            $contactNumber,                // phoneNumber
+            $step->content['text'],        // text
+            false                          // previewUrl
+        );
     }
 }

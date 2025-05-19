@@ -3,6 +3,7 @@
 namespace ScriptDevelop\WhatsappManager\Services;
 
 use ScriptDevelop\WhatsappManager\Models\WhatsappBot;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class BotBuilderService
@@ -12,14 +13,37 @@ class BotBuilderService
      */
     public function createBot(array $data): WhatsappBot
     {
-        return WhatsappBot::create([
-            'bot_name'         => $data['name'],
-            'phone_number_id'  => $data['phone_number_id'],
-            'description'      => $data['description'] ?? null,
-            'on_failure'       => $data['on_failure_action'] ?? 'assign_agent',
-            'failure_message' => $data['failure_message'] ?? null, 
-            'is_enable'        => true,
-        ]);
+        try {
+            return \DB::transaction(function () use ($data) {
+                $bot = WhatsappBot::create([
+                    'bot_name'         => $data['name'],
+                    'phone_number_id'  => $data['phone_number_id'],
+                    'description'      => $data['description'] ?? null,
+                    'on_failure'       => $data['on_failure_action'] ?? 'assign_agent',
+                    'failure_message' => $data['failure_message'] ?? null,
+                    'is_enable'        => true,
+                ]);
+                
+                Log::channel('bots')->info('Bot creado', ['bot_id' => $bot->id]);
+                return $bot;
+            });
+        } catch (\Exception $e) {
+            Log::channel('bots')->error('Error creando bot', ['error' => $e->getMessage()]);
+            throw $e;
+        }
+    }
+
+    public function updateBot(string $botId, array $params): bool
+    {
+        $bot = $this->getById($botId);
+        if (!$bot) return false;
+
+        $allowedParams = [
+            'bot_name', 'description', 'on_failure', 
+            'failure_message', 'is_enable', 'default_flow_id'
+        ];
+        
+        return $bot->update(collect($params)->only($allowedParams)->toArray());
     }
 
     /**

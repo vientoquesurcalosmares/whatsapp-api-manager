@@ -5,6 +5,7 @@ use ScriptDevelop\WhatsappManager\Models\Flow;
 use ScriptDevelop\WhatsappManager\Models\FlowStep;
 use ScriptDevelop\WhatsappManager\Models\FlowTrigger;
 use ScriptDevelop\WhatsappManager\Models\FlowVariable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Arr;
 
 class FlowBuilderService
@@ -14,21 +15,30 @@ class FlowBuilderService
      */
     public function createFlow(array $data): Flow
     {
-        $flow = Flow::create([
-            'name'              => Arr::get($data, 'name'),
-            'description'       => Arr::get($data, 'description'),
-            'trigger_keywords'  => Arr::get($data, 'trigger_keywords', []),
-            'is_case_sensitive' => Arr::get($data, 'is_case_sensitive', false),
-            'is_default'        => Arr::get($data, 'is_default', false),
-            'is_active'         => Arr::get($data, 'is_active', true),
-        ]);
+        return DB::transaction(function () use ($data) {
+            $flow = Flow::create([
+                'name'              => Arr::get($data, 'name'),
+                'description'       => Arr::get($data, 'description'),
+                'trigger_keywords'  => Arr::get($data, 'trigger_keywords', []),
+                'is_case_sensitive' => Arr::get($data, 'is_case_sensitive', false),
+                'is_default'        => Arr::get($data, 'is_default', false),
+                'is_active'         => Arr::get($data, 'is_active', true),
+            ]);
 
-        // Si vienen triggers detallados:
-        foreach (Arr::get($data, 'triggers', []) as $t) {
-            $this->addTrigger($flow->flow_id, $t);
-        }
-
-        return $flow;
+            // Si vienen triggers detallados:
+            foreach (Arr::get($data, 'triggers', []) as $t) {
+                $this->addTrigger($flow->flow_id, $t);
+            }
+            
+            // Creación de pasos iniciales
+            if (isset($data['initial_steps'])) {
+                foreach ($data['initial_steps'] as $step) {
+                    $this->addStep($flow->flow_id, $step);
+                }
+            }
+            
+            return $flow;
+        });
     }
 
     /**
@@ -36,13 +46,16 @@ class FlowBuilderService
      */
     public function addStep(string $flowId, array $stepData): FlowStep
     {
-        $order = Arr::get($stepData, 'order', FlowStep::where('flow_id', $flowId)->max('order') + 1);
-
+        $maxOrder = FlowStep::where('flow_id', $flowId)->max('order') ?? 0;
+        
         return FlowStep::create([
             'flow_id'       => $flowId,
-            'order'         => $order,
+            'order'         => $stepData['order'] ?? $maxOrder + 1,
             'type'          => Arr::get($stepData, 'type'),
-            'content'       => Arr::get($stepData, 'content'),
+            'content'       => $this->validateStepContent(
+                Arr::get($stepData, 'type'), 
+                Arr::get($stepData, 'content')
+            ),
             'next_step_id'  => Arr::get($stepData, 'next_step_id'),
             'is_terminal'   => Arr::get($stepData, 'is_terminal', false),
         ]);
@@ -79,42 +92,33 @@ class FlowBuilderService
      */
     public function cloneFlow(string $flowId, array $overrides = []): Flow
     {
-        $original = Flow::with(['steps','triggers','variables','bots'])->findOrFail($flowId);
+        return DB::transaction(function () use ($flowId, $overrides) {
+            $original = Flow::with(['steps','triggers','variables','bots'])
+                          ->findOrFail($flowId);
 
-        // Clonamos flujo
-        $copy = $original->replicate(['flow_id']);
-        $copy->fill($overrides);
-        $copy->push(); // guarda y genera nuevo ULID
+            $copy = $original->replicate(['flow_id']);
+            $copy->fill($overrides)->save();
 
-        // Clonamos triggers y variables
-        foreach ($original->triggers as $t) {
-            $copy->triggers()->create($t->replicate(['trigger_id'])->toArray());
-        }
-        foreach ($original->variables as $v) {
-            $copy->variables()->create($v->replicate(['variable_id'])->toArray());
-        }
-
-        // Clonamos pasos (manteniendo orden y next_step_id más adelante)
-        $oldToNew = [];
-        foreach ($original->steps as $step) {
-            $new = $copy->steps()->create($step->replicate(['step_id','next_step_id'])->toArray());
-            $oldToNew[$step->step_id] = $new->step_id;
-        }
-        // Ajustamos referencias next_step_id
-        foreach ($copy->steps as $step) {
-            if ($originalStep = $original->steps->first(fn($s)=> $oldToNew[$s->step_id] === $step->step_id)) {
-                $origNext = $originalStep->next_step_id;
-                $step->next_step_id = $origNext ? $oldToNew[$origNext] : null;
-                $step->save();
+            // Mapeo de IDs antiguos a nuevos
+            $stepMappings = [];
+            
+            foreach ($original->steps as $originalStep) {
+                $newStep = $originalStep->replicate(['step_id']);
+                $newStep->flow_id = $copy->flow_id;
+                $newStep->save();
+                $stepMappings[$originalStep->step_id] = $newStep->step_id;
             }
-        }
 
-        // Reasociamos bots (pivot)
-        foreach ($original->bots as $bot) {
-            $copy->bots()->attach($bot->whatsapp_bot_id);
-        }
+            // Actualizar referencias
+            foreach ($copy->steps as $newStep) {
+                if ($newStep->next_step_id && isset($stepMappings[$newStep->next_step_id])) {
+                    $newStep->next_step_id = $stepMappings[$newStep->next_step_id];
+                    $newStep->save();
+                }
+            }
 
-        return $copy;
+            return $copy->load('steps');
+        });
     }
 
     /**
@@ -136,4 +140,38 @@ class FlowBuilderService
             ->bots()
             ->detach([$botId]);
     }
+
+    /**
+     * Validación de contenido por tipo de paso
+     */
+    private function validateStepContent(string $type, array $content): array
+    {
+        $validators = [
+            'menu' => fn($c) => isset($c['options']) && is_array($c['options']),
+            'input' => fn($c) => isset($c['field_name']),
+            'message' => fn($c) => isset($c['text']),
+        ];
+
+        if (isset($validators[$type]) && !$validators[$type]($content)) {
+            throw new \InvalidArgumentException("Invalid content for step type: $type");
+        }
+
+        return $content;
+    }
+
+    // public function executeFlow(string $flowId, string $contactId, string $sessionId = null) {
+    //     $flow = Flow::with('steps')->findOrFail($flowId);
+    //     $session = $this->getOrCreateSession($sessionId, $contactId, $flowId);
+        
+    //     $nextStep = $flow->steps()->where('order', $session->current_step)->first();
+        
+    //     if (!$nextStep) {
+    //         $nextStep = $flow->initialStep;
+    //         $session->update(['current_step' => $nextStep->order]);
+    //     }
+        
+    //     $this->sendStepMessage($nextStep, $contactId, $session);
+        
+    //     return $session;
+    // }
 }
