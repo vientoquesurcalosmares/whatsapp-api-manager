@@ -159,47 +159,55 @@ class WhatsappWebhookController extends Controller
 
         // Solo procesar flujos si es un mensaje de texto válido
         if ($textContent) {
-            // 1. Obtener bot asociado
-            $bot = $whatsappPhone->bots()->firstWhere('is_enable', true);
+            try {
+                // 1. Obtener bot asociado
+                $bot = $whatsappPhone->bots()->firstWhere('is_enable', true);
 
-            if (!$bot) {
-                Log::channel('whatsapp')->error('Bot no encontrado para el número', [
-                    'phone' => $whatsappPhone->display_phone_number
+                if (!$bot) {
+                    Log::channel('whatsapp')->error('Bot no encontrado para el número', [
+                        'phone' => $whatsappPhone->display_phone_number
+                    ]);
+                    return; // Detener ejecución
+                }
+
+                // 2. Determinar flujo a ejecutar
+                $flowId = $this->determineFlow($bot, $textContent);
+
+                if (!$flowId) {
+                    Log::channel('whatsapp')->warning('Flujo no determinado', [
+                        'text' => $textContent
+                    ]);
+                    return;
+                }
+
+                // 3. Gestionar sesión
+                $session = app(SessionManager::class)->getOrCreateSession(
+                    $contactRecord,
+                    $bot,
+                    $flowId
+                );
+
+                // 4. Procesar paso actual
+                $this->processFlowStep($session, $textContent);
+
+                Log::channel('whatsapp')->info('Flow step processed.', [
+                    'bot_id' => $bot->bot_name,
+                    'session_id' => $session->session_id,
+                    'current_step' => $session->currentStep->step_id,
+                    'flow_status' => $session->flow_status,
                 ]);
-                return; // Detener ejecución
+
+                // 5. Transferir a agente si es necesario
+                if ($session->flow_status === 'completed' && $bot->on_failure === 'assign_agent') {
+                    // $this->assignToAgent($session);
+                }
+
+            } catch (\Exception $e) {
+                Log::channel('whatsapp')->error('Error en flujo: '.$e->getMessage());
+                $this->sendErrorFallbackMessage($whatsappPhone, $contactRecord);
             }
 
-            // 2. Determinar flujo a ejecutar
-            $flowId = $this->determineFlow($bot, $textContent);
-
-            if (!$flowId) {
-                Log::channel('whatsapp')->warning('Flujo no determinado', [
-                    'text' => $textContent
-                ]);
-                return;
-            }
-
-            // 3. Gestionar sesión
-            $session = app(SessionManager::class)->getOrCreateSession(
-                $contactRecord,
-                $bot,
-                $flowId
-            );
-
-            // 4. Procesar paso actual
-            $this->processFlowStep($session, $textContent);
-
-            Log::channel('whatsapp')->info('Flow step processed.', [
-                'bot_id' => $bot->bot_name,
-                'session_id' => $session->session_id,
-                'current_step' => $session->currentStep->step_id,
-                'flow_status' => $session->flow_status,
-            ]);
-
-            // 5. Transferir a agente si es necesario
-            if ($session->flow_status === 'completed' && $bot->on_failure === 'assign_agent') {
-                // $this->assignToAgent($session);
-            }
+            
         }
     }
 
@@ -566,5 +574,23 @@ class WhatsappWebhookController extends Controller
             $step->content['text'],        // text
             false                          // previewUrl
         );
+    }
+
+    private function sendDefaultFallbackMessage($whatsappPhone, $contact): void
+    {
+        try {
+            $service = app(MessageDispatcherService::class);
+            [$countryCode, $number] = $this->splitPhoneNumber($contact->full_phone);
+            
+            $service->sendTextMessage(
+                $whatsappPhone->phone_number_id,
+                $countryCode,
+                $number,
+                "Lo siento, no entendí tu mensaje. Por favor intenta con otra opción.",
+                false
+            );
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Fallback message failed: '.$e->getMessage());
+        }
     }
 }

@@ -83,21 +83,22 @@ class SessionManager {
     /**
      * Valida y obtiene el flujo a usar
      */
-    private function validateFlow(WhatsappBot $bot, ?string $flowId): Flow {
+    private function validateFlow(WhatsappBot $bot, ?string $flowId): Flow
+    {
         $flowId = $flowId ?? $bot->default_flow_id;
 
         if (!$flowId) {
-            throw new \RuntimeException("No flow ID provided and bot has no default flow");
+            throw new \RuntimeException("Bot no tiene flujo por defecto configurado");
         }
 
-        $flow = Flow::with('initialStep')->find($flowId);
+        $flow = Flow::with('initialStep')->find($flowId); // Usar find() en lugar de findOrFail()
 
         if (!$flow) {
-            throw new \RuntimeException("Flow $flowId not found");
+            throw new \RuntimeException("Flujo $flowId no existe en la base de datos");
         }
 
         if (!$flow->bots()->where('whatsapp_bot_id', $bot->whatsapp_bot_id)->exists()) {
-            throw new \RuntimeException("Flow $flowId not associated with bot");
+            throw new \RuntimeException("Flujo no asociado al bot");
         }
 
         return $flow;
