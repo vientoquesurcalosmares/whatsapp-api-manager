@@ -25,7 +25,7 @@ class Flow extends Model
         'trigger_keywords',       // Nuevo: almacena un arreglo de palabras clave
         'is_case_sensitive', // Nuevo: define si la comparación es sensible a mayúsculas/minúsculas
         'is_default',
-        'active',
+        'is_active',
     ];
 
     protected $casts = [
@@ -67,9 +67,9 @@ class Flow extends Model
     // Relaciones
 
     // Flow pertenece a un bot
-    public function bot()
+    public function bots() 
     {
-        return $this->belongsToMany(WhatsappBot::class, 'bot_id', 'whatsapp_bot_id');
+        return $this->belongsToMany(WhatsappBot::class, 'bot_flow', 'flow_id', 'whatsapp_bot_id');
     }
 
     // Flow tiene muchos pasos

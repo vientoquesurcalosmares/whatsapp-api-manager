@@ -30,10 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('flows', function (Blueprint $table) {
-            $table->dropForeign(['whatsapp_bot_id']); // Eliminar clave foránea
-        });
-        
         Schema::dropIfExists('flows');
     }
 };

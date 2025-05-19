@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignUlid('session_id')->constrained('whatsapp_chat_sessions', 'session_id');
             $table->foreignUlid('flow_step_id')->constrained('flow_steps', 'step_id');
             $table->string('field_name'); // Ej: "nombre", "telefono"
-            $table->text('field_value'); // Valor proporcionado
+            $table->json('field_value'); // Valor proporcionado
             $table->foreignUlid('contact_id')->constrained('whatsapp_contacts', 'contact_id');
             $table->timestamps();
             $table->softDeletes();
