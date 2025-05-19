@@ -19,10 +19,10 @@ class WhatsappBot extends Model
 
     protected $fillable = [
         'phone_number_id',
+        'default_flow_id',
         'bot_name',
         'description',
         'is_enable',
-        'default_flow_id',
         'on_failure',
         'failure_message',
     ];
@@ -32,9 +32,19 @@ class WhatsappBot extends Model
         return $this->belongsTo(WhatsappPhoneNumber::class, 'phone_number_id', 'phone_number_id');
     }
 
-    // Relación con Flujos
+    public function defaultFlow()
+    {
+        return $this->belongsTo(Flow::class, 'default_flow_id', 'flow_id');
+    }
+
+    // Relación muchos a muchos con flujos
     public function flows()
     {
-        return $this->belongsToMany(Flow::class, 'whatsapp_bot_id');
+        return $this->belongsToMany(
+            Flow::class,
+            'bot_flow',
+            'whatsapp_bot_id',
+            'flow_id'
+        )->withTimestamps();
     }
 }

@@ -19,7 +19,6 @@ class Flow extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'whatsapp_bot_id',
         'name',
         'description',
         'trigger_keywords',       // Nuevo: almacena un arreglo de palabras clave
@@ -29,8 +28,10 @@ class Flow extends Model
     ];
 
     protected $casts = [
-        'trigger_keywords' => 'array', // Convertir JSON a array
+        'trigger_keywords' => 'array',
         'is_case_sensitive' => 'boolean',
+        'is_default' => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     // Validación al guardar: si el flujo no es sensible a mayúsculas, se guardan las palabras clave en minúsculas.
@@ -67,9 +68,14 @@ class Flow extends Model
     // Relaciones
 
     // Flow pertenece a un bot
-    public function bots() 
+    public function bots()
     {
-        return $this->belongsToMany(WhatsappBot::class, 'bot_flow', 'flow_id', 'whatsapp_bot_id');
+        return $this->belongsToMany(
+            WhatsappBot::class,
+            'bot_flow',
+            'flow_id',
+            'whatsapp_bot_id'
+        )->withTimestamps();
     }
 
     // Flow tiene muchos pasos
