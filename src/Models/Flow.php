@@ -99,4 +99,9 @@ class Flow extends Model
     {
         return $this->hasMany(FlowVariable::class, 'flow_id', 'flow_id');
     }
+
+    public function initialStep()
+    {
+        return $this->hasOne(FlowStep::class, 'flow_id')->orderBy('order');
+    }
 }

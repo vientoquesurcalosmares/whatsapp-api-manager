@@ -47,7 +47,7 @@ class SessionManager {
                 ]);
 
             } catch (\Exception $e) {
-                Log::channel('sessions')->error("Error creando sesión: " . $e->getMessage(), [
+                Log::channel('whatsapp')->error("Error creando sesión: " . $e->getMessage(), [
                     'contact' => $contact->contact_id,
                     'bot' => $bot->whatsapp_bot_id
                 ]);

@@ -593,4 +593,9 @@ class WhatsappWebhookController extends Controller
             Log::channel('whatsapp')->error('Fallback message failed: '.$e->getMessage());
         }
     }
+
+    private function sendErrorFallbackMessage($whatsappPhone, $contact): void
+    {
+        $this->sendDefaultFallbackMessage($whatsappPhone, $contact);
+    }
 }
