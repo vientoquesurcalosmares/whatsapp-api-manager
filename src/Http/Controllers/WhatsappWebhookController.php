@@ -491,8 +491,8 @@ class WhatsappWebhookController extends Controller
             ]);
 
             // Enviar respuesta automática
-            if ($nextStep->type == 'message') {
-                $this->sendStepResponse($nextStep, $session->contact);
+            if ($currentStep->type == 'message') {
+                $this->sendStepResponse($currentStep, $session->contact);
             }
 
         } catch (\Exception $e) {
@@ -577,25 +577,27 @@ class WhatsappWebhookController extends Controller
         $service = app(MessageDispatcherService::class);
         $phoneNumber = $step->flow->bots()->first()?->phoneNumber;
 
+        Log::channel('whatsapp')->debug('Número de teléfono del bot', [
+            'phone_number' => $phoneNumber,
+        ]);
+
         if (!$phoneNumber) {
             Log::channel('whatsapp')->error('No se encontró número de teléfono asociado al bot');
             return;
         }
 
-        [$countryCode, $contactNumber] = $this->splitPhoneNumber($contact->full_phone);
-
         Log::channel('whatsapp')->info('Enviando respuesta de paso', [
             'step' => $step->step_id,
             'message' => $step->content['text'],
             'contact' => $contact->contact_id,
-            'phone_number' => $contactNumber,
-            'country_code' => $countryCode,
+            'phone_number' => $contact->phone_number,
+            'country_code' => $contact->country_code,
         ]);
 
         $service->sendTextMessage(
             $phoneNumber->phone_number_id, // phoneNumberId
-            $countryCode,                  // countryCode
-            $contactNumber,                // phoneNumber
+            $contact->country_code,                  // countryCode
+            $contact->phone_number,                // phoneNumber
             $step->content['text'],        // text
             false                          // previewUrl
         );
