@@ -20,39 +20,30 @@ class SessionManager {
         ?string $flowId = null
     ): ChatSession {
         return DB::transaction(function () use ($contact, $bot, $flowId) {
-            try {
-                // 1. Buscar sesión activa existente
-                $session = $this->findActiveSession($contact, $bot);
-                
-                if ($session) {
-                    return $session;
-                }
-
-                // 2. Validar y obtener flujo
-                $flow = $this->validateFlow($bot, $flowId);
-                
-                // 3. Validar paso inicial del flujo
-                $this->validateInitialStep($flow);
-
-                // 4. Crear nueva sesión
-                return ChatSession::create([
-                    'contact_id' => $contact->contact_id,
-                    'whatsapp_phone_id' => $bot->phone_number_id,
-                    'assigned_bot_id' => $bot->whatsapp_bot_id,
-                    'flow_id' => $flow->flow_id,
-                    'current_step_id' => $flow->initialStep->step_id,
-                    'status' => 'active',
-                    'flow_status' => 'started',
-                    'context' => []
-                ]);
-
-            } catch (\Exception $e) {
-                Log::channel('whatsapp')->error("Error creando sesión: " . $e->getMessage(), [
-                    'contact' => $contact->contact_id,
-                    'bot' => $bot->whatsapp_bot_id
-                ]);
-                throw $e; // Relanzar para manejo en capa superior
+            // 1. Buscar sesión activa existente
+            $session = $this->findActiveSession($contact, $bot);
+            
+            if ($session) {
+                return $session;
             }
+
+            // 2. Validar y obtener flujo
+            $flow = $this->validateFlow($bot, $flowId);
+            
+            // 3. Validar paso inicial del flujo
+            $this->validateInitialStep($flow);
+
+            // 4. Crear nueva sesión
+            return ChatSession::create([
+                'contact_id' => $contact->contact_id,
+                'whatsapp_phone_id' => $bot->phone_number_id,
+                'assigned_bot_id' => $bot->whatsapp_bot_id,
+                'flow_id' => $flow->flow_id,
+                'current_step_id' => $flow->initialStep->step_id,
+                'status' => 'active',
+                'flow_status' => 'started',
+                'context' => []
+            ]);
         });
     }
 
