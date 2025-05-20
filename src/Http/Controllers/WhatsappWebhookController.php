@@ -157,49 +157,51 @@ class WhatsappWebhookController extends Controller
             'Text Content' => $textContent,
         ]);
 
+
+
+        try {
+            $bot = $whatsappPhone->bots()->where('is_enable', true)->first();
+            
+            if (!$bot) {
+                Log::channel('whatsapp')->warning('Bot inactivo o no encontrado');
+                return;
+            }
+
+            // Siempre crear/obtener sesión aunque no haya flujo
+            $session = app(SessionManager::class)->getOrCreateSession(
+                $contactRecord,
+                $bot
+            );
+
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error gestionando sesión: '.$e->getMessage());
+            return;
+        }
+
+
+
         // Solo procesar flujos si es un mensaje de texto válido
         if ($textContent) {
             try {
-                // 1. Obtener bot asociado
-                $bot = $whatsappPhone->bots()->firstWhere('is_enable', true);
-
-                if (!$bot) {
-                    Log::channel('whatsapp')->error('Bot no encontrado para el número', [
-                        'phone' => $whatsappPhone->display_phone_number
-                    ]);
-                    return; // Detener ejecución
-                }
-
-                // 2. Determinar flujo a ejecutar
                 $flowId = $this->determineFlow($bot, $textContent);
 
-                if (!$flowId) {
+                if ($flowId) {
+                    $session->update(['flow_id' => $flowId]);
+
+                    $this->processFlowStep($session, $textContent);
+
+                    Log::channel('whatsapp')->info('Flow step processed.', [
+                        'bot_id' => $bot->bot_name,
+                        'session_id' => $session->session_id,
+                        'current_step' => $session->currentStep->step_id,
+                        'flow_status' => $session->flow_status,
+                    ]);
+                } else {
+                    // Lógica para mensajes no reconocidos
                     Log::channel('whatsapp')->warning('Flujo no determinado', [
                         'text' => $textContent
                     ]);
-                    return;
-                }
-
-                // 3. Gestionar sesión
-                $session = app(SessionManager::class)->getOrCreateSession(
-                    $contactRecord,
-                    $bot,
-                    $flowId
-                );
-
-                // 4. Procesar paso actual
-                $this->processFlowStep($session, $textContent);
-
-                Log::channel('whatsapp')->info('Flow step processed.', [
-                    'bot_id' => $bot->bot_name,
-                    'session_id' => $session->session_id,
-                    'current_step' => $session->currentStep->step_id,
-                    'flow_status' => $session->flow_status,
-                ]);
-
-                // 5. Transferir a agente si es necesario
-                if ($session->flow_status === 'completed' && $bot->on_failure === 'assign_agent') {
-                    // $this->assignToAgent($session);
+                    $this->handleUnrecognizedMessage($session);
                 }
 
             } catch (\Exception $e) {
@@ -566,6 +568,14 @@ class WhatsappWebhookController extends Controller
         }
 
         [$countryCode, $contactNumber] = $this->splitPhoneNumber($contact->full_phone);
+
+        Log::channel('whatsapp')->info('Enviando respuesta de paso', [
+            'step' => $step->step_id,
+            'message' => $step->content['text'],
+            'contact' => $contact->contact_id,
+            'phone_number' => $contactNumber,
+            'country_code' => $countryCode,
+        ]);
 
         $service->sendTextMessage(
             $phoneNumber->phone_number_id, // phoneNumberId
