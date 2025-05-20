@@ -482,13 +482,21 @@ class WhatsappWebhookController extends Controller
                 'flow_status' => $nextStep ? 'in_progress' : 'completed'
             ]);
 
+            Log::channel('whatsapp')->info('Flujo procesado', [
+                'session_id' => $session->session_id,
+                'session_contact' => $session->contact->contact_id,
+                'current_step' => $currentStep->step_id,
+                'next_step' => $nextStep?->step_id,
+                'flow_status' => $session->flow_status
+            ]);
+
             // Enviar respuesta automática
-            if ($nextStep && $nextStep->type !== 'input') {
+            if ($nextStep->type == 'message') {
                 $this->sendStepResponse($nextStep, $session->contact);
             }
 
         } catch (\Exception $e) {
-            Log::channel('flows')->error("Error processing flow step", [
+            Log::channel('whatsapp')->error("Error processing flow step", [
                 'session' => $session->id,
                 'error' => $e->getMessage()
             ]);
@@ -559,11 +567,18 @@ class WhatsappWebhookController extends Controller
      */
     private function sendStepResponse(FlowStep $step, Contact $contact): void
     {
+
+        Log::channel('whatsapp')->debug('Enviando respuesta', [
+            'step_id' => $step->step_id,
+            'content' => $step->content, // Verifica que el texto esté aquí
+            'contact' => $contact->contact_id,
+        ]);
+        
         $service = app(MessageDispatcherService::class);
         $phoneNumber = $step->flow->bots()->first()?->phoneNumber;
 
         if (!$phoneNumber) {
-            Log::channel('flows')->error('No se encontró número de teléfono asociado al bot');
+            Log::channel('whatsapp')->error('No se encontró número de teléfono asociado al bot');
             return;
         }
 
