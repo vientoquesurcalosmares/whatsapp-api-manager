@@ -514,12 +514,22 @@ class WhatsappWebhookController extends Controller
         if ($currentStep->is_terminal) return null;
 
         // 2. Lógica de menús/buttons
-        if ($currentStep->type === 'menu') {
-            return $this->handleMenuTransition($currentStep, $userInput);
+        // if ($currentStep->type === 'menu') {
+        //     return $this->handleMenuTransition($currentStep, $userInput);
+        // }
+
+        if ($currentStep->next_step_id) {
+            $nextStep = FlowStep::find($currentStep->next_step_id);
+            return $nextStep ?: null;
         }
 
         // 3. Transición lineal
-        return $currentStep->nextStep ?? $currentStep->flow->steps()
+        // return $currentStep->nextStep ?? $currentStep->flow->steps()
+        //     ->where('order', '>', $currentStep->order)
+        //     ->orderBy('order')
+        //     ->first();
+
+        return $currentStep->flow->steps()
             ->where('order', '>', $currentStep->order)
             ->orderBy('order')
             ->first();
