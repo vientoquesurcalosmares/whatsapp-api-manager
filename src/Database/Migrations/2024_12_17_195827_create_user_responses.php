@@ -8,6 +8,7 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     * Registro histórico de todas las interacciones del usuario. Almacena tanto la entrada bruta como el valor validado.
      */
     public function up(): void
     {
@@ -15,11 +16,14 @@ return new class extends Migration
             $table->ulid('response_id')->primary();
             $table->foreignUlid('session_id')->constrained('whatsapp_chat_sessions', 'session_id');
             $table->foreignUlid('flow_step_id')->constrained('flow_steps', 'step_id');
+            $table->foreignUlid('message_id')->constrained('whatsapp_messages', 'message_id');
             $table->string('field_name'); // Ej: "nombre", "telefono"
             $table->json('field_value'); // Valor proporcionado
             $table->foreignUlid('contact_id')->constrained('whatsapp_contacts', 'contact_id');
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index(['session_id', 'flow_step_id']);
         });
     }
 

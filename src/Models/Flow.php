@@ -21,8 +21,11 @@ class Flow extends Model
     protected $fillable = [
         'name',
         'description',
+        'type', // 'inbound', 'outbound' o 'hybrid'
+        'template_id', // Para activación por plantilla
         'trigger_keywords',       // Nuevo: almacena un arreglo de palabras clave
         'is_case_sensitive', // Nuevo: define si la comparación es sensible a mayúsculas/minúsculas
+        'entry_point_id',
         'is_default',
         'is_active',
     ];

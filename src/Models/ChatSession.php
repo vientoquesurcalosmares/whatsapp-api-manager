@@ -26,14 +26,20 @@ class ChatSession extends Model
         'current_step_id',
         'status',
         'context',
+        'assigned_at',
         'assigned_agent_id',
         'flow_status',
-        'assigned_at',
+        'message_queue',
+        'current_queue_position',
+        'attempt_count',
+        'collected_variables',
     ];
 
     protected $casts = [
         'context' => 'array',
         'assigned_at' => 'datetime',
+        'message_queue' => 'array',
+        'collected_data' => 'array'
     ];
 
     public function getCurrentStepAttribute(): ?FlowStep {
@@ -95,5 +101,9 @@ class ChatSession extends Model
         return $totalSteps > 0 
             ? ($this->completed_steps / $totalSteps) * 100 
             : 0;
+    }
+
+    public function scopeActive($query) {
+        return $query->where('last_activity', '>', now()->subHours(24));
     }
 }

@@ -8,19 +8,34 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     * Contiene los diferentes flujos conversacionales. Un flujo puede activarse por palabras clave (inbound) o 
+     * mediante el envío de una plantilla (outbound). El entry_point_id indica qué paso se ejecuta primero.
      */
     public function up(): void
     {
         Schema::create('flows', function (Blueprint $table) {
             $table->ulid('flow_id')->primary();
-            $table->string('name');
+            $table->string('name'); // Nombre interno del flujo
             $table->text('description')->nullable();
+            $table->enum('type', ['inbound','outbound', 'hybrid'])->default('inbound'); // Tipo de flujo: inbound, outbound o híbrido
+            $table->foreignUlid('template_id')
+                    ->nullable()
+                    ->constrained('whatsapp_templates', 'template_id');
             $table->json('trigger_keywords')->nullable(); // Palabra clave o palabras claves para activar el flujo o respuestas.
             $table->boolean('is_case_sensitive')->default(false);
             $table->boolean('is_default')->default(false); // Flujo por defecto
             $table->boolean('is_active')->default(true);
+
+            // Punto de entrada del flujo
+            $table->foreignUlid('entry_point_id')
+                ->nullable()
+                ->constrained('flow_steps', 'step_id');
+                
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index('type');
+            $table->index('is_active');
         });
     }
 

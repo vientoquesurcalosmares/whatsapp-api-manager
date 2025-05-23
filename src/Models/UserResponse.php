@@ -20,6 +20,7 @@ class UserResponse extends Model
     protected $fillable = [
         'session_id',
         'flow_step_id',
+        'message_id',
         'field_name',
         'field_value',
         'contact_id',

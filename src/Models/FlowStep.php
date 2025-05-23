@@ -19,15 +19,18 @@ class FlowStep extends Model
 
     protected $fillable = [
         'flow_id',
-        'order',
-        'type',
-        'content',
-        'next_step_id',
+        'step_type',
+        'validation_rules',
+        'max_attempts',
+        'retry_message',
+        'failure_action',
+        'failure_step_id',
         'is_terminal',
+        'is_entry_point',
     ];
 
     protected $casts = [
-        'content' => 'array',
+        'validation_rules' => 'array',
         'is_terminal' => 'boolean',
     ];
 
@@ -37,6 +40,18 @@ class FlowStep extends Model
     public function flow()
     {
         return $this->belongsTo(Flow::class, 'flow_id', 'flow_id');
+    }
+
+    public function messages() {
+        return $this->hasMany(StepMessage::class, 'flow_step_id');
+    }
+
+    public function variables() {
+        return $this->hasMany(StepVariable::class, 'flow_step_id');
+    }
+
+    public function getNextStep($input) {
+        // Evaluar conditions para determinar siguiente paso
     }
 
     // Si se requiere, se puede definir la relación con el siguiente paso

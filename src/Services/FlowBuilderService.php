@@ -1,44 +1,78 @@
 <?php
 namespace ScriptDevelop\WhatsappManager\Services;
 
-use ScriptDevelop\WhatsappManager\Models\Flow;
-use ScriptDevelop\WhatsappManager\Models\FlowStep;
-use ScriptDevelop\WhatsappManager\Models\FlowTrigger;
-use ScriptDevelop\WhatsappManager\Models\FlowVariable;
+use ScriptDevelop\WhatsappManager\Models\{
+    Flow,
+    FlowStep,
+    FlowTrigger,
+    FlowVariable,
+    StepMessage,
+    StepVariable
+};
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Arr;
 
 class FlowBuilderService
 {
+    // Tipos de paso permitidos
+    const ALLOWED_STEP_TYPES = [
+        'message_sequence',
+        'open_question',
+        'closed_question',
+        'conditional',
+        'terminal',
+        'api_call'
+    ];
+
+    // Tipos de trigger permitidos
+    const ALLOWED_TRIGGER_TYPES = ['keyword', 'template', 'hybrid'];
+
     /**
      * Crea un nuevo flujo con sus triggers iniciales.
      */
     public function createFlow(array $data): Flow
     {
         return DB::transaction(function () use ($data) {
+            $isCaseSensitive = (bool)Arr::get($data, 'is_case_sensitive', false);
+
             $flow = Flow::create([
                 'name'              => Arr::get($data, 'name'),
                 'description'       => Arr::get($data, 'description'),
-                'trigger_keywords'  => Arr::get($data, 'trigger_keywords', []),
-                'is_case_sensitive' => Arr::get($data, 'is_case_sensitive', false),
+                'type'              => Arr::get($data, 'type'),
+                'trigger_keywords' => $this->normalizeKeywords(
+                Arr::get($data, 'trigger_keywords', []),
+                $isCaseSensitive),
+                'is_case_sensitive' => $isCaseSensitive,
                 'is_default'        => Arr::get($data, 'is_default', false),
                 'is_active'         => Arr::get($data, 'is_active', true),
             ]);
 
-            // Si vienen triggers detallados:
-            foreach (Arr::get($data, 'triggers', []) as $t) {
-                $this->addTrigger($flow->flow_id, $t);
+            // Triggers
+            foreach ($data['triggers'] ?? [] as $trigger) {
+                $this->addTrigger($flow->flow_id, $trigger);
             }
-            
-            // Creación de pasos iniciales
-            if (isset($data['initial_steps'])) {
-                foreach ($data['initial_steps'] as $step) {
-                    $this->addStep($flow->flow_id, $step);
-                }
+
+            // Variables globales
+            foreach ($data['variables'] ?? [] as $variable) {
+                $this->addFlowVariable($flow->flow_id, $variable);
             }
-            
-            return $flow;
+
+            // Pasos
+            foreach ($data['steps'] ?? [] as $stepData) {
+                $this->addStep($flow->flow_id, $stepData);
+            }
+
+            return $flow->load(['triggers', 'variables', 'steps']);
         });
+    }
+
+    public function createEmptyFlow(string $name, string $type = 'inbound'): Flow
+    {
+        return Flow::create([
+            'name' => $this->validateName($name),
+            'type' => $this->validateFlowType($type),
+            'is_active' => true
+        ]);
     }
 
     /**
@@ -48,17 +82,30 @@ class FlowBuilderService
     {
         $maxOrder = FlowStep::where('flow_id', $flowId)->max('order') ?? 0;
         
-        return FlowStep::create([
-            'flow_id'       => $flowId,
-            'order'         => $stepData['order'] ?? $maxOrder + 1,
-            'type'          => Arr::get($stepData, 'type'),
-            'content'       => $this->validateStepContent(
-                Arr::get($stepData, 'type'), 
-                Arr::get($stepData, 'content')
-            ),
-            'next_step_id'  => Arr::get($stepData, 'next_step_id'),
-            'is_terminal'   => Arr::get($stepData, 'is_terminal', false),
-        ]);
+        return DB::transaction(function () use ($flowId, $stepData) {
+            $step = FlowStep::create([
+                'flow_id' => $flowId,
+                'step_type' => $this->validateStepType($stepData['type']),
+                'validation_rules' => $this->parseValidationRules($stepData['validation'] ?? []),
+                'max_attempts' => $stepData['max_attempts'] ?? 1,
+                'retry_message' => $stepData['retry_message'] ?? null,
+                'failure_action' => $this->validateFailureAction($stepData['failure_action'] ?? 'end_flow'),
+                'failure_step_id' => $stepData['failure_step_id'] ?? null,
+                'is_terminal' => (bool)($stepData['is_terminal'] ?? false),
+            ]);
+
+            // Mensajes asociados
+            foreach ($stepData['messages'] ?? [] as $message) {
+                $this->addStepMessage($step->step_id, $message);
+            }
+
+            // Variables del paso
+            foreach ($stepData['variables'] ?? [] as $variable) {
+                $this->addStepVariable($step->step_id, $variable);
+            }
+
+            return $step;
+        });
     }
 
     /**
@@ -66,12 +113,128 @@ class FlowBuilderService
      */
     public function addTrigger(string $flowId, array $triggerData): FlowTrigger
     {
+        $validType = in_array($triggerData['type'], self::ALLOWED_TRIGGER_TYPES)
+            ? $triggerData['type']
+            : 'keyword';
+
         return FlowTrigger::create([
             'flow_id' => $flowId,
-            'type'    => Arr::get($triggerData, 'type'),
-            'value'   => Arr::get($triggerData, 'value'),
+            'type' => $validType,
+            'value' => $triggerData['value'],
+            'priority' => (int)($triggerData['priority'] ?? 0)
         ]);
     }
+
+    /**
+     * Agrega trigger a flujo existente
+     */
+    public function addFlowTrigger(
+        string $flowId, 
+        string $type, 
+        string $value, 
+        int $priority = 0
+    ): FlowTrigger {
+        return $this->addTrigger($flowId, [
+            'type' => $type,
+            'value' => $value,
+            'priority' => $priority
+        ]);
+    }
+
+    /**
+     * Crea paso básico y devuelve para edición incremental
+     */
+    public function createStepShell(
+        string $flowId,
+        string $type = 'message_sequence',
+        int $order = null
+    ): FlowStep {
+        return $this->addStep($flowId, [
+            'type' => $type,
+            'order' => $order ?? $this->getNextStepOrder($flowId)
+        ]);
+    }
+
+    /**
+     * Agrega mensaje a un paso existente
+     */
+    public function addMessageToStep(
+        string $stepId,
+        string $type,
+        string $content,
+        int $order = 1,
+        int $delay = 0
+    ): StepMessage {
+        return $this->addStepMessage($stepId, [
+            'type' => $type,
+            'content' => $content,
+            'order' => $order,
+            'delay' => $delay
+        ]);
+    }
+
+    private function getNextStepOrder(string $flowId): int
+    {
+        return FlowStep::where('flow_id', $flowId)->max('order') + 1;
+    }
+
+    /**
+     * Agrega variable de flujo
+     */
+    public function addFlowVariable(string $flowId, array $variableData): FlowVariable
+    {
+        return FlowVariable::create([
+            'flow_id' => $flowId,
+            'name' => $this->sanitizeVariableName($variableData['name']),
+            'type' => $this->validateVariableType($variableData['type'] ?? 'string'),
+            'default_value' => $variableData['default_value'] ?? null
+        ]);
+    }
+
+    /** Métodos de validación */
+    
+    private function validateStepType(string $type): string
+    {
+        return in_array($type, self::ALLOWED_STEP_TYPES) 
+            ? $type 
+            : 'message_sequence';
+    }
+
+    private function validateFailureAction(string $action): string
+    {
+        $allowed = ['repeat', 'redirect', 'end_flow', 'transfer'];
+        return in_array($action, $allowed) ? $action : 'end_flow';
+    }
+
+    private function parseValidationRules(array $rules): array
+    {
+        return [
+            'required' => (bool)($rules['required'] ?? false),
+            'type' => $this->validateVariableType($rules['type'] ?? 'string'),
+            'regex' => $rules['regex'] ?? null,
+            'min' => (int)($rules['min'] ?? 0),
+            'max' => (int)($rules['max'] ?? 0)
+        ];
+    }
+
+    
+
+    /**
+     * Agrega mensaje a un paso
+     */
+    public function addStepMessage(string $stepId, array $messageData): StepMessage
+    {
+        return StepMessage::create([
+            'flow_step_id' => $stepId,
+            'message_type' => $messageData['type'],
+            'content' => $messageData['content'],
+            'media_file_id' => $messageData['media_id'] ?? null,
+            'delay_seconds' => (int)($messageData['delay'] ?? 0),
+            'order' => (int)($messageData['order'] ?? 0)
+        ]);
+    }
+
+    
 
     /**
      * Agrega o actualiza una variable del flujo.
@@ -157,6 +320,105 @@ class FlowBuilderService
         }
 
         return $content;
+    }
+
+    /**
+     * Agrega variable a un paso
+     */
+    public function addStepVariable(string $stepId, array $variableData): StepVariable
+    {
+        if (empty($variableData['name'])) {
+            throw new \InvalidArgumentException("El nombre de la variable es requerido");
+        }
+
+        return StepVariable::create([
+            'flow_step_id' => $stepId,
+            'name' => $this->sanitizeVariableName($variableData['name']),
+            'type' => $this->validateVariableType($variableData['type'] ?? 'string'),
+            'validation_regex' => $variableData['regex'] ?? null,
+            'is_required' => (bool)($variableData['required'] ?? false),
+            'error_message' => $variableData['error_message'] ?? 'Validación fallida'
+        ]);
+    }
+
+    /**
+     * Sanitiza nombres de variables
+     */
+    private function sanitizeVariableName(string $name): string
+    {
+        // 1. Convertir a minúsculas
+        // 2. Reemplazar espacios y guiones por underscores
+        // 3. Eliminar caracteres no permitidos
+        // 4. Limitar longitud a 64 caracteres
+        
+        return substr(
+            preg_replace(
+                '/[^a-z0-9_]/',
+                '',
+                str_replace([' ', '-'], '_', strtolower($name))
+            ),
+            0,
+            64
+        );
+    }
+
+    /**
+     * Valida tipos de variables
+     */
+    private function validateVariableType(string $type): string
+    {
+        $allowedTypes = [
+            'string', 'number', 'boolean', 
+            'datetime', 'email', 'phone', 'custom_regex'
+        ];
+        
+        return in_array(strtolower($type), $allowedTypes, true) 
+            ? strtolower($type)
+            : 'string';
+    }
+
+    /**
+     * Valida nombre del flujo
+     */
+    private function validateName(string $name): string
+    {
+        $name = trim($name);
+        
+        if (mb_strlen($name) < 3 || mb_strlen($name) > 255) {
+            throw new \InvalidArgumentException(
+                "El nombre del flujo debe tener entre 3 y 255 caracteres"
+            );
+        }
+        
+        return $name;
+    }
+
+    /**
+     * Valida tipo de flujo
+     */
+    private function validateFlowType(string $type): string
+    {
+        $allowedTypes = ['inbound', 'outbound', 'hybrid'];
+        return in_array(strtolower($type), $allowedTypes, true)
+            ? strtolower($type)
+            : 'inbound';
+    }
+
+    /**
+     * Normaliza palabras clave para triggers
+     */
+    private function normalizeKeywords(array $keywords, bool $isCaseSensitive = false): array
+    {
+        return collect($keywords)
+            ->filter()
+            ->map(function ($keyword) use ($isCaseSensitive) {
+                return $isCaseSensitive 
+                    ? trim($keyword)
+                    : mb_strtolower(trim($keyword));
+            })
+            ->unique()
+            ->values()
+            ->toArray();
     }
 
     // public function executeFlow(string $flowId, string $contactId, string $sessionId = null) {
