@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('flow_steps', function (Blueprint $table) {
             $table->ulid('step_id')->primary();
-            $table->foreignUlid('flow_id')->constrained('flows', 'flow_id')->onDelete('cascade');
+            $table->ulid('flow_id');
             $table->enum('step_type', ['message_sequence','open_question','closed_question','conditional','terminal','api_call']);
 
             $table->json('validation_rules')->nullable(); // Reglas de validación {type: 'email', regex: '/.../', etc}
@@ -23,7 +23,7 @@ return new class extends Migration
             $table->text('retry_message')->nullable();
 
             $table->enum('failure_action', ['repeat','redirect','end_flow','transfer'])->default('end_flow'); // Acción si falla la validación
-            $table->foreignUlid('failure_step_id')->nullable()->constrained('flow_steps', 'step_id')->nullOnDelete();
+             $table->ulid('failure_step_id')->nullable();
             $table->boolean('is_terminal')->default(true); // Finaliza el flujo
             $table->boolean('is_entry_point')->default(false); // Paso inicial
 

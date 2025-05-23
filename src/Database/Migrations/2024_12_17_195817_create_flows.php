@@ -27,9 +27,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
 
             // Punto de entrada del flujo
-            $table->foreignUlid('entry_point_id')
-                ->nullable()
-                ->constrained('flow_steps', 'step_id');
+            $table->ulid('entry_point_id')->nullable();
                 
             $table->timestamps();
             $table->softDeletes();
