@@ -25,7 +25,8 @@ class FlowTrigger extends Model
     // Relación inversa: un trigger pertenece a un flujo
     public function flow()
     {
-        return $this->belongsTo(Flow::class);
+        return $this->belongsTo(Flow::class, 'flow_id', 'flow_id');
+        
     }
 
     public function triggerable()
