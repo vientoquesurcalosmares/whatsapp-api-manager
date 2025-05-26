@@ -76,7 +76,7 @@ class Flow extends Model
 
     public function triggers()
     {
-        return $this->hasMany(FlowTrigger::class);
+        return $this->hasMany(FlowTrigger::class, 'flow_id', 'flow_id');
     }
 
     public function variables()
