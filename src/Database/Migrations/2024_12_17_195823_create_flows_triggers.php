@@ -13,11 +13,9 @@ return new class extends Migration
     {
         Schema::create('flow_triggers', function (Blueprint $table) {
             $table->ulid('trigger_id')->primary();
-            $table->enum('trigger_type', ['keyword','template','default'])->default('keyword');
-            $table->unsignedInteger('priority')->default(0);
             $table->foreignUlid('flow_id')->constrained('flows', 'flow_id')->onDelete('cascade');
-            $table->enum('type', ['keyword', 'event', 'schedule']);
-            $table->string('value'); // Ej: "hola", "ON_SUBSCRIBE", "08:00"
+            $table->enum('type', ['keyword', 'regex', 'template']); // keyword, regex, template
+            $table->ulidMorphs('triggerable'); // triggerable_id + triggerable_type
         
             $table->timestamps();
             $table->softDeletes();
