@@ -12,6 +12,10 @@ class KeywordTrigger extends Model
 {
     use HasFactory, SoftDeletes, GeneratesUlid;
 
+    protected $primaryKey = 'keyword_trigger_id';
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
         'keywords',
         'case_sensitive',
