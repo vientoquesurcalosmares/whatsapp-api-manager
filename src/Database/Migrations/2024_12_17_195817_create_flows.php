@@ -18,11 +18,7 @@ return new class extends Migration
             $table->string('name'); // Nombre interno del flujo
             $table->text('description')->nullable();
             $table->enum('type', ['inbound','outbound', 'hybrid'])->default('inbound'); // Tipo de flujo: inbound, outbound o híbrido
-            $table->foreignUlid('template_id')
-                    ->nullable()
-                    ->constrained('whatsapp_templates', 'template_id');
-            $table->json('trigger_keywords')->nullable(); // Palabra clave o palabras claves para activar el flujo o respuestas.
-            $table->boolean('is_case_sensitive')->default(false);
+            $table->enum('trigger_mode', ['any', 'all']);
             $table->boolean('is_default')->default(false); // Flujo por defecto
             $table->boolean('is_active')->default(true);
 
