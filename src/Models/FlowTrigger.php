@@ -18,12 +18,18 @@ class FlowTrigger extends Model
     protected $fillable = [
         'flow_id',
         'type',
-        'value',
+        'triggerable_id',
+        'triggerable_type'
     ];
 
     // Relación inversa: un trigger pertenece a un flujo
     public function flow()
     {
-        return $this->belongsTo(Flow::class, 'flow_id', 'flow_id');
+        return $this->belongsTo(Flow::class);
+    }
+
+    public function triggerable()
+    {
+        return $this->morphTo();
     }
 }

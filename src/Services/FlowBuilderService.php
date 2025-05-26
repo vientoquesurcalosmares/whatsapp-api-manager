@@ -1,439 +1,235 @@
 <?php
+
 namespace ScriptDevelop\WhatsappManager\Services;
 
+use Illuminate\Database\Eloquent\Model;
 use ScriptDevelop\WhatsappManager\Models\{
     Flow,
-    FlowStep,
     FlowTrigger,
-    FlowVariable,
-    StepMessage,
-    StepVariable
+    KeywordTrigger,
+    RegexTrigger,
+    TemplateTrigger,
+    Template
 };
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Arr;
 
 class FlowBuilderService
 {
-    // Tipos de paso permitidos
-    const ALLOWED_STEP_TYPES = [
-        'message_sequence',
-        'open_question',
-        'closed_question',
-        'conditional',
-        'terminal',
-        'api_call'
-    ];
-
-    // Tipos de trigger permitidos
-    const ALLOWED_TRIGGER_TYPES = ['keyword', 'template', 'hybrid'];
+    private $flow;
+    private $triggers = [];
+    private $allowedTriggerTypes = ['keyword', 'regex', 'template'];
 
     /**
-     * Crea un nuevo flujo con sus triggers iniciales.
+     * Inicia la creación de un nuevo flujo
      */
-    public function createFlow(array $data): Flow
+    public function createFlow(array $data): self
     {
-        return DB::transaction(function () use ($data) {
-            $isCaseSensitive = (bool)Arr::get($data, 'is_case_sensitive', false);
+        $validated = Validator::make($data, [
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'type' => 'required|in:inbound,outbound,hybrid',
+            'trigger_mode' => 'required|in:any,all',
+            'is_default' => 'sometimes|boolean',
+            'entry_point_id' => 'nullable|ulid'
+        ])->validate();
 
-            $flow = Flow::create([
-                'name'              => Arr::get($data, 'name'),
-                'description'       => Arr::get($data, 'description'),
-                'type'              => Arr::get($data, 'type'),
-                'trigger_keywords' => $this->normalizeKeywords(
-                Arr::get($data, 'trigger_keywords', []),
-                $isCaseSensitive),
-                'is_case_sensitive' => $isCaseSensitive,
-                'is_default'        => Arr::get($data, 'is_default', false),
-                'is_active'         => Arr::get($data, 'is_active', true),
-            ]);
+        $this->flow = Flow::create(array_merge($validated, [
+            'is_active' => false // Inactivo hasta agregar triggers
+        ]));
 
-            // Triggers
-            foreach ($data['triggers'] ?? [] as $trigger) {
-                $this->addTrigger($flow->flow_id, $trigger);
-            }
-
-            // Variables globales
-            foreach ($data['variables'] ?? [] as $variable) {
-                $this->addFlowVariable($flow->flow_id, $variable);
-            }
-
-            // Pasos
-            foreach ($data['steps'] ?? [] as $stepData) {
-                $this->addStep($flow->flow_id, $stepData);
-            }
-
-            return $flow->load(['triggers', 'variables', 'steps']);
-        });
-    }
-
-    public function createEmptyFlow(string $name, string $type = 'inbound'): Flow
-    {
-        return Flow::create([
-            'name' => $this->validateName($name),
-            'type' => $this->validateFlowType($type),
-            'is_active' => true
-        ]);
+        return $this;
     }
 
     /**
-     * Agrega un paso al flujo.
+     * Agrega un trigger de keywords
      */
-    public function addStep(string $flowId, array $stepData): FlowStep
+    public function addKeywordTrigger(array|string $keywords, bool $caseSensitive = false, string $matchType = 'exact'): self
     {
-        $maxOrder = FlowStep::where('flow_id', $flowId)->max('order') ?? 0;
+        $this->validateTriggerType('keyword');
         
-        return DB::transaction(function () use ($flowId, $stepData) {
-            $step = FlowStep::create([
-                'flow_id' => $flowId,
-                'step_type' => $this->validateStepType($stepData['type']),
-                'validation_rules' => $this->parseValidationRules($stepData['validation'] ?? []),
-                'max_attempts' => $stepData['max_attempts'] ?? 1,
-                'retry_message' => $stepData['retry_message'] ?? null,
-                'failure_action' => $this->validateFailureAction($stepData['failure_action'] ?? 'end_flow'),
-                'failure_step_id' => $stepData['failure_step_id'] ?? null,
-                'is_terminal' => (bool)($stepData['is_terminal'] ?? false),
-            ]);
+        $validated = Validator::make([
+            'keywords' => Arr::wrap($keywords),
+            'case_sensitive' => $caseSensitive,
+            'match_type' => $matchType
+        ], [
+            'keywords' => 'required|array|min:1',
+            'keywords.*' => 'string|max:100',
+            'case_sensitive' => 'boolean',
+            'match_type' => 'in:exact,contains,starts_with,ends_with'
+        ])->validate();
 
-            // Mensajes asociados
-            foreach ($stepData['messages'] ?? [] as $message) {
-                $this->addStepMessage($step->step_id, $message);
-            }
-
-            // Variables del paso
-            foreach ($stepData['variables'] ?? [] as $variable) {
-                $this->addStepVariable($step->step_id, $variable);
-            }
-
-            return $step;
-        });
-    }
-
-    /**
-     * Agrega un trigger al flujo.
-     */
-    public function addTrigger(string $flowId, array $triggerData): FlowTrigger
-    {
-        $validType = in_array($triggerData['type'], self::ALLOWED_TRIGGER_TYPES)
-            ? $triggerData['type']
-            : 'keyword';
-
-        return FlowTrigger::create([
-            'flow_id' => $flowId,
-            'type' => $validType,
-            'value' => $triggerData['value'],
-            'priority' => (int)($triggerData['priority'] ?? 0)
-        ]);
-    }
-
-    /**
-     * Agrega trigger a flujo existente
-     */
-    public function addFlowTrigger(
-        string $flowId, 
-        string $type, 
-        string $value, 
-        int $priority = 0
-    ): FlowTrigger {
-        return $this->addTrigger($flowId, [
-            'type' => $type,
-            'value' => $value,
-            'priority' => $priority
-        ]);
-    }
-
-    /**
-     * Crea paso básico y devuelve para edición incremental
-     */
-    public function createStepShell(
-        string $flowId,
-        string $type = 'message_sequence',
-        int $order = null
-    ): FlowStep {
-        return $this->addStep($flowId, [
-            'type' => $type,
-            'order' => $order ?? $this->getNextStepOrder($flowId)
-        ]);
-    }
-
-    /**
-     * Agrega mensaje a un paso existente
-     */
-    public function addMessageToStep(
-        string $stepId,
-        string $type,
-        string $content,
-        int $order = 1,
-        int $delay = 0
-    ): StepMessage {
-        return $this->addStepMessage($stepId, [
-            'type' => $type,
-            'content' => $content,
-            'order' => $order,
-            'delay' => $delay
-        ]);
-    }
-
-    private function getNextStepOrder(string $flowId): int
-    {
-        return FlowStep::where('flow_id', $flowId)->max('order') + 1;
-    }
-
-    /**
-     * Agrega variable de flujo
-     */
-    public function addFlowVariable(string $flowId, array $variableData): FlowVariable
-    {
-        return FlowVariable::create([
-            'flow_id' => $flowId,
-            'name' => $this->sanitizeVariableName($variableData['name']),
-            'type' => $this->validateVariableType($variableData['type'] ?? 'string'),
-            'default_value' => $variableData['default_value'] ?? null
-        ]);
-    }
-
-    /** Métodos de validación */
-    
-    private function validateStepType(string $type): string
-    {
-        return in_array($type, self::ALLOWED_STEP_TYPES) 
-            ? $type 
-            : 'message_sequence';
-    }
-
-    private function validateFailureAction(string $action): string
-    {
-        $allowed = ['repeat', 'redirect', 'end_flow', 'transfer'];
-        return in_array($action, $allowed) ? $action : 'end_flow';
-    }
-
-    private function parseValidationRules(array $rules): array
-    {
-        return [
-            'required' => (bool)($rules['required'] ?? false),
-            'type' => $this->validateVariableType($rules['type'] ?? 'string'),
-            'regex' => $rules['regex'] ?? null,
-            'min' => (int)($rules['min'] ?? 0),
-            'max' => (int)($rules['max'] ?? 0)
+        $this->triggers[] = [
+            'type' => 'keyword',
+            'data' => $validated
         ];
+
+        return $this;
     }
 
-    
-
     /**
-     * Agrega mensaje a un paso
+     * Agrega un trigger regex
      */
-    public function addStepMessage(string $stepId, array $messageData): StepMessage
+    public function addRegexTrigger(string $pattern, bool $matchFull = true, ?string $flags = null): self
     {
-        return StepMessage::create([
-            'flow_step_id' => $stepId,
-            'message_type' => $messageData['type'],
-            'content' => $messageData['content'],
-            'media_file_id' => $messageData['media_id'] ?? null,
-            'delay_seconds' => (int)($messageData['delay'] ?? 0),
-            'order' => (int)($messageData['order'] ?? 0)
-        ]);
-    }
+        $this->validateTriggerType('regex');
+        
+        $this->validateRegex($pattern);
 
-    
-
-    /**
-     * Agrega o actualiza una variable del flujo.
-     */
-    public function setVariable(string $flowId, array $variableData): FlowVariable
-    {
-        return FlowVariable::updateOrCreate(
-            ['flow_id' => $flowId, 'name' => $variableData['name']],
-            [
-                'type'          => Arr::get($variableData, 'type', 'string'),
-                'default_value' => Arr::get($variableData, 'default_value'),
+        $this->triggers[] = [
+            'type' => 'regex',
+            'data' => [
+                'pattern' => $pattern,
+                'match_full' => $matchFull,
+                'flags' => $flags
             ]
-        );
+        ];
+
+        return $this;
     }
 
     /**
-     * Clona un flujo completo (y todo lo asociado).
+     * Agrega un trigger de template
      */
-    public function cloneFlow(string $flowId, array $overrides = []): Flow
+    public function addTemplateTrigger(string $templateName, string $language = 'en', array $variables = []): self
     {
-        return DB::transaction(function () use ($flowId, $overrides) {
-            $original = Flow::with(['steps','triggers','variables','bots'])
-                          ->findOrFail($flowId);
+        $this->validateTriggerType('template');
+        
+        $this->validateTemplate($templateName);
 
-            $copy = $original->replicate(['flow_id']);
-            $copy->fill($overrides)->save();
+        $this->triggers[] = [
+            'type' => 'template',
+            'data' => [
+                'template_name' => $templateName,
+                'language' => $language,
+                'variables' => $variables
+            ]
+        ];
 
-            // Mapeo de IDs antiguos a nuevos
-            $stepMappings = [];
+        return $this;
+    }
+
+    /**
+     * Finaliza la creación y guarda todo
+     */
+    public function build(): Flow
+    {
+        return DB::transaction(function () {
+            $this->processTriggers();
+            $this->updateFlowStatus();
             
-            foreach ($original->steps as $originalStep) {
-                $newStep = $originalStep->replicate(['step_id']);
-                $newStep->flow_id = $copy->flow_id;
-                $newStep->save();
-                $stepMappings[$originalStep->step_id] = $newStep->step_id;
-            }
-
-            // Actualizar referencias
-            foreach ($copy->steps as $newStep) {
-                if ($newStep->next_step_id && isset($stepMappings[$newStep->next_step_id])) {
-                    $newStep->next_step_id = $stepMappings[$newStep->next_step_id];
-                    $newStep->save();
-                }
-            }
-
-            return $copy->load('steps');
+            return $this->flow->refresh()->load('triggers');
         });
     }
 
-    /**
-     * Asocia un flujo a un bot (pivot).
-     */
-    public function attachFlowToBot(string $flowId, string $botId): void
+    private function processTriggers(): void
     {
-        Flow::findOrFail($flowId)
-            ->bots()
-            ->syncWithoutDetaching([$botId]);
-    }
-
-    /**
-     * Desasocia un flujo de un bot.
-     */
-    public function detachFlowFromBot(string $flowId, string $botId): void
-    {
-        Flow::findOrFail($flowId)
-            ->bots()
-            ->detach([$botId]);
-    }
-
-    /**
-     * Validación de contenido por tipo de paso
-     */
-    private function validateStepContent(string $type, array $content): array
-    {
-        $validators = [
-            'menu' => fn($c) => isset($c['options']) && is_array($c['options']),
-            'input' => fn($c) => isset($c['field_name']),
-            'message' => fn($c) => isset($c['text']),
-        ];
-
-        if (isset($validators[$type]) && !$validators[$type]($content)) {
-            throw new \InvalidArgumentException("Invalid content for step type: $type");
+        foreach ($this->triggers as $trigger) {
+            $this->createTrigger($trigger);
         }
-
-        return $content;
     }
 
-    /**
-     * Agrega variable a un paso
-     */
-    public function addStepVariable(string $stepId, array $variableData): StepVariable
+    private function createTrigger(array $triggerData): void
     {
-        if (empty($variableData['name'])) {
-            throw new \InvalidArgumentException("El nombre de la variable es requerido");
-        }
+        $method = 'create' . ucfirst($triggerData['type']) . 'Trigger';
+        $this->{$method}($triggerData['data']);
+    }
 
-        return StepVariable::create([
-            'flow_step_id' => $stepId,
-            'name' => $this->sanitizeVariableName($variableData['name']),
-            'type' => $this->validateVariableType($variableData['type'] ?? 'string'),
-            'validation_regex' => $variableData['regex'] ?? null,
-            'is_required' => (bool)($variableData['required'] ?? false),
-            'error_message' => $variableData['error_message'] ?? 'Validación fallida'
+    private function createKeywordTrigger(array $data): void
+    {
+        $keywordTrigger = KeywordTrigger::create([
+            'keywords' => $data['keywords'],
+            'case_sensitive' => $data['case_sensitive'],
+            'match_type' => $data['match_type']
+        ]);
+
+        $this->createTriggerRelation($keywordTrigger, 'keyword');
+    }
+
+    private function createRegexTrigger(array $data): void
+    {
+        $regexTrigger = RegexTrigger::create([
+            'pattern' => $data['pattern'],
+            'match_full' => $data['match_full'],
+            'flags' => $data['flags']
+        ]);
+
+        $this->createTriggerRelation($regexTrigger, 'regex');
+    }
+
+    private function createTemplateTrigger(array $data): void
+    {
+        $templateTrigger = TemplateTrigger::create([
+            'template_name' => $data['template_name'],
+            'language' => $data['language'],
+            'variables' => $data['variables']
+        ]);
+
+        $this->createTriggerRelation($templateTrigger, 'template');
+    }
+
+    private function createTriggerRelation(Model $trigger, string $type): void
+    {
+        FlowTrigger::create([
+            'flow_id' => $this->flow->flow_id,
+            'type' => $type,
+            'triggerable_id' => $trigger->getKey(),
+            'triggerable_type' => $trigger->getMorphClass()
+        ]);
+    }
+
+    private function validateTriggerType(string $type): void
+    {
+        if ($this->hasTriggerType($type)) {
+            throw new \InvalidArgumentException("Ya existe un trigger de tipo $type para este flujo");
+        }
+    }
+
+    private function hasTriggerType(string $type): bool
+    {
+        return in_array($type, array_column($this->triggers, 'type'));
+    }
+
+    private function validateRegex(string $pattern): void
+    {
+        if (@preg_match($pattern, '') === false) {
+            throw new \InvalidArgumentException("Expresión regular inválida: $pattern");
+        }
+    }
+
+    private function validateTemplate(string $templateName): void
+    {
+        if (!Template::where('name', $templateName)->exists()) {
+            throw new \InvalidArgumentException("La plantilla $templateName no existe");
+        }
+    }
+
+    private function updateFlowStatus(): void
+    {
+        $this->flow->update([
+            'is_active' => !empty($this->triggers)
         ]);
     }
 
     /**
-     * Sanitiza nombres de variables
+     * Helper para crear flujo rápido con keywords
      */
-    private function sanitizeVariableName(string $name): string
-    {
-        // 1. Convertir a minúsculas
-        // 2. Reemplazar espacios y guiones por underscores
-        // 3. Eliminar caracteres no permitidos
-        // 4. Limitar longitud a 64 caracteres
-        
-        return substr(
-            preg_replace(
-                '/[^a-z0-9_]/',
-                '',
-                str_replace([' ', '-'], '_', strtolower($name))
-            ),
-            0,
-            64
-        );
+    public static function createWithKeywords(
+        string $name,
+        array $keywords,
+        string $type = 'inbound',
+        string $matchType = 'exact',
+        bool $caseSensitive = false
+    ): Flow {
+        return (new self())
+            ->createFlow([
+                'name' => $name,
+                'type' => $type,
+                'trigger_mode' => 'any'
+            ])
+            ->addKeywordTrigger($keywords, $caseSensitive, $matchType)
+            ->build();
     }
-
-    /**
-     * Valida tipos de variables
-     */
-    private function validateVariableType(string $type): string
-    {
-        $allowedTypes = [
-            'string', 'number', 'boolean', 
-            'datetime', 'email', 'phone', 'custom_regex'
-        ];
-        
-        return in_array(strtolower($type), $allowedTypes, true) 
-            ? strtolower($type)
-            : 'string';
-    }
-
-    /**
-     * Valida nombre del flujo
-     */
-    private function validateName(string $name): string
-    {
-        $name = trim($name);
-        
-        if (mb_strlen($name) < 3 || mb_strlen($name) > 255) {
-            throw new \InvalidArgumentException(
-                "El nombre del flujo debe tener entre 3 y 255 caracteres"
-            );
-        }
-        
-        return $name;
-    }
-
-    /**
-     * Valida tipo de flujo
-     */
-    private function validateFlowType(string $type): string
-    {
-        $allowedTypes = ['inbound', 'outbound', 'hybrid'];
-        return in_array(strtolower($type), $allowedTypes, true)
-            ? strtolower($type)
-            : 'inbound';
-    }
-
-    /**
-     * Normaliza palabras clave para triggers
-     */
-    private function normalizeKeywords(array $keywords, bool $isCaseSensitive = false): array
-    {
-        return collect($keywords)
-            ->filter()
-            ->map(function ($keyword) use ($isCaseSensitive) {
-                return $isCaseSensitive 
-                    ? trim($keyword)
-                    : mb_strtolower(trim($keyword));
-            })
-            ->unique()
-            ->values()
-            ->toArray();
-    }
-
-    // public function executeFlow(string $flowId, string $contactId, string $sessionId = null) {
-    //     $flow = Flow::with('steps')->findOrFail($flowId);
-    //     $session = $this->getOrCreateSession($sessionId, $contactId, $flowId);
-        
-    //     $nextStep = $flow->steps()->where('order', $session->current_step)->first();
-        
-    //     if (!$nextStep) {
-    //         $nextStep = $flow->initialStep;
-    //         $session->update(['current_step' => $nextStep->order]);
-    //     }
-        
-    //     $this->sendStepMessage($nextStep, $contactId, $session);
-        
-    //     return $session;
-    // }
 }

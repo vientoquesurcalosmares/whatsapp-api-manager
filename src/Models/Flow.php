@@ -22,9 +22,8 @@ class Flow extends Model
         'name',
         'description',
         'type', // 'inbound', 'outbound' o 'hybrid'
-        'template_id', // Para activación por plantilla
-        'trigger_keywords',       // Nuevo: almacena un arreglo de palabras clave
-        'is_case_sensitive', // Nuevo: define si la comparación es sensible a mayúsculas/minúsculas
+        'trigger_mode', // 'any' o 'all'
+        
         'entry_point_id',
         'is_default',
         'is_active',
@@ -48,25 +47,7 @@ class Flow extends Model
     }
 
 
-    public function matchesTrigger(string $message): bool
-    {
-        $message = trim($message);
-        $messageToCheck = $this->is_case_sensitive ? $message : strtolower($message);
-
-        foreach ($this->trigger_keywords as $keyword) {
-            $keywordToMatch = $this->is_case_sensitive ? $keyword : strtolower($keyword);
-            if ($keywordToMatch === $messageToCheck) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // Scope para buscar flujos por palabra clave
-    public function scopeTriggeredBy(Builder $query, string $message): Builder
-    {
-        return $query->whereJsonContains('trigger_keywords', $message);
-    }
+   
 
     // Relaciones
 
@@ -95,7 +76,7 @@ class Flow extends Model
 
     public function triggers()
     {
-        return $this->hasMany(FlowTrigger::class, 'flow_id', 'flow_id');
+        return $this->hasMany(FlowTrigger::class);
     }
 
     public function variables()
