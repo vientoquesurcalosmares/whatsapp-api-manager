@@ -2644,6 +2644,418 @@ class MessageDispatcherService
     }
 
     /**
+     * Envía un mensaje interactivo con botones de respuesta rápida
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $body Texto principal del mensaje
+     * @param array $buttons Array de botones (máximo 3, cada uno con 'id' y 'title')
+     * @param string|null $footer Texto opcional en el pie
+     * @param string|null $contextMessageId ID del mensaje original (WA) para respuesta
+     * @return Message Modelo del mensaje creado
+     * @throws WhatsappApiException|InvalidArgumentException
+     */
+    public function sendInteractiveButtonsMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $body,
+        array $buttons,
+        ?string $footer = null,
+        ?string $contextMessageId = null
+    ): Message {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje con botones interactivos.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'body' => $body,
+            'buttons' => $buttons,
+            'footer' => $footer,
+            'contextMessageId' => $contextMessageId,
+        ]);
+
+        // Validación de botones
+        if (count($buttons) < 1 || count($buttons) > 3) {
+            throw new \InvalidArgumentException('Debe proporcionar entre 1 y 3 botones.');
+        }
+        
+        foreach ($buttons as $button) {
+            if (!isset($button['id']) || !isset($button['title'])) {
+                throw new \InvalidArgumentException('Cada botón debe tener "id" y "title".');
+            }
+            if (strlen($button['title']) > 20) {
+                throw new \InvalidArgumentException('El título del botón no puede exceder 20 caracteres.');
+            }
+        }
+
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+
+        // Manejar contexto de respuesta
+        $contextMessage = null;
+        if ($contextMessageId) {
+            $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+            if (!$contextMessage) {
+                throw new \InvalidArgumentException('El mensaje de contexto no existe.');
+            }
+        }
+
+        // Crear mensaje en BD
+        $message = Message::create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'interactive',
+            'message_content' => json_encode([
+                'sub_type' => 'button',
+                'body' => $body,
+                'footer' => $footer,
+                'buttons' => $buttons
+            ]),
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+            'message_context_id' => $contextMessage ? $contextMessage->message_id : null,
+        ]);
+
+        try {
+            $parameters = [
+                'interactive_type' => 'button',
+                'body' => $body,
+                'buttons' => $buttons,
+                'footer' => $footer,
+            ];
+
+            $response = $this->sendViaApi(
+                $phoneNumberModel,
+                $fullPhoneNumber,
+                'interactive',
+                $parameters,
+                $contextMessage ? $contextMessage->wa_id : null
+            );
+
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            return $this->handleError($message, $e);
+        }
+    }
+
+    /**
+     * Envía un mensaje con lista interactiva
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $buttonText Texto del botón principal
+     * @param array $sections Array de secciones (cada una con 'title' y 'rows')
+     * @param string $body Texto principal del mensaje
+     * @param string|null $header Encabezado opcional
+     * @param string|null $footer Texto opcional en el pie
+     * @param string|null $contextMessageId ID del mensaje original (WA) para respuesta
+     * @return Message Modelo del mensaje creado
+     * @throws WhatsappApiException|InvalidArgumentException
+     */
+    public function sendListMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $buttonText,
+        array $sections,
+        string $body,
+        ?string $header = null,
+        ?string $footer = null,
+        ?string $contextMessageId = null
+    ): Message {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje con lista interactiva.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'buttonText' => $buttonText,
+            'sections' => $sections,
+            'body' => $body,
+            'header' => $header,
+            'footer' => $footer,
+            'contextMessageId' => $contextMessageId,
+        ]);
+
+        // Validaciones
+        if (strlen($buttonText) > 20) {
+            throw new \InvalidArgumentException('El texto del botón no puede exceder 20 caracteres.');
+        }
+        
+        if ($header && strlen($header) > 60) {
+            throw new \InvalidArgumentException('El encabezado no puede exceder 60 caracteres.');
+        }
+        
+        foreach ($sections as $section) {
+            if (empty($section['rows'])) {
+                throw new \InvalidArgumentException('Cada sección debe contener filas.');
+            }
+            foreach ($section['rows'] as $row) {
+                if (!isset($row['id']) || !isset($row['title'])) {
+                    throw new \InvalidArgumentException('Cada fila debe tener "id" y "title".');
+                }
+                if (strlen($row['title']) > 24) {
+                    throw new \InvalidArgumentException('El título de la fila no puede exceder 24 caracteres.');
+                }
+                if (isset($row['description']) && strlen($row['description']) > 72) {
+                    throw new \InvalidArgumentException('La descripción no puede exceder 72 caracteres.');
+                }
+            }
+        }
+
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+
+        // Manejar contexto de respuesta
+        $contextMessage = null;
+        if ($contextMessageId) {
+            $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+            if (!$contextMessage) {
+                throw new \InvalidArgumentException('El mensaje de contexto no existe.');
+            }
+        }
+
+        // Crear mensaje en BD
+        $message = Message::create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'interactive',
+            'message_content' => json_encode([
+                'sub_type' => 'list',
+                'button_text' => $buttonText,
+                'sections' => $sections,
+                'body' => $body,
+                'header' => $header,
+                'footer' => $footer
+            ]),
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+            'message_context_id' => $contextMessage ? $contextMessage->message_id : null,
+        ]);
+
+        try {
+            $parameters = [
+                'interactive_type' => 'list',
+                'button' => $buttonText,
+                'sections' => $sections,
+                'body' => $body,
+                'header' => $header,
+                'footer' => $footer,
+            ];
+
+            $response = $this->sendViaApi(
+                $phoneNumberModel,
+                $fullPhoneNumber,
+                'interactive',
+                $parameters,
+                $contextMessage ? $contextMessage->wa_id : null
+            );
+
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            return $this->handleError($message, $e);
+        }
+    }
+
+    /**
+     * Envía una lista interactiva como respuesta a un mensaje existente
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param string $contextMessageId ID del mensaje original (WA) al que se responde
+     * @param string $buttonText Texto del botón principal
+     * @param array $sections Array de secciones (cada una con 'title' y 'rows')
+     * @param string $body Texto principal del mensaje
+     * @param string|null $header Encabezado opcional
+     * @param string|null $footer Texto opcional en el pie
+     * @return Message Modelo del mensaje creado
+     * @throws WhatsappApiException|InvalidArgumentException
+     */
+    public function sendReplyToListMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $contextMessageId,
+        string $buttonText,
+        array $sections,
+        string $body,
+        ?string $header = null,
+        ?string $footer = null
+    ): Message {
+        Log::channel('whatsapp')->info('Iniciando envío de lista interactiva como respuesta.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'contextMessageId' => $contextMessageId,
+            'buttonText' => $buttonText,
+            'sections' => $sections,
+            'body' => $body,
+            'header' => $header,
+            'footer' => $footer,
+        ]);
+
+        // Validar el mensaje de contexto
+        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        if (!$contextMessage) {
+            throw new \InvalidArgumentException('El mensaje de contexto no existe.');
+        }
+
+        // Validaciones adicionales
+        if (strlen($buttonText) > 20) {
+            throw new \InvalidArgumentException('El texto del botón no puede exceder 20 caracteres.');
+        }
+
+        foreach ($sections as $section) {
+            if (empty($section['rows'])) {
+                throw new \InvalidArgumentException('Cada sección debe contener filas.');
+            }
+            foreach ($section['rows'] as $row) {
+                if (!isset($row['id']) || !isset($row['title'])) {
+                    throw new \InvalidArgumentException('Cada fila debe tener "id" y "title".');
+                }
+                if (strlen($row['title']) > 24) {
+                    throw new \InvalidArgumentException('El título de la fila no puede exceder 24 caracteres.');
+                }
+                if (isset($row['description']) && strlen($row['description']) > 72) {
+                    throw new \InvalidArgumentException('La descripción no puede exceder 72 caracteres.');
+                }
+            }
+        }
+
+        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+
+        // Crear mensaje en BD con contexto
+        $message = Message::create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'interactive',
+            'message_content' => json_encode([
+                'sub_type' => 'list',
+                'button_text' => $buttonText,
+                'sections' => $sections,
+                'body' => $body,
+                'header' => $header,
+                'footer' => $footer,
+                'context_message_id' => $contextMessageId
+            ]),
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+            'message_context_id' => $contextMessage->message_id,
+        ]);
+
+        try {
+            $parameters = [
+                'interactive_type' => 'list',
+                'button' => $buttonText,
+                'sections' => $sections,
+                'body' => $body,
+                'header' => $header,
+                'footer' => $footer,
+            ];
+
+            $response = $this->sendViaApi(
+                $phoneNumberModel,
+                $fullPhoneNumber,
+                'interactive',
+                $parameters,
+                $contextMessageId // Usar el WA ID del mensaje original como contexto
+            );
+
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            return $this->handleError($message, $e);
+        }
+    }
+
+    /**
+     * Marca un mensaje como leído en WhatsApp
+     *
+     * @param string $messageId ID interno del mensaje en tu base de datos
+     * @return bool True si se marcó correctamente, false en caso contrario
+     * @throws WhatsappApiException Si falla la operación en la API
+     */
+    public function markMessageAsRead(string $messageId): bool
+    {
+        Log::channel('whatsapp')->info('Marcando mensaje como leído.', ['message_id' => $messageId]);
+
+        try {
+            // Obtener el mensaje de la base de datos
+            $message = Message::findOrFail($messageId);
+            
+            // Verificar que el mensaje fue recibido (INPUT)
+            if ($message->message_method !== 'INPUT') {
+                throw new \InvalidArgumentException('Solo se pueden marcar como leídos mensajes recibidos');
+            }
+
+            // Obtener el número telefónico asociado
+            $phoneNumber = $message->phoneNumber;
+            
+            // Construir el endpoint
+            $endpoint = Endpoints::build(Endpoints::MARK_MESSAGE_AS_READ, [
+                'phone_number_id' => $phoneNumber->api_phone_number_id,
+                'message_id' => $message->wa_id
+            ]);
+
+            // Enviar solicitud a la API
+            $response = $this->apiClient->request(
+                'POST',
+                $endpoint,
+                headers: [
+                    'Authorization' => 'Bearer ' . $phoneNumber->businessAccount->api_token,
+                    'Content-Type' => 'application/json'
+                ],
+                data: [
+                    'messaging_product' => 'whatsapp',
+                    'status' => 'read'
+                ]
+            );
+
+            // Actualizar estado en base de datos
+            $message->update(['status' => MessageStatus::READ]);
+
+            Log::channel('whatsapp')->info('Mensaje marcado como leído exitosamente.', [
+                'message_id' => $messageId,
+                'wa_id' => $message->wa_id
+            ]);
+
+            return true;
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::channel('whatsapp')->error('Mensaje no encontrado para marcar como leído.', [
+                'message_id' => $messageId,
+                'error' => $e->getMessage()
+            ]);
+            throw new \InvalidArgumentException('El mensaje no existe en la base de datos');
+            
+        } catch (WhatsappApiException $e) {
+            Log::channel('whatsapp')->error('Error al marcar mensaje como leído.', [
+                'message_id' => $messageId,
+                'error' => $e->getMessage(),
+                'details' => $e->getDetails()
+            ]);
+            throw $e;
+            
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error inesperado al marcar mensaje como leído.', [
+                'message_id' => $messageId,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * Valida el número de teléfono y verifica que tenga un token API válido
      *
      * @param string $phoneNumberId ID del número telefónico registrado
@@ -2797,6 +3209,45 @@ class MessageDispatcherService
                     'name' => $parameters['name'] ?? '',
                     'address' => $parameters['address'] ?? ''
                 ];
+                break;
+            
+            case 'interactive':
+                $interactiveData = ['type' => $parameters['interactive_type']];
+                
+                if ($parameters['interactive_type'] === 'button') {
+                    $interactiveData['body'] = ['text' => $parameters['body']];
+                    $interactiveData['action'] = [
+                        'buttons' => array_map(function ($btn) {
+                            return [
+                                'type' => 'reply',
+                                'reply' => [
+                                    'id' => $btn['id'],
+                                    'title' => $btn['title']
+                                ]
+                            ];
+                        }, $parameters['buttons'])
+                    ];
+                    if ($parameters['footer']) {
+                        $interactiveData['footer'] = ['text' => $parameters['footer']];
+                    }
+                } elseif ($parameters['interactive_type'] === 'list') {
+                    if ($parameters['header']) {
+                        $interactiveData['header'] = [
+                            'type' => 'text',
+                            'text' => $parameters['header']
+                        ];
+                    }
+                    $interactiveData['body'] = ['text' => $parameters['body']];
+                    $interactiveData['action'] = [
+                        'button' => $parameters['button'],
+                        'sections' => $parameters['sections']
+                    ];
+                    if ($parameters['footer']) {
+                        $interactiveData['footer'] = ['text' => $parameters['footer']];
+                    }
+                }
+                
+                $data['interactive'] = $interactiveData;
                 break;
 
             default:

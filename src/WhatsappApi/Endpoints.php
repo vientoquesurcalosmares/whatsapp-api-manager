@@ -23,6 +23,7 @@ class Endpoints
 
     // Message Endpoints
     const SEND_MESSAGE = '{phone_number_id}/messages';
+    const MARK_MESSAGE_AS_READ = '{phone_number_id}/messages/{message_id}';
 
     // Media Upload Endpoints
     const CREATE_RESUMABLE_UPLOAD_SESSION = 'app/uploads';
