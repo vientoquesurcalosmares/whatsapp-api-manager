@@ -257,7 +257,7 @@ whatsapp-manager/
 
 📖 Guía de Usuario
 
-1. Registro de Cuentas de Negocios
+## 1. Registro de Cuentas de Negocios
 Registra una cuenta de negocios en WhatsApp Business API.
 Se hace la peticion a la API de whatsapp, se obtienen los datos de la cuenta y se almacenan en la base de datos. Este metodo obtiene los datos de la cuenta, los telefonos de whatsapp asociados a la cuenta y el perfil de cada numero de telefono.
 - Se usa para Obtener los datos desde la API y alojarlos en la base de datos.
@@ -272,7 +272,7 @@ $account = Whatsapp::account()->register([
 ```
 
 
-2. Obtener Detalles de Números de Teléfono
+## 2. Obtener Detalles de Números de Teléfono
 Obtén información detallada sobre un número de teléfono registrado.
 Se hace la peticion a la API de whatsapp para obtener detalles del numero de whatsapp y se almacenan en la base de datos, si el numero ya existe actualiza la informacion.
 
@@ -283,7 +283,7 @@ $phoneDetails = Whatsapp::phone()->getPhoneNumberDetails('564565346546');
 ```
 
 
-3. Obtener Cuentas de Negocios
+## 3. Obtener Cuentas de Negocios
 Obtén información sobre una cuenta de negocios específica.
 Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuenta en especifico, se almacenan los datos en la base de datos.
 
@@ -294,7 +294,7 @@ $account = Whatsapp::phone()->getBusinessAccount('356456456456');
 ```
 
 
-4. Enviar Mensajes de Texto
+## 4. Enviar Mensajes de Texto
 Envía mensajes de texto simples.
 
 ```php
@@ -323,7 +323,7 @@ $message = Whatsapp::message()->sendTextMessage(
 ```
 
 
-5. Enviar Respuestas a Mensajes
+## 5. Enviar Respuestas a Mensajes
 Responde a un mensaje existente.
 
 ```php
@@ -338,10 +338,10 @@ $message = Whatsapp::message()->sendReplyTextMessage(
 
 
 
-6. Reacciones a Mensajes
+## 6. Reacciones a Mensajes
 Envía una reacción a un mensaje existente.
 
-## Sintaxis Unicode requerida - Usa la codificación \u{código_hex} para emojis:
+### Sintaxis Unicode requerida - Usa la codificación \u{código_hex} para emojis:
 
 ```php
 // Reacción con corazón rojo ❤️
@@ -367,8 +367,8 @@ $message = Whatsapp::message()->sendReplyReactionMessage(
 
 
 
-7. Enviar Mensajes Multimedia
-Enviar Imágenes
+## 7. Enviar Mensajes Multimedia
+### Enviar Imágenes
 
 ```php
 $filePath = storage_path('app/public/laravel-whatsapp-manager.png');
@@ -382,7 +382,7 @@ $message = Whatsapp::message()->sendImageMessage(
 );
 ```
 
-Enviar Imágenes por URL
+### Enviar Imágenes por URL
 
 ```php
 $message = Whatsapp::message()->sendImageMessageByUrl(
@@ -393,7 +393,7 @@ $message = Whatsapp::message()->sendImageMessageByUrl(
 );
 ```
 
-Enviar Audio
+### Enviar Audio
 
 ```php
 $filePath = storage_path('app/public/audio.ogg');
@@ -407,7 +407,7 @@ $message = Whatsapp::message()->sendAudioMessage(
 );
 ```
 
-Enviar Audio por URL
+### Enviar Audio por URL
 
 ```php
 $message = Whatsapp::message()->sendAudioMessageByUrl(
@@ -418,7 +418,7 @@ $message = Whatsapp::message()->sendAudioMessageByUrl(
 );
 ```
 
-Enviar Documentos
+### Enviar Documentos
 
 ```php
 $filePath = storage_path('app/public/document.pdf');
@@ -432,7 +432,7 @@ $message = Whatsapp::message()->sendDocumentMessage(
 );
 ```
 
-Enviar Documentos por URL
+### Enviar Documentos por URL
 
 ```php
 $message = Whatsapp::message()->sendDocumentMessageByUrl(
@@ -443,8 +443,8 @@ $message = Whatsapp::message()->sendDocumentMessageByUrl(
 );
 ```
 
-8. Enviar Mensajes de Ubicación
-Envía un mensaje con coordenadas de ubicación.
+## 8. Enviar Mensajes de Ubicación
+### Envía un mensaje con coordenadas de ubicación.
 
 ```php
 $message = Whatsapp::message()->sendLocationMessage(
@@ -468,7 +468,7 @@ $message = Whatsapp::message()->sendLocationMessage(
 );
 ```
 
-9. Mensajes con Botones Interactivos
+## 9. Mensajes con Botones Interactivos
 
 ```php
 $message = Whatsapp::message()->sendInteractiveButtonsMessage(
@@ -484,14 +484,13 @@ $message = Whatsapp::message()->sendInteractiveButtonsMessage(
 );
 ```
 
-
-10. Listas Desplegables Interactivas
+## 10. Listas Desplegables Interactivas
 
 ```php
 $message = Whatsapp::message()->sendListMessage(
     phoneNumberId: $phone->phone_number_id,
     countryCode: '57',
-    phoneNumber: '3137181908',
+    phoneNumber: '3137555558',
     buttonText: 'Ver opciones', // Máximo 20 caracteres
     sections: [
         [
@@ -507,7 +506,7 @@ $message = Whatsapp::message()->sendListMessage(
 ```
 
 
-11. Obtener todas las plantillas de una cuenta de whatsapp
+## 11. Obtener todas las plantillas de una cuenta de whatsapp
 Se obtienen todas las plantillas de una cuenta de whatsapp y se almacenan en la base de datos.
 Se hace la peticion a la API de whatsapp para obtener todas las plantillas que estan asociadas a la cuenta de whatsapp.
 
@@ -522,7 +521,7 @@ $account = WhatsappBusinessAccount::find($accountId);
 Whatsapp::template()->getTemplates($account);
 ```
 
-- Obtener una plantilla por el nombre.
+- ### Obtener una plantilla por el nombre.
   Se hace la peticion a la API de whatsapp para obtener una plantilla por el nombre y se almacena en la base de datos.
 
    ```php
@@ -537,7 +536,7 @@ Whatsapp::template()->getTemplates($account);
    ```
 
 
-- Obtener una plantilla por el ID.
+- ### Obtener una plantilla por el ID.
   Se hace la peticion a la API de whatsapp para obtener una plantilla por el ID y se almacena en la base de datos.
 
    ```php
@@ -551,7 +550,7 @@ Whatsapp::template()->getTemplates($account);
    $template = Whatsapp::template()->getTemplateById($account, '559947779843204');
    ```
 
-- Eliminar plantilla de la API y de la base de datos al mismo tiempo.
+- ### Eliminar plantilla de la API y de la base de datos al mismo tiempo.
   Se hace la peticion a la API de whatsapp para obtener una plantilla por el ID y se almacena en la base de datos.
 
    ```php
@@ -577,7 +576,8 @@ Whatsapp::template()->getTemplates($account);
    $template = Whatsapp::template()->deleteTemplateByName($account, 'order_confirmation', true);
    ```
 
-#### Crear Plantillas de Utilidad
+## 12. Crear las plantillas en una cuenta de whatsapp
+### Crear Plantillas de Utilidad
 
 Las plantillas transaccionales son ideales para notificaciones como confirmaciones de pedidos, actualizaciones de envío, etc.
 
@@ -659,7 +659,7 @@ $template = Whatsapp::template()
     ->addHeader('IMAGE', $imagePath)
     ->addBody('Hi {{1}}, your order {{2}} has been shipped!', ['John', '12345'])
     ->addFooter('Thank you for your purchase!')
-    ->addButton('PHONE_NUMBER', 'Call Us', '+573234262686')
+    ->addButton('PHONE_NUMBER', 'Call Us', '+573234662686')
     ->addButton('QUICK_REPLY', 'Contact Support')
     ->save();
 ```
@@ -691,7 +691,7 @@ $template = Whatsapp::template()
     ->addHeader('IMAGE', $imagePath)
     ->addBody('Hi {{1}}, your order {{2}} has been shipped!', ['John', '12345'])
     ->addFooter('Thank you for your purchase!')
-    ->addButton('PHONE_NUMBER', 'Call Us', '+573234262686')
+    ->addButton('PHONE_NUMBER', 'Call Us', '+573234255686')
     ->addButton('URL', 'Track Order', 'https://example.com/track?order={{1}}', ['12345'])
     ->save();
 ```
@@ -728,6 +728,7 @@ $template = Whatsapp::template()
 ```
 
 
+## 12. Enviar Mensajes a partis de Plantilla creada.
 ### Enviar mensajes de plantillas
 
 Puedes enviar diferentes mensajes de plantillas segun la estructura de la plantilla.
@@ -745,7 +746,7 @@ $phone = WhatsappPhoneNumber::first();
 // Enviar plantilla 1
 $message = Whatsapp::template()
     ->sendTemplateMessage($phone)
-    ->to('57', '3137181908')
+    ->to('57', '3137555908')
     ->usingTemplate('order_confirmation_4')
     ->addBody(['12345'])
     ->send();
@@ -753,7 +754,7 @@ $message = Whatsapp::template()
 // Enviar plantilla 2
 $message = Whatsapp::template()
     ->sendTemplateMessage($phone)
-    ->to('57', '3135694227')
+    ->to('57', '3135666627')
     ->usingTemplate('link_de_pago')
     ->addHeader('TEXT', '123456')
     ->addBody(['20000'])
@@ -761,7 +762,7 @@ $message = Whatsapp::template()
     ->send();
 
 ```
-
+## 14. Bot Builder, Contructor de Bot y mensajes automatizados.
 ### Crear BOTS de Whatsapp
 
 Puedes diferentes tipos de Bots para whatsapp.
