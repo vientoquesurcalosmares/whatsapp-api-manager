@@ -2999,7 +2999,7 @@ class MessageDispatcherService
             }
 
             // Obtener el número telefónico asociado
-            $phoneNumber = $message->whatsappPhone;
+            $phoneNumber = $message->phoneNumber;
             
             // Construir el endpoint
             $endpoint = Endpoints::build(Endpoints::MARK_MESSAGE_AS_READ, [
