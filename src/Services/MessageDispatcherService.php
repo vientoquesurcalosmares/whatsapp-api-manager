@@ -2999,12 +2999,11 @@ class MessageDispatcherService
             }
 
             // Obtener el número telefónico asociado
-            $phoneNumber = $message->phoneNumber;
+            $phoneNumber = $message->whatsappPhone;
             
             // Construir el endpoint
             $endpoint = Endpoints::build(Endpoints::MARK_MESSAGE_AS_READ, [
-                'phone_number_id' => $phoneNumber->api_phone_number_id,
-                'message_id' => $message->wa_id
+                'phone_number_id' => $phoneNumber->api_phone_number_id
             ]);
 
             // Enviar solicitud a la API
@@ -3017,7 +3016,8 @@ class MessageDispatcherService
                 ],
                 data: [
                     'messaging_product' => 'whatsapp',
-                    'status' => 'read'
+                    'status' => 'read',
+                    'message_id' => $message->wa_id
                 ]
             );
 
