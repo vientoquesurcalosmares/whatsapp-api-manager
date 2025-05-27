@@ -341,14 +341,28 @@ $message = Whatsapp::message()->sendReplyTextMessage(
 6. Reacciones a Mensajes
 Envía una reacción a un mensaje existente.
 
+## Sintaxis Unicode requerida - Usa la codificación \u{código_hex} para emojis:
+
 ```php
+// Reacción con corazón rojo ❤️
 $message = Whatsapp::message()->sendReplyReactionMessage(
     '01JTKF55PCNNWTNEKCGMJAZV93',
     '57',
     '3237121901',
     'wamid.HBgMNTczMTM3MTgxOTA4FQIAEhggNzZENDMzMEI0MDRFQzg0OUUwRTI1M0JBQjEzMUZFRUYA', // ID del mensaje de contexto
-    '😂' // Emoji de reacción
+    "\u{2764}\u{FE0F}" // Emoji de reacción
 );
+
+
+"\u{1F44D}" // 👍 (Me gusta)
+"\u{1F44E}" // 👎 (No me gusta)
+"\u{1F525}" // 🔥 
+"\u{1F60D}" // 😍
+"\u{1F622}" // 😢
+"\u{1F389}" // 🎉
+"\u{1F680}" // 🚀
+"\u{2705}" // ✅
+"\u{274C}" // ❌
 ```
 
 
@@ -442,10 +456,58 @@ $message = Whatsapp::message()->sendLocationMessage(
     'Bogotá', // Nombre del lugar
     'Colombia' // Dirección
 );
+
+$message = Whatsapp::message()->sendLocationMessage(
+    phoneNumberId: $phone->phone_number_id,
+    countryCode: '57',
+    phoneNumber: '3137183308',
+    latitude: 19.4326077,  // Latitud
+    longitude: -99.133208, // Longitud
+    name: 'Ciudad de México',
+    address: 'Plaza de la Constitución'
+);
+```
+
+9. Mensajes con Botones Interactivos
+
+```php
+$message = Whatsapp::message()->sendInteractiveButtonsMessage(
+    phoneNumberId: $phone->phone_number_id,
+    countryCode: '57',
+    phoneNumber: '3136133508',
+    body: 'Selecciona una opción:',
+    buttons: [
+        ['id' => 'op1', 'title' => 'Opción 1'], // Máximo 3 botones
+        ['id' => 'op2', 'title' => 'Opción 2']
+    ],
+    footer: 'Footer opcional' // Texto secundario
+);
 ```
 
 
-9. Obtener todas las plantillas de una cuenta de whatsapp
+10. Listas Desplegables Interactivas
+
+```php
+$message = Whatsapp::message()->sendListMessage(
+    phoneNumberId: $phone->phone_number_id,
+    countryCode: '57',
+    phoneNumber: '3137181908',
+    buttonText: 'Ver opciones', // Máximo 20 caracteres
+    sections: [
+        [
+            'title' => 'Sección 1', // Encabezado de sección
+            'rows' => [
+                ['id' => 'row1', 'title' => 'Fila 1'], // Hasta 10 filas
+                ['id' => 'row2', 'title' => 'Fila 2']
+            ]
+        ]
+    ],
+    body: 'Selecciona de la lista:' // Texto principal
+);
+```
+
+
+11. Obtener todas las plantillas de una cuenta de whatsapp
 Se obtienen todas las plantillas de una cuenta de whatsapp y se almacenan en la base de datos.
 Se hace la peticion a la API de whatsapp para obtener todas las plantillas que estan asociadas a la cuenta de whatsapp.
 
