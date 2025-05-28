@@ -138,12 +138,13 @@ class StepBuilderService
         $this->validateStepConfiguration();
         
         return \DB::transaction(function () {
-            $this->saveStep();
+            $this->step->save();
+
             $this->saveMessages();
             $this->saveVariables();
             $this->saveTransitions();
             
-            return $this->step;
+            return $this->step->refresh();
         });
     }
 
@@ -202,8 +203,7 @@ class StepBuilderService
     private function saveMessages()
     {
         foreach ($this->messages as $message) {
-            StepMessage::create([
-                'flow_step_id' => $this->step->id,
+            $this->step->messages()->create([
                 'message_type' => $message['type'],
                 'content' => $message['content'] ?? json_encode($message['parameters']),
                 'order' => $message['order'],

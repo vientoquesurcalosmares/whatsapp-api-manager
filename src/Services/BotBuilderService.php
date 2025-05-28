@@ -29,7 +29,7 @@ class BotBuilderService
                 return $bot;
             });
         } catch (\Exception $e) {
-            Log::channel('bots')->error('Error creando bot', ['error' => $e->getMessage()]);
+            Log::channel('whatsapp')->error('Error creando bot', ['error' => $e->getMessage()]);
             throw $e;
         }
     }
