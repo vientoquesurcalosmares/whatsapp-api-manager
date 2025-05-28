@@ -19,18 +19,26 @@ class FlowStep extends Model
 
     protected $fillable = [
         'flow_id',
+        'name',
         'step_type',
         'validation_rules',
         'max_attempts',
         'retry_message',
+        'api_config',
         'failure_action',
         'failure_step_id',
         'is_terminal',
         'is_entry_point',
+        'order',
+        'failure_step_id', // Paso para reintentos
+        'variable_name',   // Variable a recolectar
+        'storage_scope'    // 'global' o 'step'
     ];
 
     protected $casts = [
-        'validation_rules' => 'array',
+        'step_type' => StepType::class,
+        'validation_rules' => 'json', // Mejor soporte para reglas
+        'api_config' => 'array',
         'is_terminal' => 'boolean',
     ];
 
@@ -50,29 +58,9 @@ class FlowStep extends Model
         return $this->hasMany(StepVariable::class, 'flow_step_id');
     }
 
-    public function getNextStep($input) {
-        // Evaluar conditions para determinar siguiente paso
-    }
-
-    // Si se requiere, se puede definir la relación con el siguiente paso
-    public function nextStep()
-    {
-        return $this->belongsTo(FlowStep::class, 'next_step_id', 'step_id');
-    }
-
     // Relación con Respuestas de usuario
     public function userResponses()
     {
         return $this->hasMany(UserResponse::class, 'flow_step_id', 'step_id');
-    }
-
-    // Validación para pasos terminales
-    protected static function booted()
-    {
-        static::saving(function ($step) {
-            if ($step->is_terminal && !is_null($step->next_step_id)) {
-                throw new \Exception('Un paso terminal no puede tener next_step_id');
-            }
-        });
     }
 }

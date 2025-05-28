@@ -68,12 +68,6 @@ class Flow extends Model
         return $this->hasMany(FlowStep::class, 'flow_id', 'flow_id');
     }
 
-    // Accesor para obtener el paso inicial dinámicamente
-    public function getInitialStepAttribute()
-    {
-        return $this->steps()->orderBy('order')->first();
-    }
-
     public function triggers()
     {
         return $this->hasMany(FlowTrigger::class, 'flow_id', 'flow_id');
@@ -82,10 +76,5 @@ class Flow extends Model
     public function variables()
     {
         return $this->hasMany(FlowVariable::class, 'flow_id', 'flow_id');
-    }
-
-    public function initialStep()
-    {
-        return $this->hasOne(FlowStep::class, 'flow_id')->orderBy('order');
     }
 }

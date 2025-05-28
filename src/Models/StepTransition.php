@@ -19,8 +19,16 @@ class StepTransition extends Model
     protected $keyType = 'ulid';
     public $incrementing = false;
 
+    protected $fillable = [
+        'from_step_id',
+        'to_step_id',
+        'condition_type',
+        'condition_config',
+        'priority'
+    ];
+
     protected $casts = [
-        'condition_config' => 'json',
+        'condition_config' => 'json', // Ej: {"variable":"edad","operator":">=","value":18}
     ];
 
     public function fromStep(): BelongsTo

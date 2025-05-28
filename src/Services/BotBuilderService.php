@@ -22,6 +22,7 @@ class BotBuilderService
                     'on_failure'       => $data['on_failure_action'] ?? 'assign_agent',
                     'failure_message' => $data['failure_message'] ?? null,
                     'is_enable'        => true,
+                    'bot_color'         => $this->getRandomBootstrapColor(),
                 ]);
                 
                 Log::channel('bots')->info('Bot creado', ['bot_id' => $bot->id]);
@@ -96,5 +97,14 @@ class BotBuilderService
 
         $bot->on_failure = $response;
         return $bot->save();
+    }
+
+    private function getRandomBootstrapColor(): string
+    {
+        $colors = [
+            'primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark'
+        ];
+        
+        return $colors[array_rand($colors)];
     }
 }
