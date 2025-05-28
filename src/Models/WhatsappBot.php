@@ -25,6 +25,8 @@ class WhatsappBot extends Model
         'is_enable',
         'on_failure',
         'failure_message',
+        'bot_color',
+        'mark_messages_as_read'
     ];
 
     public function phoneNumber()

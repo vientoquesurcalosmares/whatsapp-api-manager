@@ -28,6 +28,8 @@ return new class extends Migration
             $table->enum('on_failure', ['assign_agent', 'notify', 'restart_flow'])
                     ->default('assign_agent'); // Acción si falla el flujo
             $table->text('failure_message')->nullable();
+            $table->string('bot_color', 50)->nullable();
+            $table->boolean('mark_messages_as_read')->default(true);
             $table->timestamps();
             $table->softDeletes();
 
