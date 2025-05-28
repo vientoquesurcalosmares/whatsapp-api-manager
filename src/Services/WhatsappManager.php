@@ -2,6 +2,8 @@
 
 namespace ScriptDevelop\WhatsappManager\Services;
 
+use ScriptDevelop\WhatsappManager\Models\Flow;
+
 /**
  * Clase principal para gestionar los servicios de WhatsApp.
  * Proporciona acceso a los servicios relacionados con números de teléfono, mensajes y cuentas empresariales.
@@ -51,5 +53,16 @@ class WhatsappManager
     public function flow()
     {
         return app('whatsapp.flow');
+    }
+
+    /**
+     * Obtiene el servicio de construcción de pasos para un flujo específico.
+     *
+     * @param Flow $flow Instancia del flujo
+     * @return StepBuilderService
+     */
+    public function step(Flow $flow)
+    {
+        return app('whatsapp.step', ['flow' => $flow]);
     }
 }

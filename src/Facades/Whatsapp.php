@@ -3,6 +3,7 @@
 namespace ScriptDevelop\WhatsappManager\Facades;
 
 use Illuminate\Support\Facades\Facade;
+use ScriptDevelop\WhatsappManager\Models\Flow;
 
 /**
  * @method static \ScriptDevelop\WhatsappManager\Services\AccountRegistrationService account()
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \ScriptDevelop\WhatsappManager\Services\TemplateService template()
  * @method static \ScriptDevelop\WhatsappManager\Services\BotBuilderService bot()
  * @method static \ScriptDevelop\WhatsappManager\Services\FlowBuilderService flow()
+ * @method static \ScriptDevelop\WhatsappManager\Services\StepBuilderService step(Flow $flow)
  * @method static mixed getBusinessAccount(string $whatsappBusinessId)
  * @method static array getPhoneNumbers(string $whatsappBusinessId)
  * @method static array getPhoneNumberDetails(string $phoneNumberId)
@@ -74,5 +76,13 @@ class Whatsapp extends Facade
     public static function flow()
     {
         return app('whatsapp.flow');
+    }
+
+    /**
+     * Get the step builder service instance.
+     */
+    public static function step(Flow $flow)
+    {
+        return app('whatsapp.step', ['flow' => $flow]);
     }
 }

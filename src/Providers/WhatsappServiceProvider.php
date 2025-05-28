@@ -11,7 +11,9 @@ use ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel;
 use ScriptDevelop\WhatsappManager\Services\BotBuilderService;
 use ScriptDevelop\WhatsappManager\Services\FlowBuilderService;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
+use ScriptDevelop\WhatsappManager\Services\StepBuilderService;
 use ScriptDevelop\WhatsappManager\Services\TemplateService;
+use ScriptDevelop\WhatsappManager\Models\Flow;
 
 use Illuminate\Support\Facades\Artisan;
 
@@ -72,6 +74,17 @@ class WhatsappServiceProvider extends ServiceProvider
         // Registrar el FlowBuilderService
         $this->app->singleton('whatsapp.flow', function ($app) {
             return new FlowBuilderService();
+        });
+
+        // Registrar el StepBuilderService
+        $this->app->bind('whatsapp.step', function ($app, $parameters) {
+            $flow = $parameters['flow'] ?? null;
+            
+            if (!$flow instanceof Flow) {
+                throw new \InvalidArgumentException('Se requiere una instancia válida de Flow');
+            }
+            
+            return new StepBuilderService($flow);
         });
     }
 
