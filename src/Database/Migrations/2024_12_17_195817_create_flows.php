@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('flows', function (Blueprint $table) {
             $table->ulid('flow_id')->primary();
-            $table->string('name'); // Nombre interno del flujo
+            $table->string('name', 200); // Nombre interno del flujo
             $table->text('description')->nullable();
             $table->enum('type', ['inbound','outbound', 'hybrid'])->default('inbound'); // Tipo de flujo: inbound, outbound o híbrido
             $table->enum('trigger_mode', ['any', 'all']);

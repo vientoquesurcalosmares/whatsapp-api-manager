@@ -32,7 +32,7 @@ class StepBuilderService
     public function createStep(string $name, StepType $type, ?string $description = null): self
     {
         $this->step = new FlowStep([
-            'flow_id' => $this->flow->id,
+            'flow_id' => $this->flow->flow_id,
             'name' => $name,
             'step_type' => $type,
             'description' => $description,
@@ -238,6 +238,6 @@ class StepBuilderService
 
     private function getNextOrder(): int
     {
-        return FlowStep::where('flow_id', $this->flow->id)->max('order') + 1;
+        return FlowStep::where('flow_id', $this->flow->flow_id)->max('order') + 1;
     }
 }
