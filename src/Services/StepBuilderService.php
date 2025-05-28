@@ -216,7 +216,7 @@ class StepBuilderService
     {
         foreach ($this->variables as $variable) {
             StepVariable::create([
-                'flow_step_id' => $this->step->id,
+                'flow_step_id' => $this->step->step_id,
                 'name' => $variable['name'],
                 'type' => $variable['type'],
                 'storage_scope' => $variable['storageScope'],
@@ -229,7 +229,7 @@ class StepBuilderService
     {
         foreach ($this->transitions as $transition) {
             StepTransition::create([
-                'from_step_id' => $this->step->id,
+                'from_step_id' => $this->step->step_id,
                 'to_step_id' => $transition['target_step_id'],
                 'condition_config' => $transition['condition'] ?? null
             ]);

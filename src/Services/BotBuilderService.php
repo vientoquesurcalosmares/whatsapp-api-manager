@@ -25,7 +25,7 @@ class BotBuilderService
                     'bot_color'         => $this->getRandomBootstrapColor(),
                 ]);
                 
-                Log::channel('bots')->info('Bot creado', ['bot_id' => $bot->id]);
+                Log::channel('whatsapp')->info('Bot creado', ['bot_id' => $bot->id]);
                 return $bot;
             });
         } catch (\Exception $e) {
