@@ -322,6 +322,11 @@ $message = Whatsapp::message()->sendTextMessage(
 );
 ```
 
+## Marcar mensaje como leido
+Se encarga de marcar el mensaje recibido como leido, con los dos checks azules.
+```php
+$message = Whatsapp::message()->markMessageAsRead('01JW939646VBZTS7JEJN21FGVE');
+```
 
 ## 5. Enviar Respuestas a Mensajes
 Responde a un mensaje existente.
