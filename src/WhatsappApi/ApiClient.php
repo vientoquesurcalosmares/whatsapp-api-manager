@@ -85,11 +85,11 @@ class ApiClient
                 ], $headers),
             ];
 
-            Log::channel('whatsapp')->info('Enviando solicitud a la API de WhatsApp.', [
-                'method' => $method,
-                'url' => $url,
-                'headers' => $options['headers'], 
-            ]);
+            // Log::channel('whatsapp')->info('Enviando solicitud a la API de WhatsApp.', [
+            //     'method' => $method,
+            //     'url' => $url,
+            //     'headers' => $options['headers'], 
+            // ]);
             
             // Manejar datos según el tipo
             if (isset($data['multipart'])) {
