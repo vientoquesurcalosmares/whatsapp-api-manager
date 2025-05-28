@@ -240,6 +240,7 @@ class WhatsappWebhookController extends Controller
             'message_type' => 'TEXT',
             'message_content' => $textContent,
             'json_content' => json_encode($message),
+            'status' => 'received'
         ]);
 
         Log::channel('whatsapp')->info('Text message processed and saved.', [
@@ -299,6 +300,7 @@ class WhatsappWebhookController extends Controller
             'message_type' => strtoupper($message['type']),
             'message_content' => $caption,
             'json_content' => json_encode($message),
+            'status' => 'received'
         ]);
 
         // Crear el registro del archivo multimedia en la base de datos
