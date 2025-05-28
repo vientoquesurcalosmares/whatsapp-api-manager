@@ -16,6 +16,7 @@ return new class extends Migration
         Schema::create('flow_steps', function (Blueprint $table) {
             $table->ulid('step_id')->primary();
             $table->ulid('flow_id');
+            $table->unsignedInteger('order')->default(0);
             $table->enum('step_type', ['message_sequence','open_question','closed_question','conditional','terminal','api_call']);
 
             $table->json('validation_rules')->nullable(); // Reglas de validación {type: 'email', regex: '/.../', etc}

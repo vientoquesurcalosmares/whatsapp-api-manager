@@ -19,6 +19,7 @@ class FlowStep extends Model
 
     protected $fillable = [
         'flow_id',
+        'order',
         'name',
         'step_type',
         'validation_rules',
@@ -29,7 +30,6 @@ class FlowStep extends Model
         'failure_step_id',
         'is_terminal',
         'is_entry_point',
-        'order',
         'failure_step_id', // Paso para reintentos
         'variable_name',   // Variable a recolectar
         'storage_scope'    // 'global' o 'step'
