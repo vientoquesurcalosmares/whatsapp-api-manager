@@ -84,7 +84,8 @@ class WhatsappWebhookController extends Controller
     protected function handleIncomingMessage(array $message, ?array $contact, ?array $metadata): void
     {
         $messageType = $message['type'] ?? '';
-        $textContent = null;
+        
+        $messageRecord = null;
 
         $textContent = null;
 
@@ -140,12 +141,14 @@ class WhatsappWebhookController extends Controller
 
         // Manejar mensajes de texto
         if ($messageType === 'text') {
-            $textContent = $this->processTextMessage($message, $contactRecord, $whatsappPhone);
+            $messageRecord = $this->processTextMessage($message, $contactRecord, $whatsappPhone);
+            $textContent = $messageRecord->message_content ?? null;
         }
 
         // Manejar mensajes interactivos (botones, listas)
         if ($messageType === 'interactive') {
-            $textContent = $this->processInteractiveMessage($message, $contactRecord, $whatsappPhone);
+            $messageRecord = $this->processInteractiveMessage($message, $contactRecord, $whatsappPhone);
+            $textContent = $messageRecord->message_content ?? null;
         }
 
         // Manejar mensajes de media
@@ -165,7 +168,7 @@ class WhatsappWebhookController extends Controller
         ]);
 
         // Si tenemos contenido de texto, procesar el flujo
-        if ($textContent) {
+        if ($textContent && $messageRecord) {
             try {
                 $bot = $whatsappPhone->bots()->where('is_enable', true)->first();
                 
@@ -178,6 +181,8 @@ class WhatsappWebhookController extends Controller
                 $session = $sessionManager->getOrCreateSession($contactRecord, $bot);
                 
                 $flowId = $this->determineFlow($bot, $textContent, $contactRecord);
+
+                $messageId = $messageRecord->message_id;
                 
                 if ($flowId) {
                     // Si es una nueva sesión o el flujo ha cambiado
@@ -189,7 +194,7 @@ class WhatsappWebhookController extends Controller
                         ]);
                     }
                     
-                    $this->processFlowStep($session, $textContent);
+                    $this->processFlowStep($session, $textContent, $messageRecord->message_id);
                 } else {
                     Log::channel('whatsapp')->warning('Flujo no determinado', ['text' => $textContent]);
                     $this->handleUnrecognizedMessage($whatsappPhone, $contactRecord);
@@ -202,7 +207,7 @@ class WhatsappWebhookController extends Controller
         }
     }
 
-    protected function processTextMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?string
+    protected function processTextMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?Message
     {
         $textContent = $message['text']['body'] ?? null;
 
@@ -238,10 +243,10 @@ class WhatsappWebhookController extends Controller
             'content' => $textContent,
         ]);
 
-        return $textContent; // Retorna el contenido
+        return $messageRecord;
     }
 
-    protected function processInteractiveMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?string
+    protected function processInteractiveMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?Message
     {
         $interactiveType = $message['interactive']['type'] ?? '';
         $textContent = null;
@@ -278,7 +283,7 @@ class WhatsappWebhookController extends Controller
             'content' => $textContent,
         ]);
 
-        return $textContent;
+        return $messageRecord; 
     }
 
     protected function processMediaMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
@@ -490,8 +495,12 @@ class WhatsappWebhookController extends Controller
 
     protected function determineFlow(WhatsappBot $bot, string $text, Contact $contact): ?string
     {
-        // 1. Buscar flujo por palabra clave
-        foreach ($bot->flows as $flow) {
+        // 1. Buscar flujo por palabra clave - CON EAGER LOADING
+        $flows = $bot->flows()
+            ->with(['triggers.triggerable']) // ¡Relaciones críticas!
+            ->get();
+
+        foreach ($flows as $flow) {
             if ($flow->matchesTrigger($text)) {
                 return $flow->flow_id;
             }
@@ -499,7 +508,7 @@ class WhatsappWebhookController extends Controller
         
         // 2. Si hay sesión previa, continuar con el mismo flujo
         $lastSession = ChatSession::where('contact_id', $contact->contact_id)
-            ->where('whatsapp_bot_id', $bot->whatsapp_bot_id)
+            ->where('assigned_bot_id', $bot->whatsapp_bot_id)
             ->latest()
             ->first();
             
@@ -511,7 +520,11 @@ class WhatsappWebhookController extends Controller
         return $bot->default_flow_id;
     }
 
-    protected function processFlowStep(ChatSession $session, string $userInput): void
+    protected function processFlowStep(
+        ChatSession $session, 
+        string $userInput,
+        string $messageId
+    ): void
     {
         // Obtener el paso actual o el inicial
         // $currentStep = $session->currentStep ?? $session->flow->entryPointStep;
@@ -525,7 +538,7 @@ class WhatsappWebhookController extends Controller
         }
 
         // Guardar respuesta del usuario
-        $this->saveUserResponse($session, $currentStep, $userInput);
+        $this->saveUserResponse($session, $currentStep, $userInput, $messageId);
 
         // Determinar siguiente paso
         $nextStep = $this->determineNextStep($currentStep, $userInput, $session);
@@ -544,13 +557,19 @@ class WhatsappWebhookController extends Controller
         }
     }
 
-    private function saveUserResponse(ChatSession $session, FlowStep $step, string $response): void
-    {
+    private function saveUserResponse(
+        ChatSession $session, 
+        FlowStep $step, 
+        string $response,
+        string $messageId
+    ): void {
         UserResponse::create([
             'session_id' => $session->session_id,
             'flow_step_id' => $step->step_id,
-            'response_value' => $response,
-            'response_timestamp' => now()
+            'message_id' => $messageId, // ID del mensaje recibido
+            'field_name' => $step->variable_name, // Asumiendo que el paso tiene un nombre de variable
+            'field_value' => $response, // Nombre de campo corregido
+            'contact_id' => $session->contact_id, // Contacto obtenido de la sesión
         ]);
     }
 
