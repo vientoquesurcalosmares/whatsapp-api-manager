@@ -31,4 +31,10 @@ class TemplateTrigger extends Model
     {
         return $this->morphOne(FlowTrigger::class, 'triggerable');
     }
+
+    public function matches(string $text): bool
+    {
+        // Los triggers de plantilla generalmente no se aplican a mensajes entrantes
+        return false;
+    }
 }

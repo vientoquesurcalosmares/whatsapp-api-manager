@@ -82,4 +82,35 @@ class Flow extends Model
     {
         return $this->belongsTo(FlowStep::class, 'entry_point_id');
     }
+
+    public function matchesTrigger(string $text): bool
+    {
+        // Verificar si la relación está cargada
+        if (!$this->relationLoaded('triggers') || !$this->triggers->count()) {
+            return false;
+        }
+
+        foreach ($this->triggers as $trigger) {
+            // Asegurar que la relación polimórfica está cargada
+            if (!$trigger->relationLoaded('triggerable')) {
+                continue;
+            }
+
+            $triggerable = $trigger->triggerable;
+            
+            if ($triggerable instanceof KeywordTrigger) {
+                if ($triggerable->matches($text)) {
+                    return true;
+                }
+            } elseif ($triggerable instanceof RegexTrigger) {
+                if ($triggerable->matches($text)) {
+                    return true;
+                }
+            } elseif ($triggerable instanceof TemplateTrigger) {
+                // Lógica para plantillas (si aplica)
+            }
+        }
+        
+        return false;
+    }
 }
