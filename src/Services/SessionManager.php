@@ -98,9 +98,15 @@ class SessionManager {
     /**
      * Valida que el flujo tenga paso inicial
      */
-    private function validateInitialStep(Flow $flow): void {
+    private function validateInitialStep(Flow $flow): void 
+    {
         if (!$flow->initialStep) {
-            throw new \RuntimeException("Flow {$flow->flow_id} has no initial step");
+            throw new \RuntimeException("Flujo sin paso inicial");
+        }
+
+        // Validar que el paso tenga variables si es necesario
+        if ($flow->initialStep->step_type === 'open_question' && $flow->initialStep->variables->isEmpty()) {
+            throw new \RuntimeException("El paso inicial requiere variables definidas");
         }
     }
 }

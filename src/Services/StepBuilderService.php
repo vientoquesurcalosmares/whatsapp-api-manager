@@ -84,7 +84,12 @@ class StepBuilderService
         string $storageScope = 'global',
         array $validation = []
     ): self {
-        $this->variables[] = compact('name', 'type', 'storageScope', 'validation');
+        $this->variables[] = [
+            'name' => $name, // Asegurar nombre válido
+            'type' => $type,
+            'storageScope' => $storageScope,
+            'validation' => $validation
+        ];
         return $this;
     }
 
