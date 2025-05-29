@@ -22,6 +22,7 @@ use ScriptDevelop\WhatsappManager\Models\WhatsappBot;
 use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
 use ScriptDevelop\WhatsappManager\Models\MediaFile;
+use ScriptDevelop\WhatsappManager\Enums\StepType;
 
 class WhatsappWebhookController extends Controller
 {
@@ -83,6 +84,7 @@ class WhatsappWebhookController extends Controller
     protected function handleIncomingMessage(array $message, ?array $contact, ?array $metadata): void
     {
         $messageType = $message['type'] ?? '';
+        $textContent = null;
 
         $textContent = null;
 
@@ -141,6 +143,11 @@ class WhatsappWebhookController extends Controller
             $textContent = $this->processTextMessage($message, $contactRecord, $whatsappPhone);
         }
 
+        // Manejar mensajes interactivos (botones, listas)
+        if ($messageType === 'interactive') {
+            $textContent = $this->processInteractiveMessage($message, $contactRecord, $whatsappPhone);
+        }
+
         // Manejar mensajes de media
         if (in_array($messageType, ['image', 'audio', 'video', 'document'])) {
             $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
@@ -157,59 +164,41 @@ class WhatsappWebhookController extends Controller
             'Text Content' => $textContent,
         ]);
 
-
-
-        try {
-            $bot = $whatsappPhone->bots()->where('is_enable', true)->first();
-            
-            if (!$bot) {
-                Log::channel('whatsapp')->warning('Bot inactivo o no encontrado');
-                return;
-            }
-
-            // Siempre crear/obtener sesión aunque no haya flujo
-            $session = app(SessionManager::class)->getOrCreateSession(
-                $contactRecord,
-                $bot
-            );
-
-        } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error gestionando sesión: '.$e->getMessage());
-            return;
-        }
-
-
-
-        // Solo procesar flujos si es un mensaje de texto válido
+        // Si tenemos contenido de texto, procesar el flujo
         if ($textContent) {
             try {
-                $flowId = $this->determineFlow($bot, $textContent);
-
-                if ($flowId) {
-                    $session->update(['flow_id' => $flowId]);
-
-                    $this->processFlowStep($session, $textContent);
-
-                    Log::channel('whatsapp')->info('Flow step processed.', [
-                        'bot_id' => $bot->bot_name,
-                        'session_id' => $session->session_id,
-                        'current_step' => $session->currentStep->step_id,
-                        'flow_status' => $session->flow_status,
-                    ]);
-                } else {
-                    // Lógica para mensajes no reconocidos
-                    Log::channel('whatsapp')->warning('Flujo no determinado', [
-                        'text' => $textContent
-                    ]);
-                    $this->handleUnrecognizedMessage($session);
+                $bot = $whatsappPhone->bots()->where('is_enable', true)->first();
+                
+                if (!$bot) {
+                    Log::channel('whatsapp')->warning('Bot inactivo o no encontrado');
+                    return;
                 }
 
+                $sessionManager = app(SessionManager::class);
+                $session = $sessionManager->getOrCreateSession($contactRecord, $bot);
+                
+                $flowId = $this->determineFlow($bot, $textContent, $contactRecord);
+                
+                if ($flowId) {
+                    // Si es una nueva sesión o el flujo ha cambiado
+                    if (!$session->flow_id || $session->flow_id !== $flowId) {
+                        $session->update([
+                            'flow_id' => $flowId,
+                            'current_step_id' => null,
+                            'flow_status' => 'in_progress'
+                        ]);
+                    }
+                    
+                    $this->processFlowStep($session, $textContent);
+                } else {
+                    Log::channel('whatsapp')->warning('Flujo no determinado', ['text' => $textContent]);
+                    $this->handleUnrecognizedMessage($whatsappPhone, $contactRecord);
+                }
+                
             } catch (\Exception $e) {
                 Log::channel('whatsapp')->error('Error en flujo: '.$e->getMessage());
                 $this->sendErrorFallbackMessage($whatsappPhone, $contactRecord);
             }
-
-            
         }
     }
 
@@ -250,6 +239,46 @@ class WhatsappWebhookController extends Controller
         ]);
 
         return $textContent; // Retorna el contenido
+    }
+
+    protected function processInteractiveMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?string
+    {
+        $interactiveType = $message['interactive']['type'] ?? '';
+        $textContent = null;
+
+        if ($interactiveType === 'button_reply') {
+            $textContent = $message['interactive']['button_reply']['title'] ?? null;
+        } else if ($interactiveType === 'list_reply') {
+            $textContent = $message['interactive']['list_reply']['title'] ?? null;
+        }
+
+        if (!$textContent) {
+            Log::channel('whatsapp')->warning('No se pudo extraer contenido del mensaje interactivo.', $message);
+            return null;
+        }
+
+        // Guardar el mensaje en la base de datos como tipo INTERACTIVE
+        $messageRecord = Message::create([
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'wa_id' => $message['id'],
+            'conversation_id' => null,
+            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+            'message_from' => $message['from'],
+            'message_to' => $whatsappPhone->display_phone_number,
+            'message_type' => strtoupper($message['type']),
+            'message_content' => $textContent,
+            'json_content' => json_encode($message),
+            'status' => 'received'
+        ]);
+
+        Log::channel('whatsapp')->info('Mensaje interactivo procesado y guardado.', [
+            'message_id' => $messageRecord->message_id,
+            'wa_id' => $message['id'],
+            'content' => $textContent,
+        ]);
+
+        return $textContent;
     }
 
     protected function processMediaMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
@@ -459,161 +488,229 @@ class WhatsappWebhookController extends Controller
         }
     }
 
-    protected function processFlowStep(
-        ChatSession $session,
-        string $messageContent
-    ): void {
-        try {
-            $currentStep = $session->currentStep ?? $session->flow->initialStep;
-            
-            if (!$currentStep) {
-                throw new \RuntimeException("No initial step defined for flow");
-            }
-
-            // Guardar respuesta si es paso de entrada
-            if ($currentStep->type === 'input') {
-                $this->saveUserResponse($session, $currentStep, $messageContent);
-            }
-
-            // Determinar siguiente paso
-            $nextStep = $this->determineNextStep($currentStep, $messageContent);
-            
-            // Actualizar sesión
-            $session->update([
-                'current_step_id' => $nextStep?->step_id,
-                'flow_status' => $nextStep ? 'in_progress' : 'completed'
-            ]);
-
-            Log::channel('whatsapp')->info('Flujo procesado', [
-                'session_id' => $session->session_id,
-                'session_contact' => $session->contact->contact_id,
-                'current_step' => $currentStep->step_id,
-                'next_step' => $nextStep?->step_id,
-                'flow_status' => $session->flow_status
-            ]);
-
-            // Enviar respuesta automática
-            if ($currentStep->type == 'message') {
-                $this->sendStepResponse($currentStep, $session->contact);
-            }
-
-        } catch (\Exception $e) {
-            Log::channel('whatsapp')->error("Error processing flow step", [
-                'session' => $session->id,
-                'error' => $e->getMessage()
-            ]);
-            $session->update(['flow_status' => 'failed']);
-        }
-    }
-
-    private function determineNextStep(
-        ?FlowStep $currentStep,
-        string $userInput
-    ): ?FlowStep {
-        if (!$currentStep) return null;
-
-        // 1. Verificar si es paso terminal
-        if ($currentStep->is_terminal) return null;
-
-        // 2. Lógica de menús/buttons
-        // if ($currentStep->type === 'menu') {
-        //     return $this->handleMenuTransition($currentStep, $userInput);
-        // }
-
-        if ($currentStep->next_step_id) {
-            $nextStep = FlowStep::find($currentStep->next_step_id);
-            return $nextStep ?: null;
-        }
-
-        // 3. Transición lineal
-        // return $currentStep->nextStep ?? $currentStep->flow->steps()
-        //     ->where('order', '>', $currentStep->order)
-        //     ->orderBy('order')
-        //     ->first();
-
-        return $currentStep->flow->steps()
-            ->where('order', '>', $currentStep->order)
-            ->orderBy('order')
-            ->first();
-    }
-
-    private function handleMenuTransition(FlowStep $step, string $input): ?FlowStep {
-        $selectedOption = collect($step->content['options'])
-            ->first(fn($o) => $o['label'] === $input || $o['value'] === $input);
-
-        return $selectedOption
-            ? FlowStep::find($selectedOption['next_step_id'])
-            : $step->flow->failure_step;
-    }
-
-    protected function determineFlow(WhatsappBot $bot, string $text): ?string
+    protected function determineFlow(WhatsappBot $bot, string $text, Contact $contact): ?string
     {
+        // 1. Buscar flujo por palabra clave
         foreach ($bot->flows as $flow) {
             if ($flow->matchesTrigger($text)) {
                 return $flow->flow_id;
             }
         }
         
-        // A. Validar existencia del flujo por defecto
-        if (!$bot->default_flow_id) {
-            Log::channel('whatsapp')->error('Flujo por defecto no configurado para el bot', [
-                'bot' => $bot->bot_name
-            ]);
-            return null;
+        // 2. Si hay sesión previa, continuar con el mismo flujo
+        $lastSession = ChatSession::where('contact_id', $contact->contact_id)
+            ->where('whatsapp_bot_id', $bot->whatsapp_bot_id)
+            ->latest()
+            ->first();
+            
+        if ($lastSession && $lastSession->flow_status !== 'completed') {
+            return $lastSession->flow_id;
         }
         
-        // B. Verificar que el flujo exista
-        $defaultFlowExists = Flow::where('flow_id', $bot->default_flow_id)->exists();
-        if (!$defaultFlowExists) {
-            Log::channel('whatsapp')->error('Flujo por defecto no existe', [
-                'flow_id' => $bot->default_flow_id
-            ]);
-            return null;
-        }
-        
+        // 3. Usar flujo por defecto
         return $bot->default_flow_id;
     }
 
-    /**
-     * Envía respuesta según tipo de paso
-     */
-    private function sendStepResponse(FlowStep $step, Contact $contact): void
+    protected function processFlowStep(ChatSession $session, string $userInput): void
     {
-
-        Log::channel('whatsapp')->debug('Enviando respuesta', [
-            'step_id' => $step->step_id,
-            'content' => $step->content, // Verifica que el texto esté aquí
-            'contact' => $contact->contact_id,
-        ]);
+        // Obtener el paso actual o el inicial
+        $currentStep = $session->currentStep ?? $session->flow->entryPointStep;
         
-        $service = app(MessageDispatcherService::class);
-        $phoneNumber = $step->flow->bots()->first()?->phoneNumber;
-
-        Log::channel('whatsapp')->debug('Número de teléfono del bot', [
-            'phone_number' => $phoneNumber,
-        ]);
-
-        if (!$phoneNumber) {
-            Log::channel('whatsapp')->error('No se encontró número de teléfono asociado al bot');
+        if (!$currentStep) {
+            Log::channel('whatsapp')->error('No hay paso inicial definido para el flujo', [
+                'flow_id' => $session->flow_id
+            ]);
             return;
         }
 
-        Log::channel('whatsapp')->info('Enviando respuesta de paso', [
-            'step' => $step->step_id,
-            'message' => $step->content['text'],
-            'contact' => $contact->contact_id,
-            'phone_number' => $contact->phone_number,
-            'country_code' => $contact->country_code,
-        ]);
+        // Guardar respuesta del usuario
+        $this->saveUserResponse($session, $currentStep, $userInput);
 
-        $service->sendTextMessage(
-            $phoneNumber->phone_number_id, // phoneNumberId
-            $contact->country_code,                  // countryCode
-            $contact->phone_number,                // phoneNumber
-            $step->content['text'],        // text
-            false                          // previewUrl
-        );
+        // Determinar siguiente paso
+        $nextStep = $this->determineNextStep($currentStep, $userInput, $session);
+
+        // Actualizar sesión
+        $updateData = [
+            'current_step_id' => $nextStep?->step_id,
+            'flow_status' => $nextStep ? 'in_progress' : 'completed'
+        ];
+        
+        $session->update($updateData);
+
+        // Enviar respuesta del siguiente paso si existe
+        if ($nextStep) {
+            $this->sendStepResponse($nextStep, $session->contact, $session->bot->phoneNumber);
+        }
     }
+
+    private function saveUserResponse(ChatSession $session, FlowStep $step, string $response): void
+    {
+        UserResponse::create([
+            'session_id' => $session->session_id,
+            'flow_step_id' => $step->step_id,
+            'response_value' => $response,
+            'response_timestamp' => now()
+        ]);
+    }
+
+    private function determineNextStep(FlowStep $currentStep, string $userInput, ChatSession $session): ?FlowStep
+    {
+        // 1. Si es paso terminal, no hay siguiente paso
+        if ($currentStep->is_terminal) {
+            return null;
+        }
+
+        // 2. Buscar transiciones condicionales
+        foreach ($currentStep->transitions as $transition) {
+            if ($this->evaluateCondition($transition, $userInput, $session)) {
+                return $transition->toStep;
+            }
+        }
+
+        // 3. Transición directa por orden
+        return $currentStep->flow->steps()
+            ->where('order', '>', $currentStep->order)
+            ->orderBy('order')
+            ->first();
+    }
+
+    private function evaluateCondition($transition, string $userInput, ChatSession $session): bool
+    {
+        $config = $transition->condition_config;
+        
+        if (!$config || empty($config)) {
+            return true; // Transición incondicional
+        }
+        
+        switch ($config['type'] ?? null) {
+            case 'variable_value':
+                $variable = $this->getVariableValue($config['variable'], $session);
+                return $this->compareValues($variable, $config['operator'], $config['value']);
+                
+            case 'text_match':
+                return $userInput === $config['value'];
+                
+            case 'regex':
+                return preg_match($config['pattern'], $userInput) === 1;
+                
+            default:
+                return false;
+        }
+    }
+
+    private function sendStepResponse(FlowStep $step, Contact $contact, WhatsappPhoneNumber $phoneNumber): void
+    {
+        $service = app(MessageDispatcherService::class);
+        
+        foreach ($step->messages as $message) {
+            switch ($message->message_type) {
+                case 'text':
+                    $this->sendTextMessage($message, $contact, $phoneNumber);
+                    break;
+                    
+                case 'interactive_buttons':
+                case 'interactive_list':
+                    $this->sendInteractiveResponse($message, $contact, $phoneNumber);
+                    break;
+                    
+                default:
+                    $content = $this->getMessageContent($message);
+                    $service->sendTextMessage(
+                        $phoneNumber->phone_number_id,
+                        $contact->country_code,
+                        $contact->phone_number,
+                        $content,
+                        false
+                    );
+            }
+            
+            // Respeta el retraso entre mensajes
+            if ($message->delay_seconds > 0) {
+                sleep($message->delay_seconds);
+            }
+        }
+    }
+
+    private function getVariableValue(string $variableName, ChatSession $session)
+    {
+        // Buscar la variable en las respuestas guardadas
+        $response = UserResponse::where('session_id', $session->session_id)
+            ->whereHas('step', function($query) use ($variableName) {
+                $query->where('variable_name', $variableName);
+            })
+            ->latest()
+            ->first();
+            
+        return $response ? $response->response_value : null;
+    }
+
+    private function getMessageContent($message): string
+    {
+        if ($message->message_type === 'text') {
+            return $message->content;
+        }
+        
+        // Para mensajes interactivos, usa el cuerpo principal
+        $data = json_decode($message->content, true);
+        return $data['body'] ?? 'Mensaje no disponible';
+    }
+
+    private function compareValues($value1, string $operator, $value2): bool
+    {
+        try {
+            switch ($operator) {
+                case '==': return $value1 == $value2;
+                case '!=': return $value1 != $value2;
+                case '>': return $value1 > $value2;
+                case '<': return $value1 < $value2;
+                case '>=': return $value1 >= $value2;
+                case '<=': return $value1 <= $value2;
+                case 'contains': return stripos($value1, $value2) !== false;
+                default: return false;
+            }
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error("Error comparando valores: {$e->getMessage()}", [
+                'value1' => $value1,
+                'operator' => $operator,
+                'value2' => $value2
+            ]);
+            return false;
+        }
+    }
+
+    private function sendInteractiveResponse($message, Contact $contact, WhatsappPhoneNumber $phoneNumber): void
+    {
+        $service = app(MessageDispatcherService::class);
+        $data = json_decode($message->content, true);
+        
+        if ($message->message_type === 'interactive_buttons') {
+            // $service->sendButtonMessage(
+            @$service->sendInteractiveButtonsMessage(
+                $phoneNumber->phone_number_id,
+                $contact->country_code,
+                $contact->phone_number,
+                $data['body'],
+                $data['buttons'],
+                $data['footer'] ?? null
+            );
+        } elseif ($message->message_type === 'interactive_list') {
+            $service->sendListMessage(
+                $phoneNumber->phone_number_id,
+                $contact->country_code,
+                $contact->phone_number,
+                $data['body'],
+                $data['sections'],
+                $data['button'] ?? 'Ver opciones',
+                $data['footer'] ?? null
+            );
+        }
+    }
+
+    private function handleUnrecognizedMessage(WhatsappPhoneNumber $whatsappPhone, Contact $contact): void
+    {
+        $this->sendDefaultFallbackMessage($whatsappPhone, $contact);
+    }
+
 
     private function sendDefaultFallbackMessage($whatsappPhone, $contact): void
     {
