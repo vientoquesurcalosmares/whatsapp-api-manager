@@ -716,7 +716,7 @@ class WhatsappWebhookController extends Controller
     {
         try {
             $service = app(MessageDispatcherService::class);
-            [$countryCode, $number] = $this->splitPhoneNumber($contact->full_phone);
+            [$countryCode, $number] = $this->splitPhoneNumber($contact->wa_id);
             
             $service->sendTextMessage(
                 $whatsappPhone->phone_number_id,

@@ -39,6 +39,12 @@ class StepBuilderService
             'order' => $this->getNextOrder()
         ]);
 
+        // Resetear propiedades para evitar duplicados
+        $this->messages = [];
+        $this->transitions = [];
+        $this->variables = [];
+        $this->validationRules = [];
+
         return $this;
     }
 
@@ -209,12 +215,21 @@ class StepBuilderService
     private function saveMessages()
     {
         foreach ($this->messages as $message) {
-            $this->step->messages()->create([
+            // Verificar si el mensaje ya existe (opcional, depende del diseño)
+            $exists = $this->step->messages()->where([
                 'message_type' => $message['type'],
                 'content' => $message['content'] ?? json_encode($message['parameters']),
-                'order' => $message['order'],
-                'delay_seconds' => $message['delay'] ?? 0
-            ]);
+                'order' => $message['order']
+            ])->exists();
+
+            if (!$exists) {
+                $$this->step->messages()->create([
+                    'message_type' => $message['type'],
+                    'content' => $message['content'] ?? json_encode($message['parameters']),
+                    'order' => $message['order'],
+                    'delay_seconds' => $message['delay'] ?? 0
+                ]);
+            }
         }
     }
 
