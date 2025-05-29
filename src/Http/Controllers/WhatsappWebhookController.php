@@ -514,7 +514,8 @@ class WhatsappWebhookController extends Controller
     protected function processFlowStep(ChatSession $session, string $userInput): void
     {
         // Obtener el paso actual o el inicial
-        $currentStep = $session->currentStep ?? $session->flow->entryPointStep;
+        // $currentStep = $session->currentStep ?? $session->flow->entryPointStep;
+        $currentStep = $session->currentStep ?? $session->flow->initialStep;
         
         if (!$currentStep) {
             Log::channel('whatsapp')->error('No hay paso inicial definido para el flujo', [

@@ -77,4 +77,9 @@ class Flow extends Model
     {
         return $this->hasMany(FlowVariable::class, 'flow_id', 'flow_id');
     }
+
+    public function initialStep()
+    {
+        return $this->belongsTo(FlowStep::class, 'entry_point_id');
+    }
 }

@@ -223,7 +223,7 @@ class StepBuilderService
             ])->exists();
 
             if (!$exists) {
-                $$this->step->messages()->create([
+                $this->step->messages()->create([
                     'message_type' => $message['type'],
                     'content' => $message['content'] ?? json_encode($message['parameters']),
                     'order' => $message['order'],
