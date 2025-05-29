@@ -734,7 +734,7 @@ $template = Whatsapp::template()
 ```
 
 
-## 12. Enviar Mensajes a partis de Plantilla creada.
+## 13. Enviar Mensajes a partir de Plantilla creada.
 ### Enviar mensajes de plantillas
 
 Puedes enviar diferentes mensajes de plantillas segun la estructura de la plantilla.
@@ -824,7 +824,7 @@ $flow = Whatsapp::flow()->createFlow([
     'trigger_mode' => 'any',
     'is_default' => false
 ]);
-$flow->addKeywordTrigger(['compatible', 'funciona'], false, 'contains');
+$flow->addKeywordTrigger(['Hola', 'Buenos dias'], false, 'contains');
 $flow = $flow->build();
 $bot->flows()->attach($flow->flow_id);
 
