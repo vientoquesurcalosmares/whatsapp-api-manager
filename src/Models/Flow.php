@@ -80,7 +80,7 @@ class Flow extends Model
 
     public function initialStep()
     {
-        return $this->belongsTo(FlowStep::class, 'entry_point_id');
+        return $this->belongsTo(FlowStep::class, 'entry_point_id', 'step_id');
     }
 
     public function matchesTrigger(string $text): bool
