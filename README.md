@@ -797,7 +797,103 @@ $botDetail = Whatsapp::bot()->getById($bot->whatsapp_bot_id);
 
 ```
 
+### Bot con flujo de conversacion y pasos de pruebas
 
+```php
+// 1. Seleccionar cuenta y numero para el bot
+// Cuenta de whatsapp
+$account = WhatsappBusinessAccount::find(214545545097167);
+
+// Numerod e whatsapp
+$phone = $account->phoneNumbers->first();
+
+// 2. Crear bot
+$bot = Whatsapp::bot()->createBot([
+    'name' => 'Bot Bienvenida',
+    'phone_number_id' => $phone->phone_number_id,
+    'description' => 'Bot de Bienvenida',
+    'on_failure_action' => 'assign_agent',
+    'failure_message' => 'Transferiendo a agente...'
+]);
+
+// 3. Crear flujo
+$flow = Whatsapp::flow()->createFlow([
+    'name' => 'Flujo de pruebas',
+    'description' => 'Flujo que funciona para realizar pruebas',
+    'type' => 'inbound',
+    'trigger_mode' => 'any',
+    'is_default' => false
+]);
+$flow->addKeywordTrigger(['compatible', 'funciona'], false, 'contains');
+$flow = $flow->build();
+$bot->flows()->attach($flow->flow_id);
+
+// 4. Crear servicio de pasos
+$stepService = Whatsapp::step($flow);
+use ScriptDevelop\WhatsappManager\Enums\StepType;
+
+// Paso 1: Bienvenida
+$step1 = $stepService->createStep('Bienvenida', StepType::MESSAGE_SEQUENCE)
+    ->addTextMessage("¡Hola! Este flujo es de pruebas.", 1, 0)
+    ->build();
+
+// Paso 2: Pregunta edad
+$step2 = $stepService->createStep('Pregunta Edad', StepType::OPEN_QUESTION)
+    ->addTextMessage("¿Cuántos años tienes?", 1, 0)
+    ->addVariable('edad', 'number', 'global', ['required','numeric','min:1'])
+    ->setValidationRules(['edad' => 'required|numeric|min:1'], 2, "Edad inválida")
+    ->build();
+
+// Paso 3: Condicional
+$step3 = $stepService->createStep('Mayor de edad', StepType::MESSAGE_SEQUENCE)
+    ->addTextMessage("Eres mayor de edad", 1, 0)
+    ->build();
+
+$step4 = $stepService->createStep('Menor de edad', StepType::MESSAGE_SEQUENCE)
+    ->addTextMessage("Eres menor de edad", 1, 0)
+    ->build();
+
+// Paso 5: Despedida
+$step5 = $stepService->createStep('Despedida', StepType::TERMINAL)
+    ->addTextMessage("¡Gracias por participar!", 1, 0)
+    ->build();
+
+// 6. Crear transiciones (compatibles con la prueba)
+$step1->transitions()->create([
+    'to_step_id' => $step2->step_id,
+    'condition_type' => 'always',
+    'priority' => 1
+]);
+
+$step2->transitions()->create([
+    'to_step_id' => $step3->step_id,
+    'condition_type' => 'variable_value',
+    'condition_config' => ['variable' => 'edad', 'operator' => '>=', 'value' => 18],
+    'priority' => 2
+]);
+
+$step2->transitions()->create([
+    'to_step_id' => $step4->step_id,
+    'condition_type' => 'variable_value',
+    'condition_config' => ['variable' => 'edad', 'operator' => '<', 'value' => 18],
+    'priority' => 1
+]);
+
+$step3->transitions()->create([
+    'to_step_id' => $step5->step_id,
+    'condition_type' => 'always',
+    'priority' => 1
+]);
+
+$step4->transitions()->create([
+    'to_step_id' => $step5->step_id,
+    'condition_type' => 'always',
+    'priority' => 1
+]);
+
+// 7. Establecer paso inicial
+$flow->update(['entry_point_id' => $step1->step_id]);
+```
 
 
 1. Whatsapp (Facade)
