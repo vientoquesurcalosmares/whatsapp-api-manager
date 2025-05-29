@@ -534,7 +534,8 @@ class WhatsappWebhookController extends Controller
             Log::channel('whatsapp')->error('No hay paso inicial definido para el flujo', [
                 'flow_id' => $session->flow_id
             ]);
-            return;
+            $currentStep = $session->flow->entryPoint;
+            $session->update(['current_step_id' => $currentStep->step_id]);
         }
 
         // Guardar respuesta del usuario
@@ -552,9 +553,27 @@ class WhatsappWebhookController extends Controller
         $session->update($updateData);
 
         // Enviar respuesta del siguiente paso si existe
-        if ($nextStep) {
-            $this->sendStepResponse($nextStep, $session->contact, $session->bot->phoneNumber);
+        // if ($nextStep) {
+        //     $this->sendStepResponse($nextStep, $session->contact, $session->bot->phoneNumber);
+        // }
+
+        $phoneNumberModel = $session->bot?->phoneNumber ?? WhatsappPhoneNumber::find($session->whatsapp_phone_id);
+
+        if (!$phoneNumberModel) {
+            Log::channel('whatsapp')->error('No se pudo obtener phoneNumber', [
+                'session_id' => $session->session_id
+            ]);
+            return;
         }
+
+        if (!$session->bot || !$session->bot->phoneNumber) {
+            Log::channel('whatsapp')->error('Bot o phoneNumber no disponibles', [
+                'session_id' => $session->session_id
+            ]);
+            return;
+        }
+        
+        $this->sendStepResponse($currentStep, $session->contact, $session->bot->phoneNumber);
     }
 
     private function saveUserResponse(

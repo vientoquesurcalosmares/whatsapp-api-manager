@@ -83,6 +83,11 @@ class Flow extends Model
         return $this->belongsTo(FlowStep::class, 'entry_point_id', 'step_id');
     }
 
+    public function entryPoint()
+    {
+        return $this->belongsTo(FlowStep::class, 'entry_point_id');
+    }
+
     public function matchesTrigger(string $text): bool
     {
         // Verificar si la relación está cargada

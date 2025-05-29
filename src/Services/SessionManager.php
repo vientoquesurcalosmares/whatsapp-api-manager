@@ -39,7 +39,8 @@ class SessionManager {
                 'whatsapp_phone_id' => $bot->phone_number_id,
                 'assigned_bot_id' => $bot->whatsapp_bot_id,
                 'flow_id' => $flow->flow_id,
-                'current_step_id' => $flow->initialStep->step_id,
+                // 'current_step_id' => $flow->initialStep->step_id,
+                'current_step_id' => $flow->entryPoint->step_id, // Usar entry_point_id
                 'status' => 'active',
                 'flow_status' => 'started',
                 'context' => []
@@ -62,7 +63,9 @@ class SessionManager {
      * Busca sesiones activas existentes
      */
     private function findActiveSession(Contact $contact, WhatsappBot $bot): ?ChatSession {
-        return ChatSession::where('contact_id', $contact->contact_id)
+        
+        return ChatSession::with(['bot.phoneNumber']) // Carga las relaciones
+            ->where('contact_id', $contact->contact_id)
             ->where('assigned_bot_id', $bot->whatsapp_bot_id)
             ->where('status', 'active')
             ->whereNull('assigned_agent_id')

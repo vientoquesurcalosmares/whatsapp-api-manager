@@ -26,7 +26,7 @@ return new class extends Migration
 
             $table->enum('failure_action', ['repeat','redirect','end_flow','transfer'])->default('end_flow'); // Acción si falla la validación
              $table->ulid('failure_step_id')->nullable();
-            $table->boolean('is_terminal')->default(true); // Finaliza el flujo
+            $table->boolean('is_terminal')->default(false); // Finaliza el flujo
             $table->boolean('is_entry_point')->default(false); // Paso inicial
 
             $table->string('api_endpoint')->nullable();
