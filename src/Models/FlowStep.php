@@ -64,4 +64,9 @@ class FlowStep extends Model
     {
         return $this->hasMany(UserResponse::class, 'flow_step_id', 'step_id');
     }
+
+    public function transitions()
+    {
+        return $this->hasMany(StepTransition::class, 'from_step_id', 'step_id');
+    }
 }

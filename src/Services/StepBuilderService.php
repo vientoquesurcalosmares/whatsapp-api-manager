@@ -98,12 +98,14 @@ class StepBuilderService
         string $targetStepId, 
         string $variable, 
         string $operator, 
-        $value
+        $value,
+        int $priority = 1
     ): self {
         $this->transitions[] = [
             'type' => 'condition',
             'target_step_id' => $targetStepId,
-            'condition' => compact('variable', 'operator', 'value')
+            'condition' => compact('variable', 'operator', 'value'),
+            'priority' => $priority
         ];
         return $this;
     }
@@ -111,11 +113,15 @@ class StepBuilderService
     /**
      * Agrega transición directa
      */
-    public function addDirectTransition(string $targetStepId): self
-    {
+    public function addDirectTransition(
+        string $targetStepId,
+        int $priority = 0
+    ): self {
         $this->transitions[] = [
             'type' => 'direct',
-            'target_step_id' => $targetStepId
+            'target_step_id' => $targetStepId,
+            'condition' => null,
+            'priority' => $priority
         ];
         return $this;
     }
@@ -231,7 +237,11 @@ class StepBuilderService
             StepTransition::create([
                 'from_step_id' => $this->step->step_id,
                 'to_step_id' => $transition['target_step_id'],
-                'condition_config' => $transition['condition'] ?? null
+                'condition_type' => $transition['type'] === 'condition' 
+                    ? 'variable_value' 
+                    : 'always',
+                'condition_config' => $transition['condition'] ?? null,
+                'priority' => $transition['priority'] ?? 1
             ]);
         }
     }
