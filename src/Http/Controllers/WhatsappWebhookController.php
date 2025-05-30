@@ -651,18 +651,44 @@ class WhatsappWebhookController extends Controller
         $service = app(MessageDispatcherService::class);
         
         foreach ($step->messages as $message) {
+            $content = $this->getMessageContent($message);
+
             switch ($message->message_type) {
                 case 'text':
-                    $this->sendTextMessage($message, $contact, $phoneNumber);
+                    $service->sendTextMessage(
+                        $phoneNumber->phone_number_id,
+                        $contact->country_code,
+                        $contact->phone_number,
+                        $content,
+                        false
+                    );
                     break;
                     
                 case 'interactive_buttons':
+                    $data = json_decode($message->content, true);
+                    $service->sendInteractiveButtonsMessage(
+                        $phoneNumber->phone_number_id,
+                        $contact->country_code,
+                        $contact->phone_number,
+                        $data['body'] ?? $content,
+                        $data['buttons'] ?? [],
+                        $data['footer'] ?? null
+                    );
+                    break;
                 case 'interactive_list':
-                    $this->sendInteractiveResponse($message, $contact, $phoneNumber);
+                    $data = json_decode($message->content, true);
+                    $service->sendListMessage(
+                        $phoneNumber->phone_number_id,
+                        $contact->country_code,
+                        $contact->phone_number,
+                        $data['body'] ?? $content,
+                        $data['sections'] ?? [],
+                        $data['button'] ?? 'Ver opciones',
+                        $data['footer'] ?? null
+                    );
                     break;
                     
                 default:
-                    $content = $this->getMessageContent($message);
                     $service->sendTextMessage(
                         $phoneNumber->phone_number_id,
                         $contact->country_code,
