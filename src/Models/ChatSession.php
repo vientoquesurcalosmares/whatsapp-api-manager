@@ -43,7 +43,11 @@ class ChatSession extends Model
     ];
 
     public function getCurrentStepAttribute(): ?FlowStep {
-        return $this->currentStep ?? $this->flow->initialStep ?? null;
+        if (!$this->currentStep && $this->flow) {
+            $this->loadMissing('flow.initialStep');
+            return $this->flow->initialStep;
+        }
+        return $this->currentStep;
     }
 
     // Relaciones
@@ -61,10 +65,10 @@ class ChatSession extends Model
     }
 
     // ChatSession puede estar asignada a un bot
-    public function assignedBot()
-    {
-        return $this->belongsTo(WhatsappBot::class, 'assigned_bot_id', 'whatsapp_bot_id');
-    }
+    // public function assignedBot()
+    // {
+    //     return $this->belongsTo(WhatsappBot::class, 'assigned_bot_id', 'whatsapp_bot_id');
+    // }
 
     // ChatSession puede estar asignada a un agente (usuario)
     public function assignedAgent()
@@ -73,6 +77,15 @@ class ChatSession extends Model
             config('whatsapp-manager.models.user_model'), // Configuración
             'assigned_agent_id'
         );
+    }
+
+    public function bot()
+    {
+        return $this->belongsTo(
+            WhatsappBot::class, 
+            'assigned_bot_id', // Foreign key en chat_sessions
+            'whatsapp_bot_id'  // Primary key en whatsapp_bots
+        )->with('phoneNumber'); // Cargar siempre la relación phoneNumber
     }
 
     // ChatSession pertenece a un flujo
