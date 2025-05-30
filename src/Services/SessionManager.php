@@ -46,18 +46,12 @@ class SessionManager {
     }
 
     private function findActiveSession(Contact $contact, WhatsappBot $bot): ?ChatSession {
-        return ChatSession::with([
-                'bot.phoneNumber',
-                'currentStep',
-                'flow.entryPoint'
-            ])
-            ->where('contact_id', $contact->contact_id)
+        return ChatSession::where('contact_id', $contact->contact_id)
             ->where('assigned_bot_id', $bot->whatsapp_bot_id)
             ->where('status', 'active')
-            ->whereNull('assigned_agent_id')
-            ->whereIn('flow_status', ['started', 'in_progress'])
+            ->where('flow_status', '!=', 'completed')
             ->latest()
-            ->first();
+            ->first();  
     }
 
     private function validateFlow(WhatsappBot $bot, ?string $flowId): Flow {

@@ -569,6 +569,27 @@ class WhatsappWebhookController extends Controller
 
         // 5. Guardar respuesta y determinar siguiente paso
         $this->saveUserResponse($session, $currentStep, $userInput, $messageId);
+
+
+        if ($currentStep->step_type === StepType::OPEN_QUESTION) {
+            $validationResult = $this->validateResponse(
+                $userInput, 
+                $currentStep->validation_rules
+            );
+            
+            if ($validationResult->fails()) {  // Cambiar a fails() en lugar de passes()
+                $this->sendValidationFailure(
+                    $currentStep,
+                    $session->contact,
+                    $phoneNumberModel,
+                    $validationResult->errors()->first()  // Obtener el primer error
+                );
+                return;
+            }
+        }
+        
+
+
         $nextStep = $this->determineNextStep($currentStep, $userInput, $session);
 
         // 6. Actualizar sesión
@@ -585,6 +606,26 @@ class WhatsappWebhookController extends Controller
         $this->sendStepResponse($stepToSend, $session->contact, $phoneNumberModel);
     }
 
+    private function sendValidationFailure(
+        FlowStep $step,
+        Contact $contact,
+        WhatsappPhoneNumber $phoneNumber,
+        string $errorMessage
+    ): void {
+        $service = app(MessageDispatcherService::class);
+        
+        $service->sendTextMessage(
+            $phoneNumber->phone_number_id,
+            $contact->country_code,
+            $contact->phone_number,
+            $errorMessage,
+            false
+        );
+        
+        // También puedes enviar el mensaje original de nuevo
+        $this->sendStepResponse($step, $contact, $phoneNumber);
+    }
+
     private function saveUserResponse(
         ChatSession $session, 
         FlowStep $step, 
@@ -599,6 +640,36 @@ class WhatsappWebhookController extends Controller
             'field_value' => $response, // Nombre de campo corregido
             'contact_id' => $session->contact_id, // Contacto obtenido de la sesión
         ]);
+    }
+
+    private function validateResponse(string $userInput, ?array $validationConfig): \Illuminate\Contracts\Validation\Validator
+    {
+        // Si no hay configuración de validación, retornar un validador vacío
+        if (!$validationConfig || empty($validationConfig['rules'])) {
+            return \Illuminate\Support\Facades\Validator::make(
+                ['input' => $userInput], 
+                []
+            );
+        }
+
+        // Crear el array de datos para validación usando un nombre de campo genérico
+        $data = ['input' => $userInput];
+        
+        // Obtener las reglas de validación
+        $rules = ['input' => $validationConfig['rules']];
+        
+        // Crear mensajes personalizados si existen
+        $customMessages = [];
+        if (isset($validationConfig['retryMessage'])) {
+            $customMessages = [
+                'input.required' => $validationConfig['retryMessage'],
+                'input.in' => $validationConfig['retryMessage'],
+                'input.*' => $validationConfig['retryMessage']  // Mensaje genérico para todas las reglas
+            ];
+        }
+
+        // Crear y retornar el validador
+        return \Illuminate\Support\Facades\Validator::make($data, $rules, $customMessages);
     }
 
     private function determineNextStep(FlowStep $currentStep, string $userInput, ChatSession $session): ?FlowStep
@@ -625,21 +696,22 @@ class WhatsappWebhookController extends Controller
     private function evaluateCondition($transition, string $userInput, ChatSession $session): bool
     {
         $config = $transition->condition_config;
+        $type = $transition->condition_type; // Usar condition_type directamente
         
-        if (!$config || empty($config)) {
-            return true; // Transición incondicional
+        if (!$type) {
+            return true;
         }
         
-        switch ($config['type'] ?? null) {
+        switch ($type) {
             case 'variable_value':
-                $variable = $this->getVariableValue($config['variable'], $session);
-                return $this->compareValues($variable, $config['operator'], $config['value']);
+                $variable = $this->getVariableValue($config['variable'] ?? '', $session);
+                return $this->compareValues($variable, $config['operator'] ?? '==', $config['value'] ?? null);
                 
             case 'text_match':
-                return $userInput === $config['value'];
+                return $userInput === ($config['value'] ?? '');
                 
             case 'regex':
-                return preg_match($config['pattern'], $userInput) === 1;
+                return preg_match($config['pattern'] ?? '', $userInput) === 1;
                 
             default:
                 return false;
@@ -707,15 +779,10 @@ class WhatsappWebhookController extends Controller
 
     private function getVariableValue(string $variableName, ChatSession $session)
     {
-        // Buscar la variable en las respuestas guardadas
-        $response = UserResponse::where('session_id', $session->session_id)
-            ->whereHas('step', function($query) use ($variableName) {
-                $query->where('variable_name', $variableName);
-            })
+        return UserResponse::where('session_id', $session->session_id)
+            ->where('field_name', $variableName) // Buscar por nombre de campo
             ->latest()
-            ->first();
-            
-        return $response ? $response->response_value : null;
+            ->value('field_value'); // Obtener directamente el valor
     }
 
     private function getMessageContent($message): string
