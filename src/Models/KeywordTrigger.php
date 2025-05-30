@@ -34,9 +34,9 @@ class KeywordTrigger extends Model
 
     public function matches(string $text): bool
     {
-        $keywords = json_decode($this->keywords, true);
+        $keywords = $this->keywords;
         $text = mb_strtolower($text);
-        
+
         $matchType = $this->match_type;
         $caseSensitive = $this->case_sensitive;
 
