@@ -51,6 +51,8 @@ return new class extends Migration
 
             // ... resto de columnas (status, context, etc.)
             $table->enum('status', ['active', 'paused', 'completed'])->default('active');
+            $table->unsignedSmallInteger('validation_attempts')->default(0);
+            $table->unsignedSmallInteger('max_validation_attempts')->default(3);
             $table->json('context')->nullable();
             $table->timestamp('assigned_at')->nullable();
             $table->json('message_queue')->nullable();

@@ -578,12 +578,12 @@ class WhatsappWebhookController extends Controller
             );
             
             if ($validationResult->fails()) {
-                // Incrementar contador de intentos fallidos
-                $session->validation_attempts = ($session->validation_attempts ?? 0) + 1;
+                // Incrementar intentos
+                $session->validation_attempts++;
                 $session->save();
                 
-                // Verificar si se excedió el máximo de intentos
-                $maxAttempts = $currentStep->validation_rules['maxAttempts'] ?? 3;
+                // Verificar máximo de intentos
+                $maxAttempts = $currentStep->max_attempts ?? 3;
                 
                 if ($session->validation_attempts >= $maxAttempts) {
                     $this->handleMaxAttemptsReached($session, $currentStep);
@@ -598,8 +598,8 @@ class WhatsappWebhookController extends Controller
                 );
                 return;
             }
-
-            // Resetear contador si la validación es exitosa
+            
+            // Resetear contador si es exitoso
             $session->validation_attempts = 0;
             $session->save();
         }
