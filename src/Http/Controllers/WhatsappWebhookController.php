@@ -577,15 +577,31 @@ class WhatsappWebhookController extends Controller
                 $currentStep->validation_rules
             );
             
-            if ($validationResult->fails()) {  // Cambiar a fails() en lugar de passes()
+            if ($validationResult->fails()) {
+                // Incrementar contador de intentos fallidos
+                $session->validation_attempts = ($session->validation_attempts ?? 0) + 1;
+                $session->save();
+                
+                // Verificar si se excedió el máximo de intentos
+                $maxAttempts = $currentStep->validation_rules['maxAttempts'] ?? 3;
+                
+                if ($session->validation_attempts >= $maxAttempts) {
+                    $this->handleMaxAttemptsReached($session, $currentStep);
+                    return;
+                }
+                
                 $this->sendValidationFailure(
                     $currentStep,
                     $session->contact,
                     $phoneNumberModel,
-                    $validationResult->errors()->first()  // Obtener el primer error
+                    $validationResult->errors()->first()
                 );
                 return;
             }
+
+            // Resetear contador si la validación es exitosa
+            $session->validation_attempts = 0;
+            $session->save();
         }
         
 
@@ -874,5 +890,26 @@ class WhatsappWebhookController extends Controller
     private function sendErrorFallbackMessage($whatsappPhone, $contact): void
     {
         $this->sendDefaultFallbackMessage($whatsappPhone, $contact);
+    }
+
+    private function handleMaxAttemptsReached(ChatSession $session, FlowStep $step): void
+    {
+        $phoneNumberModel = $session->whatsappPhone ?? $session->bot->phoneNumber;
+        
+        // Enviar mensaje de error final
+        $service = app(MessageDispatcherService::class);
+        $service->sendTextMessage(
+            $phoneNumberModel->phone_number_id,
+            $session->contact->country_code,
+            $session->contact->phone_number,
+            "Has excedido el número máximo de intentos. Por favor intenta más tarde.",
+            false
+        );
+        
+        // Finalizar la sesión
+        $session->update([
+            'flow_status' => 'failed',
+            'status' => 'completed'
+        ]);
     }
 }
