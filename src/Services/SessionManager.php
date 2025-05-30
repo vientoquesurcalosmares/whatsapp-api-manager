@@ -37,7 +37,11 @@ class SessionManager {
             ]);
 
             // Cargar relaciones críticas inmediatamente
-            return $session->load(['currentStep', 'flow.entryPoint']);
+            return $session->load([
+                'currentStep',
+                'flow.entryPoint',
+                'bot.phoneNumber'
+            ]);
         });
     }
 

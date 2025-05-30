@@ -42,14 +42,6 @@ class ChatSession extends Model
         'collected_data' => 'array'
     ];
 
-    public function getCurrentStepAttribute(): ?FlowStep {
-        if (!$this->currentStep && $this->flow) {
-            $this->loadMissing('flow.initialStep');
-            return $this->flow->initialStep;
-        }
-        return $this->currentStep;
-    }
-
     // Relaciones
 
     // ChatSession pertenece a un contacto

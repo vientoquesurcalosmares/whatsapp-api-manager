@@ -496,9 +496,10 @@ class WhatsappWebhookController extends Controller
     protected function determineFlow(WhatsappBot $bot, string $text, Contact $contact): ?string
     {
         // 1. Buscar flujo por palabra clave - CON EAGER LOADING
-        $flows = $bot->flows()
-            ->with(['triggers.triggerable']) // ¡Relaciones críticas!
-            ->get();
+        $flows = $bot->flows()->with([
+            'triggers.triggerable',
+            'entryPoint' // Asegurar carga de entryPoint
+        ])->get();
 
         foreach ($flows as $flow) {
             if ($flow->matchesTrigger($text)) {
@@ -526,34 +527,23 @@ class WhatsappWebhookController extends Controller
         string $messageId
     ): void
     {
-        // 1. Obtener paso actual (asegurarse que está cargado)
-        if (!$session->relationLoaded('currentStep')) {
-            $session->load('currentStep');
-        }
+        $session->loadMissing([
+            'currentStep',
+            'flow.entryPoint'
+        ]);
         
-        $currentStep = $session->currentStep;
+        $currentStep = $session->currentStep ?? $session->flow->entryPoint;
 
         // 2. Si no hay paso actual, usar entryPoint del flujo
         if (!$currentStep) {
-            if (!$session->relationLoaded('flow.entryPoint')) {
-                $session->load('flow.entryPoint');
-            }
-            
-            $currentStep = $session->flow->entryPoint;
-            
-            if (!$currentStep) {
-                Log::channel('whatsapp')->error('No hay paso inicial definido para el flujo', [
-                    'flow_id' => $session->flow_id
-                ]);
-                $this->handleUnrecognizedMessage(
-                    $session->whatsappPhone ?? $session->bot->phoneNumber,
-                    $session->contact
-                );
-                return;
-            }
-            
-            $session->update(['current_step_id' => $currentStep->step_id]);
-            $session->currentStep = $currentStep; // Actualizar en memoria
+            Log::channel('whatsapp')->error('Flujo sin paso inicial', [
+                'flow_id' => $session->flow_id
+            ]);
+            $this->handleUnrecognizedMessage(
+                $session->whatsappPhone ?? ($session->bot ? $session->bot->phoneNumber : null),
+                $session->contact
+            );
+            return;
         }
 
         // 3. Cargar relaciones necesarias si no están cargadas
