@@ -10,61 +10,43 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class SessionManager {
-    /**
-     * Obtiene o crea una sesión activa para el contacto y bot
-     * con manejo robusto de errores
-     */
     public function getOrCreateSession(
         Contact $contact,
         WhatsappBot $bot,
         ?string $flowId = null
     ): ChatSession {
         return DB::transaction(function () use ($contact, $bot, $flowId) {
-            // 1. Buscar sesión activa existente
             $session = $this->findActiveSession($contact, $bot);
             
             if ($session) {
-                return $session;
+                return $session->load(['currentStep', 'flow.entryPoint']);
             }
 
-            // 2. Validar y obtener flujo
             $flow = $this->validateFlow($bot, $flowId);
-            
-            // 3. Validar paso inicial del flujo
-            $this->validateInitialStep($flow);
+            $this->validateEntryPoint($flow);
 
-            // 4. Crear nueva sesión
-            return ChatSession::create([
+            $session = ChatSession::create([
                 'contact_id' => $contact->contact_id,
                 'whatsapp_phone_id' => $bot->phone_number_id,
                 'assigned_bot_id' => $bot->whatsapp_bot_id,
                 'flow_id' => $flow->flow_id,
-                // 'current_step_id' => $flow->initialStep->step_id,
-                'current_step_id' => $flow->entryPoint->step_id, // Usar entry_point_id
+                'current_step_id' => $flow->entry_point_id,
                 'status' => 'active',
                 'flow_status' => 'started',
                 'context' => []
             ]);
+
+            // Cargar relaciones críticas inmediatamente
+            return $session->load(['currentStep', 'flow.entryPoint']);
         });
     }
 
-    /**
-     * Cierra una sesión actualizando su estado
-     */
-    public function closeSession(ChatSession $session): void {
-        $session->update([
-            'flow_status' => 'completed',
-            'status' => 'closed',
-            'closed_at' => now()
-        ]);
-    }
-
-    /**
-     * Busca sesiones activas existentes
-     */
     private function findActiveSession(Contact $contact, WhatsappBot $bot): ?ChatSession {
-        
-        return ChatSession::with(['bot.phoneNumber']) // Carga las relaciones
+        return ChatSession::with([
+                'bot.phoneNumber',
+                'currentStep',
+                'flow.entryPoint'
+            ])
             ->where('contact_id', $contact->contact_id)
             ->where('assigned_bot_id', $bot->whatsapp_bot_id)
             ->where('status', 'active')
@@ -74,21 +56,18 @@ class SessionManager {
             ->first();
     }
 
-    /**
-     * Valida y obtiene el flujo a usar
-     */
-    private function validateFlow(WhatsappBot $bot, ?string $flowId): Flow
-    {
+    private function validateFlow(WhatsappBot $bot, ?string $flowId): Flow {
         $flowId = $flowId ?? $bot->default_flow_id;
 
         if (!$flowId) {
             throw new \RuntimeException("Bot no tiene flujo por defecto configurado");
         }
 
-        $flow = Flow::with('initialStep')->find($flowId); // Usar find() en lugar de findOrFail()
+        // Cargar relación entryPoint anticipadamente
+        $flow = Flow::with('entryPoint')->find($flowId);
 
         if (!$flow) {
-            throw new \RuntimeException("Flujo $flowId no existe en la base de datos");
+            throw new \RuntimeException("Flujo $flowId no existe");
         }
 
         if (!$flow->bots()->where('bot_flow.whatsapp_bot_id', $bot->whatsapp_bot_id)->exists()) {
@@ -98,18 +77,9 @@ class SessionManager {
         return $flow;
     }
 
-    /**
-     * Valida que el flujo tenga paso inicial
-     */
-    private function validateInitialStep(Flow $flow): void 
-    {
-        if (!$flow->initialStep) {
-            throw new \RuntimeException("Flujo sin paso inicial");
-        }
-
-        // Validar que el paso tenga variables si es necesario
-        if ($flow->initialStep->step_type === 'open_question' && $flow->initialStep->variables->isEmpty()) {
-            throw new \RuntimeException("El paso inicial requiere variables definidas");
+    private function validateEntryPoint(Flow $flow): void {
+        if (!$flow->entryPoint) {
+            throw new \RuntimeException("Flujo sin punto de entrada definido");
         }
     }
 }

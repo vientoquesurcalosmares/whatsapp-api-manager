@@ -119,4 +119,14 @@ class ChatSession extends Model
     public function scopeActive($query) {
         return $query->where('last_activity', '>', now()->subHours(24));
     }
+
+    public function loadCriticalRelations()
+    {
+        $this->load([
+            'currentStep',
+            'flow.entryPoint',
+            'bot.phoneNumber',
+            'whatsappPhone'
+        ]);
+    }
 }

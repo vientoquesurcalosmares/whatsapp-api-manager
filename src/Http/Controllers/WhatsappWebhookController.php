@@ -526,29 +526,48 @@ class WhatsappWebhookController extends Controller
         string $messageId
     ): void
     {
-        // 1. Obtener paso actual
-        // Obtener el paso actual o el inicial
-        // $currentStep = $session->currentStep ?? $session->flow->entryPointStep;
-        $currentStep = $session->currentStep ?? $session->flow->initialStep;
+        // 1. Obtener paso actual (asegurarse que está cargado)
+        if (!$session->relationLoaded('currentStep')) {
+            $session->load('currentStep');
+        }
+        
+        $currentStep = $session->currentStep;
 
+        // 2. Si no hay paso actual, usar entryPoint del flujo
         if (!$currentStep) {
-            Log::channel('whatsapp')->error('No hay paso inicial definido para el flujo', [
-                'flow_id' => $session->flow_id
-            ]);
+            if (!$session->relationLoaded('flow.entryPoint')) {
+                $session->load('flow.entryPoint');
+            }
+            
             $currentStep = $session->flow->entryPoint;
+            
+            if (!$currentStep) {
+                Log::channel('whatsapp')->error('No hay paso inicial definido para el flujo', [
+                    'flow_id' => $session->flow_id
+                ]);
+                $this->handleUnrecognizedMessage(
+                    $session->whatsappPhone ?? $session->bot->phoneNumber,
+                    $session->contact
+                );
+                return;
+            }
+            
             $session->update(['current_step_id' => $currentStep->step_id]);
+            $session->currentStep = $currentStep; // Actualizar en memoria
         }
 
-        // 2. Cargar relaciones necesarias
-        $session->loadMissing([
-            'bot.phoneNumber',
-            'contact'
-        ]);
+        // 3. Cargar relaciones necesarias si no están cargadas
+        $loadRelations = [];
+        if (!$session->relationLoaded('bot')) $loadRelations[] = 'bot';
+        if (!$session->relationLoaded('contact')) $loadRelations[] = 'contact';
+        if (!$session->relationLoaded('whatsappPhone')) $loadRelations[] = 'whatsappPhone';
+        
+        if (!empty($loadRelations)) {
+            $session->load($loadRelations);
+        }
 
-        // 3. Verificar phoneNumber
-        $phoneNumberModel = $session->bot?->phoneNumber 
-            ?? $session->whatsappPhone 
-            ?? null;
+        // 4. Verificar phoneNumber
+        $phoneNumberModel = $session->whatsappPhone ?? $session->bot->phoneNumber;
         
         if (!$phoneNumberModel) {
             Log::error('No se pudo obtener phoneNumber', [
@@ -558,24 +577,20 @@ class WhatsappWebhookController extends Controller
             return;
         }
 
-        // 4. Guardar respuesta y determinar siguiente paso
+        // 5. Guardar respuesta y determinar siguiente paso
         $this->saveUserResponse($session, $currentStep, $userInput, $messageId);
         $nextStep = $this->determineNextStep($currentStep, $userInput, $session);
 
-        // 5. Actualizar sesión
-        $session->update([
-            'current_step_id' => $nextStep?->step_id,
-            'flow_status' => $nextStep ? 'in_progress' : 'completed'
-        ]);
+        // 6. Actualizar sesión
+        $updateData = ['flow_status' => $nextStep ? 'in_progress' : 'completed'];
+        
+        if ($nextStep) {
+            $updateData['current_step_id'] = $nextStep->step_id;
+        }
+        
+        $session->update($updateData);
 
-        // Enviar respuesta del siguiente paso si existe
-        // if ($nextStep) {
-        //     $this->sendStepResponse($nextStep, $session->contact, $session->bot->phoneNumber);
-        // }
-
-        $phoneNumberModel = $session->bot?->phoneNumber ?? WhatsappPhoneNumber::find($session->whatsapp_phone_id);
-
-        // 6. Enviar respuesta (del paso actual o siguiente)
+        // 7. Enviar respuesta del paso correspondiente
         $stepToSend = $nextStep ?: $currentStep;
         $this->sendStepResponse($stepToSend, $session->contact, $phoneNumberModel);
     }
