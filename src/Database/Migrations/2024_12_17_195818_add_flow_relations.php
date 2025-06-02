@@ -22,7 +22,7 @@ return new class extends Migration
         });
 
         // Agregar FK a flows
-        Schema::table('flows', function (Blueprint $table) {
+        Schema::table('whatsapp_flows', function (Blueprint $table) {
             $table->foreign('entry_point_id')
                   ->references('step_id')
                   ->on('whatsapp_flow_steps')
