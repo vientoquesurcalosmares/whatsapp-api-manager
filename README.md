@@ -15,13 +15,14 @@ LARAVEL WHatsapp Manager
 
 ## 🚀 Características Principales
 
-- **Envía mensajes** de texto, multimedia, interactivos.
+- **Envía mensajes** de texto, multimedia, interactivos y de plantilla.
+- **Gestion de Templates** para Crear, Listar, Eliminar y Probar plantillas.
 - **Webhooks integrados** para recibir mensajes y actualizaciones.
 - **Gestión de conversaciones** con métricas de cobro. 💰
 - **Bots conversacionales** con flujos dinámicos. 🤖
 - **Sincronización automática** de números telefónicos y perfiles.
 - **Soporte para campañas** masivas programadas. 📅
-- 100% compatible con **Laravel Echo** para notificaciones en tiempo real.
+- 100% compatible con **Laravel Echo y Reverb** para notificaciones en tiempo real.
 
 ---
 
