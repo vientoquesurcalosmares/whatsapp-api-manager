@@ -36,12 +36,12 @@ return new class extends Migration
                   
             $table->foreign('flow_id')
                   ->references('flow_id')
-                  ->on('flows')
+                  ->on('whatsapp_flows')
                   ->onDelete('set null');
                   
             $table->foreign('current_step_id')
                   ->references('step_id')
-                  ->on('flow_steps')
+                  ->on('whatsapp_flow_steps')
                   ->onDelete('set null');
                   
             $table->foreign('assigned_agent_id')
