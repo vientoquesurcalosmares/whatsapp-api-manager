@@ -561,7 +561,7 @@ Whatsapp::template()->getTemplates($account);
    ```
 
 - ### Eliminar plantilla de la API y de la base de datos al mismo tiempo.
-  Se hace la peticion a la API de whatsapp para obtener una plantilla por el ID y se almacena en la base de datos.
+  Se hace la peticion a la API de whatsapp para obtener una plantilla por el ID y se elimina la plantilla seleccionada, Existen dos maneras de eliminar Soft Delete y Hard Delete.
 
    ```php
    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
@@ -585,6 +585,89 @@ Whatsapp::template()->getTemplates($account);
    // Eliminar plantilla por su Nombre
    $template = Whatsapp::template()->deleteTemplateByName($account, 'order_confirmation', true);
    ```
+
+
+
+
+- ### Editar plantilla de la API y de la base de datos al mismo tiempo.
+  Se hace la peticion a la API de whatsapp para editar la plantilla seleccionada.
+
+    ```php
+    use ScriptDevelop\WhatsappManager\Models\Template;
+    use ScriptDevelop\WhatsappManager\Exceptions\TemplateComponentException;
+    use ScriptDevelop\WhatsappManager\Exceptions\TemplateUpdateException;
+
+    $template = Template::find('template-id');
+
+    try {
+        $updatedTemplate = $template->edit()
+            ->setName('nuevo-nombre-plantilla')
+            ->changeBody('Nuevo contenido del cuerpo {{1}}', [['Ejemplo nuevo']])
+            ->removeHeader()
+            ->addFooter('Nuevo texto de pie de página')
+            ->removeAllButtons()
+            ->addButton('URL', 'Visitar sitio', 'https://ejemplo.com')
+            ->addButton('QUICK_REPLY', 'Confirmar')
+            ->update();
+        
+        return response()->json($updatedTemplate);
+        
+    } catch (TemplateComponentException $e) {
+        // Manejar error de componente
+        return response()->json(['error' => $e->getMessage()], 400);
+        
+    } catch (TemplateUpdateException $e) {
+        // Manejar error de actualización
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+    ```
+
+    Agregar componentes a plantillas que no lo tenian:
+
+    ```php
+    $template->edit()
+        ->addHeader('TEXT', 'Encabezado agregado')
+        ->addFooter('Pie de página nuevo')
+        ->addButton('PHONE_NUMBER', 'Llamar', '+1234567890')
+        ->update();
+    ```
+
+    Eliminar componentes existentes:
+    
+    ```php
+    $template->edit()
+        ->removeFooter()
+        ->removeAllButtons()
+        ->update();
+    ```
+
+    Trabajar con componentes específicos:
+    
+    ```php
+    $editor = $template->edit();
+
+    // Verificar y modificar header
+    if ($editor->hasHeader()) {
+        $headerData = $editor->getHeader();
+        if ($headerData['format'] === 'TEXT') {
+            $editor->changeHeader('TEXT', 'Encabezado actualizado');
+        }
+    } else {
+        $editor->addHeader('TEXT', 'Nuevo encabezado');
+    }
+
+    // Modificar botones
+    $buttons = $editor->getButtons();
+    foreach ($buttons as $index => $button) {
+        if ($button['type'] === 'URL' && str_contains($button['url'], 'old-domain.com')) {
+            $newUrl = str_replace('old-domain.com', 'new-domain.com', $button['url']);
+            $editor->removeButtonAt($index);
+            $editor->addButton('URL', $button['text'], $newUrl);
+        }
+    }
+
+    $editor->update();
+    ```
 
 ## 12. Crear las plantillas en una cuenta de whatsapp
 ### Crear Plantillas de Utilidad
@@ -612,6 +695,34 @@ $template = Whatsapp::template()
     ->addButton('QUICK_REPLY', 'Contact Support')
     ->save();
 ```
+
+## Características Clave del Edit Template
+
+    1.- Gestión completa de componentes:
+        - Métodos add, change, remove para cada tipo de componente
+        - Métodos has para verificar existencia
+        - Métodos get para obtener datos
+
+    2.- Validaciones robustas:
+        - Unicidad de componentes (solo un HEADER, BODY, etc.)
+        - Componentes obligatorios (BODY siempre requerido)
+        - Límites de botones (máximo 10)
+        - Restricciones de modificación (no cambiar categoría, no modificar aprobadas)
+
+    3.- Operaciones atómicas:
+        - removeButtonAt: Elimina un botón específico
+        - removeAllButtons: Elimina todos los botones
+        - getButtons: Obtiene todos los botones actuales
+
+    4.- Manejo de errores:
+        - Excepciones específicas para problemas de componentes
+        - Excepciones para fallos en la actualización
+        - Mensajes de error claros y descriptivos
+
+    5.- Flujo intuitivo:
+        - $template->edit() inicia la edición
+        - Encadenamiento de métodos para modificaciones
+        - update() aplica los cambios
 
 ---
 
