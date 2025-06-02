@@ -590,6 +590,8 @@ Whatsapp::template()->getTemplates($account);
 
 Las plantillas transaccionales son ideales para notificaciones como confirmaciones de pedidos, actualizaciones de envío, etc.
 
+![Ejemplo de plantilla de marketing](assets/template_1.png "Plantilla de Marketing")
+
 ```php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
@@ -647,7 +649,7 @@ $template = Whatsapp::template()
 
 Las plantillas de marketing también pueden incluir imágenes en el encabezado para hacerlas más atractivas.
 
-![Ejemplo de plantilla de marketing](assets/template_1.png "Plantilla de Marketing")
+![Ejemplo de plantilla de marketing](assets/template_3.png "Plantilla de Marketing")
 
 ```php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
@@ -668,8 +670,6 @@ $template = Whatsapp::template()
     ->addHeader('IMAGE', $imagePath)
     ->addBody('Hi {{1}}, your order {{2}} has been shipped!', ['John', '12345'])
     ->addFooter('Thank you for your purchase!')
-    ->addButton('PHONE_NUMBER', 'Call Us', '+573234662686')
-    ->addButton('QUICK_REPLY', 'Contact Support')
     ->save();
 ```
 
