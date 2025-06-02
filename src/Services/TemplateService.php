@@ -255,12 +255,23 @@ class TemplateService
      */
     public function deleteTemplateById(WhatsappBusinessAccount $account, string $templateId, bool $hardDelete = false): bool
     {
+        $template = Template::where('wa_template_id', $templateId)->first();
+
+        if(!$template){
+            Log::channel('whatsapp')->error('La plantilla no existe!', [
+                'wa_template_id' => $templateId
+            ]);
+
+            return false;
+        }
+
         $endpoint = Endpoints::build(Endpoints::DELETE_TEMPLATE, [
             'waba_id' => $account->whatsapp_business_id,
         ]);
 
         $query = [
             'hsm_id' => $templateId,
+            'name' => $template->name
         ];
 
         $headers = [
@@ -288,8 +299,6 @@ class TemplateService
             ]);
 
             if ($response['success'] ?? false) {
-                $template = Template::where('wa_template_id', $templateId)->first();
-
                 if ($template) {
                     if ($hardDelete) {
                         $template->forceDelete(); // Hard delete
@@ -321,12 +330,22 @@ class TemplateService
      */
     public function deleteTemplateByName(WhatsappBusinessAccount $account, string $templateName, bool $hardDelete = false): bool
     {
+        $template = Template::where('name', $templateName)->first();
+
+        if(!$template){
+            Log::channel('whatsapp')->error('La plantilla no existe!', [
+                'name' => $templateName
+            ]);
+
+            return false;
+        }
+
         $endpoint = Endpoints::build(Endpoints::DELETE_TEMPLATE, [
             'waba_id' => $account->whatsapp_business_id,
         ]);
 
         $query = [
-            'name' => $templateName,
+            'name' => $templateName
         ];
 
         $headers = [
@@ -354,8 +373,6 @@ class TemplateService
             ]);
 
             if ($response['success'] ?? false) {
-                $template = Template::where('name', $templateName)->first();
-
                 if ($template) {
                     if ($hardDelete) {
                         $template->forceDelete(); // Hard delete
