@@ -13,12 +13,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('step_messages', function (Blueprint $table) {
+        Schema::create('whatsapp_step_messages', function (Blueprint $table) {
             $table->ulid('message_id')->primary();
-            $table->foreignUlid('flow_step_id')->constrained('flow_steps', 'step_id')->onDelete('cascade');
+            $table->foreignUlid('flow_step_id')->constrained('whatsapp_flow_steps', 'step_id')->onDelete('cascade');
             $table->enum('message_type', ['text', 'image', 'video', 'document', 'audio', 'location','quick_reply']);
             $table->text('content'); // Puede contener variables {nombre}
-            $table->foreignUlid('media_file_id')->nullable()->constrained('media_files', 'media_file_id');
+            $table->foreignUlid('media_file_id')->nullable()->constrained('whatsapp_media_files', 'media_file_id');
             $table->unsignedInteger('delay_seconds')->default(0); // Espera antes de enviar
             $table->unsignedSmallInteger('order')->default(0); // Orden de secuencia
             $table->json('variables_used')->nullable(); // Ej: ["nombre", "email"]
@@ -34,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('step_messages');
+        Schema::dropIfExists('whatsapp_step_messages');
     }
 };

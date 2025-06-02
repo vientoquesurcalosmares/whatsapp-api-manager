@@ -14,7 +14,7 @@ class StepVariable extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
-    protected $table = 'step_variables';
+    protected $table = 'whatsapp_step_variables';
     protected $primaryKey = 'variable_id';
     public $incrementing = false;
     protected $keyType = 'string';

@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('flow_triggers', function (Blueprint $table) {
+        Schema::create('whatsapp_flow_triggers', function (Blueprint $table) {
             $table->ulid('trigger_id')->primary();
-            $table->foreignUlid('flow_id')->constrained('flows', 'flow_id')->onDelete('cascade');
+            $table->foreignUlid('flow_id')->constrained('whatsapp_flows', 'flow_id')->onDelete('cascade');
             $table->enum('type', ['keyword', 'regex', 'template']); // keyword, regex, template
             $table->ulidMorphs('triggerable'); // triggerable_id + triggerable_type
         
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('flow_triggers');
+        Schema::dropIfExists('whatsapp_flow_triggers');
     }
 };

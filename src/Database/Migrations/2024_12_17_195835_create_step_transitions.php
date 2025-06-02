@@ -19,15 +19,15 @@ return new class extends Migration
     */
     public function up(): void
     {
-        Schema::create('step_transitions', function (Blueprint $table) {
+        Schema::create('whatsapp_step_transitions', function (Blueprint $table) {
             $table->ulid('transition_id')->primary();
             
             // Pasos involucrados
             $table->foreignUlid('from_step_id')
-                ->constrained('flow_steps', 'step_id')
+                ->constrained('whatsapp_flow_steps', 'step_id')
                 ->onDelete('cascade');
             $table->foreignUlid('to_step_id')
-                ->constrained('flow_steps', 'step_id')
+                ->constrained('whatsapp_flow_steps', 'step_id')
                 ->onDelete('cascade');
             
             // Tipo de condición
@@ -59,6 +59,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('step_transitions');
+        Schema::dropIfExists('whatsapp_step_transitions');
     }
 };

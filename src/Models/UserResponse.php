@@ -13,7 +13,7 @@ class UserResponse extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
-    protected $table = 'user_responses';
+    protected $table = 'whatsapp_user_responses';
     protected $primaryKey = 'response_id';
     public $incrementing = false;
     protected $keyType = 'string';

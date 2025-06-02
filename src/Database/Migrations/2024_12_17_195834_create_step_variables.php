@@ -12,9 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('step_variables', function (Blueprint $table) {
+        Schema::create('whatsapp_step_variables', function (Blueprint $table) {
             $table->ulid('variable_id')->primary();
-            $table->foreignUlid('flow_step_id')->constrained('flow_steps', 'step_id')->onDelete('cascade');
+            $table->foreignUlid('flow_step_id')->constrained('whatsapp_flow_steps', 'step_id')->onDelete('cascade');
             $table->string('name')->index(); // Nombre único en el paso
             $table->enum('type', ['string', 'number', 'boolean', 'datetime','email','phone','custom_regex'])->default('string');
             $table->string('validation_regex')->nullable(); // Solo para tipo 'custom_regex'
@@ -32,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('step_variables');
+        Schema::dropIfExists('whatsapp_step_variables');
     }
 };

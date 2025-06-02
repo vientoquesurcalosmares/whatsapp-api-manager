@@ -14,7 +14,7 @@ class Flow extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
-    protected $table = 'flows';
+    protected $table = 'whatsapp_flows';
     protected $primaryKey = 'flow_id';
     public $incrementing = false;
     protected $keyType = 'string';
@@ -57,7 +57,7 @@ class Flow extends Model
     {
         return $this->belongsToMany(
             WhatsappBot::class,
-            'bot_flow',
+            'whatsapp_bot_flow',
             'flow_id',
             'whatsapp_bot_id'
         )->withTimestamps();

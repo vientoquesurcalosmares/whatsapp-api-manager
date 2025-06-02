@@ -10,7 +10,7 @@ class FlowVariable extends Model
 {
     use HasFactory, GeneratesUlid;
 
-    protected $table = 'flow_variables';
+    protected $table = 'whatsapp_flow_variables';
     protected $primaryKey = 'variable_id';
     public $incrementing = false;
     protected $keyType = 'string';

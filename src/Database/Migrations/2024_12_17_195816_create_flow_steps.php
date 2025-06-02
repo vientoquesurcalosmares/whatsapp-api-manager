@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('flow_steps', function (Blueprint $table) {
+        Schema::create('whatsapp_flow_steps', function (Blueprint $table) {
             $table->ulid('step_id')->primary();
             $table->ulid('flow_id');
             $table->string('name', 200);
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->text('retry_message')->nullable();
 
             $table->enum('failure_action', ['repeat','redirect','end_flow','transfer'])->default('end_flow'); // Acción si falla la validación
-             $table->ulid('failure_step_id')->nullable();
+            $table->ulid('failure_step_id')->nullable();
             $table->boolean('is_terminal')->default(false); // Finaliza el flujo
             $table->boolean('is_entry_point')->default(false); // Paso inicial
 
@@ -45,6 +45,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('flow_steps');
+        Schema::dropIfExists('whatsapp_flow_steps');
     }
 };

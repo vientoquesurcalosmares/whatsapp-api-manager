@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('template_triggers', function (Blueprint $table) {
+        Schema::create('whatsapp_template_triggers', function (Blueprint $table) {
             $table->ulid('template_trigger_id')->primary();
             $table->string('template_name');
             $table->char('language', 2)->default('en');
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('template_triggers');
+        Schema::dropIfExists('whatsapp_template_triggers');
     }
 };

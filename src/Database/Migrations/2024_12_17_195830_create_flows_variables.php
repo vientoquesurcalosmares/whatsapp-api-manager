@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('flow_variables', function (Blueprint $table) {
+        Schema::create('whatsapp_flow_variables', function (Blueprint $table) {
             $table->ulid('variable_id')->primary();
-            $table->foreignUlid('flow_id')->constrained('flows', 'flow_id')->onDelete('cascade');
+            $table->foreignUlid('flow_id')->constrained('whatsapp_flows', 'flow_id')->onDelete('cascade');
             $table->string('name');
             $table->enum('type', ['string','number','boolean'])->default('string');
             $table->json('default_value')->nullable(); // Valor inicial opcional
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('flow_variables');
+        Schema::dropIfExists('whatsapp_flow_variables');
     }
 };

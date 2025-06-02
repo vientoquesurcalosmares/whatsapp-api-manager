@@ -67,7 +67,7 @@ class WhatsappPhoneNumber extends Model
     public function contacts()
     {
         return $this->hasMany(Contact::class)
-                    ->whereHas('messages', function ($query) {
+                    ->whereHas('whatsapp_messages', function ($query) {
                         $query->where('whatsapp_phone_id', $this->phone_number_id);
                     })
                     ->distinct();

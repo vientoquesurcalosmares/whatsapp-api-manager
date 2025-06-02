@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('keyword_triggers', function (Blueprint $table) {
+        Schema::create('whatsapp_keyword_triggers', function (Blueprint $table) {
             $table->ulid('keyword_trigger_id')->primary();
             $table->json('keywords');
             $table->boolean('case_sensitive')->default(false);
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('keyword_triggers');
+        Schema::dropIfExists('whatsapp_keyword_triggers');
     }
 };

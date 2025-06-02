@@ -20,7 +20,7 @@ return new class extends Migration
                 ->onDelete('cascade');
             $table->foreignUlid('default_flow_id')
                   ->nullable()
-                  ->constrained('flows', 'flow_id')
+                  ->constrained('whatsapp_flows', 'flow_id')
                   ->nullOnDelete();
             $table->string('bot_name', 45);
             $table->text('description')->nullable();

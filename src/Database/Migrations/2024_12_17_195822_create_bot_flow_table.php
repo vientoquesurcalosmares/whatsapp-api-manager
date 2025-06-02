@@ -8,12 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('bot_flow', function (Blueprint $table) {
+        Schema::create('whatsapp_bot_flow', function (Blueprint $table) {
             $table->foreignUlid('whatsapp_bot_id')
                   ->constrained('whatsapp_bots', 'whatsapp_bot_id')
                   ->cascadeOnDelete();
             $table->foreignUlid('flow_id')
-                  ->constrained('flows', 'flow_id')
+                  ->constrained('whatsapp_flows', 'flow_id')
                   ->cascadeOnDelete();
             $table->timestamps();
 
@@ -24,6 +24,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('bot_flow');
+        Schema::dropIfExists('whatsapp_bot_flow');
     }
 };

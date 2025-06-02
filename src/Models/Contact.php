@@ -58,7 +58,7 @@ class Contact extends Model
 
     public function campaigns()
     {
-        return $this->belongsToMany(Campaign::class, 'campaign_contact')
+        return $this->belongsToMany(Campaign::class)
             ->withPivot('status', 'sent_at', 'delivered_at', 'read_at');
     }
 

@@ -14,7 +14,7 @@ class StepMessage extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
-    protected $table = 'step_messages';
+    protected $table = 'whatsapp_step_messages';
     protected $primaryKey = 'message_id';
     public $incrementing = false;
     protected $keyType = 'string';

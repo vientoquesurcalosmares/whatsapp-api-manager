@@ -118,7 +118,7 @@ class Campaign extends Model
      */
     public function updateMetrics(): void
     {
-        $this->load('contacts');
+        $this->load('whatsapp_contacts');
 
         $this->metric()->updateOrCreate(
             ['campaign_id' => $this->campaign_id],

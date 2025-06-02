@@ -45,7 +45,7 @@ class WhatsappBot extends Model
     {
         return $this->belongsToMany(
             Flow::class,
-            'bot_flow', // Nombre de la tabla pivote
+            'whatsapp_bot_flow', // Nombre de la tabla pivote
             'whatsapp_bot_id', // FK en bot_flow para el bot
             'flow_id' // FK en bot_flow para el flujo
         );

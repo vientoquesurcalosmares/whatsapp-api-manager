@@ -11,7 +11,7 @@ class FlowTrigger extends Model
 {
     use HasFactory, SoftDeletes, GeneratesUlid;
 
-    protected $table = 'flow_triggers';
+    protected $table = 'whatsapp_flow_triggers';
     protected $primaryKey = 'trigger_id';
     public $incrementing = false;
     protected $keyType = 'string';

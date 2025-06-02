@@ -12,7 +12,7 @@ class KeywordTrigger extends Model
 {
     use HasFactory, SoftDeletes, GeneratesUlid;
 
-    protected $table = 'keyword_triggers';
+    protected $table = 'whatsapp_keyword_triggers';
     protected $primaryKey = 'keyword_trigger_id';
     public $incrementing = false;
     protected $keyType = 'string';

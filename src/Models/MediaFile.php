@@ -13,7 +13,7 @@ class MediaFile extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
-    protected $table = 'media_files';
+    protected $table = 'whatsapp_media_files';
     protected $primaryKey = 'media_file_id';
     public $incrementing = false;
     protected $keyType = 'string';

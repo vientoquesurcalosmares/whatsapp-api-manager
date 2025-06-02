@@ -12,10 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('user_responses', function (Blueprint $table) {
+        Schema::create('whatsapp_user_responses', function (Blueprint $table) {
             $table->ulid('response_id')->primary();
             $table->foreignUlid('session_id')->constrained('whatsapp_chat_sessions', 'session_id');
-            $table->foreignUlid('flow_step_id')->constrained('flow_steps', 'step_id');
+            $table->foreignUlid('flow_step_id')->constrained('whatsapp_flow_steps', 'step_id');
             $table->foreignUlid('message_id')->constrained('whatsapp_messages', 'message_id');
             $table->string('field_name')->nullable(); // Ej: "nombre", "telefono"
             $table->json('field_value')->nullable(); // Valor proporcionado
@@ -32,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('user_responses');
+        Schema::dropIfExists('whatsapp_user_responses');
     }
 };

@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('regex_triggers', function (Blueprint $table) {
+        Schema::create('whatsapp_regex_triggers', function (Blueprint $table) {
             $table->ulid('regex_trigger_id')->primary();
             $table->string('pattern');
             $table->string('flags')->nullable();
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('regex_triggers');
+        Schema::dropIfExists('whatsapp_regex_triggers');
     }
 };

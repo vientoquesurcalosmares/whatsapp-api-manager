@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('flows', function (Blueprint $table) {
+        Schema::create('whatsapp_flows', function (Blueprint $table) {
             $table->ulid('flow_id')->primary();
             $table->string('name', 200); // Nombre interno del flujo
             $table->text('description')->nullable();
@@ -38,6 +38,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('flows');
+        Schema::dropIfExists('whatsapp_flows');
     }
 };
