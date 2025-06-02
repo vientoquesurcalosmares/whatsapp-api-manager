@@ -13,6 +13,7 @@ class WhatsappBot extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
+    protected $table = 'whatsapp_bots';
     protected $primaryKey = 'whatsapp_bot_id';
     public $incrementing = false;
     protected $keyType = 'string';

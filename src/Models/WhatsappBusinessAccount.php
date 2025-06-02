@@ -10,6 +10,7 @@ class WhatsappBusinessAccount extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'whatsapp_business_accounts';
     protected $primaryKey = 'whatsapp_business_id';
     public $incrementing = false;
     protected $keyType = 'string';

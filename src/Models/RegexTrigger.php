@@ -12,6 +12,7 @@ class RegexTrigger extends Model
 {
     use HasFactory, SoftDeletes, GeneratesUlid;
 
+    protected $table = 'regex_triggers';
     protected $primaryKey = 'regex_trigger_id';
     public $incrementing = false;
     protected $keyType = 'string';

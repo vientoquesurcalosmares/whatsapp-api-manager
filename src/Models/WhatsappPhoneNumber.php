@@ -13,6 +13,7 @@ class WhatsappPhoneNumber extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
+    protected $table = 'whatsapp_phone_numbers';
     protected $primaryKey = 'phone_number_id';
     public $incrementing = false;
     protected $keyType = 'string';

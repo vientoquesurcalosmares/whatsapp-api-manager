@@ -14,6 +14,7 @@ class FlowStep extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
+    protected $table = 'flow_steps';
     protected $primaryKey = 'step_id';
     public $incrementing = false;
     protected $keyType = 'string';
