@@ -41,6 +41,7 @@ class Endpoints
     const GET_TEMPLATE = '{template_id}';
     const CREATE_TEMPLATE = '{waba_id}/message_templates';
     const DELETE_TEMPLATE = '{waba_id}/message_templates';
+    const UPDATE_TEMPLATE = '{template_id}';
 
     // Helper method to build URLs with dynamic parameters
     /**
