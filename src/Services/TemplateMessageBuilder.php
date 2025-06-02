@@ -470,6 +470,12 @@ class TemplateMessageBuilder
             // throw new WhatsappApiException('Error al enviar el mensaje.', $response['error'] ?? []);
         }
 
+        $message->update([
+            'wa_id' => $response['messages'][0]['id'] ?? null,
+            'status' => MessageStatus::SENT,
+            'json' => $response
+        ]);
+
         Log::info('Mensaje enviado exitosamente.', ['response' => $response]);
 
         return $response;
