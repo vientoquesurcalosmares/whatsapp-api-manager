@@ -65,6 +65,13 @@ class TemplateMessageBuilder
 
         $this->phoneNumber = $countryCode . $cleanedPhoneNumber;
 
+        $contact = Contact::firstOrCreate(
+            [
+            'phone_number' => $cleanedPhoneNumber,
+            'country_code' => $countryCode
+            ]
+        );
+
         return $this;
     }
 
