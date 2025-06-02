@@ -26,6 +26,7 @@ class TemplateMessageBuilder
     protected ?string $language = null; // Opcional
     protected array $components = [];
     protected array $templateStructure = []; // Estructura de la plantilla
+    protected Contact $contact;
 
     /**
      * Constructor de la clase TemplateMessageBuilder.
@@ -65,10 +66,11 @@ class TemplateMessageBuilder
 
         $this->phoneNumber = $countryCode . $cleanedPhoneNumber;
 
-        $contact = Contact::firstOrCreate(
+        $contact = Contact::updateOrCreate(
+        ['wa_id' => $this->phoneNumber], // Buscar por wa_id (número completo)
             [
-            'phone_number' => $cleanedPhoneNumber,
-            'country_code' => $countryCode
+                'phone_number' => $cleanedPhoneNumber,
+                'country_code' => $countryCode
             ]
         );
 
@@ -435,7 +437,7 @@ class TemplateMessageBuilder
 
         $message = Message::create([
             'whatsapp_phone_id' => $this->phone->phone_number_id,
-            'contact_id' => $contact->contact_id,
+            'contact_id' => $this->contact->contact_id,
             'message_from' => $this->phone->display_phone_number,
             'message_to' => $contact->wa_id,
             'message_type' => 'template',
