@@ -23,6 +23,6 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::dropIfExists('languages');
+        Schema::dropIfExists('whatsapp_template_languages');
     }
 };
