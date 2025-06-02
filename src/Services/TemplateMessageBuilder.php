@@ -26,7 +26,7 @@ class TemplateMessageBuilder
     protected ?string $language = null; // Opcional
     protected array $components = [];
     protected array $templateStructure = []; // Estructura de la plantilla
-    protected Contact $contact;
+    protected ?Contact $contact = null;
 
     /**
      * Constructor de la clase TemplateMessageBuilder.
