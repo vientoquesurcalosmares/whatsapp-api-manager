@@ -90,7 +90,7 @@ class WhatsappWebhookController extends Controller
         $textContent = null;
 
         Log::channel('whatsapp')->warning('Handle Incoming Message: ', [
-            'message' => $message,
+            'message_type' => $messageType,
             'contact' => $contact,
             'metadata' => $metadata,
         ]);
@@ -156,15 +156,14 @@ class WhatsappWebhookController extends Controller
             $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
         }
 
-
+        $logMessage = $textContent ?? ($message['text']['body'] ?? 'No text content');
 
         Log::channel('whatsapp')->info('Incoming message processed.', [
             'message_id' => $message['id'],
             'contact_id' => $contactRecord->contact_id,
             'phone_number' => $fullPhone,
             'message_type' => $messageType,
-            'Message' => $message['text']['body'],
-            'Text Content' => $textContent,
+            'content' => $logMessage,
         ]);
 
         // Si tenemos contenido de texto, procesar el flujo
@@ -527,6 +526,11 @@ class WhatsappWebhookController extends Controller
         string $messageId
     ): void
     {
+        if (empty(trim($userInput))) {
+            Log::channel('whatsapp')->warning('Empty user input received');
+            return;
+        }
+        
         $session->loadMissing([
             'currentStep',
             'flow.entryPoint'
