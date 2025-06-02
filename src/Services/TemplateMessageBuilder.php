@@ -66,7 +66,7 @@ class TemplateMessageBuilder
 
         $this->phoneNumber = $countryCode . $cleanedPhoneNumber;
 
-        $contact = Contact::updateOrCreate(
+        $this->contact = Contact::updateOrCreate(
         ['wa_id' => $this->phoneNumber], // Buscar por wa_id (número completo)
             [
                 'phone_number' => $cleanedPhoneNumber,
