@@ -8,6 +8,9 @@ LARAVEL WHatsapp Manager
 **Un paquete elegante y potente para integrar WhatsApp Business API en tus aplicaciones Laravel 12+.**  
 ✨ Gestión de mensajes, plantillas, campañas, flujos conversacionales, métricas y más.
 
+# Este paquete esta en version ALPHA.
+## Las migraciones y codigo estan en constante cambio hasta lograr la Version Estable
+
 ---
 
 ## 🚀 Características Principales
