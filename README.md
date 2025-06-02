@@ -669,33 +669,6 @@ Whatsapp::template()->getTemplates($account);
     $editor->update();
     ```
 
-## 12. Crear las plantillas en una cuenta de whatsapp
-### Crear Plantillas de Utilidad
-
-Las plantillas transaccionales son ideales para notificaciones como confirmaciones de pedidos, actualizaciones de envío, etc.
-
-![Ejemplo de plantilla de marketing](assets/template_1.png "Plantilla de Marketing")
-
-```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
-
-// Obtener la cuenta empresarial
-$account = WhatsappBusinessAccount::first();
-
-// Crear una plantilla transaccional
-$template = Whatsapp::template()
-    ->createUtilityTemplate($account)
-    ->setName('order_confirmation_3')
-    ->setLanguage('en_US')
-    ->addHeader('TEXT', 'Order Confirmation')
-    ->addBody('Your order {{1}} has been confirmed.', ['12345'])
-    ->addFooter('Thank you for shopping with us!')
-    ->addButton('QUICK_REPLY', 'Track Order')
-    ->addButton('QUICK_REPLY', 'Contact Support')
-    ->save();
-```
-
 ## Características Clave del Edit Template
 
     1.- Gestión completa de componentes:
@@ -724,6 +697,35 @@ $template = Whatsapp::template()
         - Encadenamiento de métodos para modificaciones
         - update() aplica los cambios
 
+## 12. Crear las plantillas en una cuenta de whatsapp
+### Crear Plantillas de Utilidad
+
+Las plantillas transaccionales son ideales para notificaciones como confirmaciones de pedidos, actualizaciones de envío, etc.
+
+![Ejemplo de plantilla de marketing](assets/template_1.png "Plantilla de Marketing")
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+
+// Obtener la cuenta empresarial
+$account = WhatsappBusinessAccount::first();
+
+// Crear una plantilla transaccional
+$template = Whatsapp::template()
+    ->createUtilityTemplate($account)
+    ->setName('order_confirmation_3')
+    ->setLanguage('en_US')
+    ->addHeader('TEXT', 'Order Confirmation')
+    ->addBody('Your order {{1}} has been confirmed.', ['12345'])
+    ->addFooter('Thank you for shopping with us!')
+    ->addButton('QUICK_REPLY', 'Track Order')
+    ->addButton('QUICK_REPLY', 'Contact Support')
+    ->save();
+```
+
+
+
 ---
 
 ### Crear Plantillas de Marketing
@@ -733,26 +735,26 @@ Las plantillas de marketing son útiles para promociones, descuentos y campañas
 ![Ejemplo de plantilla de marketing](assets/template_2.png "Plantilla de Marketing")
 
 ```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
-// Obtener la cuenta empresarial
-$account = WhatsappBusinessAccount::first();
+    // Obtener la cuenta empresarial
+    $account = WhatsappBusinessAccount::first();
 
-// Crear una plantilla de marketing con texto
-$template = Whatsapp::template()
-    ->createMarketingTemplate($account)
-    ->setName('personal_promotion_text_only')
-    ->setLanguage('en')
-    ->addHeader('TEXT', 'Our {{1}} is on!', ['Summer Sale'])
-    ->addBody(
-        'Shop now through {{1}} and use code {{2}} to get {{3}} off of all merchandise.',
-        ['the end of August', '25OFF', '25%']
-    )
-    ->addFooter('Use the buttons below to manage your marketing subscriptions')
-    ->addButton('QUICK_REPLY', 'Unsubscribe from Promos')
-    ->addButton('QUICK_REPLY', 'Unsubscribe from All')
-    ->save();
+    // Crear una plantilla de marketing con texto
+    $template = Whatsapp::template()
+        ->createMarketingTemplate($account)
+        ->setName('personal_promotion_text_only')
+        ->setLanguage('en')
+        ->addHeader('TEXT', 'Our {{1}} is on!', ['Summer Sale'])
+        ->addBody(
+            'Shop now through {{1}} and use code {{2}} to get {{3}} off of all merchandise.',
+            ['the end of August', '25OFF', '25%']
+        )
+        ->addFooter('Use the buttons below to manage your marketing subscriptions')
+        ->addButton('QUICK_REPLY', 'Unsubscribe from Promos')
+        ->addButton('QUICK_REPLY', 'Unsubscribe from All')
+        ->save();
 ```
 
 ---
