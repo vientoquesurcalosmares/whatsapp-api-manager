@@ -83,7 +83,7 @@ class TemplateService
             }
 
             return Template::where('whatsapp_business_id', $account->whatsapp_business_id)
-                ->with(['category', 'languaje', 'components'])
+                ->with(['category', 'languajeData', 'components'])
                 ->get();
 
         } catch (\Exception $e) {

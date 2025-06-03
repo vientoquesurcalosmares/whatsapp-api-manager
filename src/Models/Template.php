@@ -45,7 +45,7 @@ class Template extends Model
         return $this->belongsTo(TemplateCategory::class, 'category_id', 'category_id'); // Usar 'category_id'
     }
 
-    public function language()
+    public function languageData()
     {
         return $this->belongsTo(TemplateLanguage::class, 'language', 'id');
     }
