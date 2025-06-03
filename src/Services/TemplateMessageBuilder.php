@@ -98,28 +98,41 @@ class TemplateMessageBuilder
      * @return self
      * @throws InvalidArgumentException Si el componente no es válido.
      */
-    public function addHeader(string $type, $content): self
     {
         $this->ensureTemplateStructureLoaded();
         $this->validateComponent('HEADER', $type);
-        
+
         $formattedParams = [];
-        if (!is_array($content)) {
-            $content = [$content];
+
+        if( $type=='IMAGE' ){
+            //foreach ($content as $item) {
+                $formattedParams[] = [
+                    'type' => 'image',
+                    'image' => [
+                        'link' => $content
+                    ]
+                ];
+            //}
+
+            $this->components['HEADER']['type'] = 'header';
         }
-        
-        foreach ($content as $item) {
-            $formattedParams[] = [
-                'type' => 'text',
-                'text' => $item
-            ];
+        else{
+            if (!is_array($content)) {
+                $content = [$content];
+            }
+
+            foreach ($content as $item) {
+                $formattedParams[] = [
+                    'type' => 'text',
+                    'link' => $item
+                ];
+            }
+
+            $this->components['HEADER']['type'] = $type;
         }
-        
-        $this->components['HEADER'] = [
-            'type' => $type,
-            'parameters' => $formattedParams
-        ];
-        
+
+        $this->components['HEADER']['parameters'] = $formattedParams;
+
         return $this;
     }
 
