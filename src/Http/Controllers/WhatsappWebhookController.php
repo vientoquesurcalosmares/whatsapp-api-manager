@@ -330,6 +330,10 @@ class WhatsappWebhookController extends Controller
             $extension = 'ogg';
         }
 
+        if ($message['type'] === 'sticker' && $extension === 'bin') {
+            $extension = 'webp';
+        }
+
         $fileName = "{$mediaId}.{$extension}";
         $filePath = "{$directory}{$fileName}";
         file_put_contents($filePath, $mediaContent);
