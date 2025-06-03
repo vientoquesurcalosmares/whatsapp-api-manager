@@ -12,6 +12,11 @@ LARAVEL WHatsapp Manager
 # Este paquete esta en version ALPHA.
 ## Las migraciones y codigo estan en constante cambio hasta lograr la Version Estable
 
+## 🙌 Apóyanos con una donación
+Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]
+[![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+Gracias por tu apoyo 💙
+
 ---
 
 ## 🚀 Características Principales
