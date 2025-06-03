@@ -315,7 +315,14 @@ class WhatsappWebhookController extends Controller
             mkdir($directory, 0777, true);
         }
 
-        $fileName = "{$mediaId}.{$this->getFileExtension($mimeType)}";
+        $extension = $this->getFileExtension($mimeType);
+
+        // Si es un archivo de audio y tiene extensión .bin, forzar a .ogg
+        if ($message['type'] === 'audio' && $extension === 'bin') {
+            $extension = 'ogg';
+        }
+
+        $fileName = "{$mediaId}.{$extension}";
         $filePath = "{$directory}{$fileName}";
         file_put_contents($filePath, $mediaContent);
 
