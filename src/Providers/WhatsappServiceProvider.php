@@ -105,6 +105,11 @@ class WhatsappServiceProvider extends ServiceProvider
             $this->loadMigrationsFrom(__DIR__ . '/../Database/migrations');
         }
 
+        // Publicar seeders
+        $this->publishes([
+            __DIR__ . '/../Database/seeders/WhatsappTemplateLanguageSeeder.php' => database_path('seeders/WhatsappTemplateLanguageSeeder.php'),
+        ], 'whatsapp-seeders');
+
         // Publicar rutas
         $this->publishes([
             __DIR__ . '/../routes/whatsapp_webhook.php' => base_path('routes/whatsapp_webhook.php'),
@@ -115,12 +120,16 @@ class WhatsappServiceProvider extends ServiceProvider
 
         // Registrar comandos de consola
         if ($this->app->runningInConsole()) {
+            // Crear directorios necesarios al publicar configuraciones
+            $this->publishes([], 'whatsapp-storage');
+
+            $this->publishes([
+                __DIR__ . '/../Database/seeders/WhatsappTemplateLanguageSeeder.php' => database_path('seeders/WhatsappTemplateLanguageSeeder.php'),
+            ], 'whatsapp-seeders');
+
             $this->commands([
                 CheckUserModel::class,
             ]);
-
-            // Crear directorios necesarios al publicar configuraciones
-            $this->publishes([], 'whatsapp-storage');
         }
 
         // Crear el enlace simbólico y directorios solo al publicar configuraciones
