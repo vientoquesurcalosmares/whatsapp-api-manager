@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('variant', 5)->nullable();      // Abreviatura personalizada
             
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

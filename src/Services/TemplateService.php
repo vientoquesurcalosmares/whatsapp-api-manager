@@ -6,6 +6,7 @@ use InvalidArgumentException;
 use ScriptDevelop\WhatsappManager\Models\Template;
 use ScriptDevelop\WhatsappManager\Models\TemplateComponent;
 use ScriptDevelop\WhatsappManager\Models\TemplateCategory;
+use ScriptDevelop\WhatsappManager\Models\TemplateLanguage;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
@@ -82,7 +83,7 @@ class TemplateService
             }
 
             return Template::where('whatsapp_business_id', $account->whatsapp_business_id)
-                ->with(['category', 'components'])
+                ->with(['category', 'languaje', 'components'])
                 ->get();
 
         } catch (\Exception $e) {
@@ -443,6 +444,13 @@ class TemplateService
         return $template;
     }
 
+    protected function getLanguageId(string $templateData): string
+    {
+        $language = TemplateLanguage::find($templateData);
+
+        return $language->category_id;
+    }
+
     /**
      * Obtiene el ID de la categoría o la crea si no existe.
      *
@@ -451,10 +459,6 @@ class TemplateService
      */
     protected function getCategoryId(string $categoryName): string
     {
-        Log::channel('whatsapp')->info('Obteniendo categoría.', [
-            'category_name' => $categoryName,
-        ]);
-
         $category = TemplateCategory::firstOrCreate(
             ['name' => $categoryName],
             ['description' => ucfirst($categoryName)]

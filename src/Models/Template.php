@@ -45,6 +45,11 @@ class Template extends Model
         return $this->belongsTo(TemplateCategory::class, 'category_id', 'category_id'); // Usar 'category_id'
     }
 
+    public function language()
+    {
+        return $this->belongsTo(TemplateLanguage::class, 'language', 'id');
+    }
+
     public function components()
     {
         return $this->hasMany(TemplateComponent::class, 'template_id', 'template_id');
