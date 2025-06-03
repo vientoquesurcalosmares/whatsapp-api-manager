@@ -710,7 +710,7 @@ Se hace la peticion a la API de whatsapp para obtener todas las plantillas que e
                 ->removeHeader()
                 ->addFooter('Nuevo texto de pie de página')
                 ->removeAllButtons()
-                ->addButton('URL', 'Visitar sitio', 'https://ejemplo.com')
+                ->addButton('URL', 'Visitar sitio', 'https://mpago.li/2qe5G7E')
                 ->addButton('QUICK_REPLY', 'Confirmar')
                 ->update();
             
@@ -922,7 +922,7 @@ Puedes agregar botones de URL personalizados para redirigir a los usuarios a pá
         ->addBody('Hi {{1}}, your order {{2}} has been shipped!', ['John', '12345'])
         ->addFooter('Thank you for your purchase!')
         ->addButton('PHONE_NUMBER', 'Call Us', '+573234255686')
-        ->addButton('URL', 'Track Order', 'https://example.com/track?order={{1}}', ['12345'])
+        ->addButton('URL', 'Track Order', 'https://mpago.li/{{1}}', ['2qe5G7E'])
         ->save();
 ```
 
@@ -986,13 +986,28 @@ Puedes enviar diferentes mensajes de plantillas segun la estructura de la planti
         ->send();
 
     // Enviar plantilla 2
+
     $message = Whatsapp::template()
         ->sendTemplateMessage($phone)
         ->to('57', '3135666627')
         ->usingTemplate('link_de_pago')
         ->addHeader('TEXT', '123456')
         ->addBody(['20000'])
-        ->addButton('URL', 'Pagar', 'https://mpago.li/1QFwRV', ['1QFwRV'])
+        ->addButton('URL', 'Pagar', '1QFwRV', ['[https://mpago.li/1QFwRV]'])
+        ->send();
+    
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('link_de_pago')
+        ->addHeader('TEXT', '123456')
+        ->addBody(['20000'])
+        ->addButton(
+            'URL', // Tipo de boton
+            'Pagar', // Texto del boton
+            '1QFwRV', // Variable del boton 'Solo Tipo URL'
+            ['[https://mpago.li/1QFwRV]'] // URL de ejemplo 'No se envia solo se toma de ejemplo'
+        )
         ->send();
 ```
 ## 14. Bot Builder, Contructor de Bot y mensajes automatizados.
