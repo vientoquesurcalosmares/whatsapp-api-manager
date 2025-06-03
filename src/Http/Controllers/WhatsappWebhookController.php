@@ -159,6 +159,10 @@ class WhatsappWebhookController extends Controller
             $this->processContactMessage($message, $contactRecord, $whatsappPhone);
         }
 
+        if ($messageType === 'reaction') {
+            $this->processReactionMessage($message, $contactRecord, $whatsappPhone);
+        }
+
         // Manejar mensajes de media
         if (in_array($messageType, ['image', 'audio', 'video', 'document', 'sticker'])) {
             $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
@@ -442,7 +446,37 @@ class WhatsappWebhookController extends Controller
         }
     }
 
+    protected function processReactionMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
+    {
+        $reaction = $message['reaction'] ?? null;
 
+        if (!$reaction || !isset($reaction['emoji'], $reaction['message_id'])) {
+            Log::channel('whatsapp')->warning('Reacción inválida o incompleta.', $message);
+            return;
+        }
+
+        // Opcional: guardar la reacción asociada al mensaje original
+        $originalMessage = Message::where('wa_id', $reaction['message_id'])->first();
+
+        $messageRecord = Message::create([
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'wa_id' => $message['id'],
+            'conversation_id' => $originalMessage?->conversation_id,
+            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+            'message_from' => $message['from'],
+            'message_to' => $whatsappPhone->display_phone_number,
+            'message_type' => 'REACTION',
+            'message_content' => "Reaccionó con {$reaction['emoji']} al mensaje {$reaction['message_id']}",
+            'json_content' => json_encode($message),
+            'status' => 'received'
+        ]);
+
+        Log::channel('whatsapp')->info('Reacción procesada.', [
+            'message_id' => $messageRecord->message_id,
+            'reaction' => $reaction
+        ]);
+    }
 
     private function getMediaUrl(string $mediaId, WhatsappPhoneNumber $whatsappPhone): ?string
     {
