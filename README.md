@@ -38,12 +38,12 @@ Gracias por tu apoyo 💙
 
 1. **Instala el paquete vía Composer**:
    ```bash
-   composer require scriptdevelop/whatsapp-manager
+        composer require scriptdevelop/whatsapp-manager
    ```
 
 2. **Publica la configuración (opcional)**:
    ```bash
-   php artisan vendor:publish --tag=whatsapp-config
+        php artisan vendor:publish --tag=whatsapp-config
    ```
 
    ⚙️ Configuración
@@ -55,28 +55,29 @@ Gracias por tu apoyo 💙
    Configuración principal del paquete:
    Añadir el canal whatsapp.
 
-      ```php
-      'channels' => [
-         'whatsapp' => [
-               'driver' => 'daily',
-               'path' => storage_path('logs/whatsapp.log'),
-               'level' => 'debug',
-               'days' => 7,
-               'tap' => [\ScriptDevelop\WhatsappManager\Logging\CustomizeFormatter::class],
-         ],
-      ],
-      ```
+    ```php
+        'channels' => [
+            'whatsapp' => [
+                'driver' => 'daily',
+                'path' => storage_path('logs/whatsapp.log'),
+                'level' => 'debug',
+                'days' => 7,
+                'tap' => [\ScriptDevelop\WhatsappManager\Logging\CustomizeFormatter::class],
+            ],
+        ],
+    ```
 
 3. **Publica las migraciones (opcional)**:
-   ```bash
-   php artisan vendor:publish --tag=whatsapp-migrations
+    ```bash
+        php artisan vendor:publish --tag=whatsapp-migrations
+    ```
 
 4. **Publica las rutas (OBLIGATORIO)**:
    Se necesita para el webhook.
 
-   ```bash
-   php artisan vendor:publish --tag=whatsapp-routes
-   ```
+    ```bash
+        php artisan vendor:publish --tag=whatsapp-routes
+    ```
 
    Excluir rutas del webhook de CSRF:
 
@@ -84,20 +85,20 @@ Gracias por tu apoyo 💙
    En bootstrap/app.php:
 
    ```php
-   ->withMiddleware(function (Middleware $middleware) {
-        $middleware->validateCsrfTokens(except: [
-            '/whatsapp-webhook',
-        ]);
-    })
+    ->withMiddleware(function (Middleware $middleware) {
+            $middleware->validateCsrfTokens(except: [
+                '/whatsapp-webhook',
+            ]);
+        })
    ```
 
 5. **Configura tus credenciales en .env**:
-   ```bash
-   WHATSAPP_API_URL=https://graph.facebook.com
-   WHATSAPP_API_VERSION=v21.0
-   WHATSAPP_VERIFY_TOKEN=your-verify-token
-   WHATSAPP_USER_MODEL=App\Models\User
-
+    ```bash
+        WHATSAPP_API_URL=https://graph.facebook.com
+        WHATSAPP_API_VERSION=v21.0
+        WHATSAPP_VERIFY_TOKEN=your-verify-token
+        WHATSAPP_USER_MODEL=App\Models\User
+    ```
 
 🔄 Personalizar el Modelo User
 
@@ -106,21 +107,21 @@ Si usas un modelo User personalizado:
    Si estás utilizando un modelo User personalizado, asegúrate de especificarlo en tu archivo `.env`:
 
    ```bash
-   WHATSAPP_USER_MODEL=App\Models\YourCustomUserModel
+    WHATSAPP_USER_MODEL=App\Models\YourCustomUserModel
    ```
 
 Además, verifica que el modelo implementa las interfaces necesarias o extiende el modelo base esperado por el paquete. Por ejemplo:
 
-```php
-namespace App\Modules\Auth\Models;
+    ```php
+        namespace App\Modules\Auth\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
+        use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class Admin extends Authenticatable
-{
-   // Tu lógica personalizada aquí
-}
-```
+        class Admin extends Authenticatable
+        {
+        // Tu lógica personalizada aquí
+        }
+    ```
 
 
 6.  🗃️ Migraciones
@@ -131,27 +132,45 @@ class Admin extends Authenticatable
 
 Ejecuta el siguiente comando para asegurarte de que el modelo de usuario está correctamente configurado:
 
-```bash
-php artisan whatsapp:check-user-model
-```
+    ```bash
+        php artisan whatsapp:check-user-model
+    ```
 
 Este comando validará que el modelo especificado en el archivo `.env` cumple con los requisitos del paquete.
 
 Salida esperada (ejemplo):
-```plaintext
-✅ Modelo User configurado: App\Models\User
-```
+    ```plaintext
+        ✅ Modelo User configurado: App\Models\User
+    ```
 
 Si hay algún problema, revisa la configuración en tu archivo `.env` y asegúrate de que el modelo implementa las interfaces necesarias.
 
 
 Ejecuta las migraciones para crear las tablas necesarias:
    
-```bash
-php artisan migrate
-```
+    ```bash
+        php artisan migrate
+    ```
 
 Esto ejecutará las migraciones necesarias para crear las tablas requeridas por el paquete en tu base de datos.
+
+## 💾 Seeder de idiomas para plantillas
+
+Puedes publicar el seeder que incluye todos los idiomas compatibles con plantillas de WhatsApp con el siguiente comando:
+
+    ```bash
+        php artisan vendor:publish --tag=whatsapp-seeders
+    ```
+
+### Los seeder son necesarios para trabajar con plantillas. Debes tomarlo en cuenta.
+
+Luego de publicarlo, puedes ejecutarlo con:
+
+    ```bash
+        php artisan db:seed --class=WhatsappTemplateLanguageSeeder
+    ```
+
+
 
 Tablas incluidas:
 
