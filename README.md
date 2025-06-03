@@ -268,12 +268,12 @@ Se hace la peticion a la API de whatsapp, se obtienen los datos de la cuenta y s
 - Se usa para Obtener los datos desde la API y alojarlos en la base de datos.
 
 ```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
-$account = Whatsapp::account()->register([
-   'api_token' => '***********************',
-   'business_id' => '1243432234423'
-]);
+    $account = Whatsapp::account()->register([
+    'api_token' => '***********************',
+    'business_id' => '1243432234423'
+    ]);
 ```
 
 
@@ -282,9 +282,9 @@ Obtén información detallada sobre un número de teléfono registrado.
 Se hace la peticion a la API de whatsapp para obtener detalles del numero de whatsapp y se almacenan en la base de datos, si el numero ya existe actualiza la informacion.
 
 ```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
-$phoneDetails = Whatsapp::phone()->getPhoneNumberDetails('564565346546');
+    $phoneDetails = Whatsapp::phone()->getPhoneNumberDetails('564565346546');
 ```
 
 
@@ -293,9 +293,9 @@ Obtén información sobre una cuenta de negocios específica.
 Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuenta en especifico, se almacenan los datos en la base de datos.
 
 ```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
-$account = Whatsapp::phone()->getBusinessAccount('356456456456');
+    $account = Whatsapp::phone()->getBusinessAccount('356456456456');
 ```
 
 
@@ -303,14 +303,19 @@ $account = Whatsapp::phone()->getBusinessAccount('356456456456');
 Envía mensajes de texto simples.
 
 ```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 
-$message = Whatsapp::message()->sendTextMessage(
-    '01JTKF55PCNNWTNEKCGMJAZV93', // ID del número de teléfono
-    '57',                        // Código de país
-    '3237121901',                // Número de teléfono
-    'Hola, este es un mensaje de prueba.' // Contenido del mensaje
-);
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $message = Whatsapp::message()->sendTextMessage(
+        $phone->phone_number_id, // ID del número de teléfono
+        '57',                        // Código de país
+        '3237121901',                // Número de teléfono
+        'Hola, este es un mensaje de prueba.' // Contenido del mensaje
+    );
 ```
 
 
@@ -318,33 +323,47 @@ Enviar Mensajes de Texto con Enlaces
 Envía mensajes de texto simples.
 
 ```php
-$message = Whatsapp::message()->sendTextMessage(
-    '01JTKF55PCNNWTNEKCGMJAZV93',
-    '57',
-    '3237121901',
-    'Visítanos en YouTube: http://youtube.com',
-    true // Habilitar vista previa de enlaces
-);
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $message = Whatsapp::message()->sendTextMessage(
+        $phone->phone_number_id, // ID del número de teléfono
+        '57',
+        '3237121901',
+        'Visítanos en YouTube: http://youtube.com',
+        true // Habilitar vista previa de enlaces
+    );
 ```
 
 ## Marcar mensaje como leido
 Se encarga de marcar el mensaje recibido como leido, con los dos checks azules.
 
 ```php
-$message = Whatsapp::message()->markMessageAsRead('01JW939646VBZTS7JEJN21FGVE');
+    $message = Whatsapp::message()->markMessageAsRead('01JW939646VBZTS7JEJN21FGVE'); // ID del Mensaje a marcar como leidoo
 ```
 
 ## 5. Enviar Respuestas a Mensajes
 Responde a un mensaje existente.
 
 ```php
-$message = Whatsapp::message()->sendReplyTextMessage(
-    '01JTKF55PCNNWTNEKCGMJAZV93',
-    '57',
-    '3237121901',
-    'wamid.HBgMNTczMTM3MTgxOTA4FQIAEhggNzVCNUQzRDMxRjhEMUJEM0JERjAzNkZCNDk5RDcyQjQA', // ID del mensaje de contexto
-    'Esta es una respuesta al mensaje anterior.'
-);
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $message = Whatsapp::message()->sendReplyTextMessage(
+        $phone->phone_number_id, // ID del número de teléfono
+        '57',
+        '3237121901',
+        'wamid.HBgMNTczMTM3MTgxOTA4FQIAEhggNzVCNUQzRDMxRjhEMUJEM0JERjAzNkZCNDk5RDcyQjQA', // ID del mensaje de contexto
+        'Esta es una respuesta al mensaje anterior.'
+    );
 ```
 
 
@@ -355,25 +374,32 @@ Envía una reacción a un mensaje existente.
 ### Sintaxis Unicode requerida - Usa la codificación \u{código_hex} para emojis:
 
 ```php
-// Reacción con corazón rojo ❤️
-$message = Whatsapp::message()->sendReplyReactionMessage(
-    '01JTKF55PCNNWTNEKCGMJAZV93',
-    '57',
-    '3237121901',
-    'wamid.HBgMNTczMTM3MTgxOTA4FQIAEhggNzZENDMzMEI0MDRFQzg0OUUwRTI1M0JBQjEzMUZFRUYA', // ID del mensaje de contexto
-    "\u{2764}\u{FE0F}" // Emoji de reacción
-);
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    // Reacción con corazón rojo ❤️
+    $message = Whatsapp::message()->sendReplyReactionMessage(
+        $phone->phone_number_id, // ID del número de teléfono
+        '57',
+        '3237121901',
+        'wamid.HBgMNTczMTM3MTgxOTA4FQIAEhggNzZENDMzMEI0MDRFQzg0OUUwRTI1M0JBQjEzMUZFRUYA', // ID del mensaje de contexto
+        "\u{2764}\u{FE0F}" // Emoji de reacción
+    );
 
 
-"\u{1F44D}" // 👍 (Me gusta)
-"\u{1F44E}" // 👎 (No me gusta)
-"\u{1F525}" // 🔥 
-"\u{1F60D}" // 😍
-"\u{1F622}" // 😢
-"\u{1F389}" // 🎉
-"\u{1F680}" // 🚀
-"\u{2705}" // ✅
-"\u{274C}" // ❌
+    "\u{1F44D}" // 👍 (Me gusta)
+    "\u{1F44E}" // 👎 (No me gusta)
+    "\u{1F525}" // 🔥 
+    "\u{1F60D}" // 😍
+    "\u{1F622}" // 😢
+    "\u{1F389}" // 🎉
+    "\u{1F680}" // 🚀
+    "\u{2705}" // ✅
+    "\u{274C}" // ❌
 ```
 
 
@@ -382,138 +408,201 @@ $message = Whatsapp::message()->sendReplyReactionMessage(
 ### Enviar Imágenes
 
 ```php
-$filePath = storage_path('app/public/laravel-whatsapp-manager.png');
-$file = new \SplFileInfo($filePath);
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 
-$message = Whatsapp::message()->sendImageMessage(
-    '01JTKF55PCNNWTNEKCGMJAZV93',
-    '57',
-    '3237121901',
-    $file
-);
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $filePath = storage_path('app/public/laravel-whatsapp-manager.png');
+    $file = new \SplFileInfo($filePath);
+
+    $message = Whatsapp::message()->sendImageMessage(
+        $phone->phone_number_id, // ID del número de teléfono
+        '57',
+        '3237121901',
+        $file
+    );
 ```
 
 ### Enviar Imágenes por URL
 
 ```php
-$message = Whatsapp::message()->sendImageMessageByUrl(
-    '01JTKF55PCNNWTNEKCGMJAZV93',
-    '57',
-    '3237121901',
-    'https://example.com/image.png'
-);
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $message = Whatsapp::message()->sendImageMessageByUrl(
+        $phone->phone_number_id, // ID del número de teléfono
+        '57',
+        '3237121901',
+        'https://example.com/image.png'
+    );
 ```
 
 ### Enviar Audio
 
 ```php
-$filePath = storage_path('app/public/audio.ogg');
-$file = new \SplFileInfo($filePath);
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 
-$message = Whatsapp::message()->sendAudioMessage(
-    '01JTKF55PCNNWTNEKCGMJAZV93',
-    '57',
-    '3237121901',
-    $file
-);
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $filePath = storage_path('app/public/audio.ogg');
+    $file = new \SplFileInfo($filePath);
+
+    $message = Whatsapp::message()->sendAudioMessage(
+        $phone->phone_number_id, // ID del número de teléfono
+        '57',
+        '3237121901',
+        $file
+    );
 ```
 
 ### Enviar Audio por URL
 
 ```php
-$message = Whatsapp::message()->sendAudioMessageByUrl(
-    '01JTKF55PCNNWTNEKCGMJAZV93',
-    '57',
-    '3237121901',
-    'https://example.com/audio.ogg'
-);
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $message = Whatsapp::message()->sendAudioMessageByUrl(
+        $phone->phone_number_id, // ID del número de teléfono
+        '57',
+        '3237121901',
+        'https://example.com/audio.ogg'
+    );
 ```
 
 ### Enviar Documentos
 
 ```php
-$filePath = storage_path('app/public/document.pdf');
-$file = new \SplFileInfo($filePath);
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 
-$message = Whatsapp::message()->sendDocumentMessage(
-    '01JTKF55PCNNWTNEKCGMJAZV93',
-    '57',
-    '3237121901',
-    $file
-);
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $filePath = storage_path('app/public/document.pdf');
+    $file = new \SplFileInfo($filePath);
+
+    $message = Whatsapp::message()->sendDocumentMessage(
+        $phone->phone_number_id, // ID del número de teléfono
+        '57',
+        '3237121901',
+        $file
+    );
 ```
 
 ### Enviar Documentos por URL
 
 ```php
-$message = Whatsapp::message()->sendDocumentMessageByUrl(
-    '01JTKF55PCNNWTNEKCGMJAZV93',
-    '57',
-    '3237121901',
-    'https://example.com/document.pdf'
-);
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $message = Whatsapp::message()->sendDocumentMessageByUrl(
+        $phone->phone_number_id, // ID del número de teléfono
+        '57',
+        '3237121901',
+        'https://example.com/document.pdf'
+    );
 ```
 
 ## 8. Enviar Mensajes de Ubicación
 ### Envía un mensaje con coordenadas de ubicación.
 
 ```php
-$message = Whatsapp::message()->sendLocationMessage(
-    '01JTKF55PCNNWTNEKCGMJAZV93',
-    '57',
-    '3237121901',
-    4.7110, // Latitud
-    -74.0721, // Longitud
-    'Bogotá', // Nombre del lugar
-    'Colombia' // Dirección
-);
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 
-$message = Whatsapp::message()->sendLocationMessage(
-    phoneNumberId: $phone->phone_number_id,
-    countryCode: '57',
-    phoneNumber: '3137183308',
-    latitude: 19.4326077,  // Latitud
-    longitude: -99.133208, // Longitud
-    name: 'Ciudad de México',
-    address: 'Plaza de la Constitución'
-);
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $message = Whatsapp::message()->sendLocationMessage(
+        $phone->phone_number_id, // ID del número de teléfono
+        '57',
+        '3237121901',
+        4.7110, // Latitud
+        -74.0721, // Longitud
+        'Bogotá', // Nombre del lugar
+        'Colombia' // Dirección
+    );
+
+    $message = Whatsapp::message()->sendLocationMessage(
+        phoneNumberId: $phone->phone_number_id,
+        countryCode: '57',
+        phoneNumber: '3137183308',
+        latitude: 19.4326077,  // Latitud
+        longitude: -99.133208, // Longitud
+        name: 'Ciudad de México',
+        address: 'Plaza de la Constitución'
+    );
 ```
 
 ## 9. Mensajes con Botones Interactivos
 
 ```php
-$message = Whatsapp::message()->sendInteractiveButtonsMessage(
-    phoneNumberId: $phone->phone_number_id,
-    countryCode: '57',
-    phoneNumber: '3136133508',
-    body: 'Selecciona una opción:',
-    buttons: [
-        ['id' => 'op1', 'title' => 'Opción 1'], // Máximo 3 botones
-        ['id' => 'op2', 'title' => 'Opción 2']
-    ],
-    footer: 'Footer opcional' // Texto secundario
-);
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $message = Whatsapp::message()->sendInteractiveButtonsMessage(
+        phoneNumberId: $phone->phone_number_id,
+        countryCode: '57',
+        phoneNumber: '3136133508',
+        body: 'Selecciona una opción:',
+        buttons: [
+            ['id' => 'op1', 'title' => 'Opción 1'], // Máximo 3 botones
+            ['id' => 'op2', 'title' => 'Opción 2']
+        ],
+        footer: 'Footer opcional' // Texto secundario
+    );
 ```
 
 ## 10. Listas Desplegables Interactivas
 
 ```php
-$message = Whatsapp::message()->sendListMessage(
-    phoneNumberId: $phone->phone_number_id,
-    countryCode: '57',
-    phoneNumber: '3137555558',
-    buttonText: 'Ver opciones', // Máximo 20 caracteres
-    sections: [
-        [
-            'title' => 'Sección 1', // Encabezado de sección
-            'rows' => [
-                ['id' => 'row1', 'title' => 'Fila 1'], // Hasta 10 filas
-                ['id' => 'row2', 'title' => 'Fila 2']
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $message = Whatsapp::message()->sendListMessage(
+        phoneNumberId: $phone->phone_number_id,
+        countryCode: '57',
+        phoneNumber: '3137555558',
+        buttonText: 'Ver opciones', // Máximo 20 caracteres
+        sections: [
+            [
+                'title' => 'Sección 1', // Encabezado de sección
+                'rows' => [
+                    ['id' => 'row1', 'title' => 'Fila 1'], // Hasta 10 filas
+                    ['id' => 'row2', 'title' => 'Fila 2']
+                ]
             ]
-        ]
-    ],
-    body: 'Selecciona de la lista:' // Texto principal
-);
+        ],
+        body: 'Selecciona de la lista:' // Texto principal
+    );
 ```
 
 
@@ -522,28 +611,28 @@ Se obtienen todas las plantillas de una cuenta de whatsapp y se almacenan en la 
 Se hace la peticion a la API de whatsapp para obtener todas las plantillas que estan asociadas a la cuenta de whatsapp.
 
 ```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
-// Obtener una instancia de WhatsApp Business Account
-$account = WhatsappBusinessAccount::find($accountId);
+    // Obtener una instancia de WhatsApp Business Account
+    $account = WhatsappBusinessAccount::find($accountId);
 
-// Obtener todas las plantillas de la cuenta
-Whatsapp::template()->getTemplates($account);
+    // Obtener todas las plantillas de la cuenta
+    Whatsapp::template()->getTemplates($account);
 ```
 
 - ### Obtener una plantilla por el nombre.
   Se hace la peticion a la API de whatsapp para obtener una plantilla por el nombre y se almacena en la base de datos.
 
    ```php
-   use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-   use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+        use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+        use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
-   // Obtener una instancia de WhatsApp Business Account
-   $account = WhatsappBusinessAccount::find($accountId);
+        // Obtener una instancia de WhatsApp Business Account
+        $account = WhatsappBusinessAccount::find($accountId);
 
-   // Obtener plantilla por su nombre
-   $template = Whatsapp::template()->getTemplateByName($account, 'order_confirmation');
+        // Obtener plantilla por su nombre
+        $template = Whatsapp::template()->getTemplateByName($account, 'order_confirmation');
    ```
 
 
@@ -551,40 +640,40 @@ Whatsapp::template()->getTemplates($account);
   Se hace la peticion a la API de whatsapp para obtener una plantilla por el ID y se almacena en la base de datos.
 
    ```php
-   use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-   use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+        use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+        use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
-   // Obtener una instancia de WhatsApp Business Account
-   $account = WhatsappBusinessAccount::find($accountId);
+        // Obtener una instancia de WhatsApp Business Account
+        $account = WhatsappBusinessAccount::find($accountId);
 
-   // Obtener plantilla por su ID
-   $template = Whatsapp::template()->getTemplateById($account, '559947779843204');
+        // Obtener plantilla por su ID
+        $template = Whatsapp::template()->getTemplateById($account, '559947779843204');
    ```
 
 - ### Eliminar plantilla de la API y de la base de datos al mismo tiempo.
   Se hace la peticion a la API de whatsapp para obtener una plantilla por el ID y se elimina la plantilla seleccionada, Existen dos maneras de eliminar Soft Delete y Hard Delete.
 
    ```php
-   use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-   use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+        use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+        use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
-   // Obtener una instancia de WhatsApp Business Account
-   $account = WhatsappBusinessAccount::find($accountId);
+        // Obtener una instancia de WhatsApp Business Account
+        $account = WhatsappBusinessAccount::find($accountId);
 
-   // Soft delete
-   // Eliminar plantilla por su ID
-   $template = Whatsapp::template()->gdeleteTemplateById($account, $templateId);
+        // Soft delete
+        // Eliminar plantilla por su ID
+        $template = Whatsapp::template()->gdeleteTemplateById($account, $templateId);
 
-   // Eliminar plantilla por su Nombre
-   $template = Whatsapp::template()->deleteTemplateByName($account, 'order_confirmation');
+        // Eliminar plantilla por su Nombre
+        $template = Whatsapp::template()->deleteTemplateByName($account, 'order_confirmation');
 
 
-   // Hard delete
-   // Eliminar plantilla por su ID
-   $template = Whatsapp::template()->gdeleteTemplateById($account, $templateId, true);
+        // Hard delete
+        // Eliminar plantilla por su ID
+        $template = Whatsapp::template()->gdeleteTemplateById($account, $templateId, true);
 
-   // Eliminar plantilla por su Nombre
-   $template = Whatsapp::template()->deleteTemplateByName($account, 'order_confirmation', true);
+        // Eliminar plantilla por su Nombre
+        $template = Whatsapp::template()->deleteTemplateByName($account, 'order_confirmation', true);
    ```
 
 
@@ -594,80 +683,80 @@ Whatsapp::template()->getTemplates($account);
   Se hace la peticion a la API de whatsapp para editar la plantilla seleccionada.
 
     ```php
-    use ScriptDevelop\WhatsappManager\Models\Template;
-    use ScriptDevelop\WhatsappManager\Exceptions\TemplateComponentException;
-    use ScriptDevelop\WhatsappManager\Exceptions\TemplateUpdateException;
+        use ScriptDevelop\WhatsappManager\Models\Template;
+        use ScriptDevelop\WhatsappManager\Exceptions\TemplateComponentException;
+        use ScriptDevelop\WhatsappManager\Exceptions\TemplateUpdateException;
 
-    $template = Template::find('template-id');
+        $template = Template::find('template-id');
 
-    try {
-        $updatedTemplate = $template->edit()
-            ->setName('nuevo-nombre-plantilla')
-            ->changeBody('Nuevo contenido del cuerpo {{1}}', [['Ejemplo nuevo']])
-            ->removeHeader()
-            ->addFooter('Nuevo texto de pie de página')
-            ->removeAllButtons()
-            ->addButton('URL', 'Visitar sitio', 'https://ejemplo.com')
-            ->addButton('QUICK_REPLY', 'Confirmar')
-            ->update();
-        
-        return response()->json($updatedTemplate);
-        
-    } catch (TemplateComponentException $e) {
-        // Manejar error de componente
-        return response()->json(['error' => $e->getMessage()], 400);
-        
-    } catch (TemplateUpdateException $e) {
-        // Manejar error de actualización
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
+        try {
+            $updatedTemplate = $template->edit()
+                ->setName('nuevo-nombre-plantilla')
+                ->changeBody('Nuevo contenido del cuerpo {{1}}', [['Ejemplo nuevo']])
+                ->removeHeader()
+                ->addFooter('Nuevo texto de pie de página')
+                ->removeAllButtons()
+                ->addButton('URL', 'Visitar sitio', 'https://ejemplo.com')
+                ->addButton('QUICK_REPLY', 'Confirmar')
+                ->update();
+            
+            return response()->json($updatedTemplate);
+            
+        } catch (TemplateComponentException $e) {
+            // Manejar error de componente
+            return response()->json(['error' => $e->getMessage()], 400);
+            
+        } catch (TemplateUpdateException $e) {
+            // Manejar error de actualización
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     ```
 
     Agregar componentes a plantillas que no lo tenian:
 
     ```php
-    $template->edit()
-        ->addHeader('TEXT', 'Encabezado agregado')
-        ->addFooter('Pie de página nuevo')
-        ->addButton('PHONE_NUMBER', 'Llamar', '+1234567890')
-        ->update();
+        $template->edit()
+            ->addHeader('TEXT', 'Encabezado agregado')
+            ->addFooter('Pie de página nuevo')
+            ->addButton('PHONE_NUMBER', 'Llamar', '+1234567890')
+            ->update();
     ```
 
     Eliminar componentes existentes:
     
     ```php
-    $template->edit()
-        ->removeFooter()
-        ->removeAllButtons()
-        ->update();
+        $template->edit()
+            ->removeFooter()
+            ->removeAllButtons()
+            ->update();
     ```
 
     Trabajar con componentes específicos:
     
     ```php
-    $editor = $template->edit();
+        $editor = $template->edit();
 
-    // Verificar y modificar header
-    if ($editor->hasHeader()) {
-        $headerData = $editor->getHeader();
-        if ($headerData['format'] === 'TEXT') {
-            $editor->changeHeader('TEXT', 'Encabezado actualizado');
+        // Verificar y modificar header
+        if ($editor->hasHeader()) {
+            $headerData = $editor->getHeader();
+            if ($headerData['format'] === 'TEXT') {
+                $editor->changeHeader('TEXT', 'Encabezado actualizado');
+            }
+        } else {
+            $editor->addHeader('TEXT', 'Nuevo encabezado');
         }
-    } else {
-        $editor->addHeader('TEXT', 'Nuevo encabezado');
-    }
 
-    // Modificar botones
-    $buttons = $editor->getButtons();
-    foreach ($buttons as $index => $button) {
-        if ($button['type'] === 'URL' && str_contains($button['url'], 'old-domain.com')) {
-            $newUrl = str_replace('old-domain.com', 'new-domain.com', $button['url']);
-            $editor->removeButtonAt($index);
-            $editor->addButton('URL', $button['text'], $newUrl);
+        // Modificar botones
+        $buttons = $editor->getButtons();
+        foreach ($buttons as $index => $button) {
+            if ($button['type'] === 'URL' && str_contains($button['url'], 'old-domain.com')) {
+                $newUrl = str_replace('old-domain.com', 'new-domain.com', $button['url']);
+                $editor->removeButtonAt($index);
+                $editor->addButton('URL', $button['text'], $newUrl);
+            }
         }
-    }
 
-    $editor->update();
+        $editor->update();
     ```
 
 ## Características Clave del Edit Template
@@ -706,23 +795,23 @@ Las plantillas transaccionales son ideales para notificaciones como confirmacion
 ![Ejemplo de plantilla de marketing](assets/template_1.png "Plantilla de Marketing")
 
 ```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
-// Obtener la cuenta empresarial
-$account = WhatsappBusinessAccount::first();
+    // Obtener la cuenta empresarial
+    $account = WhatsappBusinessAccount::first();
 
-// Crear una plantilla transaccional
-$template = Whatsapp::template()
-    ->createUtilityTemplate($account)
-    ->setName('order_confirmation_3')
-    ->setLanguage('en_US')
-    ->addHeader('TEXT', 'Order Confirmation')
-    ->addBody('Your order {{1}} has been confirmed.', ['12345'])
-    ->addFooter('Thank you for shopping with us!')
-    ->addButton('QUICK_REPLY', 'Track Order')
-    ->addButton('QUICK_REPLY', 'Contact Support')
-    ->save();
+    // Crear una plantilla transaccional
+    $template = Whatsapp::template()
+        ->createUtilityTemplate($account)
+        ->setName('order_confirmation_3')
+        ->setLanguage('en_US')
+        ->addHeader('TEXT', 'Order Confirmation')
+        ->addBody('Your order {{1}} has been confirmed.', ['12345'])
+        ->addFooter('Thank you for shopping with us!')
+        ->addButton('QUICK_REPLY', 'Track Order')
+        ->addButton('QUICK_REPLY', 'Contact Support')
+        ->save();
 ```
 
 
@@ -767,25 +856,25 @@ Las plantillas de marketing también pueden incluir imágenes en el encabezado p
 ![Ejemplo de plantilla de marketing](assets/template_3.png "Plantilla de Marketing")
 
 ```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
-// Obtener la cuenta empresarial
-$account = WhatsappBusinessAccount::first();
+    // Obtener la cuenta empresarial
+    $account = WhatsappBusinessAccount::first();
 
-// Ruta de la imagen
-$imagePath = storage_path('app/public/laravel-whatsapp-manager.png');
+    // Ruta de la imagen
+    $imagePath = storage_path('app/public/laravel-whatsapp-manager.png');
 
-// Crear una plantilla de marketing con imagen
-$template = Whatsapp::template()
-    ->createMarketingTemplate($account)
-    ->setName('image_template_test')
-    ->setLanguage('en_US')
-    ->setCategory('MARKETING')
-    ->addHeader('IMAGE', $imagePath)
-    ->addBody('Hi {{1}}, your order {{2}} has been shipped!', ['John', '12345'])
-    ->addFooter('Thank you for your purchase!')
-    ->save();
+    // Crear una plantilla de marketing con imagen
+    $template = Whatsapp::template()
+        ->createMarketingTemplate($account)
+        ->setName('image_template_test')
+        ->setLanguage('en_US')
+        ->setCategory('MARKETING')
+        ->addHeader('IMAGE', $imagePath)
+        ->addBody('Hi {{1}}, your order {{2}} has been shipped!', ['John', '12345'])
+        ->addFooter('Thank you for your purchase!')
+        ->save();
 ```
 
 ---
@@ -797,27 +886,27 @@ Puedes agregar botones de URL personalizados para redirigir a los usuarios a pá
 ![Ejemplo de plantilla de marketing](assets/template_3.png "Plantilla de Marketing")
 
 ```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
-// Obtener la cuenta empresarial
-$account = WhatsappBusinessAccount::first();
+    // Obtener la cuenta empresarial
+    $account = WhatsappBusinessAccount::first();
 
-// Ruta de la imagen
-$imagePath = storage_path('app/public/laravel-whatsapp-manager.png');
+    // Ruta de la imagen
+    $imagePath = storage_path('app/public/laravel-whatsapp-manager.png');
 
-// Crear una plantilla de marketing con imagen y botones de URL
-$template = Whatsapp::template()
-    ->createMarketingTemplate($account)
-    ->setName('image_template_test_2')
-    ->setLanguage('en_US')
-    ->setCategory('MARKETING')
-    ->addHeader('IMAGE', $imagePath)
-    ->addBody('Hi {{1}}, your order {{2}} has been shipped!', ['John', '12345'])
-    ->addFooter('Thank you for your purchase!')
-    ->addButton('PHONE_NUMBER', 'Call Us', '+573234255686')
-    ->addButton('URL', 'Track Order', 'https://example.com/track?order={{1}}', ['12345'])
-    ->save();
+    // Crear una plantilla de marketing con imagen y botones de URL
+    $template = Whatsapp::template()
+        ->createMarketingTemplate($account)
+        ->setName('image_template_test_2')
+        ->setLanguage('en_US')
+        ->setCategory('MARKETING')
+        ->addHeader('IMAGE', $imagePath)
+        ->addBody('Hi {{1}}, your order {{2}} has been shipped!', ['John', '12345'])
+        ->addFooter('Thank you for your purchase!')
+        ->addButton('PHONE_NUMBER', 'Call Us', '+573234255686')
+        ->addButton('URL', 'Track Order', 'https://example.com/track?order={{1}}', ['12345'])
+        ->save();
 ```
 
 ---
@@ -829,26 +918,26 @@ Puedes crear múltiples variaciones de plantillas para diferentes propósitos.
 ![Ejemplo de plantilla de marketing](assets/template_4.png "Plantilla de Marketing")
 
 ```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
-// Obtener la cuenta empresarial
-$account = WhatsappBusinessAccount::first();
+    // Obtener la cuenta empresarial
+    $account = WhatsappBusinessAccount::first();
 
-// Crear una variación de plantilla de marketing
-$template = Whatsapp::template()
-    ->createMarketingTemplate($account)
-    ->setName('personal_promotion_text_only_22')
-    ->setLanguage('en')
-    ->addHeader('TEXT', 'Our {{1}} is on!', ['Summer Sale'])
-    ->addBody(
-        'Shop now through {{1}} and use code {{2}} to get {{3}} off of all merchandise.',
-        ['the end of August', '25OFF', '25%']
-    )
-    ->addFooter('Use the buttons below to manage your marketing subscriptions')
-    ->addButton('QUICK_REPLY', 'Unsubscribe from Promos')
-    ->addButton('QUICK_REPLY', 'Unsubscribe from All')
-    ->save();
+    // Crear una variación de plantilla de marketing
+    $template = Whatsapp::template()
+        ->createMarketingTemplate($account)
+        ->setName('personal_promotion_text_only_22')
+        ->setLanguage('en')
+        ->addHeader('TEXT', 'Our {{1}} is on!', ['Summer Sale'])
+        ->addBody(
+            'Shop now through {{1}} and use code {{2}} to get {{3}} off of all merchandise.',
+            ['the end of August', '25OFF', '25%']
+        )
+        ->addFooter('Use the buttons below to manage your marketing subscriptions')
+        ->addButton('QUICK_REPLY', 'Unsubscribe from Promos')
+        ->addButton('QUICK_REPLY', 'Unsubscribe from All')
+        ->save();
 ```
 
 
@@ -859,32 +948,31 @@ Puedes enviar diferentes mensajes de plantillas segun la estructura de la planti
 
 
 ```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
-use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 
-// Obtener la cuenta empresarial
-$account = WhatsappBusinessAccount::first();
-$phone = WhatsappPhoneNumber::first();
+    // Obtener la cuenta empresarial
+    $account = WhatsappBusinessAccount::first();
+    $phone = WhatsappPhoneNumber::first();
 
-// Enviar plantilla 1
-$message = Whatsapp::template()
-    ->sendTemplateMessage($phone)
-    ->to('57', '3137555908')
-    ->usingTemplate('order_confirmation_4')
-    ->addBody(['12345'])
-    ->send();
+    // Enviar plantilla 1
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3137555908')
+        ->usingTemplate('order_confirmation_4')
+        ->addBody(['12345'])
+        ->send();
 
-// Enviar plantilla 2
-$message = Whatsapp::template()
-    ->sendTemplateMessage($phone)
-    ->to('57', '3135666627')
-    ->usingTemplate('link_de_pago')
-    ->addHeader('TEXT', '123456')
-    ->addBody(['20000'])
-    ->addButton('URL', 'Pagar', 'https://mpago.li/1QFwRV', ['1QFwRV'])
-    ->send();
-
+    // Enviar plantilla 2
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('link_de_pago')
+        ->addHeader('TEXT', '123456')
+        ->addBody(['20000'])
+        ->addButton('URL', 'Pagar', 'https://mpago.li/1QFwRV', ['1QFwRV'])
+        ->send();
 ```
 ## 14. Bot Builder, Contructor de Bot y mensajes automatizados.
 ### Crear BOTS de Whatsapp
@@ -893,124 +981,128 @@ Puedes diferentes tipos de Bots para whatsapp.
 
 
 ```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
-use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 
-// Obtener la cuenta empresarial
-$account = WhatsappBusinessAccount::first();
-$phone = WhatsappPhoneNumber::first();
+    // Obtener la cuenta empresarial
+    $account = WhatsappBusinessAccount::first();
+    $phone = WhatsappPhoneNumber::first();
 
-// Crear Bot de whatsapp
-$bot = Whatsapp::bot()
-    ->createBot(
-        [
-            'name' => 'Soporte Técnico',
-            'phone_number_id' => $phone->phone_number_id,
-            'trigger_keywords' => ['soporte', 'ayuda'],
-        ]);
+    // Crear Bot de whatsapp
+    $bot = Whatsapp::bot()
+        ->createBot(
+            [
+                'name' => 'Soporte Técnico',
+                'phone_number_id' => $phone->phone_number_id,
+                'trigger_keywords' => ['soporte', 'ayuda'],
+            ]);
 
-// Ver detalle de un Bot de whatsapp
-$botDetail = Whatsapp::bot()->getById($bot->whatsapp_bot_id);
+    // Ver detalle de un Bot de whatsapp
+    $botDetail = Whatsapp::bot()->getById($bot->whatsapp_bot_id);
 
 ```
 
 ### Bot con flujo de conversacion y pasos de pruebas
 
 ```php
-// 1. Seleccionar cuenta y numero para el bot
-// Cuenta de whatsapp
-$account = WhatsappBusinessAccount::find(214545545097167);
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 
-// Numerod e whatsapp
-$phone = $account->phoneNumbers->first();
+    // 1. Seleccionar cuenta y numero para el bot
+    // Cuenta de whatsapp
+    $account = WhatsappBusinessAccount::find(214545545097167);
 
-// 2. Crear bot
-$bot = Whatsapp::bot()->createBot([
-    'name' => 'Bot Bienvenida',
-    'phone_number_id' => $phone->phone_number_id,
-    'description' => 'Bot de Bienvenida',
-    'on_failure_action' => 'assign_agent',
-    'failure_message' => 'Transferiendo a agente...'
-]);
+    // Numerod e whatsapp
+    $phone = $account->phoneNumbers->first();
 
-// 3. Crear flujo
-$flow = Whatsapp::flow()->createFlow([
-    'name' => 'Flujo de pruebas',
-    'description' => 'Flujo que funciona para realizar pruebas',
-    'type' => 'inbound',
-    'trigger_mode' => 'any',
-    'is_default' => false
-]);
-$flow->addKeywordTrigger(['Hola', 'Buenos dias'], false, 'contains');
-$flow = $flow->build();
-$bot->flows()->attach($flow->flow_id);
+    // 2. Crear bot
+    $bot = Whatsapp::bot()->createBot([
+        'name' => 'Bot Bienvenida',
+        'phone_number_id' => $phone->phone_number_id,
+        'description' => 'Bot de Bienvenida',
+        'on_failure_action' => 'assign_agent',
+        'failure_message' => 'Transferiendo a agente...'
+    ]);
 
-// 4. Crear servicio de pasos
-$stepService = Whatsapp::step($flow);
-use ScriptDevelop\WhatsappManager\Enums\StepType;
+    // 3. Crear flujo
+    $flow = Whatsapp::flow()->createFlow([
+        'name' => 'Flujo de pruebas',
+        'description' => 'Flujo que funciona para realizar pruebas',
+        'type' => 'inbound',
+        'trigger_mode' => 'any',
+        'is_default' => false
+    ]);
+    $flow->addKeywordTrigger(['Hola', 'Buenos dias'], false, 'contains');
+    $flow = $flow->build();
+    $bot->flows()->attach($flow->flow_id);
 
-// Paso 1: Bienvenida
-$step1 = $stepService->createStep('Bienvenida', StepType::MESSAGE_SEQUENCE)
-    ->addTextMessage("¡Hola! Este flujo es de pruebas.", 1, 0)
-    ->build();
+    // 4. Crear servicio de pasos
+    $stepService = Whatsapp::step($flow);
+    use ScriptDevelop\WhatsappManager\Enums\StepType;
 
-// Paso 2: Pregunta edad
-$step2 = $stepService->createStep('Pregunta Edad', StepType::OPEN_QUESTION)
-    ->addTextMessage("¿Cuántos años tienes?", 1, 0)
-    ->addVariable('edad', 'number', 'global', ['required','numeric','min:1'])
-    ->setValidationRules(['edad' => 'required|numeric|min:1'], 2, "Edad inválida")
-    ->build();
+    // Paso 1: Bienvenida
+    $step1 = $stepService->createStep('Bienvenida', StepType::MESSAGE_SEQUENCE)
+        ->addTextMessage("¡Hola! Este flujo es de pruebas.", 1, 0)
+        ->build();
 
-// Paso 3: Condicional
-$step3 = $stepService->createStep('Mayor de edad', StepType::MESSAGE_SEQUENCE)
-    ->addTextMessage("Eres mayor de edad", 1, 0)
-    ->build();
+    // Paso 2: Pregunta edad
+    $step2 = $stepService->createStep('Pregunta Edad', StepType::OPEN_QUESTION)
+        ->addTextMessage("¿Cuántos años tienes?", 1, 0)
+        ->addVariable('edad', 'number', 'global', ['required','numeric','min:1'])
+        ->setValidationRules(['edad' => 'required|numeric|min:1'], 2, "Edad inválida")
+        ->build();
 
-$step4 = $stepService->createStep('Menor de edad', StepType::MESSAGE_SEQUENCE)
-    ->addTextMessage("Eres menor de edad", 1, 0)
-    ->build();
+    // Paso 3: Condicional
+    $step3 = $stepService->createStep('Mayor de edad', StepType::MESSAGE_SEQUENCE)
+        ->addTextMessage("Eres mayor de edad", 1, 0)
+        ->build();
 
-// Paso 5: Despedida
-$step5 = $stepService->createStep('Despedida', StepType::TERMINAL)
-    ->addTextMessage("¡Gracias por participar!", 1, 0)
-    ->build();
+    $step4 = $stepService->createStep('Menor de edad', StepType::MESSAGE_SEQUENCE)
+        ->addTextMessage("Eres menor de edad", 1, 0)
+        ->build();
 
-// 6. Crear transiciones (compatibles con la prueba)
-$step1->transitions()->create([
-    'to_step_id' => $step2->step_id,
-    'condition_type' => 'always',
-    'priority' => 1
-]);
+    // Paso 5: Despedida
+    $step5 = $stepService->createStep('Despedida', StepType::TERMINAL)
+        ->addTextMessage("¡Gracias por participar!", 1, 0)
+        ->build();
 
-$step2->transitions()->create([
-    'to_step_id' => $step3->step_id,
-    'condition_type' => 'variable_value',
-    'condition_config' => ['variable' => 'edad', 'operator' => '>=', 'value' => 18],
-    'priority' => 2
-]);
+    // 6. Crear transiciones (compatibles con la prueba)
+    $step1->transitions()->create([
+        'to_step_id' => $step2->step_id,
+        'condition_type' => 'always',
+        'priority' => 1
+    ]);
 
-$step2->transitions()->create([
-    'to_step_id' => $step4->step_id,
-    'condition_type' => 'variable_value',
-    'condition_config' => ['variable' => 'edad', 'operator' => '<', 'value' => 18],
-    'priority' => 1
-]);
+    $step2->transitions()->create([
+        'to_step_id' => $step3->step_id,
+        'condition_type' => 'variable_value',
+        'condition_config' => ['variable' => 'edad', 'operator' => '>=', 'value' => 18],
+        'priority' => 2
+    ]);
 
-$step3->transitions()->create([
-    'to_step_id' => $step5->step_id,
-    'condition_type' => 'always',
-    'priority' => 1
-]);
+    $step2->transitions()->create([
+        'to_step_id' => $step4->step_id,
+        'condition_type' => 'variable_value',
+        'condition_config' => ['variable' => 'edad', 'operator' => '<', 'value' => 18],
+        'priority' => 1
+    ]);
 
-$step4->transitions()->create([
-    'to_step_id' => $step5->step_id,
-    'condition_type' => 'always',
-    'priority' => 1
-]);
+    $step3->transitions()->create([
+        'to_step_id' => $step5->step_id,
+        'condition_type' => 'always',
+        'priority' => 1
+    ]);
 
-// 7. Establecer paso inicial
-$flow->update(['entry_point_id' => $step1->step_id]);
+    $step4->transitions()->create([
+        'to_step_id' => $step5->step_id,
+        'condition_type' => 'always',
+        'priority' => 1
+    ]);
+
+    // 7. Establecer paso inicial
+    $flow->update(['entry_point_id' => $step1->step_id]);
 ```
 
 
