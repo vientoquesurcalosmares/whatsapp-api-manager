@@ -446,13 +446,13 @@ class TemplateMessageBuilder
             'phone_number' => $this->phoneNumber,
         ]);
 
-        $contact = Contact::where('wa_id', $this->phoneNumber)->first();
+        //$contact = Contact::where('wa_id', $this->phoneNumber)->first(); //Es innecesario, ya se creó/actualizó dentro del método "to", no tiene caso volver a llamar a la base de datos
 
         $message = Message::create([
             'whatsapp_phone_id' => $this->phone->phone_number_id,
             'contact_id' => $this->contact->contact_id,
             'message_from' => $this->phone->display_phone_number,
-            'message_to' => $contact->wa_id,
+            'message_to' => $this->contact->wa_id, //Se corrige esta variable, usar $this->contact en lugar de $contact
             'message_type' => 'template',
             'message_content' => NULL,
             'message_method' => 'OUTPUT',
