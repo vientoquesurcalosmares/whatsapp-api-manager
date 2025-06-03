@@ -98,6 +98,7 @@ class TemplateMessageBuilder
      * @return self
      * @throws InvalidArgumentException Si el componente no es válido.
      */
+    public function addHeader(string $type, $content): self
     {
         $this->ensureTemplateStructureLoaded();
         $this->validateComponent('HEADER', $type);
