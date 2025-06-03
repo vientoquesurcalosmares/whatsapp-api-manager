@@ -1516,6 +1516,15 @@ class MessageDispatcherService
             'fileName' => $file->getFilename(),
             'fileType' => $file->getExtension(),
         ]);
+
+        if (strtolower($file->getExtension()) !== 'webp') {
+            Log::channel('whatsapp')->warning('El archivo no es una imagen webp válida.', [
+                'file_name' => $file->getFilename(),
+                'extension' => $file->getExtension(),
+            ]);
+
+            throw new \InvalidArgumentException('Solo se permiten archivos .webp para stickers.');
+        }
     
         $fullPhoneNumber = $countryCode . $phoneNumber;
     
@@ -1615,6 +1624,15 @@ class MessageDispatcherService
             'fileName' => $file->getFilename(),
             'fileType' => $file->getExtension(),
         ]);
+
+        if (strtolower($file->getExtension()) !== 'webp') {
+            Log::channel('whatsapp')->warning('El archivo no es una imagen webp válida.', [
+                'file_name' => $file->getFilename(),
+                'extension' => $file->getExtension(),
+            ]);
+
+            throw new \InvalidArgumentException('Solo se permiten archivos .webp para stickers.');
+        }
     
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();

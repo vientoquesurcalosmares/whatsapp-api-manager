@@ -467,7 +467,7 @@ class WhatsappWebhookController extends Controller
             'message_from' => $message['from'],
             'message_to' => $whatsappPhone->display_phone_number,
             'message_type' => 'REACTION',
-            'message_content' => "Reaccionó con {$reaction['emoji']} al mensaje {$reaction['message_id']}",
+            'message_content' => $reaction['emoji'],
             'json_content' => json_encode($message),
             'status' => 'received'
         ]);
