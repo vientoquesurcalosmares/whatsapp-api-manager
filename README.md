@@ -486,6 +486,28 @@ Envía una reacción a un mensaje existente.
     );
 ```
 
+### Enviar Sticker
+Los sticker solo se permiten archivos webp.
+
+```php
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $filePath = storage_path('app/public/laravel-whatsapp-manager.png');
+    $file = new \SplFileInfo($filePath);
+
+    $message = Whatsapp::message()->sendStickerMessage(
+        $phone->phone_number_id, // ID del número de teléfono
+        '57',
+        '3237121901',
+        $file
+    );
+```
+
 ### Enviar Audio
 
 ```php
