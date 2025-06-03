@@ -151,8 +151,16 @@ class WhatsappWebhookController extends Controller
             $textContent = $messageRecord->message_content ?? null;
         }
 
+        if ($messageType === 'location') {
+            $this->processLocationMessage($message, $contactRecord, $whatsappPhone);
+        }
+
+        if ($messageType === 'contacts') {
+            $this->processContactMessage($message, $contactRecord, $whatsappPhone);
+        }
+
         // Manejar mensajes de media
-        if (in_array($messageType, ['image', 'audio', 'video', 'document'])) {
+        if (in_array($messageType, ['image', 'audio', 'video', 'document', 'sticker'])) {
             $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
         }
 
@@ -360,6 +368,77 @@ class WhatsappWebhookController extends Controller
             'public_url' => $publicPath,
         ]);
     }
+
+    protected function processLocationMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
+    {
+        $location = $message['location'] ?? null;
+
+        if (!$location) {
+            Log::channel('whatsapp')->warning('No location data found in message.', $message);
+            return;
+        }
+
+        $content = "Ubicación: " . ($location['name'] ?? '') . " - " . ($location['address'] ?? '');
+        $coordinates = "Lat: {$location['latitude']}, Lon: {$location['longitude']}";
+
+        $messageRecord = Message::create([
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'wa_id' => $message['id'],
+            'conversation_id' => null,
+            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+            'message_from' => $message['from'],
+            'message_to' => $whatsappPhone->display_phone_number,
+            'message_type' => 'LOCATION',
+            'message_content' => $content . ' | ' . $coordinates,
+            'json_content' => json_encode($message),
+            'status' => 'received'
+        ]);
+
+        Log::channel('whatsapp')->info('Location message processed.', [
+            'message_id' => $messageRecord->message_id,
+            'location' => $location
+        ]);
+    }
+
+    protected function processContactMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
+    {
+        $contacts = $message['contacts'] ?? [];
+
+        if (empty($contacts)) {
+            Log::channel('whatsapp')->warning('No contacts found in message.', $message);
+            return;
+        }
+
+        foreach ($contacts as $index => $contactData) {
+            $name = $contactData['name']['formatted_name'] ?? 'Nombre no disponible';
+            $phones = collect($contactData['phones'] ?? [])->pluck('phone')->implode(', ');
+            $emails = collect($contactData['emails'] ?? [])->pluck('email')->implode(', ');
+
+            $content = "Nombre: {$name} | Teléfonos: {$phones} | Correos: {$emails}";
+
+            $messageRecord = Message::create([
+                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+                'contact_id' => $contact->contact_id,
+                'wa_id' => $message['id'] . "_{$index}",
+                'conversation_id' => null,
+                'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+                'message_from' => $message['from'],
+                'message_to' => $whatsappPhone->display_phone_number,
+                'message_type' => 'CONTACT',
+                'message_content' => $content,
+                'json_content' => json_encode($message),
+                'status' => 'received'
+            ]);
+
+            Log::channel('whatsapp')->info('Contact shared message processed.', [
+                'message_id' => $messageRecord->message_id,
+                'contact' => $content
+            ]);
+        }
+    }
+
+
 
     private function getMediaUrl(string $mediaId, WhatsappPhoneNumber $whatsappPhone): ?string
     {
