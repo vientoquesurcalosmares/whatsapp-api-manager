@@ -152,7 +152,7 @@ class WhatsappWebhookController extends Controller
         }
 
         // Manejar mensajes de media
-        if (in_array($messageType, ['image', 'audio', 'video', 'document'])) {
+        if (in_array($messageType, ['image', 'audio', 'video', 'document', 'sticker'])) {
             $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
         }
 
