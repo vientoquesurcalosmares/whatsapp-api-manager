@@ -144,12 +144,14 @@ class WhatsappServiceProvider extends ServiceProvider
      */
     protected function createStorageDirectories()
     {
-        $directories = config('whatsapp.media.storage_path', []);
+        $basePath = storage_path('app/public/whatsapp');
+        $folders = ['audio', 'documents', 'images', 'stickers', 'videos'];
 
-        foreach ($directories as $directory) {
-            if (!is_dir($directory)) {
-                mkdir($directory, 0755, true);
-                $this->app['log']->info("Directorio creado: {$directory}");
+        foreach ($folders as $folder) {
+            $path = "{$basePath}/{$folder}";
+            if (!is_dir($path)) {
+                mkdir($path, 0755, true);
+                $this->app['log']->info("Directorio creado: {$path}");
             }
         }
     }
