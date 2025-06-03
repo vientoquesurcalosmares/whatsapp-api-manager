@@ -264,6 +264,10 @@ whatsapp-manager/
 └── vendor/                   # Dependencias instaladas por Composer
 ```
 
+## 🙌 Apóyanos con una donación
+Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]
+[![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+Gracias por tu apoyo 💙
 
 📖 Guía de Usuario
 
@@ -610,6 +614,11 @@ Envía una reacción a un mensaje existente.
     );
 ```
 
+## 🙌 Apóyanos con una donación
+Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]
+[![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+Gracias por tu apoyo 💙
+
 
 ## 11. Obtener todas las plantillas de una cuenta de whatsapp
 Se obtienen todas las plantillas de una cuenta de whatsapp y se almacenan en la base de datos.
@@ -819,7 +828,10 @@ Las plantillas transaccionales son ideales para notificaciones como confirmacion
         ->save();
 ```
 
-
+## 🙌 Apóyanos con una donación
+Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]
+[![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+Gracias por tu apoyo 💙
 
 ---
 
@@ -945,6 +957,10 @@ Puedes crear múltiples variaciones de plantillas para diferentes propósitos.
         ->save();
 ```
 
+## 🙌 Apóyanos con una donación
+Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]
+[![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+Gracias por tu apoyo 💙
 
 ## 13. Enviar Mensajes a partir de Plantilla creada.
 ### Enviar mensajes de plantillas
@@ -1110,6 +1126,10 @@ Puedes diferentes tipos de Bots para whatsapp.
     $flow->update(['entry_point_id' => $step1->step_id]);
 ```
 
+## 🙌 Apóyanos con una donación
+Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]
+[![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+Gracias por tu apoyo 💙
 
 1. Whatsapp (Facade)
 Métodos Principales:
