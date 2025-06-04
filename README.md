@@ -36,6 +36,15 @@ Gracias por tu apoyo 💙
 
 ## 🚀 Instalación
 
+## Necesitaras una cuenta de Whatsapp API CLoud
+
+Si quieres saber como obtener una completamente GRATIS mira este video:
+
+https://www.youtube.com/watch?v=gdD_0ernIqM&ab_channel=BismarckArag%C3%B3n
+
+
+---
+
 1. **Instala el paquete vía Composer**:
    ```bash
         composer require scriptdevelop/whatsapp-manager
