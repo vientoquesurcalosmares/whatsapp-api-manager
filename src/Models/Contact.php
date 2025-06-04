@@ -56,34 +56,6 @@ class Contact extends Model
         return $this->messages()->whereNull('read_at')->where('message_method', 'INPUT')->count();
     }
 
-    public function campaigns()
-    {
-        return $this->belongsToMany(Campaign::class)
-            ->withPivot('status', 'sent_at', 'delivered_at', 'read_at');
-    }
-
-    public function campaignResponses()
-    {
-        return $this->hasManyThrough(
-            CampaignMetric::class,
-            CampaignContact::class,
-            'contact_id',
-            'campaign_id'
-        );
-    }
-
-    // Relación con Sesiones de chat
-    public function chatSessions()
-    {
-        return $this->hasMany(ChatSession::class, 'contact_id');
-    }
-
-    // Relación con Respuestas de usuario
-    public function responses()
-    {
-        return $this->hasMany(UserResponse::class, 'contact_id', 'contact_id');
-    }
-
     public function getFullNameAttribute(): string {
         return trim("{$this->prefix} {$this->first_name} {$this->middle_name} {$this->last_name} {$this->suffix}");
     }

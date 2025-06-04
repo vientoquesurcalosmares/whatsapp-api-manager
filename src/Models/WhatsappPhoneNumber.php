@@ -21,7 +21,6 @@ class WhatsappPhoneNumber extends Model
     protected $fillable = [
         'whatsapp_business_account_id',
         'whatsapp_business_profile_id',
-        'whatsapp_bot_id',
         'display_phone_number',
         'country_code',
         'phone_number',
@@ -39,11 +38,6 @@ class WhatsappPhoneNumber extends Model
         'throughput' => 'array',
         'webhook_configuration' => 'array',
     ];
-
-    public function bots()
-    {
-        return $this->hasMany(WhatsappBot::class, 'phone_number_id', 'phone_number_id');
-    }
 
     public function messages()
     {
@@ -71,11 +65,5 @@ class WhatsappPhoneNumber extends Model
                         $query->where('whatsapp_phone_id', $this->phone_number_id);
                     })
                     ->distinct();
-    }
-
-    // Relación con Sesiones de chat
-    public function chatSessions()
-    {
-        return $this->hasMany(ChatSession::class, 'whatsapp_phone_id');
     }
 }

@@ -45,9 +45,4 @@ class WhatsappBusinessAccount extends Model
     {
         return $this->hasMany(Template::class, 'whatsapp_business_id');
     }
-
-    public function campaigns()
-    {
-        return $this->hasMany(Campaign::class, 'whatsapp_business_account_id', 'whatsapp_business_id');
-    }
 }

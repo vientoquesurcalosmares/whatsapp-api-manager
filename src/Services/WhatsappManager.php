@@ -39,30 +39,4 @@ class WhatsappManager
     {
         return app('whatsapp.account');
     }
-
-    /**
-     * Obtiene el servicio del bot de WhatsApp.
-     *
-     * @return mixed El servicio del bot.
-     */
-    public function bot()
-    {
-        return app('whatsapp.bot');
-    }
-
-    public function flow()
-    {
-        return app('whatsapp.flow');
-    }
-
-    /**
-     * Obtiene el servicio de construcción de pasos para un flujo específico.
-     *
-     * @param Flow $flow Instancia del flujo
-     * @return StepBuilderService
-     */
-    public function step(Flow $flow)
-    {
-        return app('whatsapp.step', ['flow' => $flow]);
-    }
 }

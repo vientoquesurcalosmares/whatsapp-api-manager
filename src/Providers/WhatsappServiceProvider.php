@@ -65,27 +65,6 @@ class WhatsappServiceProvider extends ServiceProvider
                 $app->make(ApiClient::class)
             );
         });
-
-        // Registrar el BotBuilderService
-        $this->app->singleton('whatsapp.bot', function ($app) {
-            return new BotBuilderService();
-        });
-
-        // Registrar el FlowBuilderService
-        $this->app->singleton('whatsapp.flow', function ($app) {
-            return new FlowBuilderService();
-        });
-
-        // Registrar el StepBuilderService
-        $this->app->bind('whatsapp.step', function ($app, $parameters) {
-            $flow = $parameters['flow'] ?? null;
-            
-            if (!$flow instanceof Flow) {
-                throw new \InvalidArgumentException('Se requiere una instancia válida de Flow');
-            }
-            
-            return new StepBuilderService($flow);
-        });
     }
 
     public function boot()
@@ -114,6 +93,8 @@ class WhatsappServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../routes/whatsapp_webhook.php' => base_path('routes/whatsapp_webhook.php'),
         ], 'whatsapp-routes');
+
+        $this->publishes([], 'whatsapp-media');
 
         // Cargar rutas automáticamente
         $this->loadRoutesFrom(__DIR__ . '/../routes/whatsapp_webhook.php');
