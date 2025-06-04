@@ -303,6 +303,15 @@ class WhatsappWebhookController extends Controller
         $caption = $message[$message['type']]['caption'] ?? strtoupper($message['type']);
         $mimeType = $message[$message['type']]['mime_type'] ?? null;
 
+        Log::channel('whatsapp')->info('Processing media message.', [
+            'message' => $message,
+            'contact' => $contact,
+            'whatsappPhone' => $whatsappPhone,
+            'mediaId' => $mediaId,
+            'caption' => $caption,
+            'mimeType' => $mimeType,
+        ]);
+
         if (!$mediaId) {
             Log::channel('whatsapp')->warning('No media ID found in message.', $message);
             return;
@@ -503,10 +512,21 @@ class WhatsappWebhookController extends Controller
         return match ($mimeType) {
             'image/jpeg' => 'jpg',
             'image/png' => 'png',
-            'audio/ogg' => 'ogg',
-            'video/mp4' => 'mp4',
+            'audio/ogg', 'audio/aac', 'audio/mp4', 'audio/mpeg', 'audio/amr' => 'ogg',
+            'video/mp4', 'video/3gp' => 'mp4',
             'application/pdf' => 'pdf',
-            default => 'bin',
+            'application/msword' => 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'application/vnd.ms-excel' => 'xls',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+            'application/vnd.ms-powerpoint' => 'ppt',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
+            'text/plain' => 'txt',
+            'image/webp' => 'webp',
+            default => function() use ($mimeType) {
+                Log::warning("Extensión desconocida para MIME type: {$mimeType}");
+                return 'bin';
+            },
         };
     }
 
