@@ -38,7 +38,9 @@ Gracias por tu apoyo 💙
 
 ## Necesitaras una cuenta de Whatsapp API CLoud
 
-Si quieres saber como obtener una completamente GRATIS mira este video:
+Si quieres saber como obtener una completamente GRATIS mira estos dos videos:
+
+https://www.youtube.com/watch?v=of6dEsKSh-0&ab_channel=AdBoostPro
 
 https://www.youtube.com/watch?v=gdD_0ernIqM&ab_channel=BismarckArag%C3%B3n
 
