@@ -1076,6 +1076,11 @@ Puedes enviar diferentes mensajes de plantillas segun la estructura de la planti
         )
         ->send();
 ```
+
+# BOT BUILDER SERA MUDADO A OTRO PAQUETE
+## PAQUETE whatsapp-bot (Aun en desarrolo): https://github.com/djdang3r/whatsapp-bot
+## - Las siguientes funcionalidades seran eliminadas de este paquete.
+
 ## 14. Bot Builder, Contructor de Bot y mensajes automatizados.
 ### Crear BOTS de Whatsapp
 
