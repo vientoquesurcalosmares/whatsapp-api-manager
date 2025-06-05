@@ -7,27 +7,31 @@ class CountryCodes
     public static function list(): array
     {
         return [
-            '1',   // USA, Canadá
-            '34',  // España
-            '52',  // México
-            '54',  // Argentina
-            '55',  // Brasil
-            '57',  // Colombia
-            '58',  // Venezuela
-            '51',  // Perú
-            '56',  // Chile
-            '507', // Panamá
-            '506', // Costa Rica
-            '593', // Ecuador
-            '591', // Bolivia
-            '592', // Guyana
-            '595', // Paraguay
-            '598', // Uruguay
-            '502', // Guatemala
-            '503', // El Salvador
-            '504', // Honduras
-            '505', // Nicaragua
-            // Agrega más según lo necesites
+            '1'     => 'US/CA',    // Estados Unidos/Canadá
+            '34'    => 'ES',       // España
+            '52'    => 'MX',       // México
+            '54'    => 'AR',       // Argentina
+            '55'    => 'BR',       // Brasil
+            '57'    => 'CO',       // Colombia
+            '58'    => 'VE',       // Venezuela
+            '51'    => 'PE',       // Perú
+            '56'    => 'CL',       // Chile
+            '507'   => 'PA',       // Panamá
+            '506'   => 'CR',       // Costa Rica
+            '593'   => 'EC',       // Ecuador
+            '591'   => 'BO',       // Bolivia
+            '592'   => 'GY',       // Guyana
+            '595'   => 'PY',       // Paraguay
+            '598'   => 'UY',       // Uruguay
+            '502'   => 'GT',       // Guatemala
+            '503'   => 'SV',       // El Salvador
+            '504'   => 'HN',       // Honduras
+            '505'   => 'NI',       // Nicaragua
         ];
+    }
+
+    public static function codes(): array
+    {
+        return array_keys(self::list());
     }
 }
