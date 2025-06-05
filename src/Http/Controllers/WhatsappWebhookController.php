@@ -470,6 +470,11 @@ class WhatsappWebhookController extends Controller
 
     private function getFileExtension(?string $mimeType): string
     {
+        //Prevenir que el mimetype sea parecido a esto: "audio/ogg; codecs=opus", así son las notas de voz
+        if ($mimeType && str_contains($mimeType, ';')) {
+            $mimeType = explode(';', $mimeType)[0];
+        }
+        
         return match ($mimeType) {
             'image/jpeg' => 'jpg',
             'image/png' => 'png',
