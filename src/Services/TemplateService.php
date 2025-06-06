@@ -11,6 +11,8 @@ use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+use ScriptDevelop\WhatsappManager\Models\WhatsappTemplateFlow;
+use ScriptDevelop\WhatsappManager\Models\WhatsappFlow;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -21,19 +23,25 @@ class TemplateService
 {
     /**
      * Cliente para realizar solicitudes a la API de WhatsApp.
-     *
      * @var ApiClient
      */
     protected ApiClient $apiClient;
+
+    /**
+     * Servicio para gestionar flujos de WhatsApp.
+     * @var FlowService
+     */
+    protected FlowService $flowService;
 
     /**
      * Constructor de la clase.
      *
      * @param ApiClient $apiClient Cliente para realizar solicitudes a la API de WhatsApp.
      */
-    public function __construct(ApiClient $apiClient)
+    public function __construct(ApiClient $apiClient, FlowService $flowService)
     {
         $this->apiClient = $apiClient;
+        $this->flowService = $flowService;
     }
 
     /**
@@ -44,6 +52,8 @@ class TemplateService
      */
     public function getTemplates(WhatsappBusinessAccount $account)
     {
+        $this->flowService->syncFlows($account);
+        
         $endpoint = Endpoints::build(Endpoints::GET_TEMPLATES, [
             'waba_id' => $account->whatsapp_business_id,
         ]);
@@ -79,8 +89,14 @@ class TemplateService
             $templates = $response['data'] ?? [];
 
             foreach ($templates as $templateData) {
-                $this->storeOrUpdateTemplate($account->whatsapp_business_id, $templateData);
+                $this->validateTemplateData($templateData);
+                $this->storeOrUpdateTemplate($account, $templateData);
             }
+
+            $apiTemplateIds = collect($templates)->pluck('id')->toArray();
+            Template::where('whatsapp_business_id', $account->whatsapp_business_id)
+                    ->whereNotIn('wa_template_id', $apiTemplateIds)
+                    ->update(['status' => 'INACTIVE']);
 
             return Template::where('whatsapp_business_id', $account->whatsapp_business_id)
                 ->with(['category', 'components'])
@@ -136,8 +152,10 @@ class TemplateService
                 'response' => $response,
             ]);
 
+            $this->validateTemplateData($response);
+
             // Almacenar o actualizar la plantilla en la base de datos
-            return $this->storeOrUpdateTemplate($account->whatsapp_business_id, $response);
+            return $this->storeOrUpdateTemplate($account, $response);
         } catch (\Exception $e) {
             Log::channel('whatsapp')->error('Error al obtener la plantilla.', [
                 'error_message' => $e->getMessage(),
@@ -198,8 +216,10 @@ class TemplateService
                 return null;
             }
 
+            $this->validateTemplateData($response);
+
             // Almacenar o actualizar la plantilla en la base de datos
-            return $this->storeOrUpdateTemplate($account->whatsapp_business_id, $templateData);
+            return $this->storeOrUpdateTemplate($account, $templateData);
         } catch (\Exception $e) {
             Log::channel('whatsapp')->error('Error al obtener la plantilla por nombre.', [
                 'error_message' => $e->getMessage(),
@@ -218,7 +238,7 @@ class TemplateService
      */
     public function createUtilityTemplate(WhatsappBusinessAccount $account): TemplateBuilder
     {
-        return (new TemplateBuilder($this->apiClient, $account, $this))
+        return (new TemplateBuilder($this->apiClient, $account, $this, $this->flowService))
             ->setCategory('UTILITY'); // Categoría específica para plantillas transaccionales
     }
 
@@ -230,7 +250,7 @@ class TemplateService
      */
     public function createMarketingTemplate(WhatsappBusinessAccount $account): TemplateBuilder
     {
-        return (new TemplateBuilder($this->apiClient, $account, $this))
+        return (new TemplateBuilder($this->apiClient, $account, $this, $this->flowService))
             ->setCategory('MARKETING'); // Categoría específica para plantillas de marketing
     }
 
@@ -242,7 +262,7 @@ class TemplateService
      */
     public function createAuthenticationTemplate(WhatsappBusinessAccount $account): TemplateBuilder
     {
-        return (new TemplateBuilder($this->apiClient, $account, $this))
+        return (new TemplateBuilder($this->apiClient, $account, $this, $this->flowService))
             ->setCategory('AUTHENTICATION'); // Categoría específica para plantillas de autenticación
     }
 
@@ -413,7 +433,7 @@ class TemplateService
      * @param array $templateData Los datos de la plantilla.
      * @return Template La plantilla creada o actualizada.
      */
-    protected function storeOrUpdateTemplate(string $businessId, array $templateData): Template
+    protected function storeOrUpdateTemplate(WhatsappBusinessAccount $account, array $templateData): Template
     {
         Log::channel('whatsapp')->info('Procesando plantilla.', [
             'template_id' => $templateData['id'],
@@ -425,7 +445,7 @@ class TemplateService
                 'wa_template_id' => $templateData['id'],
             ],
             [
-                'whatsapp_business_id' => $businessId,
+                'whatsapp_business_id' => $account->whatsapp_business_id,
                 'name' => $templateData['name'],
                 'language' => $templateData['language'],
                 'category_id' => $this->getCategoryId($templateData['category']),
@@ -439,9 +459,48 @@ class TemplateService
         ]);
 
         // Sincronizar los componentes de la plantilla
-        $this->syncTemplateComponents($template, $templateData['components'] ?? []);
+        $this->syncTemplateComponents($account, $template, $templateData['components'] ?? []);
 
         return $template;
+    }
+
+    /**
+     * Sincroniza la relación entre plantilla y flujo
+     */
+    protected function syncTemplateFlowRelation(WhatsappBusinessAccount $account, string $templateId, string $apiFlowId, string $buttonLabel): ?WhatsappFlow
+    {
+        try {
+            // Validar que el flujo existe en la base de datos
+            $flow = $this->flowService->getFlowById($apiFlowId);
+            if (!$flow) {
+                Log::error('Flujo no encontrado en la base de datos', [
+                    'flow_id' => $apiFlowId,
+                    'template_id' => $templateId
+                ]);
+                return null;
+            }
+
+            // Usar el ULID local del flujo
+            WhatsappTemplateFlow::updateOrCreate(
+                [
+                    'template_id' => $templateId,
+                    'flow_id' => $flow->flow_id, // ULID local
+                ],
+                [
+                    'flow_button_label' => $buttonLabel,
+                ]
+            );
+
+            return $flow;
+        } catch (\Exception $e) {
+            Log::error('Error en syncTemplateFlowRelation', [
+                'error' => $e->getMessage(),
+                'account_id' => $account->whatsapp_business_id,
+                'template_id' => $templateId,
+                'flow_id' => $apiFlowId
+            ]);
+            return null;
+        }
     }
 
     protected function getLanguageId(string $templateData): string
@@ -479,7 +538,7 @@ class TemplateService
      * @param array $components Los componentes de la plantilla.
      * @return void
      */
-    protected function syncTemplateComponents(Template $template, array $components): void
+    protected function syncTemplateComponents(WhatsappBusinessAccount $account, Template $template, array $components): void
     {
         Log::channel('whatsapp')->info('Sincronizando componentes de la plantilla.', [
             'template_id' => $template->template_id,
@@ -487,17 +546,16 @@ class TemplateService
         ]);
 
         try {
+            $currentLocalFlowIds = []; // Para relaciones actuales
+
             foreach ($components as $componentData) {
                 $type = strtolower($componentData['type']);
                 if ($type === 'buttons') {
                     $type = 'button';
                 }
 
-                Log::channel('whatsapp')->info('Procesando componente.', [
-                    'component_type' => $type,
-                ]);
-    
-                TemplateComponent::updateOrCreate(
+                // 1. Sincronizar componente principal
+                $component = TemplateComponent::updateOrCreate(
                     [
                         'template_id' => $template->template_id,
                         'type' => $type,
@@ -508,10 +566,31 @@ class TemplateService
                     ]
                 );
 
-                Log::channel('whatsapp')->info('Componentes sincronizados.', [
-                    'template_id' => $template->template_id,
-                ]);
+                // 2. Sincronizar relaciones con flujos (si es componente de botones)
+                if ($type === 'button' && isset($componentData['buttons'])) {
+                    foreach ($componentData['buttons'] as $button) {
+                        if ($button['type'] === 'FLOW' && isset($button['flow_id'])) {
+                            $flow = $this->syncTemplateFlowRelation(
+                                $account,
+                                $template->template_id,
+                                $button['flow_id'],
+                                $button['text'] ?? 'Iniciar flujo'
+                            );
+                            
+                            // Almacenar ULID local en lugar de ID de API
+                            if ($flow) {
+                                $currentLocalFlowIds[] = $flow->flow_id;
+                            }
+                        }
+                    }
+                }
             }
+
+            // 3. Eliminar relaciones obsoletas
+            WhatsappTemplateFlow::where('template_id', $template->template_id)
+                ->whereNotIn('flow_id', $currentLocalFlowIds)
+                ->delete();
+
         } catch (\Exception $e) {
             Log::channel('whatsapp')->error('Error al sincronizar componentes.', [
                 'template_id' => $template->template_id,

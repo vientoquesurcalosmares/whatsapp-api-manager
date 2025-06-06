@@ -35,18 +35,23 @@ class TemplateBuilder
     /** @var WhatsappBusinessAccount Cuenta empresarial asociada */
     protected WhatsappBusinessAccount $account;
 
+    /** @var FlowService Servicio auxiliar para flujos */
+    protected FlowService $flowService;
+
     /**
      * Constructor de la clase
      *
      * @param ApiClient $apiClient
      * @param WhatsappBusinessAccount $account
      * @param TemplateService $templateService
+     * @param FlowService $flowService
      */
-    public function __construct(ApiClient $apiClient, WhatsappBusinessAccount $account, TemplateService $templateService)
+    public function __construct(ApiClient $apiClient, WhatsappBusinessAccount $account, TemplateService $templateService, FlowService $flowService)
     {
         $this->apiClient = $apiClient;
         $this->account = $account;
         $this->templateService = $templateService;
+        $this->flowService = $flowService;
     }
 
 
@@ -326,6 +331,62 @@ class TemplateBuilder
             ];
         } else {
             // Si ya existe, agregar el botón al componente existente
+            $index = array_search('BUTTONS', array_column($this->templateData['components'], 'type'));
+            $this->templateData['components'][$index]['buttons'][] = $button;
+        }
+
+        $this->buttonCount++;
+
+        return $this;
+    }
+
+    /**
+     * Agrega un botón de tipo FLOW a la plantilla.
+     *
+     * @param string $text Texto visible del botón (CTA)
+     * @param string $flowId ID del flujo en WhatsApp Manager
+     * @param string|null $flowToken Token opcional para autenticación/contexto
+     * @return self
+     * @throws InvalidArgumentException Si se violan restricciones de la API
+     */
+    public function addFlowButton(string $text, string $flowId, ?string $flowToken = null): self
+    {
+        if ($this->buttonCount >= 10) {
+            throw new InvalidArgumentException('No se pueden agregar más de 10 botones a una plantilla.');
+        }
+
+        if (strlen($text) > 25) {
+            throw new InvalidArgumentException('El texto del botón no puede exceder los 25 caracteres.');
+        }
+
+        if (empty($flowId)) {
+            throw new InvalidArgumentException('El ID del flujo (flow_id) es obligatorio.');
+        }
+
+        if (!$this->flowService->getFlowById($flowId)) {
+            throw new InvalidArgumentException("El flujo con ID $flowId no existe.");
+        }
+
+        $button = [
+            'type' => 'FLOW',
+            'text' => $text,
+            'flow_id' => $flowId,
+            'flow_action' => 'navigate',
+        ];
+
+        if (!empty($flowToken)) {
+            $button['flow_token'] = $flowToken;
+        }
+
+        // Agregar el botón al componente BUTTONS
+        $existingButtons = $this->getComponentsByType('BUTTONS');
+
+        if (empty($existingButtons)) {
+            $this->templateData['components'][] = [
+                'type' => 'BUTTONS',
+                'buttons' => [$button],
+            ];
+        } else {
             $index = array_search('BUTTONS', array_column($this->templateData['components'], 'type'));
             $this->templateData['components'][$index]['buttons'][] = $button;
         }

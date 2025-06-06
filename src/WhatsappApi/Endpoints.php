@@ -43,6 +43,11 @@ class Endpoints
     const DELETE_TEMPLATE = '{waba_id}/message_templates';
     const UPDATE_TEMPLATE = '{template_id}';
 
+    // Flow Endpoints
+    const GET_FLOWS = '{waba_id}/flows';
+    const GET_FLOW = 'flows/{flow_id}';
+    const CREATE_FLOW = '{waba_id}/flows';
+
     // Helper method to build URLs with dynamic parameters
     /**
      * Construye una URL a partir de un endpoint y parámetros.

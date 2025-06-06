@@ -55,6 +55,13 @@ class Template extends Model
         return $this->hasMany(TemplateComponent::class, 'template_id', 'template_id');
     }
 
+    public function flows()
+    {
+        return $this->belongsToMany(
+            WhatsappFlow::class, 'whatsapp_template_flows', 'template_id', 'flow_id'
+        );
+    }
+
     /**
      * Scope para buscar plantillas activas.
      */

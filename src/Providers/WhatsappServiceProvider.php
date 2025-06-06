@@ -8,14 +8,9 @@ use ScriptDevelop\WhatsappManager\Services\AccountRegistrationService;
 use ScriptDevelop\WhatsappManager\Services\WhatsappService;
 use ScriptDevelop\WhatsappManager\Repositories\WhatsappBusinessAccountRepository;
 use ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel;
-use ScriptDevelop\WhatsappManager\Services\BotBuilderService;
-use ScriptDevelop\WhatsappManager\Services\FlowBuilderService;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
-use ScriptDevelop\WhatsappManager\Services\StepBuilderService;
 use ScriptDevelop\WhatsappManager\Services\TemplateService;
-use ScriptDevelop\WhatsappManager\Models\Flow;
-
-use Illuminate\Support\Facades\Artisan;
+use ScriptDevelop\WhatsappManager\Services\FlowService;
 
 class WhatsappServiceProvider extends ServiceProvider
 {
@@ -29,7 +24,7 @@ class WhatsappServiceProvider extends ServiceProvider
         $this->app->singleton(ApiClient::class, function ($app) {
             return new ApiClient(
                 config('whatsapp.api.base_url', 'https://graph.facebook.com'),
-                config('whatsapp.api.version', 'v19.0'),
+                config('whatsapp.api.version', 'v22.0'),
                 config('whatsapp.api.timeout', 30)
             );
         });
@@ -62,6 +57,13 @@ class WhatsappServiceProvider extends ServiceProvider
         // Registrar el servicio de plantillas
         $this->app->singleton('whatsapp.template', function ($app) {
             return new TemplateService(
+                $app->make(ApiClient::class),
+                $app->make(FlowService::class) // Inyectar FlowService
+            );
+        });
+
+        $this->app->singleton(FlowService::class, function ($app) {
+            return new FlowService(
                 $app->make(ApiClient::class)
             );
         });
