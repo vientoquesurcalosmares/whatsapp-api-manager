@@ -11,6 +11,7 @@ use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Exceptions\WhatsappApiException;
 use Illuminate\Support\Facades\Log; // <-- Agregamos esto
+use Illuminate\Support\Str; // <-- Agregamos esto
 
 /**
  * Servicio para enviar mensajes a través de WhatsApp Business API
