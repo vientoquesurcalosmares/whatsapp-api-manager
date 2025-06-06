@@ -26,10 +26,24 @@ class WhatsappFlow extends Model
         'json_structure',
         'status',
         'version',
+
+        'categories',
+        'preview_url',
+        'preview_expires_at',
+        'validation_errors',
+        'json_version',
+        'health_status',
+        'application_id',
+        'application_name',
+        'application_link',
     ];
 
     protected $casts = [
         'json_structure' => 'array',
+        'categories' => 'array',
+        'validation_errors' => 'array',
+        'health_status' => 'array',
+        'preview_expires_at' => 'datetime',
     ];
 
     public function screens()

@@ -62,7 +62,7 @@ class WhatsappServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->singleton(FlowService::class, function ($app) {
+        $this->app->singleton('whatsapp.flow', function ($app) {
             return new FlowService(
                 $app->make(ApiClient::class)
             );

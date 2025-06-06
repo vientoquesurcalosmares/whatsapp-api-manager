@@ -22,6 +22,16 @@ return new class extends Migration
             $table->enum('status', ['draft', 'published', 'archived'])->default('draft');
             $table->string('version')->default('3.0');
 
+            $table->json('categories')->nullable();
+            $table->string('preview_url')->nullable();
+            $table->timestamp('preview_expires_at')->nullable();
+            $table->json('validation_errors')->nullable();
+            $table->string('json_version')->nullable();
+            $table->json('health_status')->nullable();
+            $table->string('application_id')->nullable();
+            $table->string('application_name')->nullable();
+            $table->string('application_link')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
 
