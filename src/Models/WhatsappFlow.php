@@ -66,8 +66,12 @@ class WhatsappFlow extends Model
         return $this->hasMany(WhatsappFlowSession::class, 'flow_id', 'flow_id');
     }
 
-    public function businessAccount()
+    public function whatsappBusinessAccount()
     {
-        return $this->belongsTo(WhatsappBusinessAccount::class, 'whatsapp_business_account_id', 'whatsapp_business_account_id');
+        return $this->belongsTo(
+            WhatsappBusinessAccount::class,
+            'whatsapp_business_account_id',
+            'whatsapp_business_id'
+        );
     }
 }

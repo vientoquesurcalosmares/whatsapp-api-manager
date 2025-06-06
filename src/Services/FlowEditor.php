@@ -19,6 +19,8 @@ class FlowEditor
     protected array $flowData;
     protected ?array $currentScreen = null;
     protected ?int $currentScreenIndex = null;
+    protected ?array $currentElement = null;
+    protected ?int $currentElementIndex = null;
 
     public function __construct(WhatsappFlow $flow, ApiClient $apiClient, FlowService $flowService)
     {
@@ -223,36 +225,100 @@ class FlowEditor
             throw new InvalidArgumentException('El flujo no tiene wa_flow_id, no puede ser editado en la API.');
         }
 
-        $endpoint = Endpoints::build(Endpoints::GET_FLOW, [
-            'flow_id' => $this->flow->wa_flow_id,
+        $flowId = $this->flow->wa_flow_id;
+        $accessToken = $this->flow->whatsappBusinessAccount->api_token;
+
+        // 1. Actualizar metadatos (puedes dejarlo con Guzzle si ya funciona)
+        $metaEndpoint = Endpoints::build(Endpoints::UPDATE_FLOW_METADATA, [
+            'flow_id' => $flowId,
         ]);
-
-        $headers = [
-            'Authorization' => 'Bearer ' . $this->flow->whatsappBusinessAccount->api_token,
-            'Content-Type' => 'application/json',
+        $metaData = [
+            'name' => $this->flowData['name'],
+            'categories' => $this->flowData['categories'] ?? [],
+            'description' => $this->flowData['description'] ?? '',
         ];
-
-        // Enviar actualización a la API de WhatsApp
-        $response = $this->apiClient->request(
-            'POST', // O 'PATCH' según la API
-            $endpoint,
+        $this->apiClient->request(
+            'POST',
+            $metaEndpoint,
             [],
-            $this->flowData,
+            $metaData,
             [],
-            $headers
+            [
+                'Authorization' => 'Bearer ' . $accessToken,
+            ]
         );
 
-        // Actualizar la base de datos local con la respuesta de la API
+        // 2. Actualizar JSON del flujo (estructura) usando cURL puro
+        $jsonForFile = $this->flowData['json_structure'];
+        $jsonForFile['name'] = $this->flowData['name'] ?? 'SinNombre';
+        $jsonForFile['version'] = '7.0';
+
+        if (empty($jsonForFile['name'])) {
+            throw new InvalidArgumentException('El campo name del flujo no puede estar vacío al actualizar el flujo en la API.');
+        }
+        if (!empty($this->flowData['description'])) {
+            $jsonForFile['description'] = $this->flowData['description'];
+        }
+        if (!empty($this->flowData['categories'])) {
+            $jsonForFile['categories'] = $this->flowData['categories'];
+        }
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'flow_') . '.json';
+        file_put_contents($tmpFile, json_encode($jsonForFile));
+
+        $assetsEndpoint = Endpoints::build(Endpoints::UPDATE_FLOW_ASSETS, [
+            'flow_id' => $flowId,
+        ]);
+        // Construir la URL completa
+        $baseUrl = config('whatsapp.api.base_url', 'https://graph.facebook.com');
+        $version = config('whatsapp.api.version', 'v22.0');
+        $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . '/' . $flowId . '/assets';
+
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => [
+                'file' => new \CURLFile($tmpFile, 'application/json', 'flow.json'),
+                'name' => 'flow.json',
+                'asset_type' => 'FLOW_JSON',
+            ],
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $accessToken,
+            ],
+        ]);
+
+        $response = curl_exec($curl);
+        $curlError = curl_error($curl);
+        curl_close($curl);
+        unlink($tmpFile);
+
+        if ($curlError) {
+            throw new \RuntimeException("Error en cURL: $curlError");
+        }
+
+        $decoded = json_decode($response, true);
+        if (isset($decoded['error'])) {
+            throw new \RuntimeException("Error al subir el flujo: " . $decoded['error']['message']);
+        }
+
+        // 3. (Opcional) Publicar el flujo si lo deseas
+        // $publishEndpoint = Endpoints::build(Endpoints::PUBLISH_FLOW, ['flow_id' => $flowId]);
+        // $this->apiClient->request('POST', $publishEndpoint, [], [], [], ['Authorization' => 'Bearer ' . $accessToken]);
+
+        // 4. Actualizar la base de datos local
         $this->flow->update([
             'name' => $this->flowData['name'],
             'description' => $this->flowData['description'],
             'json_structure' => $this->flowData['json_structure'],
-            'status' => $response['status'] ?? $this->flow->status,
-            'version' => $response['version'] ?? $this->flow->version,
-            // ...otros campos según respuesta...
+            // ...otros campos...
         ]);
-
-        // Si editaste screens/elements, sincronízalos también
         if (!empty($this->flowData['json_structure']['screens'])) {
             $this->flowService->syncScreensAndElements($this->flow, $this->flowData['json_structure']['screens']);
         }

@@ -47,6 +47,9 @@ class Endpoints
     const GET_FLOWS = '{waba_id}/flows';
     const GET_FLOW = '{flow_id}';
     const CREATE_FLOW = '{waba_id}/flows';
+    const UPDATE_FLOW_METADATA = '{flow_id}';
+    const UPDATE_FLOW_ASSETS = '{flow_id}/assets';
+    const PUBLISH_FLOW = '{flow_id}/publish';
 
     // Helper method to build URLs with dynamic parameters
     /**
