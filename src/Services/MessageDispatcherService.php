@@ -3104,6 +3104,13 @@ class MessageDispatcherService
      */
     private function resolveContact(string $countryCode, string $phoneNumber): Contact
     {
+        //Si el país es México, según ChatGPT este es el único caso en el mundo que tiene un 1 después del código de area y luego vienen 10 dígitos del celular así 521 1234567890
+        //Por lo tanto comprobar si es número de méxico y el $phoneNumber son exactamente 10 números, entonces agregar el 1 inicial
+        if( $countryCode==52 && Str::length($phoneNumber)==10 )
+        {
+            $phoneNumber = '1'.$phoneNumber;
+        }
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
 
         Log::channel('whatsapp')->info('Resolviendo contacto.', ['full_phone_number' => $fullPhoneNumber]);
