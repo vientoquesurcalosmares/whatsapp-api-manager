@@ -77,12 +77,4 @@ class Whatsapp extends Facade
     {
         return app('whatsapp.flow');
     }
-
-    /**
-     * Get the step builder service instance.
-     */
-    public static function step(Flow $flow)
-    {
-        return app('whatsapp.step', ['flow' => $flow]);
-    }
 }
