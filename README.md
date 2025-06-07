@@ -125,16 +125,16 @@ Si usas un modelo User personalizado:
 
 Además, verifica que el modelo implementa las interfaces necesarias o extiende el modelo base esperado por el paquete. Por ejemplo:
 
-    ```php
-        namespace App\Modules\Auth\Models;
+```php
+    namespace App\Modules\Auth\Models;
 
-        use Illuminate\Foundation\Auth\User as Authenticatable;
+    use Illuminate\Foundation\Auth\User as Authenticatable;
 
-        class Admin extends Authenticatable
-        {
-        // Tu lógica personalizada aquí
-        }
-    ```
+    class Admin extends Authenticatable
+    {
+    // Tu lógica personalizada aquí
+    }
+```
 
 
 6.  🗃️ Migraciones
@@ -145,25 +145,26 @@ Además, verifica que el modelo implementa las interfaces necesarias o extiende 
 
 Ejecuta el siguiente comando para asegurarte de que el modelo de usuario está correctamente configurado:
 
-    ```bash
-        php artisan whatsapp:check-user-model
-    ```
+```bash
+    php artisan whatsapp:check-user-model
+```
 
 Este comando validará que el modelo especificado en el archivo `.env` cumple con los requisitos del paquete.
 
 Salida esperada (ejemplo):
-    ```plaintext
-        ✅ Modelo User configurado: App\Models\User
-    ```
+
+```plaintext
+    ✅ Modelo User configurado: App\Models\User
+```
 
 Si hay algún problema, revisa la configuración en tu archivo `.env` y asegúrate de que el modelo implementa las interfaces necesarias.
 
 
 Ejecuta las migraciones para crear las tablas necesarias:
    
-    ```bash
-        php artisan migrate
-    ```
+```bash
+    php artisan migrate
+```
 
 Esto ejecutará las migraciones necesarias para crear las tablas requeridas por el paquete en tu base de datos.
 
@@ -171,17 +172,17 @@ Esto ejecutará las migraciones necesarias para crear las tablas requeridas por 
 
 Puedes publicar el seeder que incluye todos los idiomas compatibles con plantillas de WhatsApp con el siguiente comando:
 
-    ```bash
-        php artisan vendor:publish --tag=whatsapp-seeders
-    ```
+```bash
+    php artisan vendor:publish --tag=whatsapp-seeders
+```
 
 ### Los seeder son necesarios para trabajar con plantillas. Debes tomarlo en cuenta.
 
 Luego de publicarlo, puedes ejecutarlo con:
 
-    ```bash
-        php artisan db:seed --class=WhatsappTemplateLanguageSeeder
-    ```
+```bash
+    php artisan db:seed --class=WhatsappTemplateLanguageSeeder
+```
 
 ###  📁 Publicar directorios multimedia para WhatsApp
 Para almacenar mensajes multimedia entrantes (audios, imágenes, documentos, etc.) necesitas crear los siguientes directorios en storage/app/public/whatsapp:
@@ -198,21 +199,21 @@ videos/
 
 - Puedes crearlos automáticamente ejecutando:
 
-    ```bash
-        php artisan vendor:publish --tag=whatsapp-media
-    ```
+```bash
+    php artisan vendor:publish --tag=whatsapp-media
+```
 
 - O, si no se crean automáticamente, puedes hacerlo manualmente:
-    ```bash
-        mkdir -p storage/app/public/whatsapp/{audio,documents,images,stickers,videos}
-    ```
+```bash
+    mkdir -p storage/app/public/whatsapp/{audio,documents,images,stickers,videos}
+```
 
 ## 🔗 Crear enlace simbólico del storage
 Para que los archivos sean accesibles públicamente, ejecuta:
 
-    ```bash
-        php artisan storage:link
-    ```
+```bash
+    php artisan storage:link
+```
 
 Esto crea el enlace public/storage apuntando a storage/app/public, requerido por Laravel para servir archivos correctamente.
 
@@ -236,77 +237,77 @@ Eventos a suscribir: messages, message_statuses
 
 ## 🧩 Estructura del Paquete
 
-    ```bash
-        whatsapp-manager/
-        ├── .env.testing              # Archivo de configuración para pruebas
-        ├── composer.json             # Configuración de dependencias del paquete
-        ├── composer.lock             # Archivo de bloqueo de dependencias
-        ├── LICENSE                   # Licencia del paquete
-        ├── phpunit.xml               # Configuración de PHPUnit para pruebas
-        ├── README.md                 # Documentación principal del paquete
-        ├── .vscode/
-        │   └── settings.json         # Configuración específica para Visual Studio Code
-        ├── assets/                   # Archivos de recursos
-        │   ├── 2394384167581644.ogg  # Archivo de audio de ejemplo
-        │   ├── LARAVEL WHATSAPP MANEGER.pdf # Documento PDF de ejemplo
-        │   └── laravel-whatsapp-manager.png # Imagen de ejemplo
-        ├── src/                      # Código fuente principal del paquete
-        │   ├── Config/               # Archivos de configuración
-        │   │   ├── logging.php
-        │   │   ├── whatsapp.php
-        │   ├── Console/              # Comandos Artisan personalizados
-        │   │   ├── CheckUserModel.php
-        │   │   ├── MergeLoggingConfig.php
-        │   ├── Database/             # Migraciones y seeders
-        │   │   ├── Migrations/       # Migraciones de base de datos
-        │   │   └── Seeders/          # Seeders opcionales
-        │   ├── Enums/                # Enumeraciones del sistema
-        │   │   ├── MessageStatus.php
-        │   ├── Exceptions/           # Excepciones personalizadas
-        │   │   ├── InvalidApiResponseException.php
-        │   │   ├── WhatsappApiException.php
-        │   ├── Facades/              # Facades del paquete
-        │   │   ├── whatsapp.php
-        │   ├── Helpers/              # Funciones y utilidades auxiliares   
-        │   │   ├── CountryCodes.php
-        │   ├── Http/                 # Lógica HTTP
-        │   │   ├── Controllers/      # Controladores HTTP y Webhook
-        │   │   │   ├── WhatsappWebhookController.php
-        │   │   └── Middleware/       # Middleware personalizados
-        │   ├── Logging/              # Personalización de logs  
-        │   │   ├── CustomizeFormatter.php
-        │   ├── Models/               # Modelos Eloquent
-        │   ├── Providers/            # Proveedores de servicios del paquete  
-        │   │   ├── WhatsappServiceProvider.php
-        │   ├── Repositories/         # Repositorios para acceso a datos
-        │   │   ├── WhatsappBusinessAccountRepository.php
-        │   ├── routes/               # Rutas del paquete
-        │   │   ├── whatsapp_webhook.php
-        │   ├── Services/             # Lógica de negocio y API
-        │   │   ├── AccountRegistrationService.php
-        │   │   ├── MessageDispatcherService.php
-        │   │   ├── TemplateBuilder.php
-        │   │   ├── TemplateMessageBuilder.php
-        │   │   ├── TemplateService.php
-        │   │   ├── WhatsappManager.php
-        │   │   ├── WhatsappService.php
-        │   ├── Traits/               # Traits reutilizables
-        │   │   ├── GeneratesUlid.php
-        │   └── WhatsappApi/          # Cliente API y endpoints
-        │   │   ├── DataTransferObjects/
-        │   │   │   ├── ApiErrorResponse.php
-        │   │   │   ├── BusinessAccountResponse.php
-        │   │   │   ├── MessageResponse.php
-        │   │   ├── Exceptions/
-        │   │   │   ├── BusinessProfileValidator.php
-        │   │   ├── ApiClient.php
-        │   │   ├── Endpoints.php     
-        ├── tests/                    # Pruebas del paquete
-        │   ├── TestCase.php          # Clase base para pruebas
-        │   ├── Feature/              # Pruebas funcionales
-        │   └── Unit/                 # Pruebas unitarias
-        └── vendor/                   # Dependencias instaladas por Composer
-    ```
+```bash
+    whatsapp-manager/
+    ├── .env.testing              # Archivo de configuración para pruebas
+    ├── composer.json             # Configuración de dependencias del paquete
+    ├── composer.lock             # Archivo de bloqueo de dependencias
+    ├── LICENSE                   # Licencia del paquete
+    ├── phpunit.xml               # Configuración de PHPUnit para pruebas
+    ├── README.md                 # Documentación principal del paquete
+    ├── .vscode/
+    │   └── settings.json         # Configuración específica para Visual Studio Code
+    ├── assets/                   # Archivos de recursos
+    │   ├── 2394384167581644.ogg  # Archivo de audio de ejemplo
+    │   ├── LARAVEL WHATSAPP MANEGER.pdf # Documento PDF de ejemplo
+    │   └── laravel-whatsapp-manager.png # Imagen de ejemplo
+    ├── src/                      # Código fuente principal del paquete
+    │   ├── Config/               # Archivos de configuración
+    │   │   ├── logging.php
+    │   │   ├── whatsapp.php
+    │   ├── Console/              # Comandos Artisan personalizados
+    │   │   ├── CheckUserModel.php
+    │   │   ├── MergeLoggingConfig.php
+    │   ├── Database/             # Migraciones y seeders
+    │   │   ├── Migrations/       # Migraciones de base de datos
+    │   │   └── Seeders/          # Seeders opcionales
+    │   ├── Enums/                # Enumeraciones del sistema
+    │   │   ├── MessageStatus.php
+    │   ├── Exceptions/           # Excepciones personalizadas
+    │   │   ├── InvalidApiResponseException.php
+    │   │   ├── WhatsappApiException.php
+    │   ├── Facades/              # Facades del paquete
+    │   │   ├── whatsapp.php
+    │   ├── Helpers/              # Funciones y utilidades auxiliares   
+    │   │   ├── CountryCodes.php
+    │   ├── Http/                 # Lógica HTTP
+    │   │   ├── Controllers/      # Controladores HTTP y Webhook
+    │   │   │   ├── WhatsappWebhookController.php
+    │   │   └── Middleware/       # Middleware personalizados
+    │   ├── Logging/              # Personalización de logs  
+    │   │   ├── CustomizeFormatter.php
+    │   ├── Models/               # Modelos Eloquent
+    │   ├── Providers/            # Proveedores de servicios del paquete  
+    │   │   ├── WhatsappServiceProvider.php
+    │   ├── Repositories/         # Repositorios para acceso a datos
+    │   │   ├── WhatsappBusinessAccountRepository.php
+    │   ├── routes/               # Rutas del paquete
+    │   │   ├── whatsapp_webhook.php
+    │   ├── Services/             # Lógica de negocio y API
+    │   │   ├── AccountRegistrationService.php
+    │   │   ├── MessageDispatcherService.php
+    │   │   ├── TemplateBuilder.php
+    │   │   ├── TemplateMessageBuilder.php
+    │   │   ├── TemplateService.php
+    │   │   ├── WhatsappManager.php
+    │   │   ├── WhatsappService.php
+    │   ├── Traits/               # Traits reutilizables
+    │   │   ├── GeneratesUlid.php
+    │   └── WhatsappApi/          # Cliente API y endpoints
+    │   │   ├── DataTransferObjects/
+    │   │   │   ├── ApiErrorResponse.php
+    │   │   │   ├── BusinessAccountResponse.php
+    │   │   │   ├── MessageResponse.php
+    │   │   ├── Exceptions/
+    │   │   │   ├── BusinessProfileValidator.php
+    │   │   ├── ApiClient.php
+    │   │   ├── Endpoints.php     
+    ├── tests/                    # Pruebas del paquete
+    │   ├── TestCase.php          # Clase base para pruebas
+    │   ├── Feature/              # Pruebas funcionales
+    │   └── Unit/                 # Pruebas unitarias
+    └── vendor/                   # Dependencias instaladas por Composer
+```
 
 ## 🙌 Apóyanos con una donación
 Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]

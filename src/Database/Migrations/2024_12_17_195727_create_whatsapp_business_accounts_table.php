@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('whatsapp_business_accounts', function (Blueprint $table) {
             $table->string('whatsapp_business_id', 255)->primary();
-            $table->string('phone_number_id', 45)->nullable();
+            $table->string('phone_number_id', 45)->nullable()->unique();
             $table->char('name', 250);
             $table->text('api_token')->nullable();
             $table->char('app_id', 20)->nullable();

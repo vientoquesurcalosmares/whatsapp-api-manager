@@ -28,10 +28,12 @@ class TemplateEditor extends TemplateBuilder
     public function __construct(
         Template $template, 
         ApiClient $apiClient, 
-        TemplateService $templateService
+        TemplateService $templateService,
+        FlowService $flowService
     ) {
-        parent::__construct($apiClient, $template->businessAccount, $templateService);
+        parent::__construct($apiClient, $template->businessAccount, $templateService, $flowService);
         $this->template = $template;
+        $this->flowService = $flowService;
         $this->loadExistingTemplate();
     }
 
@@ -76,16 +78,19 @@ class TemplateEditor extends TemplateBuilder
         try {
             $this->validateForUpdate();
             $this->sanitizeTemplateData();
-            
+
             // Actualizar en la API de WhatsApp
             $response = $this->updateTemplateInApi();
-            
+
             // Actualizar en la base de datos
             $this->updateTemplateInDatabase();
-            
+
+            // Sincronizar relaciones de flujo si hay botones tipo FLOW
+            $this->syncFlowRelations();
+
             // Reiniciar el estado del builder
             $this->resetBuilder();
-            
+
             return $this->template->fresh();
         } catch (\Exception $e) {
             Log::error('Error actualizando plantilla: ' . $e->getMessage(), [
@@ -343,6 +348,24 @@ class TemplateEditor extends TemplateBuilder
         return parent::addButton($type, $text, $urlOrPhone, $example);
     }
 
+    /**
+     * Agrega un botón de tipo FLOW a la plantilla.
+     *
+     * @param string $text Texto visible del botón
+     * @param string $flowId ID del flujo configurado en Meta
+     * @param string|null $flowToken Token opcional para el flujo
+     * @return self
+     * @throws TemplateComponentException
+     */
+    public function addFlowButton(string $text, string $flowId, ?string $flowToken = null): self
+    {
+        if ($this->buttonCount >= 10) {
+            throw new TemplateComponentException('No se pueden agregar más de 10 botones a una plantilla.');
+        }
+
+        return parent::addFlowButton($text, $flowId, $flowToken);
+    }
+
     public function getButtons(): array
     {
         $buttonsComponent = $this->getComponentsByType('BUTTONS');
@@ -451,5 +474,32 @@ class TemplateEditor extends TemplateBuilder
     protected function getComponentsByType(string $type): array
     {
         return array_filter($this->templateData['components'], fn($c) => $c['type'] === $type);
+    }
+
+    /**
+     * Sincroniza las relaciones de flujo para botones tipo FLOW.
+     */
+    protected function syncFlowRelations(): void
+    {
+        $flowButtonIds = [];
+        foreach ($this->getButtons() as $button) {
+            if (($button['type'] ?? null) === 'FLOW' && !empty($button['flow_id'])) {
+                $flow = $this->flowService->getFlowById($button['flow_id']);
+                if ($flow) {
+                    // Actualiza o crea la relación en la tabla pivote
+                    $this->template->flows()->syncWithoutDetaching([$flow->flow_id => [
+                        'flow_button_label' => $button['text'] ?? 'Iniciar flujo'
+                    ]]);
+                    $flowButtonIds[] = $flow->flow_id;
+                }
+            }
+        }
+        // Elimina relaciones obsoletas
+        if (!empty($flowButtonIds)) {
+            $this->template->flows()->wherePivotNotIn('flow_id', $flowButtonIds)->detach();
+        } else {
+            // Si ya no hay botones FLOW, elimina todas las relaciones
+            $this->template->flows()->detach();
+        }
     }
 }
