@@ -186,6 +186,11 @@ class FlowService
     public function syncScreensAndElements(WhatsappFlow $flow, array $screens): void
     {
         foreach ($screens as $screenData) {
+            // Validar que el campo 'name' esté presente y no sea null
+            if (empty($screenData['name'])) {
+                throw new InvalidArgumentException("El campo 'name' es obligatorio para sincronizar las pantallas.");
+            }
+
             // Guardar o actualizar la pantalla
             $screen = $flow->screens()->updateOrCreate(
                 ['name' => $screenData['name']],
@@ -213,8 +218,6 @@ class FlowService
                             'options' => $elementData['options'] ?? null,
                             'style_json' => $elementData['style_json'] ?? null,
                             'required' => $elementData['required'] ?? false,
-                            'validation' => $elementData['validation'] ?? null,
-                            'next_screen' => $elementData['next_screen'] ?? null,
                         ]
                     );
                 }

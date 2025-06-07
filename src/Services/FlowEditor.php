@@ -228,7 +228,7 @@ class FlowEditor
         $flowId = $this->flow->wa_flow_id;
         $accessToken = $this->flow->whatsappBusinessAccount->api_token;
 
-        // 1. Actualizar metadatos (puedes dejarlo con Guzzle si ya funciona)
+        // 1. Actualizar metadatos
         $metaEndpoint = Endpoints::build(Endpoints::UPDATE_FLOW_METADATA, [
             'flow_id' => $flowId,
         ]);
@@ -248,28 +248,17 @@ class FlowEditor
             ]
         );
 
-        // 2. Actualizar JSON del flujo (estructura) usando cURL puro
-        $jsonForFile = $this->flowData['json_structure'];
-        $jsonForFile['name'] = $this->flowData['name'] ?? 'SinNombre';
-        $jsonForFile['version'] = '7.0';
+        // 2. Actualizar JSON del flujo
+        $flowJson = $this->buildFlowJson();
+        $this->flowData['json_structure'] = $flowJson;
 
-        if (empty($jsonForFile['name'])) {
-            throw new InvalidArgumentException('El campo name del flujo no puede estar vacío al actualizar el flujo en la API.');
-        }
-        if (!empty($this->flowData['description'])) {
-            $jsonForFile['description'] = $this->flowData['description'];
-        }
-        if (!empty($this->flowData['categories'])) {
-            $jsonForFile['categories'] = $this->flowData['categories'];
+        if (empty($flowJson['screens'])) {
+            throw new InvalidArgumentException('El flujo debe tener al menos una pantalla.');
         }
 
         $tmpFile = tempnam(sys_get_temp_dir(), 'flow_') . '.json';
-        file_put_contents($tmpFile, json_encode($jsonForFile));
+        file_put_contents($tmpFile, json_encode($flowJson));
 
-        $assetsEndpoint = Endpoints::build(Endpoints::UPDATE_FLOW_ASSETS, [
-            'flow_id' => $flowId,
-        ]);
-        // Construir la URL completa
         $baseUrl = config('whatsapp.api.base_url', 'https://graph.facebook.com');
         $version = config('whatsapp.api.version', 'v22.0');
         $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . '/' . $flowId . '/assets';
@@ -308,21 +297,56 @@ class FlowEditor
             throw new \RuntimeException("Error al subir el flujo: " . $decoded['error']['message']);
         }
 
-        // 3. (Opcional) Publicar el flujo si lo deseas
-        // $publishEndpoint = Endpoints::build(Endpoints::PUBLISH_FLOW, ['flow_id' => $flowId]);
-        // $this->apiClient->request('POST', $publishEndpoint, [], [], [], ['Authorization' => 'Bearer ' . $accessToken]);
-
-        // 4. Actualizar la base de datos local
+        // 3. Actualizar la base de datos local
         $this->flow->update([
             'name' => $this->flowData['name'],
             'description' => $this->flowData['description'],
-            'json_structure' => $this->flowData['json_structure'],
-            // ...otros campos...
+            'json_structure' => json_encode($flowJson),
+            'status' => $this->flowData['status'] ?? 'draft',
+            'version' => $this->flowData['version'] ?? '7.0',
+            'categories' => $this->flowData['categories'] ?? [],
+            'preview_url' => $this->flowData['preview_url'] ?? null,
+            'preview_expires_at' => $this->flowData['preview_expires_at'] ?? null,
+            'validation_errors' => $this->flowData['validation_errors'] ?? [],
+            'json_version' => $this->flowData['json_version'] ?? '7.0',
+            'health_status' => $this->flowData['health_status'] ?? [],
         ]);
+
         if (!empty($this->flowData['json_structure']['screens'])) {
             $this->flowService->syncScreensAndElements($this->flow, $this->flowData['json_structure']['screens']);
         }
 
         return $this->flow->fresh();
+    }
+
+    protected function buildFlowJson(): array
+    {
+        $screens = [];
+        foreach ($this->flowData['json_structure']['screens'] as $screen) {
+            if (empty($screen['name'])) {
+                throw new InvalidArgumentException("El campo 'name' es obligatorio para construir el JSON del flujo.");
+            }
+
+            $children = [];
+            // Construir elementos válidos
+            foreach ($screen['elements'] ?? [] as $element) {
+                // Lógica para construir elementos...
+            }
+
+            $screens[] = [
+                'id' => strtoupper($screen['name']),
+                'title' => $screen['title'] ?? '',
+                'layout' => [
+                    'type' => 'SingleColumnLayout',
+                    'children' => $children,
+                ],
+                'data' => (object)[],
+            ];
+        }
+
+        return [
+            'version' => $this->flowData['json_version'] ?? '7.0',
+            'screens' => $screens,
+        ];
     }
 }
