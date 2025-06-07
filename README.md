@@ -125,16 +125,16 @@ Si usas un modelo User personalizado:
 
 Además, verifica que el modelo implementa las interfaces necesarias o extiende el modelo base esperado por el paquete. Por ejemplo:
 
-    ```php
-        namespace App\Modules\Auth\Models;
+```php
+    namespace App\Modules\Auth\Models;
 
-        use Illuminate\Foundation\Auth\User as Authenticatable;
+    use Illuminate\Foundation\Auth\User as Authenticatable;
 
-        class Admin extends Authenticatable
-        {
-        // Tu lógica personalizada aquí
-        }
-    ```
+    class Admin extends Authenticatable
+    {
+    // Tu lógica personalizada aquí
+    }
+```
 
 
 6.  🗃️ Migraciones
@@ -152,6 +152,7 @@ Ejecuta el siguiente comando para asegurarte de que el modelo de usuario está c
 Este comando validará que el modelo especificado en el archivo `.env` cumple con los requisitos del paquete.
 
 Salida esperada (ejemplo):
+
     ```plaintext
         ✅ Modelo User configurado: App\Models\User
     ```
