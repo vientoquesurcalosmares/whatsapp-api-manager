@@ -13,6 +13,7 @@ class WhatsappScreenElement extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
+    protected $table = 'whatsapp_screen_elements';
     protected $primaryKey = 'screen_element_id';
     public $incrementing = false;
     protected $keyType = 'string';
