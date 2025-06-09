@@ -363,8 +363,12 @@ class TemplateBuilder
             throw new InvalidArgumentException('El ID del flujo (flow_id) es obligatorio.');
         }
 
-        if (!$this->flowService->getFlowById($flowId)) {
-            throw new InvalidArgumentException("El flujo con ID $flowId no existe.");
+        $flow = $this->flowService->getFlowById($flowId);
+        if (!$flow) {
+            throw new InvalidArgumentException("El flujo con ID ($flowId - $flow->name) no existe o no ha sido aprobado pot META.");
+        }
+        if ($flow->status !== 'APPROVED') {
+            throw new \Exception("El flujo debe estar aprobado");
         }
 
         $button = [
