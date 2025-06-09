@@ -13,6 +13,7 @@ class WhatsappFlowSession extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
+    protected $table = 'whatsapp_flow_sessions';
     protected $primaryKey = 'flow_session_id';
     public $incrementing = false;
     protected $keyType = 'string';
