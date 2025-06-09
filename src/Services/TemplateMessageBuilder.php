@@ -53,7 +53,7 @@ class TemplateMessageBuilder
      */
     public function to(string $countryCode, string $phoneNumber,): self
     {
-        $codes = CountryCodes::list();
+        $codes = CountryCodes::codes();
 
         if (!in_array($countryCode, $codes)) {
             throw new InvalidArgumentException("El código de país '$countryCode' no es válido.");
