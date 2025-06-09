@@ -14,7 +14,7 @@ class WhatsappFlowEvent extends Model
     use GeneratesUlid;
 
     public $timestamps = false;
-
+    protected $table = 'whatsapp_flow_events';
     protected $primaryKey = 'flow_event_id';
     public $incrementing = false;
     protected $keyType = 'string';
