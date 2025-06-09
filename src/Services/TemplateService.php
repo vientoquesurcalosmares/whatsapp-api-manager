@@ -216,7 +216,7 @@ class TemplateService
                 return null;
             }
 
-            $this->validateTemplateData($response);
+            $this->validateTemplateData($$templateData);
 
             // Almacenar o actualizar la plantilla en la base de datos
             return $this->storeOrUpdateTemplate($account, $templateData);
