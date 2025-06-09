@@ -13,6 +13,7 @@ class WhatsappFlowScreen extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
+    protected $table = 'whatsapp_flow_screens';
     protected $primaryKey = 'screen_id';
     public $incrementing = false;
     protected $keyType = 'string';
