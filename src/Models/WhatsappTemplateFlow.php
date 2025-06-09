@@ -13,6 +13,7 @@ class WhatsappTemplateFlow extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
+    protected $table = 'whatsapp_template_flows';
     protected $primaryKey = 'template_flow_id';
     public $incrementing = false;
     protected $keyType = 'string';
