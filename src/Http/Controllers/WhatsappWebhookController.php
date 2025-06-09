@@ -516,7 +516,7 @@ class WhatsappWebhookController extends Controller
         }
 
         // 1. Actualizar estado del mensaje
-        $this->updateMessageStatus($messageRecord, $statusValue, $timestamp);
+        $this->updateMessageStatus($messageRecord, $status);
 
         // 2. Procesar datos de conversación y métricas
         if (isset($status['conversation'])) {
@@ -552,19 +552,38 @@ class WhatsappWebhookController extends Controller
         return [null, null];
     }
 
-    private function updateMessageStatus(Message $message, string $status, ?string $timestamp): void
+    private function updateMessageStatus(Message $message, array $status): void
     {
-        $updateData = ['status' => $status];
+        $statusValue = $status['status'] ?? null;
+        $timestamp = $status['timestamp'] ?? null;
+
+        $updateData = ['status' => $statusValue];
 
         if ($timestamp) {
             $date = \Carbon\Carbon::createFromTimestamp($timestamp);
 
-            match($status) {
-                'sent' => $updateData['sent_at'] = $date,
+            match($statusValue) {
                 'delivered' => $updateData['delivered_at'] = $date,
                 'read' => $updateData['read_at'] = $date,
+                'failed' => $updateData['failed_at'] = $date,
                 default => null
             };
+        }
+
+        //Si falló el mensaje, guardar los datos del error
+        if( $statusValue=='failed' && isset($status['errors']) && isset($status['errors'][0]) ){
+            $updateData['code_error'] = (integer)$status['errors'][0]['code'];
+            $updateData['title_error'] = $status['errors'][0]['title'];
+            $updateData['message_error'] = $status['errors'][0]['message'];
+
+            if( isset($status['errors'][0]['error_data']) ){
+                if( isset($status['errors'][0]['error_data']['details']) ){
+                    $updateData['details_error'] = $status['errors'][0]['error_data']['details'];
+                }
+                else{
+                    $updateData['details_error'] = $status['errors'][0]['error_data'];
+                }
+            }
         }
 
         $message->update($updateData);
