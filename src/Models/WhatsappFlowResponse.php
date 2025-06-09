@@ -13,6 +13,7 @@ class WhatsappFlowResponse extends Model
     use HasFactory, SoftDeletes;
     use GeneratesUlid;
 
+    protected $table = 'whatsapp_flow_responses';
     protected $primaryKey = 'flow_response_id';
     public $incrementing = false;
     protected $keyType = 'string';
