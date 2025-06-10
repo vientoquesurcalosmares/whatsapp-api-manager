@@ -78,7 +78,7 @@ class FlowService
             return WhatsappFlow::where('whatsapp_business_account_id', $account->whatsapp_business_id)->get();
 
         } catch (\Exception $e) {
-            Log::error('Error al sincronizar flujos: ' . $e->getMessage(), [
+            Log::channel('whatsapp')->error('Error al sincronizar flujos: ' . $e->getMessage(), [
                 'endpoint' => $endpoint,
                 'business_id' => $account->whatsapp_business_id
             ]);
@@ -161,16 +161,16 @@ class FlowService
 
         try {
             $response = $this->apiClient->request('GET', $endpoint, [], null, [], $headers);
-            
+
             // Asegurar que la respuesta tiene los datos necesarios
             if (empty($response['id']) || empty($response['name'])) {
-                Log::error('Respuesta de flujo inválida', ['response' => $response]);
+                Log::channel('whatsapp')->error('Respuesta de flujo inválida', ['response' => $response]);
                 return null;
             }
-            
+
             return $this->storeOrUpdateFlow($account->whatsapp_business_id, $response);
         } catch (\Exception $e) {
-            Log::error('Error al sincronizar flujo por ID: ' . $e->getMessage(), [
+            Log::channel('whatsapp')->error('Error al sincronizar flujo por ID: ' . $e->getMessage(), [
                 'flow_id' => $flowId,
             ]);
             return null;

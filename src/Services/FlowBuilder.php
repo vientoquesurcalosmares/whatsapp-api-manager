@@ -89,7 +89,7 @@ class FlowBuilder
         if ($this->currentScreen) {
             $this->screens[] = $this->currentScreen->build();
         }
-        
+
         $this->currentScreen = new ScreenBuilder($this, $name);
         return $this->currentScreen;
     }
@@ -199,7 +199,7 @@ class FlowBuilder
             return $flow;
 
         } catch (\Exception $e) {
-            Log::error('Error al guardar flujo: ' . $e->getMessage(), [
+            Log::channel('whatsapp')->error('Error al guardar flujo: ' . $e->getMessage(), [
                 'endpoint' => $endpoint,
                 'flow_data' => $flowData
             ]);
