@@ -1011,6 +1011,14 @@ class WhatsappTemplateLanguageSeeder extends Seeder
             ]
         ];
 
-        DB::table('whatsapp_template_languages')->insert($languages);
+        foreach ($languages as $language) {
+            DB::table('whatsapp_template_languages')->updateOrInsert(
+                ['id' => $language['id']],
+                array_merge($language, [
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ])
+            );
+        }
     }
 }

@@ -63,26 +63,10 @@ class Whatsapp extends Facade
     }
 
     /**
-     * Get the bot builder service instance.
-     */
-    public static function bot()
-    {
-        return app('whatsapp.bot');
-    }
-
-    /**
      * Get the flow builder service instance.
      */
     public static function flow()
     {
         return app('whatsapp.flow');
-    }
-
-    /**
-     * Get the step builder service instance.
-     */
-    public static function step(Flow $flow)
-    {
-        return app('whatsapp.step', ['flow' => $flow]);
     }
 }

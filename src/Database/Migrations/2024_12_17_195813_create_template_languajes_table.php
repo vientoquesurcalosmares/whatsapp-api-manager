@@ -18,11 +18,12 @@ return new class extends Migration
             $table->string('variant', 5)->nullable();      // Abreviatura personalizada
             
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('languages');
+        Schema::dropIfExists('whatsapp_template_languages');
     }
 };

@@ -50,7 +50,7 @@ return new class extends Migration
 
             $table->foreign('conversation_id')
                   ->references('conversation_id')
-                  ->on('conversations')
+                  ->on('whatsapp_conversations')
                   ->onDelete('cascade');
 
             $table->foreign('whatsapp_phone_id')

@@ -23,6 +23,7 @@ use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
 use ScriptDevelop\WhatsappManager\Models\MediaFile;
 use ScriptDevelop\WhatsappManager\Enums\StepType;
+use Illuminate\Support\Str; // <-- Agregamos esto
 
 class WhatsappWebhookController extends Controller
 {
@@ -84,12 +85,13 @@ class WhatsappWebhookController extends Controller
     protected function handleIncomingMessage(array $message, ?array $contact, ?array $metadata): void
     {
         $messageType = $message['type'] ?? '';
-        $textContent = null;
+        
+        $messageRecord = null;
 
         $textContent = null;
 
         Log::channel('whatsapp')->warning('Handle Incoming Message: ', [
-            'message' => $message,
+            'message_type' => $messageType,
             'contact' => $contact,
             'metadata' => $metadata,
         ]);
@@ -140,69 +142,45 @@ class WhatsappWebhookController extends Controller
 
         // Manejar mensajes de texto
         if ($messageType === 'text') {
-            $textContent = $this->processTextMessage($message, $contactRecord, $whatsappPhone);
+            $messageRecord = $this->processTextMessage($message, $contactRecord, $whatsappPhone);
+            $textContent = $messageRecord->message_content ?? null;
         }
 
         // Manejar mensajes interactivos (botones, listas)
         if ($messageType === 'interactive') {
-            $textContent = $this->processInteractiveMessage($message, $contactRecord, $whatsappPhone);
+            $messageRecord = $this->processInteractiveMessage($message, $contactRecord, $whatsappPhone);
+            $textContent = $messageRecord->message_content ?? null;
+        }
+
+        if ($messageType === 'location') {
+            $this->processLocationMessage($message, $contactRecord, $whatsappPhone);
+        }
+
+        if ($messageType === 'contacts') {
+            $this->processContactMessage($message, $contactRecord, $whatsappPhone);
+        }
+
+        if ($messageType === 'reaction') {
+            $this->processReactionMessage($message, $contactRecord, $whatsappPhone);
         }
 
         // Manejar mensajes de media
-        if (in_array($messageType, ['image', 'audio', 'video', 'document'])) {
+        if (in_array($messageType, ['image', 'audio', 'video', 'document', 'sticker'])) {
             $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
         }
 
-
+        $logMessage = $textContent ?? ($message['text']['body'] ?? 'No text content');
 
         Log::channel('whatsapp')->info('Incoming message processed.', [
             'message_id' => $message['id'],
             'contact_id' => $contactRecord->contact_id,
             'phone_number' => $fullPhone,
             'message_type' => $messageType,
-            'Message' => $message['text']['body'],
-            'Text Content' => $textContent,
+            'content' => $logMessage,
         ]);
-
-        // Si tenemos contenido de texto, procesar el flujo
-        if ($textContent) {
-            try {
-                $bot = $whatsappPhone->bots()->where('is_enable', true)->first();
-                
-                if (!$bot) {
-                    Log::channel('whatsapp')->warning('Bot inactivo o no encontrado');
-                    return;
-                }
-
-                $sessionManager = app(SessionManager::class);
-                $session = $sessionManager->getOrCreateSession($contactRecord, $bot);
-                
-                $flowId = $this->determineFlow($bot, $textContent, $contactRecord);
-                
-                if ($flowId) {
-                    // Si es una nueva sesión o el flujo ha cambiado
-                    if (!$session->flow_id || $session->flow_id !== $flowId) {
-                        $session->update([
-                            'flow_id' => $flowId,
-                            'current_step_id' => null,
-                            'flow_status' => 'in_progress'
-                        ]);
-                    }
-                    
-                    $this->processFlowStep($session, $textContent);
-                } else {
-                    Log::channel('whatsapp')->warning('Flujo no determinado', ['text' => $textContent]);
-                    $this->handleUnrecognizedMessage($whatsappPhone, $contactRecord);
-                }
-                
-            } catch (\Exception $e) {
-                Log::channel('whatsapp')->error('Error en flujo: '.$e->getMessage());
-                $this->sendErrorFallbackMessage($whatsappPhone, $contactRecord);
-            }
-        }
     }
 
-    protected function processTextMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?string
+    protected function processTextMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?Message
     {
         $textContent = $message['text']['body'] ?? null;
 
@@ -238,10 +216,10 @@ class WhatsappWebhookController extends Controller
             'content' => $textContent,
         ]);
 
-        return $textContent; // Retorna el contenido
+        return $messageRecord;
     }
 
-    protected function processInteractiveMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?string
+    protected function processInteractiveMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?Message
     {
         $interactiveType = $message['interactive']['type'] ?? '';
         $textContent = null;
@@ -278,7 +256,7 @@ class WhatsappWebhookController extends Controller
             'content' => $textContent,
         ]);
 
-        return $textContent;
+        return $messageRecord; 
     }
 
     protected function processMediaMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
@@ -286,6 +264,15 @@ class WhatsappWebhookController extends Controller
         $mediaId = $message[$message['type']]['id'] ?? null;
         $caption = $message[$message['type']]['caption'] ?? strtoupper($message['type']);
         $mimeType = $message[$message['type']]['mime_type'] ?? null;
+
+        Log::channel('whatsapp')->info('Processing media message.', [
+            'message' => $message,
+            'contact' => $contact,
+            'whatsappPhone' => $whatsappPhone,
+            'mediaId' => $mediaId,
+            'caption' => $caption,
+            'mimeType' => $mimeType,
+        ]);
 
         if (!$mediaId) {
             Log::channel('whatsapp')->warning('No media ID found in message.', $message);
@@ -311,7 +298,18 @@ class WhatsappWebhookController extends Controller
             mkdir($directory, 0777, true);
         }
 
-        $fileName = "{$mediaId}.{$this->getFileExtension($mimeType)}";
+        $extension = $this->getFileExtension($mimeType);
+
+        // Si es un archivo de audio y tiene extensión .bin, forzar a .ogg
+        if ($message['type'] === 'audio' && $extension === 'bin') {
+            $extension = 'ogg';
+        }
+
+        if ($message['type'] === 'sticker' && $extension === 'bin') {
+            $extension = 'webp';
+        }
+
+        $fileName = "{$mediaId}.{$extension}";
         $filePath = "{$directory}{$fileName}";
         file_put_contents($filePath, $mediaContent);
 
@@ -350,9 +348,110 @@ class WhatsappWebhookController extends Controller
         ]);
     }
 
+    protected function processLocationMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
+    {
+        $location = $message['location'] ?? null;
+
+        if (!$location) {
+            Log::channel('whatsapp')->warning('No location data found in message.', $message);
+            return;
+        }
+
+        $content = "Ubicación: " . ($location['name'] ?? '') . " - " . ($location['address'] ?? '');
+        $coordinates = "Lat: {$location['latitude']}, Lon: {$location['longitude']}";
+
+        $messageRecord = Message::create([
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'wa_id' => $message['id'],
+            'conversation_id' => null,
+            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+            'message_from' => $message['from'],
+            'message_to' => $whatsappPhone->display_phone_number,
+            'message_type' => 'LOCATION',
+            'message_content' => $content . ' | ' . $coordinates,
+            'json_content' => json_encode($message),
+            'status' => 'received'
+        ]);
+
+        Log::channel('whatsapp')->info('Location message processed.', [
+            'message_id' => $messageRecord->message_id,
+            'location' => $location
+        ]);
+    }
+
+    protected function processContactMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
+    {
+        $contacts = $message['contacts'] ?? [];
+
+        if (empty($contacts)) {
+            Log::channel('whatsapp')->warning('No contacts found in message.', $message);
+            return;
+        }
+
+        foreach ($contacts as $index => $contactData) {
+            $name = $contactData['name']['formatted_name'] ?? 'Nombre no disponible';
+            $phones = collect($contactData['phones'] ?? [])->pluck('phone')->implode(', ');
+            $emails = collect($contactData['emails'] ?? [])->pluck('email')->implode(', ');
+
+            $content = "Nombre: {$name} | Teléfonos: {$phones} | Correos: {$emails}";
+
+            $messageRecord = Message::create([
+                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+                'contact_id' => $contact->contact_id,
+                'wa_id' => $message['id'] . "_{$index}",
+                'conversation_id' => null,
+                'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+                'message_from' => $message['from'],
+                'message_to' => $whatsappPhone->display_phone_number,
+                'message_type' => 'CONTACT',
+                'message_content' => $content,
+                'json_content' => json_encode($message),
+                'status' => 'received'
+            ]);
+
+            Log::channel('whatsapp')->info('Contact shared message processed.', [
+                'message_id' => $messageRecord->message_id,
+                'contact' => $content
+            ]);
+        }
+    }
+
+    protected function processReactionMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
+    {
+        $reaction = $message['reaction'] ?? null;
+
+        if (!$reaction || !isset($reaction['emoji'], $reaction['message_id'])) {
+            Log::channel('whatsapp')->warning('Reacción inválida o incompleta.', $message);
+            return;
+        }
+
+        // Opcional: guardar la reacción asociada al mensaje original
+        $originalMessage = Message::where('wa_id', $reaction['message_id'])->first();
+
+        $messageRecord = Message::create([
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'wa_id' => $message['id'],
+            'conversation_id' => $originalMessage?->conversation_id,
+            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+            'message_from' => $message['from'],
+            'message_to' => $whatsappPhone->display_phone_number,
+            'message_type' => 'REACTION',
+            'message_content' => $reaction['emoji'],
+            'json_content' => json_encode($message),
+            'status' => 'received'
+        ]);
+
+        Log::channel('whatsapp')->info('Reacción procesada.', [
+            'message_id' => $messageRecord->message_id,
+            'reaction' => $reaction
+        ]);
+    }
+
     private function getMediaUrl(string $mediaId, WhatsappPhoneNumber $whatsappPhone): ?string
     {
-        $url = env('WHATSAPP_API_URL') . '/' . env('WHATSAPP_API_VERSION') . "/$mediaId?phone_number_id=" . $whatsappPhone->api_phone_number_id;
+        $url = config('whatsapp.api.base_url', env('WHATSAPP_API_URL')) . '/' . config('whatsapp.api.version', env('WHATSAPP_API_VERSION')) . "/$mediaId?phone_number_id=" . $whatsappPhone->api_phone_number_id;
 
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $whatsappPhone->businessAccount->api_token,
@@ -372,13 +471,29 @@ class WhatsappWebhookController extends Controller
 
     private function getFileExtension(?string $mimeType): string
     {
+        //Prevenir que el mimetype sea parecido a esto: "audio/ogg; codecs=opus", así son las notas de voz
+        if ($mimeType && str_contains($mimeType, ';')) {
+            $mimeType = explode(';', $mimeType)[0];
+        }
+        
         return match ($mimeType) {
             'image/jpeg' => 'jpg',
             'image/png' => 'png',
-            'audio/ogg' => 'ogg',
-            'video/mp4' => 'mp4',
+            'audio/ogg', 'audio/aac', 'audio/mp4', 'audio/mpeg', 'audio/amr' => 'ogg',
+            'video/mp4', 'video/3gp' => 'mp4',
             'application/pdf' => 'pdf',
-            default => 'bin',
+            'application/msword' => 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'application/vnd.ms-excel' => 'xls',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+            'application/vnd.ms-powerpoint' => 'ppt',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
+            'text/plain' => 'txt',
+            'image/webp' => 'webp',
+            default => function() use ($mimeType) {
+                Log::warning("Extensión desconocida para MIME type: {$mimeType}");
+                return 'bin';
+            },
         };
     }
 
@@ -401,7 +516,7 @@ class WhatsappWebhookController extends Controller
         }
 
         // 1. Actualizar estado del mensaje
-        $this->updateMessageStatus($messageRecord, $statusValue, $timestamp);
+        $this->updateMessageStatus($messageRecord, $status);
 
         // 2. Procesar datos de conversación y métricas
         if (isset($status['conversation'])) {
@@ -425,6 +540,11 @@ class WhatsappWebhookController extends Controller
         foreach ($codes as $code) {
             if (str_starts_with($fullPhone, $code)) {
                 $phoneNumber = substr($fullPhone, strlen($code));
+                //Si el país es México, según ChatGPT este es el único caso en el mundo que tiene un 1 después del código de area y luego vienen 10 dígitos del celular así 521 1234567890
+                //Por lo tanto comprobar si es número de méxico y el $phoneNumber son exactamente 10 números, entonces agregar el 1 inicial
+                if( $code==52 && Str::length($phoneNumber)==10 ){
+                    $phoneNumber = '1'.$phoneNumber;
+                }
                 return [$code, $phoneNumber];
             }
         }
@@ -432,19 +552,38 @@ class WhatsappWebhookController extends Controller
         return [null, null];
     }
 
-    private function updateMessageStatus(Message $message, string $status, ?string $timestamp): void
+    private function updateMessageStatus(Message $message, array $status): void
     {
-        $updateData = ['status' => $status];
+        $statusValue = $status['status'] ?? null;
+        $timestamp = $status['timestamp'] ?? null;
+
+        $updateData = ['status' => $statusValue];
 
         if ($timestamp) {
             $date = \Carbon\Carbon::createFromTimestamp($timestamp);
 
-            match($status) {
-                'sent' => $updateData['sent_at'] = $date,
+            match($statusValue) {
                 'delivered' => $updateData['delivered_at'] = $date,
                 'read' => $updateData['read_at'] = $date,
+                'failed' => $updateData['failed_at'] = $date,
                 default => null
             };
+        }
+
+        //Si falló el mensaje, guardar los datos del error
+        if( $statusValue=='failed' && isset($status['errors']) && isset($status['errors'][0]) ){
+            $updateData['code_error'] = (integer)$status['errors'][0]['code'];
+            $updateData['title_error'] = $status['errors'][0]['title'];
+            $updateData['message_error'] = $status['errors'][0]['message'];
+
+            if( isset($status['errors'][0]['error_data']) ){
+                if( isset($status['errors'][0]['error_data']['details']) ){
+                    $updateData['details_error'] = $status['errors'][0]['error_data']['details'];
+                }
+                else{
+                    $updateData['details_error'] = $status['errors'][0]['error_data'];
+                }
+            }
         }
 
         $message->update($updateData);
@@ -488,160 +627,34 @@ class WhatsappWebhookController extends Controller
         }
     }
 
-    protected function determineFlow(WhatsappBot $bot, string $text, Contact $contact): ?string
+    private function validateResponse(string $userInput, ?array $validationConfig): \Illuminate\Contracts\Validation\Validator
     {
-        // 1. Buscar flujo por palabra clave
-        foreach ($bot->flows as $flow) {
-            if ($flow->matchesTrigger($text)) {
-                return $flow->flow_id;
-            }
+        // Si no hay configuración de validación, retornar un validador vacío
+        if (!$validationConfig || empty($validationConfig['rules'])) {
+            return \Illuminate\Support\Facades\Validator::make(
+                ['input' => $userInput], 
+                []
+            );
         }
+
+        // Crear el array de datos para validación usando un nombre de campo genérico
+        $data = ['input' => $userInput];
         
-        // 2. Si hay sesión previa, continuar con el mismo flujo
-        $lastSession = ChatSession::where('contact_id', $contact->contact_id)
-            ->where('whatsapp_bot_id', $bot->whatsapp_bot_id)
-            ->latest()
-            ->first();
-            
-        if ($lastSession && $lastSession->flow_status !== 'completed') {
-            return $lastSession->flow_id;
-        }
+        // Obtener las reglas de validación
+        $rules = ['input' => $validationConfig['rules']];
         
-        // 3. Usar flujo por defecto
-        return $bot->default_flow_id;
-    }
-
-    protected function processFlowStep(ChatSession $session, string $userInput): void
-    {
-        // Obtener el paso actual o el inicial
-        $currentStep = $session->currentStep ?? $session->flow->entryPointStep;
-        
-        if (!$currentStep) {
-            Log::channel('whatsapp')->error('No hay paso inicial definido para el flujo', [
-                'flow_id' => $session->flow_id
-            ]);
-            return;
+        // Crear mensajes personalizados si existen
+        $customMessages = [];
+        if (isset($validationConfig['retryMessage'])) {
+            $customMessages = [
+                'input.required' => $validationConfig['retryMessage'],
+                'input.in' => $validationConfig['retryMessage'],
+                'input.*' => $validationConfig['retryMessage']  // Mensaje genérico para todas las reglas
+            ];
         }
 
-        // Guardar respuesta del usuario
-        $this->saveUserResponse($session, $currentStep, $userInput);
-
-        // Determinar siguiente paso
-        $nextStep = $this->determineNextStep($currentStep, $userInput, $session);
-
-        // Actualizar sesión
-        $updateData = [
-            'current_step_id' => $nextStep?->step_id,
-            'flow_status' => $nextStep ? 'in_progress' : 'completed'
-        ];
-        
-        $session->update($updateData);
-
-        // Enviar respuesta del siguiente paso si existe
-        if ($nextStep) {
-            $this->sendStepResponse($nextStep, $session->contact, $session->bot->phoneNumber);
-        }
-    }
-
-    private function saveUserResponse(ChatSession $session, FlowStep $step, string $response): void
-    {
-        UserResponse::create([
-            'session_id' => $session->session_id,
-            'flow_step_id' => $step->step_id,
-            'response_value' => $response,
-            'response_timestamp' => now()
-        ]);
-    }
-
-    private function determineNextStep(FlowStep $currentStep, string $userInput, ChatSession $session): ?FlowStep
-    {
-        // 1. Si es paso terminal, no hay siguiente paso
-        if ($currentStep->is_terminal) {
-            return null;
-        }
-
-        // 2. Buscar transiciones condicionales
-        foreach ($currentStep->transitions as $transition) {
-            if ($this->evaluateCondition($transition, $userInput, $session)) {
-                return $transition->toStep;
-            }
-        }
-
-        // 3. Transición directa por orden
-        return $currentStep->flow->steps()
-            ->where('order', '>', $currentStep->order)
-            ->orderBy('order')
-            ->first();
-    }
-
-    private function evaluateCondition($transition, string $userInput, ChatSession $session): bool
-    {
-        $config = $transition->condition_config;
-        
-        if (!$config || empty($config)) {
-            return true; // Transición incondicional
-        }
-        
-        switch ($config['type'] ?? null) {
-            case 'variable_value':
-                $variable = $this->getVariableValue($config['variable'], $session);
-                return $this->compareValues($variable, $config['operator'], $config['value']);
-                
-            case 'text_match':
-                return $userInput === $config['value'];
-                
-            case 'regex':
-                return preg_match($config['pattern'], $userInput) === 1;
-                
-            default:
-                return false;
-        }
-    }
-
-    private function sendStepResponse(FlowStep $step, Contact $contact, WhatsappPhoneNumber $phoneNumber): void
-    {
-        $service = app(MessageDispatcherService::class);
-        
-        foreach ($step->messages as $message) {
-            switch ($message->message_type) {
-                case 'text':
-                    $this->sendTextMessage($message, $contact, $phoneNumber);
-                    break;
-                    
-                case 'interactive_buttons':
-                case 'interactive_list':
-                    $this->sendInteractiveResponse($message, $contact, $phoneNumber);
-                    break;
-                    
-                default:
-                    $content = $this->getMessageContent($message);
-                    $service->sendTextMessage(
-                        $phoneNumber->phone_number_id,
-                        $contact->country_code,
-                        $contact->phone_number,
-                        $content,
-                        false
-                    );
-            }
-            
-            // Respeta el retraso entre mensajes
-            if ($message->delay_seconds > 0) {
-                sleep($message->delay_seconds);
-            }
-        }
-    }
-
-    private function getVariableValue(string $variableName, ChatSession $session)
-    {
-        // Buscar la variable en las respuestas guardadas
-        $response = UserResponse::where('session_id', $session->session_id)
-            ->whereHas('step', function($query) use ($variableName) {
-                $query->where('variable_name', $variableName);
-            })
-            ->latest()
-            ->first();
-            
-        return $response ? $response->response_value : null;
+        // Crear y retornar el validador
+        return \Illuminate\Support\Facades\Validator::make($data, $rules, $customMessages);
     }
 
     private function getMessageContent($message): string

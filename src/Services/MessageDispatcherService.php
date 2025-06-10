@@ -11,10 +11,11 @@ use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Exceptions\WhatsappApiException;
 use Illuminate\Support\Facades\Log; // <-- Agregamos esto
+use Illuminate\Support\Str; // <-- Agregamos esto
 
 /**
  * Servicio para enviar mensajes a través de WhatsApp Business API
- * 
+ *
  * Maneja diferentes tipos de mensajes (texto, multimedia, reacciones, ubicación)
  * incluyendo respuestas a mensajes existentes, con registro en base de datos y
  * manejo de archivos multimedia.
@@ -55,15 +56,15 @@ class MessageDispatcherService
             'text' => $text,
             'previewUrl' => $previewUrl,
         ]);
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -75,21 +76,21 @@ class MessageDispatcherService
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje creado en base de datos.', ['message_id' => $message->id]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
                 'preview_url' => $previewUrl,
                 'body' => $text,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'text', $parameters);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -98,7 +99,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails()
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -125,7 +126,7 @@ class MessageDispatcherService
         string $text,
         bool $previewUrl = false
     ): Message {
-        Log::info('Iniciando envío replica de mensaje.', [
+        Log::channel('whatsapp')->info('Iniciando envío replica de mensaje.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
             'phoneNumber' => $phoneNumber,
@@ -137,14 +138,10 @@ class MessageDispatcherService
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
 
-        Log::info('Mensaje de replica.', ['message' => $contextMessage, 'message_id' => $contextMessage->message_id, 'wa_id' => $contextMessage->wa_id]);
+        Log::channel('whatsapp')->info('Mensaje de replica.', ['message' => $contextMessage, 'message_id' => $contextMessage->message_id, 'wa_id' => $contextMessage->wa_id]);
 
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
-                'contextMessageId' => $contextMessageId,
-            ]);
-
-            Log::error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
             ]);
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
@@ -175,12 +172,12 @@ class MessageDispatcherService
                 'preview_url' => $previewUrl,
                 'body' => $text,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'text', $parameters, $contextMessage->wa_id);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -189,12 +186,12 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
     }
-    
+
     /**
      * Envía una reacción (emoji) como respuesta a un mensaje
      *
@@ -214,7 +211,7 @@ class MessageDispatcherService
         string $contextMessageId,
         string $emoji
     ): Message {
-        Log::info('Iniciando envío replica de mensaje.', [
+        Log::channel('whatsapp')->info('Iniciando envío replica de mensaje.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
             'phoneNumber' => $phoneNumber,
@@ -230,14 +227,10 @@ class MessageDispatcherService
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
 
-        Log::info('Mensaje de replica.', ['message' => $contextMessage, 'message_id' => $contextMessage->message_id, 'wa_id' => $contextMessage->wa_id]);
+        Log::channel('whatsapp')->info('Mensaje de replica.', ['message' => $contextMessage, 'message_id' => $contextMessage->message_id, 'wa_id' => $contextMessage->wa_id]);
 
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
-                'contextMessageId' => $contextMessageId,
-            ]);
-
-            Log::error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
             ]);
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
@@ -268,12 +261,12 @@ class MessageDispatcherService
                 'message_id' => $contextMessage->wa_id,
                 'emoji' => $emoji,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'reaction', $parameters, $contextMessage->wa_id);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -282,7 +275,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -424,14 +417,10 @@ class MessageDispatcherService
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
 
-        Log::info('Mensaje de replica.', ['message' => $contextMessage, 'message_id' => $contextMessage->message_id, 'wa_id' => $contextMessage->wa_id]);
+        Log::channel('whatsapp')->info('Mensaje de replica.', ['message' => $contextMessage, 'message_id' => $contextMessage->message_id, 'wa_id' => $contextMessage->wa_id]);
 
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
-                'contextMessageId' => $contextMessageId,
-            ]);
-
-            Log::error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
             ]);
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
@@ -549,7 +538,7 @@ class MessageDispatcherService
             ]);
             throw new \InvalidArgumentException('El enlace proporcionado no es una URL válida.');
         }
-       
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
@@ -627,14 +616,10 @@ class MessageDispatcherService
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
 
-        Log::info('Mensaje de replica.', ['message' => $contextMessage, 'message_id' => $contextMessage->message_id, 'wa_id' => $contextMessage->wa_id]);
+        Log::channel('whatsapp')->info('Mensaje de replica.', ['message' => $contextMessage, 'message_id' => $contextMessage->message_id, 'wa_id' => $contextMessage->wa_id]);
 
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
-                'contextMessageId' => $contextMessageId,
-            ]);
-
-            Log::error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
             ]);
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
@@ -652,7 +637,7 @@ class MessageDispatcherService
             ]);
             throw new \InvalidArgumentException('El enlace proporcionado no es una URL válida.');
         }
-       
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
@@ -727,12 +712,12 @@ class MessageDispatcherService
             'fileName' => $file->getFilename(),
             'fileType' => $file->getExtension(),
         ]);
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'audio');
 
@@ -744,10 +729,10 @@ class MessageDispatcherService
 
         // Descargar el archivo desde la URL proporcionada por la API
         $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $file->getFilename(), 'audio');
-    
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -771,22 +756,22 @@ class MessageDispatcherService
             'media_id' => $mediaInfo['id'],
             'file_size' => $mediaInfo['file_size'],
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de audio creado en base de datos.', [
             'message_id' => $message->message_id,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
                 'id' => $fileId,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'audio', $parameters);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -795,7 +780,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -828,22 +813,22 @@ class MessageDispatcherService
             'fileName' => $file->getFilename(),
             'fileType' => $file->getExtension(),
         ]);
-    
+
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
-    
+
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
             ]);
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'audio');
 
@@ -855,7 +840,7 @@ class MessageDispatcherService
 
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -880,22 +865,22 @@ class MessageDispatcherService
             'media_id' => $mediaInfo['id'],
             'file_size' => $mediaInfo['file_size'],
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de audio creado en base de datos.', [
             'message_id' => $message->message_id,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
                 'id' => $fileId,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'audio', $parameters, $contextMessage->wa_id);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -904,12 +889,12 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
     }
-    
+
     /**
      * Envía un mensaje de audio desde URL pública
      *
@@ -933,12 +918,12 @@ class MessageDispatcherService
             'phoneNumber' => $phoneNumber,
             'link' => $link,
         ]);
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Validar que $link sea una URL válida
         if (!filter_var($link, FILTER_VALIDATE_URL)) {
             Log::channel('whatsapp')->error('El enlace proporcionado no es una URL válida.', [
@@ -946,10 +931,10 @@ class MessageDispatcherService
             ]);
             throw new \InvalidArgumentException('El enlace proporcionado no es una URL válida.');
         }
-    
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -961,23 +946,23 @@ class MessageDispatcherService
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de audio creado en base de datos.', [
             'message_id' => $message->message_id,
             'link' => $link,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
                 'link' => $link,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'audio', $parameters);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -986,7 +971,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -1017,22 +1002,22 @@ class MessageDispatcherService
             'phoneNumber' => $phoneNumber,
             'link' => $link,
         ]);
-    
+
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
-    
+
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
             ]);
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Validar que $link sea una URL válida
         if (!filter_var($link, FILTER_VALIDATE_URL)) {
             Log::channel('whatsapp')->error('El enlace proporcionado no es una URL válida.', [
@@ -1040,10 +1025,10 @@ class MessageDispatcherService
             ]);
             throw new \InvalidArgumentException('El enlace proporcionado no es una URL válida.');
         }
-    
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -1056,23 +1041,23 @@ class MessageDispatcherService
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de audio creado en base de datos.', [
             'message_id' => $message->message_id,
             'link' => $link,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
                 'link' => $link,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'audio', $parameters, $contextMessageId);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -1081,7 +1066,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -1218,25 +1203,25 @@ class MessageDispatcherService
             'fileType' => $file->getExtension(),
             'caption' => $caption,
         ]);
-    
+
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
-    
+
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
             ]);
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'document');
-    
+
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
 
@@ -1246,10 +1231,10 @@ class MessageDispatcherService
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
-    
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -1274,11 +1259,11 @@ class MessageDispatcherService
             'media_id' => $mediaInfo['id'],
             'file_size' => $mediaInfo['file_size'],
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de documento creado en base de datos.', [
             'message_id' => $message->message_id,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
@@ -1286,12 +1271,12 @@ class MessageDispatcherService
                 'caption' => $caption,
                 'filename' => $file->getFilename(),
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'document', $parameters, $contextMessage->wa_id);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -1300,7 +1285,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -1332,12 +1317,12 @@ class MessageDispatcherService
             'link' => $link,
             'caption' => $caption,
         ]);
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Validar que $link sea una URL válida
         if (!filter_var($link, FILTER_VALIDATE_URL)) {
             Log::channel('whatsapp')->error('El enlace proporcionado no es una URL válida.', [
@@ -1345,10 +1330,10 @@ class MessageDispatcherService
             ]);
             throw new \InvalidArgumentException('El enlace proporcionado no es una URL válida.');
         }
-    
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -1360,24 +1345,24 @@ class MessageDispatcherService
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de documento creado en base de datos.', [
             'message_id' => $message->message_id,
             'link' => $link,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
                 'link' => $link,
                 'caption' => $caption,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'document', $parameters);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -1386,7 +1371,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -1421,22 +1406,22 @@ class MessageDispatcherService
             'link' => $link,
             'caption' => $caption,
         ]);
-    
+
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
-    
+
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
             ]);
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Validar que $link sea una URL válida
         if (!filter_var($link, FILTER_VALIDATE_URL)) {
             Log::channel('whatsapp')->error('El enlace proporcionado no es una URL válida.', [
@@ -1444,10 +1429,10 @@ class MessageDispatcherService
             ]);
             throw new \InvalidArgumentException('El enlace proporcionado no es una URL válida.');
         }
-    
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -1460,24 +1445,24 @@ class MessageDispatcherService
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de documento creado en base de datos.', [
             'message_id' => $message->message_id,
             'link' => $link,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
                 'link' => $link,
                 'caption' => $caption,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'document', $parameters, $contextMessage->wa_id);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -1486,7 +1471,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -1516,15 +1501,24 @@ class MessageDispatcherService
             'fileName' => $file->getFilename(),
             'fileType' => $file->getExtension(),
         ]);
-    
+
+        if (strtolower($file->getExtension()) !== 'webp') {
+            Log::channel('whatsapp')->warning('El archivo no es una imagen webp válida.', [
+                'file_name' => $file->getFilename(),
+                'extension' => $file->getExtension(),
+            ]);
+
+            throw new \InvalidArgumentException('Solo se permiten archivos .webp para stickers.');
+        }
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'sticker');
-    
+
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
 
@@ -1533,7 +1527,7 @@ class MessageDispatcherService
 
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -1557,22 +1551,22 @@ class MessageDispatcherService
             'media_id' => $mediaInfo['id'],
             'file_size' => $mediaInfo['file_size'],
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de sticker creado en base de datos.', [
             'message_id' => $message->message_id,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
                 'id' => $fileId,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'sticker', $parameters);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -1581,7 +1575,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -1615,22 +1609,31 @@ class MessageDispatcherService
             'fileName' => $file->getFilename(),
             'fileType' => $file->getExtension(),
         ]);
-    
+
+        if (strtolower($file->getExtension()) !== 'webp') {
+            Log::channel('whatsapp')->warning('El archivo no es una imagen webp válida.', [
+                'file_name' => $file->getFilename(),
+                'extension' => $file->getExtension(),
+            ]);
+
+            throw new \InvalidArgumentException('Solo se permiten archivos .webp para stickers.');
+        }
+
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
-    
+
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
             ]);
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'sticker');
 
@@ -1639,10 +1642,10 @@ class MessageDispatcherService
 
         // Descargar el archivo desde la URL proporcionada por la API
         $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $file->getFilename(), 'stickers');
-    
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -1667,22 +1670,22 @@ class MessageDispatcherService
             'media_id' => $mediaInfo['id'],
             'file_size' => $mediaInfo['file_size'],
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de sticker creado en base de datos.', [
             'message_id' => $message->message_id,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
                 'id' => $fileId,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'sticker', $parameters, $contextMessage->wa_id);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -1691,7 +1694,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -1722,22 +1725,22 @@ class MessageDispatcherService
             'contextMessageId' => $contextMessageId,
             'link' => $link,
         ]);
-    
+
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
-    
+
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
             ]);
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Validar que $link sea una URL válida
         if (!filter_var($link, FILTER_VALIDATE_URL)) {
             Log::channel('whatsapp')->error('El enlace proporcionado no es una URL válida.', [
@@ -1745,10 +1748,10 @@ class MessageDispatcherService
             ]);
             throw new \InvalidArgumentException('El enlace proporcionado no es una URL válida.');
         }
-    
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -1761,23 +1764,23 @@ class MessageDispatcherService
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de sticker creado en base de datos.', [
             'message_id' => $message->message_id,
             'link' => $link,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
                 'link' => $link,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'sticker', $parameters, $contextMessage->wa_id);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -1786,7 +1789,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -1819,24 +1822,24 @@ class MessageDispatcherService
             'fileType' => $file->getExtension(),
             'caption' => $caption,
         ]);
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'video');
-    
+
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
 
         // Descargar el archivo desde la URL proporcionada por la API
         $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $file->getFilename(), 'videos');
-    
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -1860,23 +1863,23 @@ class MessageDispatcherService
             'media_id' => $mediaInfo['id'],
             'file_size' => $mediaInfo['file_size'],
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de video creado en base de datos.', [
             'message_id' => $message->message_id,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
                 'id' => $fileId,
                 'caption' => $caption,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'video', $parameters);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -1885,7 +1888,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -1922,25 +1925,25 @@ class MessageDispatcherService
             'fileType' => $file->getExtension(),
             'caption' => $caption,
         ]);
-    
+
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
-    
+
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
             ]);
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'video');
-    
+
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
 
@@ -1949,7 +1952,7 @@ class MessageDispatcherService
 
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -1974,23 +1977,23 @@ class MessageDispatcherService
             'media_id' => $mediaInfo['id'],
             'file_size' => $mediaInfo['file_size'],
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de video creado en base de datos.', [
             'message_id' => $message->message_id,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
                 'id' => $fileId,
                 'caption' => $caption,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'video', $parameters, $contextMessage->wa_id);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -1999,7 +2002,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -2031,12 +2034,12 @@ class MessageDispatcherService
             'link' => $link,
             'caption' => $caption,
         ]);
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Validar que $link sea una URL válida
         if (!filter_var($link, FILTER_VALIDATE_URL)) {
             Log::channel('whatsapp')->error('El enlace proporcionado no es una URL válida.', [
@@ -2044,10 +2047,10 @@ class MessageDispatcherService
             ]);
             throw new \InvalidArgumentException('El enlace proporcionado no es una URL válida.');
         }
-    
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -2059,24 +2062,24 @@ class MessageDispatcherService
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de video creado en base de datos.', [
             'message_id' => $message->message_id,
             'link' => $link,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
                 'link' => $link,
                 'caption' => $caption,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'video', $parameters);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -2085,7 +2088,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -2120,22 +2123,22 @@ class MessageDispatcherService
             'link' => $link,
             'caption' => $caption,
         ]);
-    
+
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
-    
+
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
             ]);
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Validar que $link sea una URL válida
         if (!filter_var($link, FILTER_VALIDATE_URL)) {
             Log::channel('whatsapp')->error('El enlace proporcionado no es una URL válida.', [
@@ -2143,10 +2146,10 @@ class MessageDispatcherService
             ]);
             throw new \InvalidArgumentException('El enlace proporcionado no es una URL válida.');
         }
-    
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -2159,24 +2162,24 @@ class MessageDispatcherService
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de video creado en base de datos.', [
             'message_id' => $message->message_id,
             'link' => $link,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
                 'link' => $link,
                 'caption' => $caption,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'video', $parameters, $contextMessage->wa_id);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -2185,7 +2188,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -2213,18 +2216,18 @@ class MessageDispatcherService
             'phoneNumber' => $phoneNumber,
             'contactId' => $contactId,
         ]);
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono del destinatario
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Validar que el contacto a enviar exista
         $contact = Contact::findOrFail($contactId);
-    
+
         // Resolver el contacto del destinatario
         $recipientContact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -2236,11 +2239,11 @@ class MessageDispatcherService
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de contacto creado en base de datos.', [
             'message_id' => $message->message_id,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
@@ -2293,12 +2296,12 @@ class MessageDispatcherService
                     ],
                 ],
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'contacts', $parameters);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -2307,7 +2310,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -2339,28 +2342,28 @@ class MessageDispatcherService
             'contextMessageId' => $contextMessageId,
             'contactId' => $contactId,
         ]);
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono del destinatario
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Validar que el contacto a enviar exista
         $contact = Contact::findOrFail($contactId);
-    
+
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
-    
+
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
             ]);
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
-    
+
         // Resolver el contacto del destinatario
         $recipientContact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -2373,11 +2376,11 @@ class MessageDispatcherService
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de contacto creado en base de datos.', [
             'message_id' => $message->message_id,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
@@ -2430,12 +2433,12 @@ class MessageDispatcherService
                     ],
                 ],
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'contacts', $parameters, $contextMessage->wa_id);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -2444,7 +2447,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -2481,15 +2484,15 @@ class MessageDispatcherService
             'name' => $name,
             'address' => $address,
         ]);
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -2506,11 +2509,11 @@ class MessageDispatcherService
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de localización creado en base de datos.', [
             'message_id' => $message->message_id,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
@@ -2519,12 +2522,12 @@ class MessageDispatcherService
                 'name' => $name,
                 'address' => $address,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'location', $parameters);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -2533,7 +2536,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -2574,25 +2577,25 @@ class MessageDispatcherService
             'name' => $name,
             'address' => $address,
         ]);
-    
+
         // Verificar que el mensaje de contexto exista
         $contextMessage = Message::where('wa_id', $contextMessageId)->first();
-    
+
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
                 'contextMessageId' => $contextMessageId,
             ]);
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
-    
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
-    
+
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-    
+
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
-    
+
         // Crear el mensaje en la base de datos
         $message = Message::create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
@@ -2610,11 +2613,11 @@ class MessageDispatcherService
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
         ]);
-    
+
         Log::channel('whatsapp')->info('Mensaje de localización creado en base de datos.', [
             'message_id' => $message->message_id,
         ]);
-    
+
         try {
             // Preparar los parámetros para el envío
             $parameters = [
@@ -2623,12 +2626,12 @@ class MessageDispatcherService
                 'name' => $name,
                 'address' => $address,
             ];
-    
+
             // Enviar el mensaje a través de la API
             $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'location', $parameters, $contextMessage->wa_id);
-    
+
             Log::channel('whatsapp')->info('Respuesta recibida de API WhatsApp.', ['response' => $response]);
-    
+
             // Manejar el éxito del envío
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
@@ -2637,7 +2640,7 @@ class MessageDispatcherService
                 'exception_code' => $e->getCode(),
                 'details' => $e->getDetails(),
             ]);
-    
+
             // Manejar el error del envío
             return $this->handleError($message, $e);
         }
@@ -2679,7 +2682,7 @@ class MessageDispatcherService
         if (count($buttons) < 1 || count($buttons) > 3) {
             throw new \InvalidArgumentException('Debe proporcionar entre 1 y 3 botones.');
         }
-        
+
         foreach ($buttons as $button) {
             if (!isset($button['id']) || !isset($button['title'])) {
                 throw new \InvalidArgumentException('Cada botón debe tener "id" y "title".');
@@ -2784,11 +2787,11 @@ class MessageDispatcherService
         if (strlen($buttonText) > 20) {
             throw new \InvalidArgumentException('El texto del botón no puede exceder 20 caracteres.');
         }
-        
+
         if ($header && strlen($header) > 60) {
             throw new \InvalidArgumentException('El encabezado no puede exceder 60 caracteres.');
         }
-        
+
         foreach ($sections as $section) {
             if (empty($section['rows'])) {
                 throw new \InvalidArgumentException('Cada sección debe contener filas.');
@@ -2992,7 +2995,7 @@ class MessageDispatcherService
         try {
             // Obtener el mensaje de la base de datos
             $message = Message::findOrFail($messageId);
-            
+
             // Verificar que el mensaje fue recibido (INPUT)
             if ($message->message_method !== 'INPUT') {
                 throw new \InvalidArgumentException('Solo se pueden marcar como leídos mensajes recibidos');
@@ -3000,7 +3003,7 @@ class MessageDispatcherService
 
             // Obtener el número telefónico asociado
             $phoneNumber = $message->phoneNumber;
-            
+
             // Construir el endpoint
             $endpoint = Endpoints::build(Endpoints::MARK_MESSAGE_AS_READ, [
                 'phone_number_id' => $phoneNumber->api_phone_number_id
@@ -3037,7 +3040,7 @@ class MessageDispatcherService
                 'error' => $e->getMessage()
             ]);
             throw new \InvalidArgumentException('El mensaje no existe en la base de datos');
-            
+
         } catch (WhatsappApiException $e) {
             Log::channel('whatsapp')->error('Error al marcar mensaje como leído.', [
                 'message_id' => $messageId,
@@ -3045,7 +3048,7 @@ class MessageDispatcherService
                 'details' => $e->getDetails()
             ]);
             throw $e;
-            
+
         } catch (\Exception $e) {
             Log::channel('whatsapp')->error('Error inesperado al marcar mensaje como leído.', [
                 'message_id' => $messageId,
@@ -3086,6 +3089,13 @@ class MessageDispatcherService
      */
     private function resolveContact(string $countryCode, string $phoneNumber): Contact
     {
+        //Si el país es México, según ChatGPT este es el único caso en el mundo que tiene un 1 después del código de area y luego vienen 10 dígitos del celular así 521 1234567890
+        //Por lo tanto comprobar si es número de méxico y el $phoneNumber son exactamente 10 números, entonces agregar el 1 inicial
+        if( $countryCode==52 && Str::length($phoneNumber)==10 )
+        {
+            $phoneNumber = '1'.$phoneNumber;
+        }
+
         $fullPhoneNumber = $countryCode . $phoneNumber;
 
         Log::channel('whatsapp')->info('Resolviendo contacto.', ['full_phone_number' => $fullPhoneNumber]);
@@ -3123,7 +3133,7 @@ class MessageDispatcherService
             'phone_number_id' => $phone->api_phone_number_id
         ]);
 
-        Log::info('Enviando solicitud a la API de WhatsApp.', [
+        Log::channel('whatsapp')->info('Enviando solicitud a la API de WhatsApp.', [
             'endpoint' => $endpoint,
             'to' => $to,
             'type' => $type,
@@ -3156,19 +3166,19 @@ class MessageDispatcherService
                 break;
 
             case 'image':
-                $data['image'] = isset($parameters['id']) && $parameters['id'] 
-                    ? ['id' => $parameters['id']] 
+                $data['image'] = isset($parameters['id']) && $parameters['id']
+                    ? ['id' => $parameters['id']]
                     : ['link' => $parameters['link'] ?? ''];
                 break;
 
             case 'audio':
-                $data['audio'] = $parameters['id'] 
-                    ? ['id' => $parameters['id']] 
+                $data['audio'] = $parameters['id']
+                    ? ['id' => $parameters['id']]
                     : ['link' => $parameters['link'] ?? ''];
                 break;
 
             case 'document':
-                $data['document'] = $parameters['id'] 
+                $data['document'] = $parameters['id']
                     ? [
                         'id' => $parameters['id'],
                         'caption' => $parameters['caption'] ?? '',
@@ -3181,13 +3191,13 @@ class MessageDispatcherService
                 break;
 
             case 'sticker':
-                $data['sticker'] = $parameters['id'] 
-                    ? ['id' => $parameters['id']] 
+                $data['sticker'] = $parameters['id']
+                    ? ['id' => $parameters['id']]
                     : ['link' => $parameters['link'] ?? ''];
                 break;
 
             case 'video':
-                $data['video'] = $parameters['id'] 
+                $data['video'] = $parameters['id']
                     ? [
                         'id' => $parameters['id'],
                         'caption' => $parameters['caption'] ?? ''
@@ -3210,10 +3220,10 @@ class MessageDispatcherService
                     'address' => $parameters['address'] ?? ''
                 ];
                 break;
-            
+
             case 'interactive':
                 $interactiveData = ['type' => $parameters['interactive_type']];
-                
+
                 if ($parameters['interactive_type'] === 'button') {
                     $interactiveData['body'] = ['text' => $parameters['body']];
                     $interactiveData['action'] = [
@@ -3246,7 +3256,7 @@ class MessageDispatcherService
                         $interactiveData['footer'] = ['text' => $parameters['footer']];
                     }
                 }
-                
+
                 $data['interactive'] = $interactiveData;
                 break;
 
@@ -3293,7 +3303,7 @@ class MessageDispatcherService
             'file_length' => $fileLength,
         ];
 
-        Log::info('Creando sesión de subida para archivo.', [
+        Log::channel('whatsapp')->info('Creando sesión de subida para archivo.', [
             'endpoint' => $endpoint,
             'queryParams' => $queryParams,
         ]);
@@ -3308,14 +3318,14 @@ class MessageDispatcherService
                     'Content-Type' => 'application/json',
                 ]
             );
-    
-            Log::info('Sesión de subida creada exitosamente.', [
+
+            Log::channel('whatsapp')->info('Sesión de subida creada exitosamente.', [
                 'response' => $response,
             ]);
-    
+
             return $response['id'] ?? throw new \RuntimeException('No se pudo crear la sesión de subida.');
         } catch (\Exception $e) {
-            Log::error('Error al crear la sesión de subida.', [
+            Log::channel('whatsapp')->error('Error al crear la sesión de subida.', [
                 'error_message' => $e->getMessage(),
                 'queryParams' => $queryParams,
             ]);
@@ -3337,7 +3347,7 @@ class MessageDispatcherService
 
         // Validar que los tipos MIME permitidos estén configurados
         if (!is_array($allowedMimeTypes)) {
-            Log::error('La configuración de tipos MIME permitidos no es válida.', [
+            Log::channel('whatsapp')->error('La configuración de tipos MIME permitidos no es válida.', [
                 'mediaType' => $mediaType,
                 'allowedMimeTypes' => $allowedMimeTypes,
             ]);
@@ -3346,7 +3356,7 @@ class MessageDispatcherService
 
         // Validar tamaño del archivo
         if ($file->getSize() > $maxFileSize) {
-            Log::error('El archivo excede el tamaño máximo permitido.', [
+            Log::channel('whatsapp')->error('El archivo excede el tamaño máximo permitido.', [
                 'filePath' => $file->getRealPath(),
                 'fileSize' => $file->getSize(),
                 'maxFileSize' => $maxFileSize,
@@ -3357,7 +3367,7 @@ class MessageDispatcherService
         // Validar tipo MIME del archivo
         $fileMimeType = mime_content_type($file->getRealPath());
         if (!in_array($fileMimeType, $allowedMimeTypes)) {
-            Log::error('El tipo de archivo no es permitido.', [
+            Log::channel('whatsapp')->error('El tipo de archivo no es permitido.', [
                 'filePath' => $file->getRealPath(),
                 'fileMimeType' => $fileMimeType,
                 'allowedMimeTypes' => $allowedMimeTypes,
@@ -3365,7 +3375,7 @@ class MessageDispatcherService
             throw new \RuntimeException('El tipo de archivo no es permitido.');
         }
 
-        Log::info('Archivo validado correctamente.', [
+        Log::channel('whatsapp')->info('Archivo validado correctamente.', [
             'filePath' => $file->getRealPath(),
             'fileSize' => $file->getSize(),
             'fileMimeType' => $fileMimeType,
@@ -3387,7 +3397,7 @@ class MessageDispatcherService
             'phone_number_id' => $phone->api_phone_number_id,
         ]);
 
-        Log::info('Subiendo archivo a la API de WhatsApp.', [
+        Log::channel('whatsapp')->info('Subiendo archivo a la API de WhatsApp.', [
             'endpoint' => $endpoint,
             'filePath' => $file->getRealPath(),
         ]);
@@ -3421,7 +3431,7 @@ class MessageDispatcherService
                 ]
             );
 
-            Log::info('Archivo subido exitosamente.', ['response' => $response]);
+            Log::channel('whatsapp')->info('Archivo subido exitosamente.', ['response' => $response]);
 
             // Verificar y devolver el ID del archivo subido
             return $response['id'] ?? throw new \RuntimeException('No se pudo obtener el ID del archivo subido.');
@@ -3430,7 +3440,7 @@ class MessageDispatcherService
             $responseBody = $e->getResponse() ? $e->getResponse()->getBody()->getContents() : null;
             $responseStatusCode = $e->getResponse() ? $e->getResponse()->getStatusCode() : null;
 
-            Log::error('Error al subir el archivo.', [
+            Log::channel('whatsapp')->error('Error al subir el archivo.', [
                 'error_message' => $e->getMessage(),
                 'response_body' => $responseBody,
                 'response_status_code' => $responseStatusCode,
@@ -3455,7 +3465,7 @@ class MessageDispatcherService
             'media_id' => $fileId,
         ]);
 
-        Log::info('Recuperando información del archivo subido.', ['endpoint' => $endpoint]);
+        Log::channel('whatsapp')->info('Recuperando información del archivo subido.', ['endpoint' => $endpoint]);
 
         $response = $this->apiClient->request(
             'GET',
@@ -3485,17 +3495,17 @@ class MessageDispatcherService
         if (!$storagePath) {
             throw new \RuntimeException("No se ha configurado una ruta de almacenamiento para el tipo de media: $mediaType");
         }
-        
+
         $localFilePath = storage_path('app/public/media/' . $fileName);
         $directoryPath = dirname($localFilePath);
 
         // Verificar y crear el directorio si no existe
         if (!is_dir($directoryPath)) {
-            Log::info('Creando directorio para guardar el archivo.', ['directoryPath' => $directoryPath]);
+            Log::channel('whatsapp')->info('Creando directorio para guardar el archivo.', ['directoryPath' => $directoryPath]);
             mkdir($directoryPath, 0755, true);
         }
 
-        Log::info('Descargando archivo desde la URL.', ['url' => $url, 'localFilePath' => $localFilePath]);
+        Log::channel('whatsapp')->info('Descargando archivo desde la URL.', ['url' => $url, 'localFilePath' => $localFilePath]);
 
         $attempts = 3; // Número de reintentos
         $delay = 2; // Segundos entre reintentos
@@ -3512,11 +3522,11 @@ class MessageDispatcherService
 
                 file_put_contents($localFilePath, $response);
 
-                Log::info('Archivo descargado exitosamente.', ['localFilePath' => $localFilePath]);
+                Log::channel('whatsapp')->info('Archivo descargado exitosamente.', ['localFilePath' => $localFilePath]);
 
                 return $localFilePath;
             } catch (\Exception $e) {
-                Log::error('Error al descargar el archivo.', [
+                Log::channel('whatsapp')->error('Error al descargar el archivo.', [
                     'attempt' => $i + 1,
                     'error_message' => $e->getMessage(),
                     'url' => $url,

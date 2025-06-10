@@ -4,6 +4,7 @@ namespace ScriptDevelop\WhatsappManager\Services;
 use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 use InvalidArgumentException;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
@@ -26,6 +27,7 @@ class TemplateMessageBuilder
     protected ?string $language = null; // Opcional
     protected array $components = [];
     protected array $templateStructure = []; // Estructura de la plantilla
+    protected ?Contact $contact = null;
 
     /**
      * Constructor de la clase TemplateMessageBuilder.
@@ -51,7 +53,7 @@ class TemplateMessageBuilder
      */
     public function to(string $countryCode, string $phoneNumber,): self
     {
-        $codes = CountryCodes::list();
+        $codes = CountryCodes::codes();
 
         if (!in_array($countryCode, $codes)) {
             throw new InvalidArgumentException("El código de país '$countryCode' no es válido.");
@@ -63,7 +65,22 @@ class TemplateMessageBuilder
             throw new InvalidArgumentException("El número de teléfono '$phoneNumber' no parece ser válido.");
         }
 
+        //Si el país es México, según ChatGPT este es el único caso en el mundo que tiene un 1 después del código de area y luego vienen 10 dígitos del celular así 521 1234567890
+        //Por lo tanto comprobar si es número de méxico y el $phoneNumber son exactamente 10 números, entonces agregar el 1 inicial
+        if( $countryCode==52 && Str::length($cleanedPhoneNumber)==10 )
+        {
+            $cleanedPhoneNumber = '1'.$cleanedPhoneNumber;
+        }
+
         $this->phoneNumber = $countryCode . $cleanedPhoneNumber;
+
+        $this->contact = Contact::updateOrCreate(
+        ['wa_id' => $this->phoneNumber], // Buscar por wa_id (número completo)
+            [
+                'phone_number' => $cleanedPhoneNumber,
+                'country_code' => $countryCode
+            ]
+        );
 
         return $this;
     }
@@ -93,24 +110,38 @@ class TemplateMessageBuilder
     {
         $this->ensureTemplateStructureLoaded();
         $this->validateComponent('HEADER', $type);
-        
+
         $formattedParams = [];
-        if (!is_array($content)) {
-            $content = [$content];
+
+        if( $type=='IMAGE' ){
+            //foreach ($content as $item) {
+                $formattedParams[] = [
+                    'type' => 'image',
+                    'image' => [
+                        'link' => $content
+                    ]
+                ];
+            //}
+
+            $this->components['HEADER']['type'] = 'header';
         }
-        
-        foreach ($content as $item) {
-            $formattedParams[] = [
-                'type' => 'text',
-                'text' => $item
-            ];
+        else{
+            if (!is_array($content)) {
+                $content = [$content];
+            }
+
+            foreach ($content as $item) {
+                $formattedParams[] = [
+                    'type' => 'text',
+                    'link' => $item
+                ];
+            }
+
+            $this->components['HEADER']['type'] = $type;
         }
-        
-        $this->components['HEADER'] = [
-            'type' => $type,
-            'parameters' => $formattedParams
-        ];
-        
+
+        $this->components['HEADER']['parameters'] = $formattedParams;
+
         return $this;
     }
 
@@ -424,13 +455,13 @@ class TemplateMessageBuilder
             'phone_number' => $this->phoneNumber,
         ]);
 
-        $contact = Contact::where('wa_id', $this->phoneNumber)->first();
+        //$contact = Contact::where('wa_id', $this->phoneNumber)->first(); //Es innecesario, ya se creó/actualizó dentro del método "to", no tiene caso volver a llamar a la base de datos
 
         $message = Message::create([
             'whatsapp_phone_id' => $this->phone->phone_number_id,
-            'contact_id' => $contact->contact_id,
+            'contact_id' => $this->contact->contact_id,
             'message_from' => $this->phone->display_phone_number,
-            'message_to' => $contact->wa_id,
+            'message_to' => $this->contact->wa_id, //Se corrige esta variable, usar $this->contact en lugar de $contact
             'message_type' => 'template',
             'message_content' => NULL,
             'message_method' => 'OUTPUT',
@@ -460,6 +491,12 @@ class TemplateMessageBuilder
 
             // throw new WhatsappApiException('Error al enviar el mensaje.', $response['error'] ?? []);
         }
+
+        $message->update([
+            'wa_id' => $response['messages'][0]['id'] ?? null,
+            'status' => MessageStatus::SENT,
+            'json' => $response
+        ]);
 
         Log::info('Mensaje enviado exitosamente.', ['response' => $response]);
 

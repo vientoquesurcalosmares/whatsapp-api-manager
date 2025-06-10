@@ -121,4 +121,18 @@ return [
     |
     */
     'load_migrations' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Configuración del bots
+    |--------------------------------------------------------------------------
+    |
+    | Configuración para habilitar bots del packete whatsapp-bot
+    | https://github.com/djdang3r/whatsapp-bot
+    |
+    */
+    'whatsapp_bot' => [
+        // bot_anable: Habilita o deshabilita el bot
+        'bot_enable' => false,
+    ],
 ];

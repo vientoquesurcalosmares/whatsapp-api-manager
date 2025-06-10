@@ -2,6 +2,9 @@
 
 namespace ScriptDevelop\WhatsappManager\Models;
 
+use ScriptDevelop\WhatsappManager\Services\TemplateEditor;
+use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
+use ScriptDevelop\WhatsappManager\Services\TemplateService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -42,9 +45,21 @@ class Template extends Model
         return $this->belongsTo(TemplateCategory::class, 'category_id', 'category_id'); // Usar 'category_id'
     }
 
+    public function languageData()
+    {
+        return $this->belongsTo(TemplateLanguage::class, 'language', 'id');
+    }
+
     public function components()
     {
         return $this->hasMany(TemplateComponent::class, 'template_id', 'template_id');
+    }
+
+    public function flows()
+    {
+        return $this->belongsToMany(
+            WhatsappFlow::class, 'whatsapp_template_flows', 'template_id', 'flow_id'
+        );
     }
 
     /**
@@ -61,5 +76,17 @@ class Template extends Model
     public function getContentByLanguage(string $language): ?array
     {
         return $this->json['languages'][$language] ?? null;
+    }
+
+    /**
+     * Inicia el editor de plantillas para esta instancia
+     */
+    public function edit(): TemplateEditor
+    {
+        return app(TemplateEditor::class, [
+            'template' => $this,
+            'apiClient' => app(ApiClient::class),
+            'templateService' => app(TemplateService::class)
+        ]);
     }
 }

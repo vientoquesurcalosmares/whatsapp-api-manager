@@ -8,28 +8,23 @@ use ScriptDevelop\WhatsappManager\Services\AccountRegistrationService;
 use ScriptDevelop\WhatsappManager\Services\WhatsappService;
 use ScriptDevelop\WhatsappManager\Repositories\WhatsappBusinessAccountRepository;
 use ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel;
-use ScriptDevelop\WhatsappManager\Services\BotBuilderService;
-use ScriptDevelop\WhatsappManager\Services\FlowBuilderService;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
-use ScriptDevelop\WhatsappManager\Services\StepBuilderService;
 use ScriptDevelop\WhatsappManager\Services\TemplateService;
-use ScriptDevelop\WhatsappManager\Models\Flow;
-
-use Illuminate\Support\Facades\Artisan;
+use ScriptDevelop\WhatsappManager\Services\FlowService;
 
 class WhatsappServiceProvider extends ServiceProvider
 {
     public function register()
     {
         // Fusionar configuraciones
-        $this->mergeConfigFrom(__DIR__ . '/../config/whatsapp.php', 'whatsapp');
-        $this->mergeConfigFrom(__DIR__ . '/../config/logging.php', 'logging');
+        $this->mergeConfigFrom(__DIR__ . '/../Config/whatsapp.php', 'whatsapp');
+        $this->mergeConfigFrom(__DIR__ . '/../Config/logging.php', 'logging');
 
         // Registrar servicios
         $this->app->singleton(ApiClient::class, function ($app) {
             return new ApiClient(
                 config('whatsapp.api.base_url', 'https://graph.facebook.com'),
-                config('whatsapp.api.version', 'v19.0'),
+                config('whatsapp.api.version', 'v22.0'),
                 config('whatsapp.api.timeout', 30)
             );
         });
@@ -62,29 +57,15 @@ class WhatsappServiceProvider extends ServiceProvider
         // Registrar el servicio de plantillas
         $this->app->singleton('whatsapp.template', function ($app) {
             return new TemplateService(
-                $app->make(ApiClient::class)
+                $app->make(ApiClient::class),
+                $app->make(FlowService::class) // Inyectar FlowService
             );
         });
 
-        // Registrar el BotBuilderService
-        $this->app->singleton('whatsapp.bot', function ($app) {
-            return new BotBuilderService();
-        });
-
-        // Registrar el FlowBuilderService
         $this->app->singleton('whatsapp.flow', function ($app) {
-            return new FlowBuilderService();
-        });
-
-        // Registrar el StepBuilderService
-        $this->app->bind('whatsapp.step', function ($app, $parameters) {
-            $flow = $parameters['flow'] ?? null;
-            
-            if (!$flow instanceof Flow) {
-                throw new \InvalidArgumentException('Se requiere una instancia válida de Flow');
-            }
-            
-            return new StepBuilderService($flow);
+            return new FlowService(
+                $app->make(ApiClient::class)
+            );
         });
     }
 
@@ -92,35 +73,46 @@ class WhatsappServiceProvider extends ServiceProvider
     {
         // Publicar archivos de configuración
         $this->publishes([
-            __DIR__ . '/../config/whatsapp.php' => config_path('whatsapp.php'),
+            __DIR__ . '/../Config/whatsapp.php' => config_path('whatsapp.php'),
         ], 'whatsapp-config');
 
         // Publicar migraciones
         $this->publishes([
-            __DIR__ . '/../database/migrations' => database_path('migrations'),
+            __DIR__ . '/../Database/migrations' => database_path('migrations'),
         ], 'whatsapp-migrations');
 
         // Cargar automáticamente las migraciones si está habilitado
         if (config('whatsapp.load_migrations', true)) {
-            $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+            $this->loadMigrationsFrom(__DIR__ . '/../Database/migrations');
         }
+
+        // Publicar seeders
+        $this->publishes([
+            __DIR__ . '/../Database/seeders/WhatsappTemplateLanguageSeeder.php' => database_path('seeders/WhatsappTemplateLanguageSeeder.php'),
+        ], 'whatsapp-seeders');
 
         // Publicar rutas
         $this->publishes([
             __DIR__ . '/../routes/whatsapp_webhook.php' => base_path('routes/whatsapp_webhook.php'),
         ], 'whatsapp-routes');
 
+        $this->publishes([], 'whatsapp-media');
+
         // Cargar rutas automáticamente
         $this->loadRoutesFrom(__DIR__ . '/../routes/whatsapp_webhook.php');
 
         // Registrar comandos de consola
         if ($this->app->runningInConsole()) {
+            // Crear directorios necesarios al publicar configuraciones
+            $this->publishes([], 'whatsapp-storage');
+
+            $this->publishes([
+                __DIR__ . '/../Database/seeders/WhatsappTemplateLanguageSeeder.php' => database_path('seeders/WhatsappTemplateLanguageSeeder.php'),
+            ], 'whatsapp-seeders');
+
             $this->commands([
                 CheckUserModel::class,
             ]);
-
-            // Crear directorios necesarios al publicar configuraciones
-            $this->publishes([], 'whatsapp-storage');
         }
 
         // Crear el enlace simbólico y directorios solo al publicar configuraciones
@@ -135,12 +127,14 @@ class WhatsappServiceProvider extends ServiceProvider
      */
     protected function createStorageDirectories()
     {
-        $directories = config('whatsapp.media.storage_path', []);
+        $basePath = storage_path('app/public/whatsapp');
+        $folders = ['audio', 'documents', 'images', 'stickers', 'videos'];
 
-        foreach ($directories as $directory) {
-            if (!is_dir($directory)) {
-                mkdir($directory, 0755, true);
-                $this->app['log']->info("Directorio creado: {$directory}");
+        foreach ($folders as $folder) {
+            $path = "{$basePath}/{$folder}";
+            if (!is_dir($path)) {
+                mkdir($path, 0755, true);
+                $this->app['log']->info("Directorio creado: {$path}");
             }
         }
     }

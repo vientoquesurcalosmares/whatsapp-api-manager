@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('media_files', function (Blueprint $table) {
+        Schema::create('whatsapp_media_files', function (Blueprint $table) {
             $table->ulid('media_file_id')->primary();
             $table->ulid('message_id');
             $table->string('media_type', 45);
             $table->string('file_name', 45);
-            $table->string('mime_type', 45);
+            $table->string('mime_type', 100);
             $table->string('sha256', 64);
             $table->text('url');
             $table->string('media_id', 45);
@@ -36,6 +36,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('media_files');
+        Schema::dropIfExists('whatsapp_media_files');
     }
 };

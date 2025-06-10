@@ -4,6 +4,7 @@ namespace ScriptDevelop\WhatsappManager\Services;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessProfile;
@@ -184,11 +185,26 @@ class AccountRegistrationService
     {
         try {
             $phoneDetails = $this->whatsappService->getPhoneNumberDetails($phoneData['id']);
+
+            // Obtener todos los códigos de país ordenados por longitud (de mayor a menor)
+            $countryCodes = CountryCodes::codes();
+            usort($countryCodes, function($a, $b) {
+                return strlen($b) <=> strlen($a);
+            });
             
             // Extraer código de país y número
-            preg_match('/^\+(\d+)\s*(.+)$/', $phoneDetails['display_phone_number'], $matches);
-            $countryCode = $matches[1] ?? null;
-            $phoneNumber = preg_replace('/\s+/', '', $matches[2] ?? '');
+            $rawNumber = preg_replace('/[^\d]/', '', $phoneDetails['display_phone_number']);
+            $countryCode = null;
+            $phoneNumber = $rawNumber;
+
+            // Buscar el código de país más largo que coincida al principio
+            foreach ($countryCodes as $code) {
+                if (strpos($rawNumber, $code) === 0) {
+                    $countryCode = $code;
+                    $phoneNumber = substr($rawNumber, strlen($code));
+                    break;
+                }
+            }
 
             return WhatsappPhoneNumber::updateOrCreate(
                 ['api_phone_number_id' => $phoneData['id']],
