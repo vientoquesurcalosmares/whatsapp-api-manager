@@ -61,18 +61,10 @@ class TemplateMessageBuilder
 
         $cleanedPhoneNumber = preg_replace('/\D/', '', $phoneNumber);
 
-        if (strlen($cleanedPhoneNumber) < 10) {
-            throw new InvalidArgumentException("El número de teléfono '$phoneNumber' no parece ser válido.");
-        }
+        $normalizedPhone  = CountryCodes::normalizeInternationalPhone($countryCode, $cleanedPhoneNumber);
+        $cleanedPhoneNumber = $normalizedPhone['phoneNumber'];
 
-        //Si el país es México, según ChatGPT este es el único caso en el mundo que tiene un 1 después del código de area y luego vienen 10 dígitos del celular así 521 1234567890
-        //Por lo tanto comprobar si es número de méxico y el $phoneNumber son exactamente 10 números, entonces agregar el 1 inicial
-        if( $countryCode==52 && Str::length($cleanedPhoneNumber)==10 )
-        {
-            $cleanedPhoneNumber = '1'.$cleanedPhoneNumber;
-        }
-
-        $this->phoneNumber = $countryCode . $cleanedPhoneNumber;
+        $this->phoneNumber = $normalizedPhone['fullPhoneNumber'];
 
         $this->contact = Contact::updateOrCreate(
         ['wa_id' => $this->phoneNumber], // Buscar por wa_id (número completo)
@@ -460,7 +452,7 @@ class TemplateMessageBuilder
         $message = Message::create([
             'whatsapp_phone_id' => $this->phone->phone_number_id,
             'contact_id' => $this->contact->contact_id,
-            'message_from' => $this->phone->display_phone_number,
+            'message_from' => preg_replace('/[\s+]/', '', $this->phone->display_phone_number),
             'message_to' => $this->contact->wa_id, //Se corrige esta variable, usar $this->contact en lugar de $contact
             'message_type' => 'template',
             'message_content' => NULL,

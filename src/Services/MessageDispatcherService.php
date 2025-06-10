@@ -10,6 +10,7 @@ use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Exceptions\WhatsappApiException;
+use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
 use Illuminate\Support\Facades\Log; // <-- Agregamos esto
 use Illuminate\Support\Str; // <-- Agregamos esto
 
@@ -57,7 +58,7 @@ class MessageDispatcherService
             'previewUrl' => $previewUrl,
         ]);
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -147,7 +148,7 @@ class MessageDispatcherService
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
         $contact = $this->resolveContact($countryCode, $phoneNumber);
@@ -236,7 +237,7 @@ class MessageDispatcherService
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
         $contact = $this->resolveContact($countryCode, $phoneNumber);
@@ -309,7 +310,7 @@ class MessageDispatcherService
             'fileType' => $file->getExtension(),
         ]);
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -426,7 +427,7 @@ class MessageDispatcherService
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -526,7 +527,7 @@ class MessageDispatcherService
             'link' => $link,
         ]);
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -625,7 +626,7 @@ class MessageDispatcherService
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -713,7 +714,7 @@ class MessageDispatcherService
             'fileType' => $file->getExtension(),
         ]);
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -824,7 +825,7 @@ class MessageDispatcherService
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -919,7 +920,7 @@ class MessageDispatcherService
             'link' => $link,
         ]);
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -1013,7 +1014,7 @@ class MessageDispatcherService
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -1100,7 +1101,7 @@ class MessageDispatcherService
             'caption' => $caption,
         ]);
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -1214,7 +1215,7 @@ class MessageDispatcherService
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -1318,7 +1319,7 @@ class MessageDispatcherService
             'caption' => $caption,
         ]);
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -1417,7 +1418,7 @@ class MessageDispatcherService
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -1511,7 +1512,7 @@ class MessageDispatcherService
             throw new \InvalidArgumentException('Solo se permiten archivos .webp para stickers.');
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -1629,7 +1630,7 @@ class MessageDispatcherService
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -1736,7 +1737,7 @@ class MessageDispatcherService
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -1823,7 +1824,7 @@ class MessageDispatcherService
             'caption' => $caption,
         ]);
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -1936,7 +1937,7 @@ class MessageDispatcherService
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -2035,7 +2036,7 @@ class MessageDispatcherService
             'caption' => $caption,
         ]);
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -2134,7 +2135,7 @@ class MessageDispatcherService
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -2217,7 +2218,7 @@ class MessageDispatcherService
             'contactId' => $contactId,
         ]);
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono del destinatario
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -2343,7 +2344,7 @@ class MessageDispatcherService
             'contactId' => $contactId,
         ]);
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono del destinatario
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -2485,7 +2486,7 @@ class MessageDispatcherService
             'address' => $address,
         ]);
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -2588,7 +2589,7 @@ class MessageDispatcherService
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -2692,7 +2693,7 @@ class MessageDispatcherService
             }
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
@@ -2809,7 +2810,7 @@ class MessageDispatcherService
             }
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
@@ -2932,7 +2933,7 @@ class MessageDispatcherService
             }
         }
 
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
@@ -3089,14 +3090,9 @@ class MessageDispatcherService
      */
     private function resolveContact(string $countryCode, string $phoneNumber): Contact
     {
-        //Si el país es México, según ChatGPT este es el único caso en el mundo que tiene un 1 después del código de area y luego vienen 10 dígitos del celular así 521 1234567890
-        //Por lo tanto comprobar si es número de méxico y el $phoneNumber son exactamente 10 números, entonces agregar el 1 inicial
-        if( $countryCode==52 && Str::length($phoneNumber)==10 )
-        {
-            $phoneNumber = '1'.$phoneNumber;
-        }
-
-        $fullPhoneNumber = $countryCode . $phoneNumber;
+        $normalizedPhone  = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber);
+        $phoneNumber     = $normalizedPhone['phoneNumber'];
+        $fullPhoneNumber = $normalizedPhone['fullPhoneNumber'];
 
         Log::channel('whatsapp')->info('Resolviendo contacto.', ['full_phone_number' => $fullPhoneNumber]);
 
