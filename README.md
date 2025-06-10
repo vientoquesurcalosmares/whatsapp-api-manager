@@ -6,6 +6,10 @@
 
 LARAVEL WHatsapp Manager
 
+[![Latest Version](https://img.shields.io/packagist/v/scriptdevelop/whatsapp-manager.svg?style=flat-square)](https://packagist.org/packages/scriptdevelop/whatsapp-manager)
+[![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-8892BF.svg?style=flat-square)](https://php.net/)
+[![Laravel Version](https://img.shields.io/badge/Laravel-10%2B-FF2D20.svg?style=flat-square)](https://laravel.com)
+
 **Un paquete elegante y potente para integrar WhatsApp Business API en tus aplicaciones Laravel 12+.**  
 ✨ Gestión de mensajes, plantillas, campañas, flujos conversacionales, métricas y más.
 
