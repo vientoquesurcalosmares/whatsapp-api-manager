@@ -1400,8 +1400,8 @@ Desarrollado con ❤️ por ScriptDevelop
 3. **Badges Interactivos** (Añade estos al inicio):
 
    [![Latest Version](https://img.shields.io/packagist/v/scriptdevelop/whatsapp-manager.svg?style=flat-square)](https://packagist.org/packages/scriptdevelop/whatsapp-manager)
-   [![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-8892BF.svg?style=flat-square)](https://php.net/)
-   [![Laravel Version](https://img.shields.io/badge/Laravel-10%2B-FF2D20.svg?style=flat-square)](https://laravel.com)
+   [![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-8892BF.svg?style=flat-square)](https://php.net/)
+   [![Laravel Version](https://img.shields.io/badge/Laravel-12%2B-FF2D20.svg?style=flat-square)](https://laravel.com)
 
 4.  Secciones Colapsables (Usa detalles HTML si necesitas):
     <details>
