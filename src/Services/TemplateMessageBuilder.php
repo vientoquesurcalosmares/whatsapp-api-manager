@@ -61,18 +61,10 @@ class TemplateMessageBuilder
 
         $cleanedPhoneNumber = preg_replace('/\D/', '', $phoneNumber);
 
-        if (strlen($cleanedPhoneNumber) < 10) {
-            throw new InvalidArgumentException("El número de teléfono '$phoneNumber' no parece ser válido.");
-        }
+        $normalizedPhone  = CountryCodes::normalizeInternationalPhone($countryCode, $cleanedPhoneNumber);
+        $cleanedPhoneNumber = $normalizedPhone['phoneNumber'];
 
-        //Si el país es México, según ChatGPT este es el único caso en el mundo que tiene un 1 después del código de area y luego vienen 10 dígitos del celular así 521 1234567890
-        //Por lo tanto comprobar si es número de méxico y el $phoneNumber son exactamente 10 números, entonces agregar el 1 inicial
-        if( $countryCode==52 && Str::length($cleanedPhoneNumber)==10 )
-        {
-            $cleanedPhoneNumber = '1'.$cleanedPhoneNumber;
-        }
-
-        $this->phoneNumber = $countryCode . $cleanedPhoneNumber;
+        $this->phoneNumber = $normalizedPhone['fullPhoneNumber'];
 
         $this->contact = Contact::updateOrCreate(
         ['wa_id' => $this->phoneNumber], // Buscar por wa_id (número completo)
@@ -156,7 +148,7 @@ class TemplateMessageBuilder
     {
         $this->ensureTemplateStructureLoaded();
         $this->validateComponent('BODY');
-        
+
         // Formatear cada parámetro como objeto
         $formattedParams = [];
         foreach ($parameters as $param) {
@@ -165,12 +157,12 @@ class TemplateMessageBuilder
                 'text' => $param
             ];
         }
-        
+
         $this->components['BODY'] = [
             'type' => 'BODY',
             'parameters' => $formattedParams
         ];
-        
+
         return $this;
     }
 
@@ -202,26 +194,26 @@ class TemplateMessageBuilder
      * @throws InvalidArgumentException
      */
     public function addButton(
-        string $type, 
-        string $text, 
-        ?string $url = null, 
+        string $type,
+        string $text,
+        ?string $url = null,
         array $parameters = []
     ): self {
         $this->ensureTemplateStructureLoaded();
         $this->validateComponent('BUTTONS');
-    
+
         $button = [
             'type' => strtoupper($type),
             'text' => $text,
             'url' => $url
         ];
-    
+
         if (!isset($this->components['BUTTONS'])) {
             $this->components['BUTTONS'] = ['buttons' => []];
         }
-    
+
         $this->components['BUTTONS']['buttons'][] = $button;
-        
+
         return $this;
     }
 
@@ -298,7 +290,7 @@ class TemplateMessageBuilder
     //         'BUTTONS' => $template->components->where('type', 'button')->all(),
     //     ];
 
-    //     Log::info('Estructura de la plantilla obtenida.', ['templateStructure' => $this->templateStructure]);
+    //     Log::channel('whatsapp')->info('Estructura de la plantilla obtenida.', ['templateStructure' => $this->templateStructure]);
     // }
 
     protected function fetchTemplateStructure(): void
@@ -308,7 +300,7 @@ class TemplateMessageBuilder
             ->where('whatsapp_business_id', $this->phone->businessAccount->whatsapp_business_id)
             ->first();
 
-        Log::info('Plantilla obtenida de la base de datos.', ['template' => $template]);
+        Log::channel('whatsapp')->info('Plantilla obtenida de la base de datos.', ['template' => $template]);
 
         if (!$template) {
             throw new InvalidArgumentException("La plantilla '{$this->templateIdentifier}' no existe en la base de datos.");
@@ -329,8 +321,8 @@ class TemplateMessageBuilder
                 case 'HEADER':
                     $structure['HEADER'] = [
                         'type' => 'HEADER',
-                        'formats' => isset($component->content['format']) 
-                            ? (array)$component->content['format'] 
+                        'formats' => isset($component->content['format'])
+                            ? (array)$component->content['format']
                             : ['TEXT'] // Valor por defecto si no hay formato
                     ];
                     break;
@@ -347,7 +339,7 @@ class TemplateMessageBuilder
 
         $this->templateStructure = $structure;
 
-        Log::info('Estructura de la plantilla obtenida.', ['templateStructure' => $this->templateStructure]);
+        Log::channel('whatsapp')->info('Estructura de la plantilla obtenida.', ['templateStructure' => $this->templateStructure]);
     }
 
     /**
@@ -361,7 +353,7 @@ class TemplateMessageBuilder
     protected function validateComponent(string $componentType, ?string $subType = null): void
     {
         $componentType = strtoupper($componentType);
-        
+
         if (!isset($this->templateStructure[$componentType])) {
             throw new InvalidArgumentException("Componente '$componentType' no definido en la plantilla.");
         }
@@ -370,7 +362,7 @@ class TemplateMessageBuilder
         if ($componentType === 'HEADER' && $subType) {
             $allowedFormats = $this->templateStructure['HEADER']['formats'] ?? [];
             $allowedFormats = array_map('strtoupper', (array)$allowedFormats);
-            
+
             if (!in_array(strtoupper($subType), $allowedFormats)) {
                 throw new InvalidArgumentException("Formato '$subType' no permitido para el header. Formatos válidos: " . implode(', ', $allowedFormats));
             }
@@ -385,7 +377,7 @@ class TemplateMessageBuilder
     protected function buildPayload(): array
     {
         $components = [];
-        
+
         foreach ($this->components as $componentType => $component) {
             if ($componentType === 'BUTTONS') {
                 // Procesar botones como componentes individuales
@@ -401,12 +393,12 @@ class TemplateMessageBuilder
                             ]
                         ]
                     ];
-                    
+
                     if ($button['type'] === 'URL') {
                         $buttonComponent['parameters'][0]['type'] = 'payload';
                         $buttonComponent['parameters'][0]['payload'] = $button['url'];
                     }
-                    
+
                     $components[] = $buttonComponent;
                 }
             } else {
@@ -429,7 +421,7 @@ class TemplateMessageBuilder
             ]
         ];
 
-        Log::info('Payload construido para el mensaje de plantilla.', ['payload' => $payload]);
+        Log::channel('whatsapp')->info('Payload construido para el mensaje de plantilla.', ['payload' => $payload]);
 
         return $payload;
     }
@@ -449,7 +441,7 @@ class TemplateMessageBuilder
             'phone_number_id' => $this->phone->api_phone_number_id,
         ]);
 
-        Log::info('Enviando mensaje de plantilla.', [
+        Log::channel('whatsapp')->info('Enviando mensaje de plantilla.', [
             'endpoint' => $endpoint,
             'payload' => $payload,
             'phone_number' => $this->phoneNumber,
@@ -460,7 +452,7 @@ class TemplateMessageBuilder
         $message = Message::create([
             'whatsapp_phone_id' => $this->phone->phone_number_id,
             'contact_id' => $this->contact->contact_id,
-            'message_from' => $this->phone->display_phone_number,
+            'message_from' => preg_replace('/[\s+]/', '', $this->phone->display_phone_number),
             'message_to' => $this->contact->wa_id, //Se corrige esta variable, usar $this->contact en lugar de $contact
             'message_type' => 'template',
             'message_content' => NULL,
@@ -480,7 +472,7 @@ class TemplateMessageBuilder
         );
 
         if (!isset($response['messages'][0]['message_status']) || $response['messages'][0]['message_status'] !== 'accepted') {
-            Log::error('Error al enviar el mensaje de plantilla.', [
+            Log::channel('whatsapp')->error('Error al enviar el mensaje de plantilla.', [
                 'endpoint' => $endpoint,
                 'payload' => $payload,
                 'response' => $response,
@@ -498,7 +490,7 @@ class TemplateMessageBuilder
             'json' => $response
         ]);
 
-        Log::info('Mensaje enviado exitosamente.', ['response' => $response]);
+        Log::channel('whatsapp')->info('Mensaje enviado exitosamente.', ['response' => $response]);
 
         return $response;
     }

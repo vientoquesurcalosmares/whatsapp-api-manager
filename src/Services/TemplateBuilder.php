@@ -12,7 +12,7 @@ use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
 /**
  * Constructor de plantillas para mensajes de WhatsApp Business API
- * 
+ *
  * Permite crear y configurar plantillas con diferentes componentes,
  * validando los requisitos de la API y manejando la comunicación con el servicio.
  */
@@ -113,7 +113,7 @@ class TemplateBuilder
      */
     public function addHeader(string $format, string $content, ?array $example = null): self
     {
-        Log::info('Estado actual de los componentes antes de agregar HEADER.', [
+        Log::channel('whatsapp')->info('Estado actual de los componentes antes de agregar HEADER.', [
             'components' => $this->templateData['components'],
         ]);
 
@@ -134,18 +134,18 @@ class TemplateBuilder
             // Validar parámetros en el texto del HEADER
             preg_match_all('/{{(.*?)}}/', $content, $matches);
             $placeholders = $matches[1] ?? [];
-    
+
             if (count($placeholders) > 1) {
                 throw new InvalidArgumentException('El HEADER solo puede tener un único parámetro o ninguno.');
             }
-    
+
             // Validar el ejemplo si hay un parámetro
             if (!empty($placeholders)) {
                 if ($example === null || count($example) !== 1) {
                     throw new InvalidArgumentException('El campo "example" es obligatorio y debe contener exactamente un valor para headers con un parámetro.');
                 }
             }
-    
+
             $headerComponent = [
                 'type' => 'HEADER',
                 'format' => $format,
@@ -156,16 +156,16 @@ class TemplateBuilder
             $filePath = $content;
             $fileSize = filesize($filePath);
             $mimeType = mime_content_type($filePath);
-    
+
             // Asumiendo que createUploadSession requiere $account, $filePath, $mimeType como argumentos
             $sessionId = $this->templateService->createUploadSession($this->account, $filePath, $mimeType);
             $mediaId = $this->templateService->uploadMedia($this->account, $sessionId, $filePath, $mimeType);
-    
+
             if (!mb_check_encoding($mediaId, 'UTF-8')) {
-                Log::warning('Corrigiendo codificación de mediaId no UTF-8.', ['mediaId' => $mediaId]);
+                Log::channel('whatsapp')->warning('Corrigiendo codificación de mediaId no UTF-8.', ['mediaId' => $mediaId]);
                 $mediaId = mb_convert_encoding($mediaId, 'UTF-8', 'auto');
             }
-    
+
             $headerComponent = [
                 'type' => 'HEADER',
                 'format' => $format,
@@ -175,7 +175,7 @@ class TemplateBuilder
             if (!empty($content)) {
                 throw new InvalidArgumentException('El HEADER de tipo LOCATION no debe tener contenido.');
             }
-    
+
             $headerComponent = [
                 'type' => 'HEADER',
                 'format' => $format,
@@ -212,7 +212,7 @@ class TemplateBuilder
         if ($example !== null) {
             foreach ($example as &$value) {
                 if (is_string($value) && !mb_check_encoding($value, 'UTF-8')) {
-                    Log::warning('Corrigiendo codificación de un ejemplo no UTF-8.', ['value' => $value]);
+                    Log::channel('whatsapp')->warning('Corrigiendo codificación de un ejemplo no UTF-8.', ['value' => $value]);
                     $value = mb_convert_encoding($value, 'UTF-8', 'auto');
                 }
             }
@@ -507,7 +507,7 @@ class TemplateBuilder
             array_walk_recursive($this->templateData, function (&$value) {
                 if (is_string($value)) {
                     if (!mb_check_encoding($value, 'UTF-8')) {
-                        Log::warning('Corrigiendo codificación de un valor no UTF-8.', ['value' => $value]);
+                        Log::channel('whatsapp')->warning('Corrigiendo codificación de un valor no UTF-8.', ['value' => $value]);
                         $value = mb_convert_encoding($value, 'UTF-8', 'auto');
                     }
                     // Eliminar caracteres invisibles o no imprimibles
@@ -525,7 +525,7 @@ class TemplateBuilder
             ];
 
             // Registrar los datos antes de codificar en JSON
-            Log::info('Datos de la plantilla antes de codificar en JSON.', [
+            Log::channel('whatsapp')->info('Datos de la plantilla antes de codificar en JSON.', [
                 'template_data' => $this->templateData,
             ]);
 
@@ -533,7 +533,7 @@ class TemplateBuilder
             $jsonData = json_encode($this->templateData, JSON_UNESCAPED_UNICODE);
             if ($jsonData === false) {
                 $error = json_last_error_msg();
-                Log::error('Error al codificar JSON.', ['error' => $error, 'data' => $this->templateData]);
+                Log::channel('whatsapp')->error('Error al codificar JSON.', ['error' => $error, 'data' => $this->templateData]);
                 throw new \Exception('Error al codificar JSON: ' . $error);
             }
 
@@ -547,7 +547,7 @@ class TemplateBuilder
                 $headers
             );
 
-            Log::info('Respuesta recibida de la API al crear plantilla.', [
+            Log::channel('whatsapp')->info('Respuesta recibida de la API al crear plantilla.', [
                 'response' => $response,
             ]);
 
@@ -568,7 +568,7 @@ class TemplateBuilder
 
             return $template;
         } catch (\Exception $e) {
-            Log::error('Error al guardar la plantilla.', [
+            Log::channel('whatsapp')->error('Error al guardar la plantilla.', [
                 'error_message' => $e->getMessage(),
             ]);
             throw $e;

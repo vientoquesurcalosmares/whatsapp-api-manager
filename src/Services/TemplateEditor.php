@@ -26,8 +26,8 @@ class TemplateEditor extends TemplateBuilder
      * @param TemplateService $templateService Servicio de plantillas
      */
     public function __construct(
-        Template $template, 
-        ApiClient $apiClient, 
+        Template $template,
+        ApiClient $apiClient,
         TemplateService $templateService,
         FlowService $flowService
     ) {
@@ -44,12 +44,12 @@ class TemplateEditor extends TemplateBuilder
     {
         // Cargar datos desde el JSON almacenado
         $this->templateData = json_decode($this->template->json, true);
-        
+
         // Conservar metadatos esenciales
         $this->templateData['name'] = $this->template->name;
         $this->templateData['language'] = $this->template->language;
         $this->templateData['category'] = $this->template->category->name;
-        
+
         // Inicializar contador de botones
         $this->buttonCount = $this->countExistingButtons();
     }
@@ -93,7 +93,7 @@ class TemplateEditor extends TemplateBuilder
 
             return $this->template->fresh();
         } catch (\Exception $e) {
-            Log::error('Error actualizando plantilla: ' . $e->getMessage(), [
+            Log::channel('whatsapp')->error('Error actualizando plantilla: ' . $e->getMessage(), [
                 'template_id' => $this->template->id,
                 'exception' => $e
             ]);
@@ -107,7 +107,7 @@ class TemplateEditor extends TemplateBuilder
     protected function validateForUpdate(): void
     {
         $this->validateTemplate();
-        
+
         // No se puede cambiar la categoría de plantillas existentes
         $originalCategory = $this->template->category->name;
         if ($this->templateData['category'] !== $originalCategory) {
@@ -115,7 +115,7 @@ class TemplateEditor extends TemplateBuilder
                 "No se puede cambiar la categoría de una plantilla existente. Original: $originalCategory, Nueva: {$this->templateData['category']}"
             );
         }
-        
+
         // Validar estado de la plantilla
         if ($this->template->status === 'APPROVED') {
             throw new InvalidArgumentException(
@@ -127,17 +127,17 @@ class TemplateEditor extends TemplateBuilder
         if (!$this->componentExists('BODY')) {
             throw new TemplateComponentException('El componente BODY es obligatorio en todas las plantillas.');
         }
-        
+
         // Validar límite de botones
         if ($this->buttonCount > 10) {
             throw new TemplateComponentException('No se pueden tener más de 10 botones en una plantilla.');
         }
-        
+
         // Validar que solo hay un componente de cada tipo (excepto botones)
         $componentCounts = array_count_values(
             array_column($this->templateData['components'], 'type')
         );
-        
+
         foreach (['HEADER', 'BODY', 'FOOTER'] as $componentType) {
             if (($componentCounts[$componentType] ?? 0) > 1) {
                 throw new TemplateComponentException("Solo puede haber un componente $componentType por plantilla.");
@@ -156,7 +156,7 @@ class TemplateEditor extends TemplateBuilder
                 if (!mb_check_encoding($value, 'UTF-8')) {
                     $value = mb_convert_encoding($value, 'UTF-8', 'auto');
                 }
-                
+
                 // Eliminar caracteres no imprimibles
                 $value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value);
             }
@@ -168,7 +168,7 @@ class TemplateEditor extends TemplateBuilder
      */
     protected function updateTemplateInApi(): array
     {
-        $endpoint = Endpoints::build(Endpoints::UPDATE_TEMPLATE, [  
+        $endpoint = Endpoints::build(Endpoints::UPDATE_TEMPLATE, [
             'template_id' => $this->template->wa_template_id,
         ]);
 
@@ -228,7 +228,7 @@ class TemplateEditor extends TemplateBuilder
         if ($this->hasHeader()) {
             throw new TemplateComponentException('La plantilla ya tiene un HEADER. Use changeHeader() para modificarlo.');
         }
-        
+
         return parent::addHeader($format, $content, $example);
     }
 
@@ -237,7 +237,7 @@ class TemplateEditor extends TemplateBuilder
         if (!$this->hasHeader()) {
             throw new TemplateComponentException('La plantilla no tiene un HEADER. Use addHeader() para agregar uno.');
         }
-        
+
         $this->removeHeader();
         return parent::addHeader($format, $content, $example);
     }
@@ -267,7 +267,7 @@ class TemplateEditor extends TemplateBuilder
         if ($this->hasBody()) {
             throw new TemplateComponentException('La plantilla ya tiene un BODY. Use changeBody() para modificarlo.');
         }
-        
+
         return parent::addBody($text, $example);
     }
 
@@ -276,7 +276,7 @@ class TemplateEditor extends TemplateBuilder
         if (!$this->hasBody()) {
             throw new TemplateComponentException('La plantilla no tiene un BODY. Use addBody() para agregar uno.');
         }
-        
+
         $this->removeBody();
         return parent::addBody($text, $example);
     }
@@ -305,7 +305,7 @@ class TemplateEditor extends TemplateBuilder
         if ($this->hasFooter()) {
             throw new TemplateComponentException('La plantilla ya tiene un FOOTER. Use changeFooter() para modificarlo.');
         }
-        
+
         return parent::addFooter($text);
     }
 
@@ -314,7 +314,7 @@ class TemplateEditor extends TemplateBuilder
         if (!$this->hasFooter()) {
             throw new TemplateComponentException('La plantilla no tiene un FOOTER. Use addFooter() para agregar uno.');
         }
-        
+
         $this->removeFooter();
         return parent::addFooter($text);
     }
@@ -344,7 +344,7 @@ class TemplateEditor extends TemplateBuilder
         if ($this->buttonCount >= 10) {
             throw new TemplateComponentException('No se pueden agregar más de 10 botones a una plantilla.');
         }
-        
+
         return parent::addButton($type, $text, $urlOrPhone, $example);
     }
 
@@ -375,11 +375,11 @@ class TemplateEditor extends TemplateBuilder
     public function removeButtonAt(int $index): self
     {
         $buttons = $this->getButtons();
-        
+
         if (!isset($buttons[$index])) {
             throw new TemplateComponentException("No existe un botón en la posición $index");
         }
-        
+
         $this->removeButton($index);
         return $this;
     }
@@ -428,11 +428,11 @@ class TemplateEditor extends TemplateBuilder
             $this->templateData['components'],
             fn($component) => $component['type'] !== $type
         ));
-        
+
         if ($type === 'BUTTONS') {
             $this->buttonCount = 0;
         }
-        
+
         return $this;
     }
 
@@ -442,29 +442,29 @@ class TemplateEditor extends TemplateBuilder
     protected function removeButton(int $index): self
     {
         $buttonsComponent = $this->getComponentsByType('BUTTONS');
-        
+
         if (empty($buttonsComponent)) {
             throw new TemplateComponentException('No existe un componente BUTTONS');
         }
-        
+
         $componentIndex = array_key_first($buttonsComponent);
         $buttons = $buttonsComponent[$componentIndex]['buttons'] ?? [];
-        
+
         if (!isset($buttons[$index])) {
             throw new TemplateComponentException("Índice de botón inválido: $index");
         }
-        
+
         unset($buttons[$index]);
         $buttons = array_values($buttons);
-        
+
         $this->templateData['components'][$componentIndex]['buttons'] = $buttons;
         $this->buttonCount--;
-        
+
         if (empty($buttons)) {
             unset($this->templateData['components'][$componentIndex]);
             $this->templateData['components'] = array_values($this->templateData['components']);
         }
-        
+
         return $this;
     }
 

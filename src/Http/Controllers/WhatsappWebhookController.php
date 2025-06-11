@@ -85,7 +85,7 @@ class WhatsappWebhookController extends Controller
     protected function handleIncomingMessage(array $message, ?array $contact, ?array $metadata): void
     {
         $messageType = $message['type'] ?? '';
-        
+
         $messageRecord = null;
 
         $textContent = null;
@@ -256,7 +256,7 @@ class WhatsappWebhookController extends Controller
             'content' => $textContent,
         ]);
 
-        return $messageRecord; 
+        return $messageRecord;
     }
 
     protected function processMediaMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
@@ -475,7 +475,7 @@ class WhatsappWebhookController extends Controller
         if ($mimeType && str_contains($mimeType, ';')) {
             $mimeType = explode(';', $mimeType)[0];
         }
-        
+
         return match ($mimeType) {
             'image/jpeg' => 'jpg',
             'image/png' => 'png',
@@ -491,7 +491,7 @@ class WhatsappWebhookController extends Controller
             'text/plain' => 'txt',
             'image/webp' => 'webp',
             default => function() use ($mimeType) {
-                Log::warning("Extensión desconocida para MIME type: {$mimeType}");
+                Log::channel('whatsapp')->warning("Extensión desconocida para MIME type: {$mimeType}");
                 return 'bin';
             },
         };
@@ -533,18 +533,15 @@ class WhatsappWebhookController extends Controller
 
     private function splitPhoneNumber(string $fullPhone): array
     {
-        $codes = CountryCodes::list();
+        $codes = CountryCodes::codes();
 
         usort($codes, static fn($a, $b) => strlen($b) <=> strlen($a));
 
         foreach ($codes as $code) {
             if (str_starts_with($fullPhone, $code)) {
                 $phoneNumber = substr($fullPhone, strlen($code));
-                //Si el país es México, según ChatGPT este es el único caso en el mundo que tiene un 1 después del código de area y luego vienen 10 dígitos del celular así 521 1234567890
-                //Por lo tanto comprobar si es número de méxico y el $phoneNumber son exactamente 10 números, entonces agregar el 1 inicial
-                if( $code==52 && Str::length($phoneNumber)==10 ){
-                    $phoneNumber = '1'.$phoneNumber;
-                }
+
+                $phoneNumber = CountryCodes::normalizeInternationalPhone($code, $phoneNumber)['phoneNumber'];
                 return [$code, $phoneNumber];
             }
         }
@@ -632,17 +629,17 @@ class WhatsappWebhookController extends Controller
         // Si no hay configuración de validación, retornar un validador vacío
         if (!$validationConfig || empty($validationConfig['rules'])) {
             return \Illuminate\Support\Facades\Validator::make(
-                ['input' => $userInput], 
+                ['input' => $userInput],
                 []
             );
         }
 
         // Crear el array de datos para validación usando un nombre de campo genérico
         $data = ['input' => $userInput];
-        
+
         // Obtener las reglas de validación
         $rules = ['input' => $validationConfig['rules']];
-        
+
         // Crear mensajes personalizados si existen
         $customMessages = [];
         if (isset($validationConfig['retryMessage'])) {
@@ -662,7 +659,7 @@ class WhatsappWebhookController extends Controller
         if ($message->message_type === 'text') {
             return $message->content;
         }
-        
+
         // Para mensajes interactivos, usa el cuerpo principal
         $data = json_decode($message->content, true);
         return $data['body'] ?? 'Mensaje no disponible';
@@ -695,7 +692,7 @@ class WhatsappWebhookController extends Controller
     {
         $service = app(MessageDispatcherService::class);
         $data = json_decode($message->content, true);
-        
+
         if ($message->message_type === 'interactive_buttons') {
             // $service->sendButtonMessage(
             @$service->sendInteractiveButtonsMessage(
@@ -730,7 +727,7 @@ class WhatsappWebhookController extends Controller
         try {
             $service = app(MessageDispatcherService::class);
             [$countryCode, $number] = $this->splitPhoneNumber($contact->wa_id);
-            
+
             $service->sendTextMessage(
                 $whatsappPhone->phone_number_id,
                 $countryCode,

@@ -53,7 +53,7 @@ class TemplateService
     public function getTemplates(WhatsappBusinessAccount $account)
     {
         $this->flowService->syncFlows($account);
-        
+
         $endpoint = Endpoints::build(Endpoints::GET_TEMPLATES, [
             'waba_id' => $account->whatsapp_business_id,
         ]);
@@ -473,7 +473,7 @@ class TemplateService
             // Validar que el flujo existe en la base de datos
             $flow = $this->flowService->getFlowById($apiFlowId);
             if (!$flow) {
-                Log::error('Flujo no encontrado en la base de datos', [
+                Log::channel('whatsapp')->error('Flujo no encontrado en la base de datos', [
                     'flow_id' => $apiFlowId,
                     'template_id' => $templateId
                 ]);
@@ -493,7 +493,7 @@ class TemplateService
 
             return $flow;
         } catch (\Exception $e) {
-            Log::error('Error en syncTemplateFlowRelation', [
+            Log::channel('whatsapp')->error('Error en syncTemplateFlowRelation', [
                 'error' => $e->getMessage(),
                 'account_id' => $account->whatsapp_business_id,
                 'template_id' => $templateId,
@@ -576,7 +576,7 @@ class TemplateService
                                 $button['flow_id'],
                                 $button['text'] ?? 'Iniciar flujo'
                             );
-                            
+
                             // Almacenar ULID local en lugar de ID de API
                             if ($flow) {
                                 $currentLocalFlowIds[] = $flow->flow_id;
@@ -688,7 +688,7 @@ class TemplateService
             'file_type' => $mimeType,
         ];
 
-        Log::info('Creando sesión de carga.', [
+        Log::channel('whatsapp')->info('Creando sesión de carga.', [
             'url' => $url,
             'body' => $body,
         ]);
@@ -723,7 +723,7 @@ class TemplateService
         curl_close($curl);
 
         // Registrar la respuesta
-        Log::info('Respuesta de la API al crear la sesión de carga.', [
+        Log::channel('whatsapp')->info('Respuesta de la API al crear la sesión de carga.', [
             'response' => $response,
             'http_code' => $httpCode,
         ]);
@@ -747,7 +747,7 @@ class TemplateService
             throw new \Exception('No se pudo obtener el ID de la sesión de carga.');
         }
 
-        Log::info('Sesión de carga creada exitosamente.', ['uploadSessionId' => $uploadSessionId]);
+        Log::channel('whatsapp')->info('Sesión de carga creada exitosamente.', ['uploadSessionId' => $uploadSessionId]);
 
         return $uploadSessionId;
     }
@@ -775,7 +775,7 @@ class TemplateService
         $version = config('whatsapp.api.version', 'v22.0');
         $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . "/$sessionId";
 
-        Log::info('URL final para la carga de medios:', ['url' => $url]);
+        Log::channel('whatsapp')->info('URL final para la carga de medios:', ['url' => $url]);
 
         // Leer el contenido del archivo
         $fileContents = file_get_contents($filePath);
@@ -814,7 +814,7 @@ class TemplateService
         curl_close($curl);
 
         // Registrar la respuesta
-        Log::info('Respuesta de la API después de subir el archivo.', [
+        Log::channel('whatsapp')->info('Respuesta de la API después de subir el archivo.', [
             'response' => $response,
             'http_code' => $httpCode,
         ]);
@@ -838,7 +838,7 @@ class TemplateService
             throw new \Exception('No se pudo obtener el identificador del archivo.');
         }
 
-        Log::info('Archivo subido exitosamente.', ['handle' => $handle]);
+        Log::channel('whatsapp')->info('Archivo subido exitosamente.', ['handle' => $handle]);
 
         return $handle;
     }
@@ -870,7 +870,7 @@ class TemplateService
             throw new InvalidArgumentException("El tipo de archivo no es permitido. Tipo recibido: $mimeType.");
         }
 
-        Log::info('Archivo validado correctamente.', [
+        Log::channel('whatsapp')->info('Archivo validado correctamente.', [
             'file_path' => $filePath,
             'file_size' => $fileSize,
             'mime_type' => $mimeType,

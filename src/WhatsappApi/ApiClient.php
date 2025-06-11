@@ -40,7 +40,7 @@ class ApiClient
     {
         $this->baseUrl = rtrim($baseUrl, '/');
         $this->version = $version;
-        
+
         $this->client = new Client([
             'base_uri' => $this->baseUrl . '/',
             'timeout' => $timeout,
@@ -77,7 +77,7 @@ class ApiClient
         try {
             // Construir URL final
             $url = $this->buildUrl($endpoint, $params, $query);
-            
+
             // Configurar opciones
             $options = [
                 'headers' => array_merge([
@@ -88,9 +88,9 @@ class ApiClient
             // Log::channel('whatsapp')->info('Enviando solicitud a la API de WhatsApp.', [
             //     'method' => $method,
             //     'url' => $url,
-            //     'headers' => $options['headers'], 
+            //     'headers' => $options['headers'],
             // ]);
-            
+
             // Manejar datos según el tipo
             if (isset($data['multipart'])) {
                 // Si los datos son de tipo multipart
@@ -105,7 +105,7 @@ class ApiClient
 
             // Enviar petición
             $response = $this->client->request($method, $url, $options);
-            
+
             // Verificar el código de estado HTTP
             $statusCode = $response->getStatusCode();
             if ($statusCode >= 200 && $statusCode < 300) {
@@ -181,7 +181,7 @@ class ApiClient
             $body = json_decode($response->getBody(), true);
             $message = $body['error']['message'] ?? $message;
 
-            Log::error('Error en la respuesta de la API.', [
+            Log::channel('whatsapp')->error('Error en la respuesta de la API.', [
                 'status_code' => $statusCode,
                 'response_body' => $body,
                 'headers' => $response->getHeaders(),
