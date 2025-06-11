@@ -225,4 +225,54 @@ class FlowService
             }
         }
     }
+
+    /**
+     * Publica un flujo en la API de WhatsApp.
+     *
+     * @param WhatsappFlow $flow El flujo que se desea publicar.
+     * @return bool Indica si la publicación fue exitosa.
+     * @throws InvalidArgumentException Si el flujo no tiene un ID válido.
+     * @throws \RuntimeException Si ocurre un error durante la publicación.
+     */
+    public function publish(WhatsappFlow $flow): bool
+    {
+        // Validar que el flujo tenga un ID válido
+        if (empty($flow->wa_flow_id)) {
+            throw new InvalidArgumentException('El flujo no tiene un ID válido, no puede ser publicado.');
+        }
+
+        $endpoint = Endpoints::build(Endpoints::PUBLISH_FLOW, [
+            'flow_id' => $flow->wa_flow_id,
+        ]);
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $flow->whatsappBusinessAccount->api_token,
+        ];
+
+        try {
+            $response = $this->apiClient->request(
+                'POST',
+                $endpoint,
+                [],
+                null,
+                [],
+                $headers
+            );
+
+            Log::info('Flujo publicado exitosamente.', [
+                'flow_id' => $flow->wa_flow_id,
+                'response' => $response,
+            ]);
+
+            // Actualizar el estado del flujo en la base de datos
+            $flow->update(['status' => 'PUBLISHED']);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error al publicar el flujo: ' . $e->getMessage(), [
+                'flow_id' => $flow->wa_flow_id,
+            ]);
+            throw new \RuntimeException('Error al publicar el flujo: ' . $e->getMessage());
+        }
+    }
 }

@@ -321,6 +321,7 @@ class TemplateService
 
             if ($response['success'] ?? false) {
                 if ($template) {
+                    $template->flows()->detach();
                     if ($hardDelete) {
                         $template->forceDelete(); // Hard delete
                     } else {
@@ -395,6 +396,7 @@ class TemplateService
 
             if ($response['success'] ?? false) {
                 if ($template) {
+                    $template->flows()->detach();
                     if ($hardDelete) {
                         $template->forceDelete(); // Hard delete
                     } else {
@@ -656,6 +658,12 @@ class TemplateService
 
         if (empty($templateData['components']) || !is_array($templateData['components'])) {
             throw new InvalidArgumentException('Los componentes de la plantilla son obligatorios.');
+        }
+
+        $validCategories = ['AUTHENTICATION', 'MARKETING', 'UTILITY'];
+        
+        if (!in_array($templateData['category'], $validCategories)) {
+            throw new InvalidArgumentException('Categoría inválida');
         }
     }
 
