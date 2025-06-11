@@ -363,6 +363,7 @@ class MessageDispatcherService
             // Preparar los parámetros para el envío
             $parameters = [
                 'id' => $fileId,
+                'caption' => $caption,
             ];
 
             // Enviar el mensaje a través de la API
@@ -481,6 +482,7 @@ class MessageDispatcherService
             // Preparar los parámetros para el envío
             $parameters = [
                 'id' => $fileId,
+                'caption' => $caption,
             ];
 
             // Enviar el mensaje a través de la API
@@ -3163,8 +3165,14 @@ class MessageDispatcherService
 
             case 'image':
                 $data['image'] = isset($parameters['id']) && $parameters['id']
-                    ? ['id' => $parameters['id']]
-                    : ['link' => $parameters['link'] ?? ''];
+                    ? [
+                        'id' => $parameters['id'],
+                        'caption' => $parameters['caption'] ?? '',
+                    ]
+                    : [
+                        'link' => $parameters['link'] ?? '',
+                        'caption' => $parameters['caption'] ?? '',
+                    ];
                 break;
 
             case 'audio':
