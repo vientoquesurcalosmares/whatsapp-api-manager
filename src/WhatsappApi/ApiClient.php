@@ -72,11 +72,12 @@ class ApiClient
         array $params = [],
         mixed $data = null, // Cambiado a mixed para soportar flujos
         array $query = [],
-        array $headers = []
-    ): array {
+        array $headers = [],
+        $is_multimedia = false
+    ): mixed {
         try {
             // Construir URL final
-            $url = $this->buildUrl($endpoint, $params, $query);
+            $url = $this->buildUrl($endpoint, $params, $query, $is_multimedia);
 
             // Configurar opciones
             $options = [
@@ -109,13 +110,24 @@ class ApiClient
             // Verificar el código de estado HTTP
             $statusCode = $response->getStatusCode();
             if ($statusCode >= 200 && $statusCode < 300) {
+
                 // Respuesta exitosa
-                Log::channel('whatsapp')->info('Respuesta exitosa de la API.', [
+                $logArray = [
                     'URL' => $url,
                     'status_code' => $statusCode,
-                    'response_body' => $response->getBody()->getContents(),
-                ]);
+                ];
 
+                if( $is_multimedia==false ){
+                    $logArray['response_body'] = $response->getBody()->getContents();
+                }
+
+                Log::channel('whatsapp')->info('Respuesta exitosa de la API.', $logArray);
+
+                if( $is_multimedia==true ){
+                    return $response->getBody()->getContents();
+                }
+
+                //Revisar aquí, cuando es archivo multimedia se necesita retornar $response->getBody()->getContents()
                 return json_decode($response->getBody(), true) ?: [];
             }
 
@@ -137,6 +149,25 @@ class ApiClient
         }
     }
 
+    public function requestMultimedia(
+        string $method,
+        string $endpoint,
+        array $params = [],
+        mixed $data = null, // Cambiado a mixed para soportar flujos
+        array $query = [],
+        array $headers = []
+    ) {
+        return $this->request(
+            $method,
+            $endpoint,
+            $params,
+            $data, // Cambiado a mixed para soportar flujos
+            $query,
+            $headers,
+            true //Mandar siempre en true para que se retorne $response->getBody()->getContents()
+        );
+    }
+
     /**
      * Construye la URL final para la solicitud.
      *
@@ -145,13 +176,18 @@ class ApiClient
      * @param array $query Parámetros de consulta adicionales.
      * @return string URL construida.
      */
-    protected function buildUrl(string $endpoint, array $params, array $query = []): string
+    protected function buildUrl(string $endpoint, array $params, array $query = [], $is_multimedia=false): string
     {
-        $url = str_replace(
-            array_map(fn($k) => '{' . $k . '}', array_keys($params)),
-            array_values($params),
-            $this->version . '/' . $endpoint
-        );
+        if( $is_multimedia==true ){
+            $url = $endpoint;
+        }
+        else{
+            $url = str_replace(
+                array_map(fn($k) => '{' . $k . '}', array_keys($params)),
+                array_values($params),
+                $this->version . '/' . $endpoint
+            );
+        }
 
         if (!empty($query)) {
             $url .= '?' . http_build_query($query);

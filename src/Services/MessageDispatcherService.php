@@ -11,6 +11,7 @@ use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Exceptions\WhatsappApiException;
 use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log; // <-- Agregamos esto
 use Illuminate\Support\Str; // <-- Agregamos esto
 
@@ -3500,7 +3501,8 @@ class MessageDispatcherService
             throw new \RuntimeException("No se ha configurado una ruta de almacenamiento para el tipo de media: $mediaType");
         }
 
-        $localFilePath = storage_path('app/public/media/' . $fileName);
+        //$localFilePath = storage_path('app/public/media/' . $fileName);
+        $localFilePath = $storagePath.'/'.$fileName;
         $directoryPath = dirname($localFilePath);
 
         // Verificar y crear el directorio si no existe
@@ -3516,7 +3518,7 @@ class MessageDispatcherService
 
         for ($i = 0; $i < $attempts; $i++) {
             try {
-                $response = $this->apiClient->request(
+                $response = $this->apiClient->requestMultimedia(
                     'GET',
                     $url,
                     headers: [
@@ -3526,9 +3528,12 @@ class MessageDispatcherService
 
                 file_put_contents($localFilePath, $response);
 
-                Log::channel('whatsapp')->info('Archivo descargado exitosamente.', ['localFilePath' => $localFilePath]);
+                Log::channel('whatsapp')->info('Archivo descargado exitosamente.', ['localFilePath' => $localFilePath, 'response' => $response]);
 
-                return $localFilePath;
+                $publicPath = Storage::url("public/whatsapp/".$mediaType."/".$fileName);
+
+                //return $localFilePath;
+                return $publicPath;
             } catch (\Exception $e) {
                 Log::channel('whatsapp')->error('Error al descargar el archivo.', [
                     'attempt' => $i + 1,
