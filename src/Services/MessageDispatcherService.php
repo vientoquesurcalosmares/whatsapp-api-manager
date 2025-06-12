@@ -3518,7 +3518,7 @@ class MessageDispatcherService
 
         for ($i = 0; $i < $attempts; $i++) {
             try {
-                $response = $this->apiClient->request(
+                $response = $this->apiClient->requestMultimedia(
                     'GET',
                     $url,
                     headers: [
