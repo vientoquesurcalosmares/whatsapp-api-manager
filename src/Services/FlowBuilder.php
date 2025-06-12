@@ -135,6 +135,7 @@ class FlowBuilder
             'version' => '7.0', // Versión requerida por WhatsApp
             'screens' => $whatsappScreens,
             'metadata' => [
+                'api_version' => '3.0',
                 'created_at' => now()->toISOString(),
                 'last_updated' => now()->toISOString()
             ]
@@ -152,6 +153,9 @@ class FlowBuilder
             $category = $typeToCategory[$flowType] ?? 'OTHER';
             $this->flowData['categories'] = [$category];
         }
+
+        $this->flowData['endpoint_uri'] = config('app.url').'/whatsapp/flows/endpoint';
+        $this->flowData['data_api_version'] = '3.0';
 
         return $this->flowData;
     }
@@ -202,7 +206,11 @@ class FlowBuilder
                 'type' => 'SingleColumnLayout',
                 'children' => $children
             ],
-            'data' => (object)[], // Siempre incluir `data` como objeto vacío
+            'data' => [
+                'screen_id' => strtoupper($screen['name']),
+                'title' => $screen['title'] ?? '',
+                'content' => $screen['content'] ?? '',
+            ]
         ];
     }
 
@@ -225,7 +233,12 @@ class FlowBuilder
     {
         $base = [
             'name' => $element['name'],
-            'label' => $element['label'] ?? ''
+            'label' => $element['label'] ?? '',
+            'data' => [ // Campo OBLIGATORIO
+                'element_id' => $element['name'],
+                'type' => $element['type'],
+                'label' => $element['label'] ?? ''
+            ]
         ];
 
         switch ($element['type']) {
@@ -284,6 +297,8 @@ class FlowBuilder
     {
         $flowData = $this->build();
 
+        $flowData['json'] = json_encode($flowData['json_structure'], JSON_UNESCAPED_UNICODE);
+
         $endpoint = Endpoints::build(Endpoints::CREATE_FLOW, [
             'waba_id' => $this->account->whatsapp_business_id,
         ]);
@@ -298,7 +313,13 @@ class FlowBuilder
                 'POST',
                 $endpoint,
                 [],
-                $flowData,
+                [
+                        'name' => $flowData['name'],
+                        'categories' => $flowData['categories'],
+                        'endpoint_uri' => $flowData['endpoint_uri'],
+                        'data_api_version' => $flowData['data_api_version'],
+                        'json' => $flowData['json'],
+                    ],
                 [],
                 $headers
             );
