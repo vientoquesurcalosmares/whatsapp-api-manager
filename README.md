@@ -1129,7 +1129,7 @@ Agrega o ajusta las siguientes variables:
 ## 4. Configura config/broadcasting.php
 Asegúrate de que el driver predeterminado sea reverb:
 ```php
-    'default' => env('BROADCAST_DRIVER', 'null'),
+    'default' => env('BROADCAST_CONNECTION', 'null'),
 ```
 
 Y dentro del array connections, asegúrate de tener esto:
@@ -1139,8 +1139,15 @@ Y dentro del array connections, asegúrate de tener esto:
         'key' => env('REVERB_APP_KEY'),
         'secret' => env('REVERB_APP_SECRET'),
         'app_id' => env('REVERB_APP_ID'),
-        'host' => env('REVERB_HOST', '127.0.0.1'),
-        'port' => env('REVERB_PORT', 8080),
+        'options' => [
+            'host' => env('REVERB_HOST'),
+            'port' => env('REVERB_PORT', 443),
+            'scheme' => env('REVERB_SCHEME', 'https'),
+            'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
+        ],
+        'client_options' => [
+            // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
+        ],
     ],
 ```
 
