@@ -4,6 +4,7 @@
     "name": "scriptdevelop/whatsapp-manager",
     "version": "1.0.356",
     "description": "Paquete para manejo de WhatsApp Business API en Laravel",
+    "keywords": ["whatsapp", "laravel", "api", "messaging", "chat", "notifications"],
     "type": "library",
     "license": "MIT",
     "require": {
@@ -15,6 +16,9 @@
         "phpunit/phpunit": "^12.1",
         "orchestra/testbench": "^10.2",
         "mockery/mockery": "^1.6"
+    },
+    "suggest": {
+        "laravel/reverb": "Permite recibir eventos websocket desde el paquete vía broadcasting"
     },
     "autoload": {
         "psr-4": {

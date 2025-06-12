@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Scriptdevelop\WhatsappManager\Events\MessageReceived;
 USE ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
 use ScriptDevelop\WhatsappManager\Services\SessionManager;
 use ScriptDevelop\WhatsappManager\Models\Contact;
@@ -169,7 +170,18 @@ class WhatsappWebhookController extends Controller
             $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
         }
 
-        $logMessage = $textContent ?? ($message['text']['body'] ?? 'No text content');
+        $logMessage = $textContent ?? ($message['text']['body'] ?? $message['type'] . ' content not available');
+
+        event(new MessageReceived([
+            'contact_id' => $contactRecord->contact_id,
+            'wa_id' => $contact['wa_id'] ?? null,
+            'name' => $contact['profile']['name'] ?? null,
+            'phone_number' => $fullPhone,
+            'message_type' => $messageType,
+            'message_id' => $message['id'],
+            'content' => $textContent ?? null,
+            'timestamp' => $message['timestamp'] ?? now()->timestamp,
+        ]));
 
         Log::channel('whatsapp')->info('Incoming message processed.', [
             'message_id' => $message['id'],

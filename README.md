@@ -115,6 +115,7 @@ https://www.youtube.com/watch?v=gdD_0ernIqM&ab_channel=BismarckArag%C3%B3n
         WHATSAPP_API_VERSION=v21.0
         WHATSAPP_VERIFY_TOKEN=your-verify-token
         WHATSAPP_USER_MODEL=App\Models\User
+        WHATSAPP_BROADCAST_CHANNEL_TYPE=private
     ```
 
 🔄 Personalizar el Modelo User
@@ -1028,6 +1029,13 @@ Puedes crear múltiples variaciones de plantillas para diferentes propósitos.
         ->save();
 ```
 
+# Notas
+
+- Asegúrate de que las imágenes utilizadas en las plantillas cumplan con los requisitos de la API de WhatsApp (tamaño y formato).
+- Los botones de URL pueden incluir parámetros dinámicos utilizando las variables de las plantillas (`{{1}}`, `{{2}}`, etc.).
+- Revisa los logs para depurar cualquier problema durante la creación de plantillas.
+
+
 ## 🙌 Apóyanos con una donación
 Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]
 [![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
@@ -1082,7 +1090,154 @@ Puedes enviar diferentes mensajes de plantillas segun la estructura de la planti
         ->send();
 ```
 
-# BOT BUILDER SERA MUDADO A OTRO PAQUETE
+
+## 🙌 Apóyanos con una donación
+Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]
+[![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+Gracias por tu apoyo 💙
+
+
+
+# 📦 Instalación de Laravel Reverb
+## 1. Instala Laravel Reverb vía Composer
+En una nueva terminal, ejecuta el siguiente comando:
+```php
+    composer require laravel/reverb
+```
+
+## 2. Publica los archivos de configuración de Reverb
+
+```php
+    composer require laravel/reverb
+```
+Esto generará el archivo config/reverb.php y ajustará tu broadcasting.php para incluir el driver reverb.
+
+
+## 3. Configura tu archivo .env
+Agrega o ajusta las siguientes variables:
+```bash
+    BROADCAST_DRIVER=reverb
+    REVERB_APP_ID=whatsapp-app
+    REVERB_APP_KEY=whatsapp-key
+    REVERB_APP_SECRET=whatsapp-secret
+    REVERB_HOST=127.0.0.1
+    REVERB_PORT=8080
+```
+⚠️ Estos valores deben coincidir con los definidos en config/reverb.php.
+
+
+## 4. Configura config/broadcasting.php
+Asegúrate de que el driver predeterminado sea reverb:
+```php
+    'default' => env('BROADCAST_DRIVER', 'null'),
+```
+
+Y dentro del array connections, asegúrate de tener esto:
+```php
+    'reverb' => [
+        'driver' => 'reverb',
+        'key' => env('REVERB_APP_KEY'),
+        'secret' => env('REVERB_APP_SECRET'),
+        'app_id' => env('REVERB_APP_ID'),
+        'host' => env('REVERB_HOST', '127.0.0.1'),
+        'port' => env('REVERB_PORT', 8080),
+    ],
+```
+
+# 🚀 Levantar el servidor Reverb
+En una nueva terminal, ejecuta el siguiente comando:
+```php
+    php artisan reverb:start
+```
+
+Deberías ver algo como:
+```php
+    Reverb server started on 127.0.0.1:8080
+```
+
+El servidor WebSocket quedará activo en 127.0.0.1:8080.
+
+
+# 🌐 Configurar Laravel Echo (Frontend)
+## 1. Instala las dependencias de frontend:
+Instalar Laravel Echo y PusherJS
+```bash
+    npm install --save laravel-echo pusher-js
+```
+
+## 2. Configura Echo en resources/js/bootstrap.js o donde inicialices tu JS:
+
+```js
+    import Echo from 'laravel-echo';
+
+    window.Pusher = require('pusher-js');
+
+    window.Echo = new Echo({
+        broadcaster: 'reverb',
+        key: import.meta.env.VITE_REVERB_APP_KEY,
+        wsHost: import.meta.env.VITE_REVERB_HOST,
+        wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
+        forceTLS: false,
+        enabledTransports: ['ws'],
+    });
+```
+
+## 3. Asegúrate de tener las variables necesarias en tu .env frontend (Vite):
+
+```bash
+    VITE_REVERB_APP_KEY=whatsapp-key
+    VITE_REVERB_HOST=127.0.0.1
+    VITE_REVERB_PORT=8080
+```
+
+
+# 📡 Escuchar eventos (ejemplo en JS)
+
+```js
+    window.Echo.private('whatsapp.messages')
+        .listen('.message.received', (e) => {
+            console.log('Nuevo mensaje recibido:', e.data);
+        });
+```
+
+
+# 📁 Configuración en el paquete
+En tu archivo config/whatsapp-events.php asegúrate de tener:
+```php
+    return [
+        'broadcast_channel_type' => env('WHATSAPP_BROADCAST_TYPE', 'private'),
+    ];
+```
+
+Y en tu .env:
+```bash
+    WHATSAPP_BROADCAST_TYPE=private
+```
+
+# 🧪 Prueba de Eventos
+Puedes emitir manualmente un evento de prueba con:
+```bash
+    php artisan tinker
+```
+
+```php
+    event(new \Scriptdevelop\WhatsappManager\Events\MessageReceived([
+        'from' => '51987654321',
+        'message' => 'Hola desde Reverb'
+    ]));
+```
+
+# 🖥️ Escuchar desde el frontend
+
+```js
+    window.Echo.private('whatsapp.messages')
+        .listen('.message.received', (e) => {
+            console.log('Nuevo mensaje recibido:', e.data);
+        });
+```
+
+
+# BOT BUILDER SERA MOVIDO A OTRO PAQUETE
 ## PAQUETE whatsapp-bot (Aun en desarrolo): https://github.com/djdang3r/whatsapp-bot
 ## - Las siguientes funcionalidades seran eliminadas de este paquete.
 
@@ -1217,157 +1372,8 @@ Puedes diferentes tipos de Bots para whatsapp.
     $flow->update(['entry_point_id' => $step1->step_id]);
 ```
 
-## 🙌 Apóyanos con una donación
-Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]
-[![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
-Gracias por tu apoyo 💙
 
-1. Whatsapp (Facade)
-Métodos Principales:
-
-account(): Acceso a AccountRegistrationService
-
-message(): Acceso a MessageDispatcherService
-
-phone(): Acceso a WhatsappService
-
-template(): Acceso a TemplateService
-
-bot(): Accesoa BotBuilderService
-
-getBusinessAccount(): Obtiene datos de una cuenta empresarial
-
-getPhoneNumbers(): Lista números asociados a una cuenta
-
-getPhoneNumberDetails(): Detalles técnicos de un número
-
-getBusinessProfile(): Perfil comercial vinculado a un número
-
-2. WhatsappService
-Métodos Clave:
-
-forAccount(): Establece la cuenta activa para operaciones
-
-getBusinessAccount(): Datos de cuenta (nombre, timezone, IDs)
-
-getPhoneNumbers(): Listado de números telefónicos
-
-getPhoneNumberDetails(): Verificación, rating de calidad, configuración
-
-getBusinessProfile(): Descripción, email, logo, dirección
-
-withTempToken(): Autenticación temporal para operaciones
-
-3. TemplateService
-Gestión de Plantillas:
-
-getTemplates(): Sincroniza plantillas desde la API
-
-getTemplateById()/getTemplateByName(): Búsqueda específica
-
-createUtilityTemplate()/createMarketingTemplate()/createAuthenticationTemplate(): Builders para tipos de plantillas
-
-deleteTemplateById()/deleteTemplateByName(): Eliminación (soft/hard delete)
-
-sendTemplateMessage(): Constructor para enviar plantillas
-
-createUploadSession()/uploadMedia(): Manejo de archivos multimedia
-
-TemplateBuilder (Subservicio):
-
-setName()/setLanguage()/setCategory(): Configuración básica
-
-addHeader(): Texto, imágenes o ubicación
-
-addBody(): Texto con parámetros dinámicos
-
-addFooter(): Texto estático
-
-addButton(): URL, teléfono o quick reply
-
-save(): Crea/actualiza plantillas en la API y DB
-
-4. AccountRegistrationService
-Métodos Clave:
-
-register(): Flujo completo de registro (cuenta + números + perfiles)
-
-validateInput(): Verifica token y business ID
-
-fetchAccountData(): Obtiene metadata de la API
-
-upsertBusinessAccount(): Crea/actualiza cuenta en DB
-
-registerPhoneNumbers(): Sincroniza números telefónicos
-
-linkBusinessProfilesToPhones(): Vincula perfiles comerciales
-
-5. MessageDispatcherService
-Envío de Mensajes:
-
-sendTextMessage(): Mensaje básico con vista previa opcional
-
-sendReplyTextMessage(): Respuesta a mensaje existente
-
-sendImageMessage()/sendAudioMessage()/sendVideoMessage(): Multimedia desde archivo
-
-sendDocumentMessage(): PDF, Excel, Word con caption
-
-sendStickerMessage(): Stickers estáticos/animados
-
-sendContactMessage(): Comparte tarjeta de contacto
-
-sendLocationMessage(): Coordenadas + dirección
-
-Métodos de Soporte:
-
-uploadFile(): Sube archivos a la API
-
-downloadMedia(): Descarga medios a almacenamiento local
-
-validateMediaFile(): Verifica formatos y tamaños
-
-resolveContact(): Crea/recupera contactos en DB
-
-Manejo de Respuestas:
-
-Todos los métodos tienen versión sendReply...Message() para respuestas contextuales.
-
-6. TemplateMessageBuilder
-Construcción Dinámica:
-
-to(): Define destinatario (país + número)
-
-usingTemplate(): Selecciona plantilla por ID/nombre
-
-addHeader()/addBody()/addFooter(): Componentes estáticos
-
-addButton(): Hasta 10 botones por mensaje
-
-send(): Valida y envía el mensaje estructurado
-
-Flujos Técnicos Destacados
-Registro de Cuenta:
-register() -> validateInput() -> fetchAccountData() -> upsertBusinessAccount() -> registerPhoneNumbers()
-
-Envío de Multimedia:
-validateMediaFile() -> createUploadSession() -> uploadMedia() -> send...Message()
-
-Plantillas con Parámetros:
-TemplateBuilder -> addHeader()/addBody() -> storeOrUpdateTemplate() -> syncTemplateComponents()
-
-
----
-
-### Notas
-
-- Asegúrate de que las imágenes utilizadas en las plantillas cumplan con los requisitos de la API de WhatsApp (tamaño y formato).
-- Los botones de URL pueden incluir parámetros dinámicos utilizando las variables de las plantillas (`{{1}}`, `{{2}}`, etc.).
-- Revisa los logs para depurar cualquier problema durante la creación de plantillas.
-
-
-
-🤝 Contribuir
+# 🤝 Contribuir
 ¡Tu ayuda es bienvenida! Sigue estos pasos:
 
 Haz un fork del repositorio
@@ -1383,28 +1389,15 @@ Abre un Pull Request
 📄 Licencia
 MIT License. Ver LICENSE para más detalles.
 
-👨💻 Soporte
+
+
+# 👨💻 Soporte
 ¿Problemas o sugerencias?
-📧 Contacto: soporte@scriptdevelop.com
+📧 Contacto: wilfredoperilla@gmail.com, soporte@scriptdevelop.com
 🐞 Reporta un issue: GitHub Issues
 
-Desarrollado con ❤️ por ScriptDevelop
-✨ Potenciando tu conexión con WhatsApp Business API
+# Desarrollado con ❤️ por ScriptDevelop
+## ✨ Potenciando tu conexión con WhatsApp Business API
 
-
----
-
-### 🔥 Características Destacadas del README
-1. **Jerarquía Visual Clara**: Uso de emojis y encabezados para guiar la lectura.
-2. **Sintaxis Resaltada**: Bloques de código con syntax highlighting.
-3. **Badges Interactivos** (Añade estos al inicio):
-
-[![Latest Version](https://img.shields.io/packagist/v/scriptdevelop/whatsapp-manager.svg?style=flat-square)](https://packagist.org/packages/scriptdevelop/whatsapp-manager)
-[![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-8892BF.svg?style=flat-square)](https://php.net/)
-[![Laravel Version](https://img.shields.io/badge/Laravel-12%2B-FF2D20.svg?style=flat-square)](https://laravel.com)
-
-4.  Secciones Colapsables (Usa detalles HTML si necesitas):
-    <details>
-    <summary>📦 Ver estructura completa del paquete</summary>
-    <!-- Contenido -->
-    </details>
+# 🔥 Con el apollo de:
+## @vientoquesurcalosmares

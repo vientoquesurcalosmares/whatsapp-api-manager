@@ -112,6 +112,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Personalización de canales
+    |--------------------------------------------------------------------------
+    |
+    | Si se activa esta opción, se usará el archivo de canales del proyecto
+    | ubicado en routes/channels.php en lugar del predeterminado del paquete.
+    |
+    */
+
+    'custom_channels' => false,
+
+    'broadcast_channel_type' => env('WHATSAPP_BROADCAST_CHANNEL_TYPE', 'public'), // 'public' o 'private'
+
+    /*
+    |--------------------------------------------------------------------------
     | Migraciones Automáticas
     |--------------------------------------------------------------------------
     |

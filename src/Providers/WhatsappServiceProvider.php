@@ -19,6 +19,7 @@ class WhatsappServiceProvider extends ServiceProvider
         // Fusionar configuraciones
         $this->mergeConfigFrom(__DIR__ . '/../Config/whatsapp.php', 'whatsapp');
         $this->mergeConfigFrom(__DIR__ . '/../Config/logging.php', 'logging');
+        $this->mergeConfigFrom(__DIR__ . '/../config/whatsapp-events.php', 'whatsapp-events');
 
         // Registrar servicios
         $this->app->singleton(ApiClient::class, function ($app) {
@@ -67,6 +68,8 @@ class WhatsappServiceProvider extends ServiceProvider
                 $app->make(ApiClient::class)
             );
         });
+
+        $this->app->register(\Scriptdevelop\WhatsappManager\Providers\BroadcastServiceProvider::class);
     }
 
     public function boot()
@@ -97,6 +100,11 @@ class WhatsappServiceProvider extends ServiceProvider
         ], 'whatsapp-routes');
 
         $this->publishes([], 'whatsapp-media');
+
+        $this->publishes([
+            __DIR__ . '/../config/whatsapp-events.php' => config_path('whatsapp-events.php'),
+            __DIR__ . '/../routes/channels.php' => base_path('routes/channels.php'),
+        ], 'whatsapp-events');
 
         // Cargar rutas automáticamente
         $this->loadRoutesFrom(__DIR__ . '/../routes/whatsapp_webhook.php');
