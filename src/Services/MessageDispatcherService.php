@@ -316,7 +316,6 @@ class MessageDispatcherService
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
-
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'image');
 
@@ -325,7 +324,6 @@ class MessageDispatcherService
 
         // Descargar el archivo desde la URL proporcionada por la API
         $localFilePath = $this->downloadMedia($phoneNumberModel,$mediaInfo['url'], $file->getFilename(), 'images');
-
 
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
@@ -434,7 +432,6 @@ class MessageDispatcherService
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
-
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'image');
 
@@ -443,7 +440,6 @@ class MessageDispatcherService
 
         // Descargar el archivo desde la URL proporcionada por la API
         $localFilePath = $this->downloadMedia($phoneNumberModel,$mediaInfo['url'], $file->getFilename(), 'images');
-
 
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
@@ -721,9 +717,6 @@ class MessageDispatcherService
 
         // Validar el número de teléfono
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
-
-        // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $file, 'audio');
 
         // Subir el archivo y obtener el ID del archivo subido
         $fileId = $this->uploadFile($phoneNumberModel, $file, 'audio');
@@ -1231,10 +1224,6 @@ class MessageDispatcherService
 
         // Descargar el archivo desde la URL proporcionada por la API
         $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $file->getFilename(), 'documents');
-
-        // Resolver el contacto
-        $contact = $this->resolveContact($countryCode, $phoneNumber);
-
 
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
