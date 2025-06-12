@@ -1202,7 +1202,7 @@ Instalar Laravel Echo y PusherJS
 
 
 # 📁 Configuración en el paquete
-En tu archivo config/whatsapp-events.php asegúrate de tener:
+En tu archivo config/whatsapp.php asegúrate de tener:
 ```php
     return [
         'broadcast_channel_type' => env('WHATSAPP_BROADCAST_TYPE', 'private'),
