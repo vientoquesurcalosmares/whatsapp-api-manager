@@ -1108,7 +1108,7 @@ En una nueva terminal, ejecuta el siguiente comando:
 ## 2. Publica los archivos de configuración de Reverb
 
 ```php
-    composer require laravel/reverb
+    php artisan reverb:install
 ```
 Esto generará el archivo config/reverb.php y ajustará tu broadcasting.php para incluir el driver reverb.
 
