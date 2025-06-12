@@ -77,7 +77,7 @@ class ApiClient
     ): mixed {
         try {
             // Construir URL final
-            $url = $this->buildUrl($endpoint, $params, $query);
+            $url = $this->buildUrl($endpoint, $params, $query, $is_multimedia);
 
             // Configurar opciones
             $options = [
@@ -176,13 +176,18 @@ class ApiClient
      * @param array $query Parámetros de consulta adicionales.
      * @return string URL construida.
      */
-    protected function buildUrl(string $endpoint, array $params, array $query = []): string
+    protected function buildUrl(string $endpoint, array $params, array $query = [], $is_multimedia=false): string
     {
-        $url = str_replace(
-            array_map(fn($k) => '{' . $k . '}', array_keys($params)),
-            array_values($params),
-            $endpoint
-        );
+        if( $is_multimedia==true ){
+            $url = $endpoint;
+        }
+        else{
+            $url = str_replace(
+                array_map(fn($k) => '{' . $k . '}', array_keys($params)),
+                array_values($params),
+                $this->version . '/' . $endpoint
+            );
+        }
 
         if (!empty($query)) {
             $url .= '?' . http_build_query($query);
