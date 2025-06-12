@@ -25,7 +25,7 @@ class MediaMessageReceived implements ShouldBroadcast
     {
         $channelName = 'whatsapp.messages';
 
-        return config('whatsapp-events.broadcast_channel_type') === 'private'
+        return config('whatsapp.broadcast_channel_type') === 'private'
             ? new PrivateChannel($channelName)
             : new Channel($channelName);
     }

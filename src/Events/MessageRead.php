@@ -24,7 +24,7 @@ class MessageRead implements ShouldBroadcast
     {
         $channelName = 'whatsapp.status';
 
-        return config('whatsapp-events.broadcast_channel_type') === 'private'
+        return config('whatsapp.broadcast_channel_type') === 'private'
             ? new PrivateChannel($channelName)
             : new Channel($channelName);
     }
