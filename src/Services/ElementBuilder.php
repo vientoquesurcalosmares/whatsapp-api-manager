@@ -37,6 +37,21 @@ class ElementBuilder
         return $this;
     }
 
+    public function options(array $options): self
+    {
+        $this->elementData['options'] = $options;
+        return $this;
+    }
+
+    public function action(string $actionName, array $payload = []): self
+    {
+        $this->elementData['action'] = [
+            'name' => $actionName,
+            'payload' => $payload
+        ];
+        return $this;
+    }
+
     /**
      * Finaliza la construcción del elemento y retorna al ScreenBuilder
      */

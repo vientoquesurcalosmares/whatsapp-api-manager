@@ -365,10 +365,11 @@ class TemplateBuilder
 
         $flow = $this->flowService->getFlowById($flowId);
         if (!$flow) {
-            throw new InvalidArgumentException("El flujo con ID ($flowId - $flow->name) no existe o no ha sido aprobado pot META.");
+            throw new InvalidArgumentException("El flujo con ID ($flowId) no existe o no ha sido aprobado por META.");
         }
-        if ($flow->status !== 'APPROVED') {
-            throw new \Exception("El flujo debe estar aprobado");
+
+        if (!in_array($flow->status, ['approved', 'published'])) {
+            throw new \Exception("El flujo debe estar aprobado o publicado.");
         }
 
         $button = [

@@ -2,6 +2,8 @@
 
 namespace ScriptDevelop\WhatsappManager\Models;
 
+use InvalidArgumentException;
+use ScriptDevelop\WhatsappManager\Services\FlowService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -74,5 +76,35 @@ class WhatsappFlow extends Model
             'whatsapp_business_account_id',
             'whatsapp_business_id'
         );
+    }
+
+    public function publish(): bool
+    {
+        // Validar que el flujo tenga un ID válido
+        if (empty($this->wa_flow_id)) {
+            throw new InvalidArgumentException('El flujo no tiene un ID válido, no puede ser publicado.');
+        }
+
+        $flowService = app(FlowService::class);
+
+        return $flowService->publish($this);
+    }
+
+    public function sync(): bool
+    {
+        // Validar que el flujo tenga un ID válido
+        if (empty($this->wa_flow_id)) {
+            throw new InvalidArgumentException('El flujo no tiene un ID válido, no puede ser sincronizado.');
+        }
+
+        $flowService = app(FlowService::class);
+
+        $updatedFlow = $flowService->syncFlowById($this->whatsappBusinessAccount, $this->wa_flow_id);
+
+        if (!$updatedFlow) {
+            throw new \RuntimeException('Error al sincronizar el flujo desde la API.');
+        }
+
+        return true;
     }
 }

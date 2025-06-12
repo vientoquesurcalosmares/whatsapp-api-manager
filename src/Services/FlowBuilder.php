@@ -85,11 +85,16 @@ class FlowBuilder
      */
     public function screen(string $name): ScreenBuilder
     {
-        // Si ya hay una pantalla en construcción, la guardamos
+        if (empty($name)) {
+            throw new InvalidArgumentException('El nombre de la pantalla es obligatorio.');
+        }
+
+        // Finalizar la pantalla actual si existe
         if ($this->currentScreen) {
             $this->screens[] = $this->currentScreen->build();
         }
 
+        // Crear una nueva pantalla con el nombre especificado
         $this->currentScreen = new ScreenBuilder($this, $name);
         return $this->currentScreen;
     }
@@ -119,10 +124,16 @@ class FlowBuilder
             throw new InvalidArgumentException('El nombre del flujo es obligatorio.');
         }
 
-        // Construir estructura de pantallas
+        // Construir estructura de pantallas en formato WhatsApp
+        $whatsappScreens = [];
+        foreach ($this->screens as $screen) {
+            $whatsappScreens[] = $this->convertToWhatsappScreen($screen);
+        }
+
+        // Construir estructura final del flujo
         $this->flowData['json_structure'] = [
-            'version' => '1.0',
-            'screens' => $this->screens,
+            'version' => '7.0', // Versión requerida por WhatsApp
+            'screens' => $whatsappScreens,
             'metadata' => [
                 'created_at' => now()->toISOString(),
                 'last_updated' => now()->toISOString()
@@ -143,6 +154,127 @@ class FlowBuilder
         }
 
         return $this->flowData;
+    }
+
+    /**
+     * Convierte una pantalla en formato WhatsApp
+     */
+    protected function convertToWhatsappScreen(array $screen): array
+    {
+        $children = [];
+        $buttons = [];
+
+        foreach ($screen['elements'] as $element) {
+            if ($element['type'] === 'button') {
+                $buttons[] = $this->convertButton($element);
+            } else {
+                $children[] = $this->convertToWhatsappElement($element);
+            }
+        }
+
+        // Agregar botones al Footer si existen
+        if (!empty($buttons)) {
+            $children[] = [
+                'type' => 'Footer',
+                'buttons' => $buttons
+            ];
+        }
+
+        // Agregar encabezado y cuerpo
+        if (!empty($screen['title'])) {
+            $children[] = [
+                'type' => 'TextHeading',
+                'text' => $screen['title']
+            ];
+        }
+
+        if (!empty($screen['content'])) {
+            $children[] = [
+                'type' => 'TextBody',
+                'text' => $screen['content']
+            ];
+        }
+
+        return [
+            'id' => strtoupper($screen['name']),
+            'title' => $screen['title'] ?? '',
+            'layout' => [
+                'type' => 'SingleColumnLayout',
+                'children' => $children
+            ],
+            'data' => (object)[], // Siempre incluir `data` como objeto vacío
+        ];
+    }
+
+    protected function convertButton(array $element): array
+    {
+        return [
+            'type' => 'QuickReplyButton',
+            'title' => $element['label'] ?? 'Button',
+            'on_click_action' => [
+                'name' => $element['action']['name'] ?? 'complete',
+                'payload' => $element['action']['payload'] ?? (object)[],
+            ],
+        ];
+    }
+
+    /**
+     * Convierte un elemento en formato WhatsApp
+     */
+    protected function convertToWhatsappElement(array $element): array
+    {
+        $base = [
+            'name' => $element['name'],
+            'label' => $element['label'] ?? ''
+        ];
+
+        switch ($element['type']) {
+            case 'input':
+                $converted = array_merge($base, [
+                    'type' => 'TextInput',
+                    'placeholder' => $element['placeholder'] ?? '',
+                    'required' => $element['required'] ?? false
+                ]);
+                break;
+                
+            case 'dropdown':
+                $converted = array_merge($base, [
+                    'type' => 'Dropdown',
+                    'options' => array_map(function($option) {
+                        return [
+                            'id' => $option['value'] ?? '',
+                            'title' => $option['label'] ?? ''
+                        ];
+                    }, $element['options'] ?? [])
+                ]);
+                break;
+                
+            case 'checkbox':
+                $converted = array_merge($base, [
+                    'type' => 'Checkbox',
+                    'required' => $element['required'] ?? false
+                ]);
+                break;
+
+            case 'button':
+                $converted = [
+                    'type' => 'QuickReplyButton',
+                    'title' => $element['label'] ?? 'Button',
+                    'on_click_action' => [
+                        'name' => $element['action']['name'] ?? 'complete',
+                        'payload' => $element['action']['payload'] ?? (object)[],
+                    ],
+                ];
+                break;
+                
+            default:
+                throw new InvalidArgumentException("Tipo de elemento no soportado: {$element['type']}");
+        }
+
+        // Limpieza de valores nulos
+        return array_filter($converted, function($value) {
+            return $value !== null && $value !== '';
+        });
     }
 
     /**

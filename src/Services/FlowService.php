@@ -91,7 +91,7 @@ class FlowService
      */
     protected function storeOrUpdateFlow(string $businessId, array $flowData): WhatsappFlow
     {
-        return WhatsappFlow::updateOrCreate(
+        $flow = WhatsappFlow::updateOrCreate(
             ['wa_flow_id' => $flowData['id']],
             [
                 'whatsapp_business_account_id' => $businessId,
@@ -113,6 +113,8 @@ class FlowService
                 'application_link' => $flowData['application']['link'] ?? null,
             ]
         );
+
+        Log::channel('whatsapp')->info('Flujo actualizado en la base de datos:', ['flow' => $flow]);
 
         // Procesar screens y elements si existen en json_structure
         if (!empty($flowData['json_structure']['screens'])) {
@@ -159,8 +161,14 @@ class FlowService
             'Authorization' => 'Bearer ' . $account->api_token,
         ];
 
+        $queryParams = [
+            'fields' => 'id,name,categories,preview,status,validation_errors,json_version,data_api_version,data_channel_uri,health_status,whatsapp_business_account,application',
+        ];
+
         try {
-            $response = $this->apiClient->request('GET', $endpoint, [], null, [], $headers);
+            $response = $this->apiClient->request('GET', $endpoint, [], null, $queryParams, $headers);
+
+            Log::channel('whatsapp')->info('Respuesta de la API para sincronización de flujo:', ['response' => $response]);
 
             // Asegurar que la respuesta tiene los datos necesarios
             if (empty($response['id']) || empty($response['name'])) {
@@ -168,7 +176,14 @@ class FlowService
                 return null;
             }
 
-            return $this->storeOrUpdateFlow($account->whatsapp_business_id, $response);
+            // Guardar o actualizar el flujo en la base de datos
+            $updatedFlow = $this->storeOrUpdateFlow($account->whatsapp_business_id, $response);
+
+            // Log de los datos procesados
+            Log::channel('whatsapp')->info('Datos procesados para sincronización de flujo:', ['flow' => $updatedFlow]);
+
+            return $updatedFlow;
+
         } catch (\Exception $e) {
             Log::channel('whatsapp')->error('Error al sincronizar flujo por ID: ' . $e->getMessage(), [
                 'flow_id' => $flowId,
@@ -187,12 +202,10 @@ class FlowService
     public function syncScreensAndElements(WhatsappFlow $flow, array $screens): void
     {
         foreach ($screens as $screenData) {
-            // Validar que el campo 'name' esté presente y no sea null
             if (empty($screenData['name'])) {
                 throw new InvalidArgumentException("El campo 'name' es obligatorio para sincronizar las pantallas.");
             }
 
-            // Guardar o actualizar la pantalla
             $screen = $flow->screens()->updateOrCreate(
                 ['name' => $screenData['name']],
                 [
@@ -206,7 +219,6 @@ class FlowService
                 ]
             );
 
-            // Guardar elementos de la pantalla
             if (!empty($screenData['elements'])) {
                 foreach ($screenData['elements'] as $elementData) {
                     $screen->elements()->updateOrCreate(
@@ -266,6 +278,9 @@ class FlowService
 
             // Actualizar el estado del flujo en la base de datos
             $flow->update(['status' => 'PUBLISHED']);
+
+            // Sincronizar el flujo con la API para obtener los datos actualizados
+            $this->syncFlowById($flow->whatsappBusinessAccount, $flow->wa_flow_id);
 
             return true;
         } catch (\Exception $e) {
