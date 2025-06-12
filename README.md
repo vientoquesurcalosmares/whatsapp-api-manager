@@ -1116,7 +1116,7 @@ Esto generará el archivo config/reverb.php y ajustará tu broadcasting.php para
 ## 3. Configura tu archivo .env
 Agrega o ajusta las siguientes variables:
 ```bash
-    BROADCAST_DRIVER=reverb
+    BROADCAST_CONNECTION=reverb
     REVERB_APP_ID=whatsapp-app
     REVERB_APP_KEY=whatsapp-key
     REVERB_APP_SECRET=whatsapp-secret
