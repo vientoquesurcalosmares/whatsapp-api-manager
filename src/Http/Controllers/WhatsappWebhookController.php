@@ -582,32 +582,24 @@ class WhatsappWebhookController extends Controller
         }
 
         // 1. Actualizar estado del mensaje
-        $this->updateMessageStatus($messageRecord, $status);
+        $messageUpdated = $this->updateMessageStatus($messageRecord, $status);
 
         switch ($statusValue) {
             case 'delivered':
                 event(new MessageDelivered([
-                    'message_id' => $messageRecord->message_id,
-                    'status' => $statusValue,
-                    'timestamp' => $timestamp
+                    'message' => $messageUpdated,
                 ]));
                 break;
 
             case 'read':
                 event(new MessageRead([
-                    'message_id' => $messageRecord->message_id,
-                    'status' => $statusValue,
-                    'timestamp' => $timestamp
+                    'message' => $messageUpdated,
                 ]));
                 break;
 
             case 'failed':
                 event(new MessageFailed([
-                    'message_id' => $messageRecord->message_id,
-                    'status' => $statusValue,
-                    'error_code' => $status['errors'][0]['code'] ?? null,
-                    'error_message' => $status['errors'][0]['message'] ?? null,
-                    'timestamp' => $timestamp
+                    'message' => $messageUpdated,
                 ]));
                 break;
         }
@@ -643,7 +635,7 @@ class WhatsappWebhookController extends Controller
         return [null, null];
     }
 
-    private function updateMessageStatus(Message $message, array $status): void
+    private function updateMessageStatus(Message $message, array $status): Message
     {
         $statusValue = $status['status'] ?? null;
         $timestamp = $status['timestamp'] ?? null;
@@ -678,6 +670,8 @@ class WhatsappWebhookController extends Controller
         }
 
         $message->update($updateData);
+
+        return $message;
     }
 
     private function processConversationData(Message $message, array $status): void
