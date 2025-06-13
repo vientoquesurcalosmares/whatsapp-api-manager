@@ -170,32 +170,39 @@ class FlowBuilder
 
         foreach ($screen['elements'] as $element) {
             if ($element['type'] === 'button') {
-                $buttons[] = $this->convertButton($element);
+                $buttons[] = [
+                    'type' => 'QuickReplyButton',
+                    'title' => $element['label'] ?? 'Button',
+                    'on_click_action' => [
+                        'name' => $element['action']['name'] ?? 'complete',
+                        'payload' => $element['action']['payload'] ?? (object)[],
+                    ],
+                ];
             } else {
                 $children[] = $this->convertToWhatsappElement($element);
             }
         }
 
-        // Agregar botones al Footer si existen
+        // Agregar título y contenido como elementos separados
+        if (!empty($screen['title'])) {
+            array_unshift($children, [
+                'type' => 'TextHeading',
+                'text' => $screen['title']
+            ]);
+        }
+
+        if (!empty($screen['content'])) {
+            array_unshift($children, [
+                'type' => 'TextBody',
+                'text' => $screen['content']
+            ]);
+        }
+
+        // Agregar botones al final
         if (!empty($buttons)) {
             $children[] = [
                 'type' => 'Footer',
                 'buttons' => $buttons
-            ];
-        }
-
-        // Agregar encabezado y cuerpo
-        if (!empty($screen['title'])) {
-            $children[] = [
-                'type' => 'TextHeading',
-                'text' => $screen['title']
-            ];
-        }
-
-        if (!empty($screen['content'])) {
-            $children[] = [
-                'type' => 'TextBody',
-                'text' => $screen['content']
             ];
         }
 
@@ -234,7 +241,7 @@ class FlowBuilder
         $base = [
             'name' => $element['name'],
             'label' => $element['label'] ?? '',
-            'data' => [ // Campo OBLIGATORIO
+            'data' => [
                 'element_id' => $element['name'],
                 'type' => $element['type'],
                 'label' => $element['label'] ?? ''
@@ -346,7 +353,9 @@ class FlowBuilder
             ]);
 
             // Sincronizar screens y elements en la base de datos
-            $screens = $flowData['json_structure']['screens'] ?? [];
+            // $screens = $flowData['json_structure']['screens'] ?? [];
+            $screens = $this->screens;
+
             $this->flowService->syncScreensAndElements($flow, $screens);
 
             return $flow;
