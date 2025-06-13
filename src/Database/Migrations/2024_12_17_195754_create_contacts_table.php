@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('whatsapp_contacts', function (Blueprint $table) {
+            // $table->ulid('whatsapp_phone_id')->nullable();
             $table->ulid('contact_id')->primary();
             $table->string('wa_id', 200)->unique()->nullable();
             $table->string('country_code', 45);
@@ -33,8 +34,11 @@ return new class extends Migration
             $table->string('country')->nullable();
             $table->date('birthday')->nullable();
             $table->string('url')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
+
+            // $table->foreign('whatsapp_phone_id')->references('phone_number_id')->on('whatsapp_phone_numbers')->onDelete('cascade');
         });
     }
 
