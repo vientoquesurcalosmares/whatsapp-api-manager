@@ -10,21 +10,22 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Scriptdevelop\WhatsappManager\Events\MessageReceived;
+use Scriptdevelop\WhatsappManager\Events\MessageDelivered;
+use Scriptdevelop\WhatsappManager\Events\MessageRead;
+use Scriptdevelop\WhatsappManager\Events\MessageFailed;
+use Scriptdevelop\WhatsappManager\Events\TextMessageReceived;
+use Scriptdevelop\WhatsappManager\Events\InteractiveMessageReceived;
+use Scriptdevelop\WhatsappManager\Events\LocationMessageReceived;
+use Scriptdevelop\WhatsappManager\Events\ContactMessageReceived;
+use Scriptdevelop\WhatsappManager\Events\MediaMessageReceived;
+use Scriptdevelop\WhatsappManager\Events\ReactionReceived;
 USE ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
-use ScriptDevelop\WhatsappManager\Services\SessionManager;
 use ScriptDevelop\WhatsappManager\Models\Contact;
 use ScriptDevelop\WhatsappManager\Models\Conversation;
-use ScriptDevelop\WhatsappManager\Models\ChatSession;
-use ScriptDevelop\WhatsappManager\Models\Flow;
-use ScriptDevelop\WhatsappManager\Models\FlowStep;
 use ScriptDevelop\WhatsappManager\Models\Message;
-use ScriptDevelop\WhatsappManager\Models\UserResponse;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBot;
 use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
 use ScriptDevelop\WhatsappManager\Models\MediaFile;
-use ScriptDevelop\WhatsappManager\Enums\StepType;
-use Illuminate\Support\Str; // <-- Agregamos esto
 
 class WhatsappWebhookController extends Controller
 {
@@ -145,29 +146,75 @@ class WhatsappWebhookController extends Controller
         if ($messageType === 'text') {
             $messageRecord = $this->processTextMessage($message, $contactRecord, $whatsappPhone);
             $textContent = $messageRecord->message_content ?? null;
+
+            event(new TextMessageReceived([
+                'contact_id' => $contactRecord->contact_id,
+                'message_id' => $messageRecord->message_id,
+                'content' => $textContent,
+                'timestamp' => $message['timestamp'] ?? now()->timestamp
+            ]));
         }
 
         // Manejar mensajes interactivos (botones, listas)
         if ($messageType === 'interactive') {
             $messageRecord = $this->processInteractiveMessage($message, $contactRecord, $whatsappPhone);
             $textContent = $messageRecord->message_content ?? null;
+
+            event(new InteractiveMessageReceived([
+                'contact_id' => $contactRecord->contact_id,
+                'message_id' => $messageRecord->message_id,
+                'content' => $textContent,
+                'type' => $message['interactive']['type'] ?? 'unknown',
+                'timestamp' => $message['timestamp'] ?? now()->timestamp
+            ]));
         }
 
         if ($messageType === 'location') {
             $this->processLocationMessage($message, $contactRecord, $whatsappPhone);
+
+            event(new LocationMessageReceived([
+                'contact_id' => $contactRecord->contact_id,
+                'message_id' => $messageRecord->message_id,
+                'latitude' => $message['location']['latitude'] ?? null,
+                'longitude' => $message['location']['longitude'] ?? null,
+                'timestamp' => $message['timestamp'] ?? now()->timestamp
+            ]));
         }
 
         if ($messageType === 'contacts') {
-            $this->processContactMessage($message, $contactRecord, $whatsappPhone);
+            $messageRecord = $this->processContactMessage($message, $contactRecord, $whatsappPhone);
+
+            event(new ContactMessageReceived([
+                'contact_id' => $contactRecord->contact_id,
+                'contacts' => $message['contacts'] ?? [],
+                'timestamp' => $message['timestamp'] ?? now()->timestamp
+            ]));
         }
 
         if ($messageType === 'reaction') {
-            $this->processReactionMessage($message, $contactRecord, $whatsappPhone);
+            $messageRecord = $this->processReactionMessage($message, $contactRecord, $whatsappPhone);
+
+            event(new ReactionReceived([
+                'contact_id' => $contactRecord->contact_id,
+                'message_id' => $messageRecord->message_id,
+                'emoji' => $message['reaction']['emoji'] ?? null,
+                'target_message_id' => $message['reaction']['message_id'] ?? null,
+                'timestamp' => $message['timestamp'] ?? now()->timestamp
+            ]));
         }
 
         // Manejar mensajes de media
         if (in_array($messageType, ['image', 'audio', 'video', 'document', 'sticker'])) {
-            $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
+            $messageRecord =  $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
+
+            event(new MediaMessageReceived([
+                'contact_id' => $contactRecord->contact_id,
+                'message_id' => $messageRecord->message_id,
+                'media_type' => $messageType,
+                'url' => MediaFile::where('message_id', $messageRecord->message_id)->first()->url ?? null,
+                'caption' => $message[$messageType]['caption'] ?? null,
+                'timestamp' => $message['timestamp'] ?? now()->timestamp
+            ]));
         }
 
         $logMessage = $textContent ?? ($message['text']['body'] ?? $message['type'] . ' content not available');
@@ -179,7 +226,7 @@ class WhatsappWebhookController extends Controller
             'phone_number' => $fullPhone,
             'message_type' => $messageType,
             'message_id' => $message['id'],
-            'content' => $textContent ?? null,
+            'content' => $textContent ?? ($this->getMessageContentForType($messageType, $message) ?? null),
             'timestamp' => $message['timestamp'] ?? now()->timestamp,
         ]));
 
@@ -190,6 +237,26 @@ class WhatsappWebhookController extends Controller
             'message_type' => $messageType,
             'content' => $logMessage,
         ]);
+    }
+
+    private function getMessageContentForType(string $messageType, array $message): ?string
+    {
+        switch ($messageType) {
+            case 'text':
+                return $message['text']['body'] ?? null;
+            case 'interactive':
+                return $message['interactive']['button_reply']['title'] 
+                    ?? $message['interactive']['list_reply']['title'] 
+                    ?? null;
+            case 'location':
+                return "Location: " . ($message['location']['name'] ?? '');
+            case 'contacts':
+                return "Shared contacts: " . count($message['contacts'] ?? []);
+            case 'reaction':
+                return $message['reaction']['emoji'] ?? null;
+            default:
+                return $message[$messageType]['caption'] ?? strtoupper($messageType);
+        }
     }
 
     protected function processTextMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?Message
@@ -271,7 +338,7 @@ class WhatsappWebhookController extends Controller
         return $messageRecord;
     }
 
-    protected function processMediaMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
+    protected function processMediaMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): Message
     {
         $mediaId = $message[$message['type']]['id'] ?? null;
         $caption = $message[$message['type']]['caption'] ?? strtoupper($message['type']);
@@ -288,21 +355,21 @@ class WhatsappWebhookController extends Controller
 
         if (!$mediaId) {
             Log::channel('whatsapp')->warning('No media ID found in message.', $message);
-            return;
+            throw new \RuntimeException('No media ID found in message.');
         }
 
         $mediaUrl = $this->getMediaUrl($mediaId, $whatsappPhone);
 
         if (!$mediaUrl) {
             Log::channel('whatsapp')->error('Failed to retrieve media URL.', ['media_id' => $mediaId]);
-            return;
+            throw new \RuntimeException('Failed to retrieve media URL.');
         }
 
         $mediaContent = $this->downloadMedia($mediaUrl, $whatsappPhone);
 
         if (!$mediaContent) {
             Log::channel('whatsapp')->error('Failed to download media content.', ['media_url' => $mediaUrl]);
-            return;
+            throw new \RuntimeException('Failed to download media content.');
         }
 
         $directory = storage_path("app/public/whatsapp/{$message['type']}s/");
@@ -358,6 +425,8 @@ class WhatsappWebhookController extends Controller
             'file_path' => $filePath,
             'public_url' => $publicPath,
         ]);
+
+        return $messageRecord;
     }
 
     protected function processLocationMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
@@ -392,50 +461,50 @@ class WhatsappWebhookController extends Controller
         ]);
     }
 
-    protected function processContactMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
+    protected function processContactMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?Message
     {
-        $contacts = $message['contacts'] ?? [];
+        $contactData = $message['contacts'][0] ?? null;
 
-        if (empty($contacts)) {
-            Log::channel('whatsapp')->warning('No contacts found in message.', $message);
-            return;
+        if (!$contactData) {
+            Log::channel('whatsapp')->warning('No contact data found in message.', $message);
+            return null;
         }
 
-        foreach ($contacts as $index => $contactData) {
-            $name = $contactData['name']['formatted_name'] ?? 'Nombre no disponible';
-            $phones = collect($contactData['phones'] ?? [])->pluck('phone')->implode(', ');
-            $emails = collect($contactData['emails'] ?? [])->pluck('email')->implode(', ');
+        $name = $contactData['name']['formatted_name'] ?? 'Nombre no disponible';
+        $phones = collect($contactData['phones'] ?? [])->pluck('phone')->implode(', ');
+        $emails = collect($contactData['emails'] ?? [])->pluck('email')->implode(', ');
 
-            $content = "Nombre: {$name} | Teléfonos: {$phones} | Correos: {$emails}";
+        $content = "Nombre: {$name} | Teléfonos: {$phones} | Correos: {$emails}";
 
-            $messageRecord = Message::create([
-                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
-                'contact_id' => $contact->contact_id,
-                'wa_id' => $message['id'] . "_{$index}",
-                'conversation_id' => null,
-                'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-                'message_from' => $message['from'],
-                'message_to' => $whatsappPhone->display_phone_number,
-                'message_type' => 'CONTACT',
-                'message_content' => $content,
-                'json_content' => json_encode($message),
-                'status' => 'received'
-            ]);
+        $messageRecord = Message::create([
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'wa_id' => $message['id'],
+            'conversation_id' => null,
+            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+            'message_from' => $message['from'],
+            'message_to' => $whatsappPhone->display_phone_number,
+            'message_type' => 'CONTACT',
+            'message_content' => $content,
+            'json_content' => json_encode($message),
+            'status' => 'received'
+        ]);
 
-            Log::channel('whatsapp')->info('Contact shared message processed.', [
-                'message_id' => $messageRecord->message_id,
-                'contact' => $content
-            ]);
-        }
+        Log::channel('whatsapp')->info('Contact shared message processed.', [
+            'message_id' => $messageRecord->message_id,
+            'contact' => $content
+        ]);
+
+        return $messageRecord;
     }
 
-    protected function processReactionMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
+    protected function processReactionMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?Message
     {
         $reaction = $message['reaction'] ?? null;
 
         if (!$reaction || !isset($reaction['emoji'], $reaction['message_id'])) {
             Log::channel('whatsapp')->warning('Reacción inválida o incompleta.', $message);
-            return;
+            return null;
         }
 
         // Opcional: guardar la reacción asociada al mensaje original
@@ -459,6 +528,8 @@ class WhatsappWebhookController extends Controller
             'message_id' => $messageRecord->message_id,
             'reaction' => $reaction
         ]);
+
+        return $messageRecord;
     }
 
     private function getMediaUrl(string $mediaId, WhatsappPhoneNumber $whatsappPhone): ?string
@@ -529,6 +600,34 @@ class WhatsappWebhookController extends Controller
 
         // 1. Actualizar estado del mensaje
         $this->updateMessageStatus($messageRecord, $status);
+
+        switch ($statusValue) {
+            case 'delivered':
+                event(new MessageDelivered([
+                    'message_id' => $messageRecord->message_id,
+                    'status' => $statusValue,
+                    'timestamp' => $timestamp
+                ]));
+                break;
+                
+            case 'read':
+                event(new MessageRead([
+                    'message_id' => $messageRecord->message_id,
+                    'status' => $statusValue,
+                    'timestamp' => $timestamp
+                ]));
+                break;
+                
+            case 'failed':
+                event(new MessageFailed([
+                    'message_id' => $messageRecord->message_id,
+                    'status' => $statusValue,
+                    'error_code' => $status['errors'][0]['code'] ?? null,
+                    'error_message' => $status['errors'][0]['message'] ?? null,
+                    'timestamp' => $timestamp
+                ]));
+                break;
+        }
 
         // 2. Procesar datos de conversación y métricas
         if (isset($status['conversation'])) {
