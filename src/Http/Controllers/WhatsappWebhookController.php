@@ -145,39 +145,29 @@ class WhatsappWebhookController extends Controller
         // Manejar mensajes de texto
         if ($messageType === 'text') {
             $messageRecord = $this->processTextMessage($message, $contactRecord, $whatsappPhone);
-            $textContent = $messageRecord->message_content ?? null;
 
             event(new TextMessageReceived([
-                'contact_id' => $contactRecord->contact_id,
-                'message_id' => $messageRecord->message_id,
-                'content' => $textContent,
-                'timestamp' => $message['timestamp'] ?? now()->timestamp
+                'contact' => $contactRecord,
+                'message' => $messageRecord,
             ]));
         }
 
         // Manejar mensajes interactivos (botones, listas)
         if ($messageType === 'interactive') {
             $messageRecord = $this->processInteractiveMessage($message, $contactRecord, $whatsappPhone);
-            $textContent = $messageRecord->message_content ?? null;
 
             event(new InteractiveMessageReceived([
-                'contact_id' => $contactRecord->contact_id,
-                'message_id' => $messageRecord->message_id,
-                'content' => $textContent,
-                'type' => $message['interactive']['type'] ?? 'unknown',
-                'timestamp' => $message['timestamp'] ?? now()->timestamp
+                'contact' => $contactRecord,
+                'message' => $messageRecord,
             ]));
         }
 
         if ($messageType === 'location') {
-            $this->processLocationMessage($message, $contactRecord, $whatsappPhone);
+            $messageRecord = $this->processLocationMessage($message, $contactRecord, $whatsappPhone);
 
             event(new LocationMessageReceived([
-                'contact_id' => $contactRecord->contact_id,
-                'message_id' => $messageRecord->message_id,
-                'latitude' => $message['location']['latitude'] ?? null,
-                'longitude' => $message['location']['longitude'] ?? null,
-                'timestamp' => $message['timestamp'] ?? now()->timestamp
+                'contact' => $contactRecord,
+                'message' => $messageRecord,
             ]));
         }
 
@@ -185,9 +175,8 @@ class WhatsappWebhookController extends Controller
             $messageRecord = $this->processContactMessage($message, $contactRecord, $whatsappPhone);
 
             event(new ContactMessageReceived([
-                'contact_id' => $contactRecord->contact_id,
-                'contacts' => $message['contacts'] ?? [],
-                'timestamp' => $message['timestamp'] ?? now()->timestamp
+                'contact' => $contactRecord,
+                'message' => $messageRecord,
             ]));
         }
 
@@ -195,11 +184,8 @@ class WhatsappWebhookController extends Controller
             $messageRecord = $this->processReactionMessage($message, $contactRecord, $whatsappPhone);
 
             event(new ReactionReceived([
-                'contact_id' => $contactRecord->contact_id,
-                'message_id' => $messageRecord->message_id,
-                'emoji' => $message['reaction']['emoji'] ?? null,
-                'target_message_id' => $message['reaction']['message_id'] ?? null,
-                'timestamp' => $message['timestamp'] ?? now()->timestamp
+                'contact' => $contactRecord,
+                'message' => $messageRecord,
             ]));
         }
 
@@ -208,26 +194,16 @@ class WhatsappWebhookController extends Controller
             $messageRecord =  $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
 
             event(new MediaMessageReceived([
-                'contact_id' => $contactRecord->contact_id,
-                'message_id' => $messageRecord->message_id,
-                'media_type' => $messageType,
-                'url' => MediaFile::where('message_id', $messageRecord->message_id)->first()->url ?? null,
-                'caption' => $message[$messageType]['caption'] ?? null,
-                'timestamp' => $message['timestamp'] ?? now()->timestamp
+                'contact' => $contactRecord,
+                'message' => $messageRecord,
             ]));
         }
 
         $logMessage = $textContent ?? ($message['text']['body'] ?? $message['type'] . ' content not available');
 
         event(new MessageReceived([
-            'contact_id' => $contactRecord->contact_id,
-            'wa_id' => $contact['wa_id'] ?? null,
-            'name' => $contact['profile']['name'] ?? null,
-            'phone_number' => $fullPhone,
-            'message_type' => $messageType,
-            'message_id' => $message['id'],
-            'content' => $textContent ?? ($this->getMessageContentForType($messageType, $message) ?? null),
-            'timestamp' => $message['timestamp'] ?? now()->timestamp,
+            'contact' => $contactRecord,
+            'message' => $messageRecord,
         ]));
 
         Log::channel('whatsapp')->info('Incoming message processed.', [
@@ -245,8 +221,8 @@ class WhatsappWebhookController extends Controller
             case 'text':
                 return $message['text']['body'] ?? null;
             case 'interactive':
-                return $message['interactive']['button_reply']['title'] 
-                    ?? $message['interactive']['list_reply']['title'] 
+                return $message['interactive']['button_reply']['title']
+                    ?? $message['interactive']['list_reply']['title']
                     ?? null;
             case 'location':
                 return "Location: " . ($message['location']['name'] ?? '');
@@ -426,16 +402,21 @@ class WhatsappWebhookController extends Controller
             'public_url' => $publicPath,
         ]);
 
+        //Cargar los datos de archivos multimedia, para que también se transmita en los eventos correspondientes
+        $messageRecord->loadMissing([
+            'media_files',
+        ]);
+
         return $messageRecord;
     }
 
-    protected function processLocationMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): void
+    protected function processLocationMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?Message
     {
         $location = $message['location'] ?? null;
 
         if (!$location) {
             Log::channel('whatsapp')->warning('No location data found in message.', $message);
-            return;
+            return null;
         }
 
         $content = "Ubicación: " . ($location['name'] ?? '') . " - " . ($location['address'] ?? '');
@@ -459,6 +440,8 @@ class WhatsappWebhookController extends Controller
             'message_id' => $messageRecord->message_id,
             'location' => $location
         ]);
+
+        return $messageRecord;
     }
 
     protected function processContactMessage(array $message, Contact $contact, WhatsappPhoneNumber $whatsappPhone): ?Message
@@ -609,7 +592,7 @@ class WhatsappWebhookController extends Controller
                     'timestamp' => $timestamp
                 ]));
                 break;
-                
+
             case 'read':
                 event(new MessageRead([
                     'message_id' => $messageRecord->message_id,
@@ -617,7 +600,7 @@ class WhatsappWebhookController extends Controller
                     'timestamp' => $timestamp
                 ]));
                 break;
-                
+
             case 'failed':
                 event(new MessageFailed([
                     'message_id' => $messageRecord->message_id,
