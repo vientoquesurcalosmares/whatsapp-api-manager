@@ -53,7 +53,7 @@ class WhatsappPhoneNumber extends Model
     {
         return $this->belongsTo(
             WhatsappBusinessProfile::class,
-            'whatsapp_business_profile_id', 
+            'whatsapp_business_profile_id',
             'whatsapp_business_profile_id'
         );
     }

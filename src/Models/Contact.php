@@ -38,7 +38,7 @@ class Contact extends Model
         'zip',
         'country',
         'birthday',
-        'url', 
+        'url',
     ];
 
     public function messages()
@@ -46,9 +46,12 @@ class Contact extends Model
         return $this->hasMany(Message::class, 'contact_id');
     }
 
-    public function latestMessage()
+    public function latestMessage($phoneNumberId)
     {
-        return $this->hasOne(Message::class, 'contact_id')->orderBy('created_at', 'desc');
+        return $this->messages()
+            ->where('whatsapp_phone_id', $phoneNumberId)
+            ->orderBy('created_at', 'desc')
+            ->first();
     }
 
     public function unreadMessagesCountByContact()
