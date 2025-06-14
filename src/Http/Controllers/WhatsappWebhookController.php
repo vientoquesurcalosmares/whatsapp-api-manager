@@ -146,65 +146,44 @@ class WhatsappWebhookController extends Controller
         if ($messageType === 'text') {
             $messageRecord = $this->processTextMessage($message, $contactRecord, $whatsappPhone);
 
-            event(new TextMessageReceived([
-                'contact' => $contactRecord,
-                'message' => $messageRecord,
-            ]));
+            $this->fireTextMessageReceived($contactRecord, $messageRecord);
         }
 
         // Manejar mensajes interactivos (botones, listas)
         if ($messageType === 'interactive') {
             $messageRecord = $this->processInteractiveMessage($message, $contactRecord, $whatsappPhone);
 
-            event(new InteractiveMessageReceived([
-                'contact' => $contactRecord,
-                'message' => $messageRecord,
-            ]));
+            $this->fireInteractiveMessageReceived($contactRecord, $messageRecord);
         }
 
         if ($messageType === 'location') {
             $messageRecord = $this->processLocationMessage($message, $contactRecord, $whatsappPhone);
 
-            event(new LocationMessageReceived([
-                'contact' => $contactRecord,
-                'message' => $messageRecord,
-            ]));
+            $this->fireLocationMessageReceived($contactRecord, $messageRecord);
         }
 
         if ($messageType === 'contacts') {
             $messageRecord = $this->processContactMessage($message, $contactRecord, $whatsappPhone);
 
-            event(new ContactMessageReceived([
-                'contact' => $contactRecord,
-                'message' => $messageRecord,
-            ]));
+            $this->fireContactMessageReceived($contactRecord, $messageRecord);
         }
 
         if ($messageType === 'reaction') {
             $messageRecord = $this->processReactionMessage($message, $contactRecord, $whatsappPhone);
 
-            event(new ReactionReceived([
-                'contact' => $contactRecord,
-                'message' => $messageRecord,
-            ]));
+            $this->fireReactionReceived($contactRecord, $messageRecord);
         }
 
         // Manejar mensajes de media
         if (in_array($messageType, ['image', 'audio', 'video', 'document', 'sticker'])) {
             $messageRecord =  $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
 
-            event(new MediaMessageReceived([
-                'contact' => $contactRecord,
-                'message' => $messageRecord,
-            ]));
+            $this->fireMediaMessageReceived($contactRecord, $messageRecord);
         }
 
         $logMessage = $textContent ?? ($message['text']['body'] ?? $message['type'] . ' content not available');
 
-        event(new MessageReceived([
-            'contact' => $contactRecord,
-            'message' => $messageRecord,
-        ]));
+        $this->fireMessageReceived($contactRecord, $messageRecord);
 
         Log::channel('whatsapp')->info('Incoming message processed.', [
             'message_id' => $message['id'],
@@ -585,22 +564,13 @@ class WhatsappWebhookController extends Controller
         $messageUpdated = $this->updateMessageStatus($messageRecord, $status);
 
         switch ($statusValue) {
-            case 'delivered':
-                event(new MessageDelivered([
-                    'message' => $messageUpdated,
-                ]));
+            case 'delivered': $this->fireMessageDelivered($messageUpdated);
                 break;
 
-            case 'read':
-                event(new MessageRead([
-                    'message' => $messageUpdated,
-                ]));
+            case 'read': $this->fireMessageRead($messageUpdated);
                 break;
 
-            case 'failed':
-                event(new MessageFailed([
-                    'message' => $messageUpdated,
-                ]));
+            case 'failed': $this->fireMessageFailed($messageUpdated);
                 break;
         }
 
@@ -809,7 +779,6 @@ class WhatsappWebhookController extends Controller
         $this->sendDefaultFallbackMessage($whatsappPhone, $contact);
     }
 
-
     private function sendDefaultFallbackMessage($whatsappPhone, $contact): void
     {
         try {
@@ -831,5 +800,76 @@ class WhatsappWebhookController extends Controller
     private function sendErrorFallbackMessage($whatsappPhone, $contact): void
     {
         $this->sendDefaultFallbackMessage($whatsappPhone, $contact);
+    }
+
+    /**
+     * Ahora el disparo de los eventos estáran en métodos, esto ayudará a que si alguien extienden de esta clase puedan sobreescribir estos métodos y usar clases de Eventos personalizadas!
+     */
+
+    protected function fireTextMessageReceived($contactRecord, $messageRecord){
+        event(new TextMessageReceived([
+            'contact' => $contactRecord,
+            'message' => $messageRecord,
+        ]));
+    }
+
+    protected function fireInteractiveMessageReceived($contactRecord, $messageRecord){
+        event(new InteractiveMessageReceived([
+            'contact' => $contactRecord,
+            'message' => $messageRecord,
+        ]));
+    }
+
+    protected function fireLocationMessageReceived($contactRecord, $messageRecord){
+        event(new LocationMessageReceived([
+            'contact' => $contactRecord,
+            'message' => $messageRecord,
+        ]));
+    }
+
+    protected function fireContactMessageReceived($contactRecord, $messageRecord){
+        event(new ContactMessageReceived([
+            'contact' => $contactRecord,
+            'message' => $messageRecord,
+        ]));
+    }
+
+    protected function fireReactionReceived($contactRecord, $messageRecord){
+        event(new ReactionReceived([
+            'contact' => $contactRecord,
+            'message' => $messageRecord,
+        ]));
+    }
+
+    protected function fireMediaMessageReceived($contactRecord, $messageRecord){
+        event(new MediaMessageReceived([
+            'contact' => $contactRecord,
+            'message' => $messageRecord,
+        ]));
+    }
+
+    protected function fireMessageReceived($contactRecord, $messageRecord){
+        event(new MessageReceived([
+            'contact' => $contactRecord,
+            'message' => $messageRecord,
+        ]));
+    }
+
+    protected function fireMessageDelivered($messageUpdated){
+        event(new MessageDelivered([
+            'message' => $messageUpdated,
+        ]));
+    }
+
+    protected function fireMessageRead($messageUpdated){
+        event(new MessageRead([
+            'message' => $messageUpdated,
+        ]));
+    }
+
+    protected function fireMessageFailed($messageUpdated){
+        event(new MessageFailed([
+            'message' => $messageUpdated,
+        ]));
     }
 }
