@@ -16,8 +16,16 @@ LARAVEL WHatsapp Manager
 # Este paquete esta en version ALPHA.
 ## Las migraciones y codigo estan en constante cambio hasta lograr la Version Estable
 
-## 🙌 Apóyanos con una donación
-Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]
+
+---
+
+## ❤️Apóyanos con una donación en GitHub Sponsors
+
+Me puedes apoyar como desarrollador open source en GitHub Sponsors:
+Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
+[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?logo=github)](https://github.com/sponsors/djdang3r)
+
+o tambien por Mercadopago Colombia.
 [![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
 Gracias por tu apoyo 💙
 
@@ -314,10 +322,19 @@ Eventos a suscribir: messages, message_statuses
     └── vendor/                   # Dependencias instaladas por Composer
 ```
 
-## 🙌 Apóyanos con una donación
-Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]
+---
+
+## ❤️Apóyanos con una donación en GitHub Sponsors
+
+Me puedes apoyar como desarrollador open source en GitHub Sponsors:
+Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
+[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?logo=github)](https://github.com/sponsors/djdang3r)
+
+o tambien por Mercadopago Colombia.
 [![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
 Gracias por tu apoyo 💙
+
+---
 
 📖 Guía de Usuario
 
@@ -686,10 +703,19 @@ Los sticker solo se permiten archivos webp.
     );
 ```
 
-## 🙌 Apóyanos con una donación
-Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]
+---
+
+## ❤️Apóyanos con una donación en GitHub Sponsors
+
+Me puedes apoyar como desarrollador open source en GitHub Sponsors:
+Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
+[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?logo=github)](https://github.com/sponsors/djdang3r)
+
+o tambien por Mercadopago Colombia.
 [![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
 Gracias por tu apoyo 💙
+
+---
 
 
 ## 11. Obtener todas las plantillas de una cuenta de whatsapp
@@ -1408,3 +1434,17 @@ MIT License. Ver LICENSE para más detalles.
 
 # 🔥 Con el apollo de:
 ## @vientoquesurcalosmares
+
+---
+
+## ❤️Apóyanos con una donación en GitHub Sponsors
+
+Me puedes apoyar como desarrollador open source en GitHub Sponsors:
+Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
+[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?logo=github)](https://github.com/sponsors/djdang3r)
+
+o tambien por Mercadopago Colombia.
+[![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+Gracias por tu apoyo 💙
+
+---
