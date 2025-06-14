@@ -9,16 +9,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
-use Scriptdevelop\WhatsappManager\Events\MessageReceived;
-use Scriptdevelop\WhatsappManager\Events\MessageDelivered;
-use Scriptdevelop\WhatsappManager\Events\MessageRead;
-use Scriptdevelop\WhatsappManager\Events\MessageFailed;
-use Scriptdevelop\WhatsappManager\Events\TextMessageReceived;
-use Scriptdevelop\WhatsappManager\Events\InteractiveMessageReceived;
-use Scriptdevelop\WhatsappManager\Events\LocationMessageReceived;
-use Scriptdevelop\WhatsappManager\Events\ContactMessageReceived;
-use Scriptdevelop\WhatsappManager\Events\MediaMessageReceived;
-use Scriptdevelop\WhatsappManager\Events\ReactionReceived;
 USE ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
 use ScriptDevelop\WhatsappManager\Models\Contact;
 use ScriptDevelop\WhatsappManager\Models\Conversation;
@@ -803,72 +793,82 @@ class WhatsappWebhookController extends Controller
     }
 
     /**
-     * Ahora el disparo de los eventos estáran en métodos, esto ayudará a que si alguien extienden de esta clase puedan sobreescribir estos métodos y usar clases de Eventos personalizadas!
+     * Ahora el disparo de los eventos estáran en métodos, y se usarán las clases de los eventos configuradas en el archivo de configuración whatsapp.events!
      */
 
     protected function fireTextMessageReceived($contactRecord, $messageRecord){
-        event(new TextMessageReceived([
+        $event = config('whatsapp.events.messages.text.received');
+        event(new $event([
             'contact' => $contactRecord,
             'message' => $messageRecord,
         ]));
     }
 
     protected function fireInteractiveMessageReceived($contactRecord, $messageRecord){
-        event(new InteractiveMessageReceived([
+        $event = config('whatsapp.events.messages.interactive.received');
+        event(new $event([
             'contact' => $contactRecord,
             'message' => $messageRecord,
         ]));
     }
 
     protected function fireLocationMessageReceived($contactRecord, $messageRecord){
-        event(new LocationMessageReceived([
+        $event = config('whatsapp.events.messages.location.received');
+        event(new $event([
             'contact' => $contactRecord,
             'message' => $messageRecord,
         ]));
     }
 
     protected function fireContactMessageReceived($contactRecord, $messageRecord){
-        event(new ContactMessageReceived([
+        $event = config('whatsapp.events.messages.contact.received');
+        event(new $event([
             'contact' => $contactRecord,
             'message' => $messageRecord,
         ]));
     }
 
     protected function fireReactionReceived($contactRecord, $messageRecord){
-        event(new ReactionReceived([
+        $event = config('whatsapp.events.messages.reaction.received');
+        event(new $event([
             'contact' => $contactRecord,
             'message' => $messageRecord,
         ]));
     }
 
     protected function fireMediaMessageReceived($contactRecord, $messageRecord){
-        event(new MediaMessageReceived([
+        $event = config('whatsapp.events.messages.media.received');
+        event(new $event([
             'contact' => $contactRecord,
             'message' => $messageRecord,
         ]));
     }
 
     protected function fireMessageReceived($contactRecord, $messageRecord){
-        event(new MessageReceived([
+        $event = config('whatsapp.events.messages.message.received');
+        event(new $event([
             'contact' => $contactRecord,
             'message' => $messageRecord,
         ]));
     }
 
     protected function fireMessageDelivered($messageUpdated){
-        event(new MessageDelivered([
+        $event = config('whatsapp.events.messages.message.delivered');
+        event(new $event([
             'message' => $messageUpdated,
         ]));
     }
 
     protected function fireMessageRead($messageUpdated){
-        event(new MessageRead([
+        $event = config('whatsapp.events.messages.message.read');
+        event(new $event([
             'message' => $messageUpdated,
         ]));
     }
 
     protected function fireMessageFailed($messageUpdated){
-        event(new MessageFailed([
+        $event = config('whatsapp.events.messages.message.failed');
+        event(new $event([
             'message' => $messageUpdated,
         ]));
     }
