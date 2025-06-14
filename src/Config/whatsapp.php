@@ -25,6 +25,95 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Eventos Personalizados
+    |--------------------------------------------------------------------------
+    |
+    | Aquí puedes especificar los eventos que el paquete utilizará.
+    | Puedes cambiar estas clases por personalizadas.
+    |
+    */
+    'events' => [
+        //Este evento se dispara cuando se actualiza
+        'business' => [
+            'settings' => [
+                'updated' => \Scriptdevelop\WhatsappManager\Events\BusinessSettingsUpdated::class, //Aun no se implementa
+            ],
+        ],
+        'contact' => [
+            'created' => \Scriptdevelop\WhatsappManager\Events\ContactCreated::class, //Aun no se implementa
+            'updated' => \Scriptdevelop\WhatsappManager\Events\ContactUpdated::class, //Aun no se implementa
+        ],
+        'messages' => [
+            'contact' => [
+                /**
+                 * Se dispara cuando se envía al webhook mensaje de recibido de tipo contacto, recibe como parámetro el objeto de contacto y el objeto de mensaje
+                 */
+                'received' => \Scriptdevelop\WhatsappManager\Events\ContactMessageReceived::class,
+            ],
+            'interactive' => [
+                /**
+                 * Se dispara cuando se envía al webhook mensaje de recibido de tipo interactive, recibe como parámetro el objeto de contacto y el objeto de mensaje
+                 */
+                'received' => \Scriptdevelop\WhatsappManager\Events\InteractiveMessageReceived::class,
+            ],
+            'location' => [
+                /**
+                 * Se dispara cuando se envía al webhook mensaje de recibido de tipo location, recibe como parámetro el objeto de contacto y el objeto de mensaje
+                 */
+                'received' => \Scriptdevelop\WhatsappManager\Events\LocationMessageReceived::class,
+            ],
+            'media' => [
+                /**
+                 * Se dispara cuando se envía al webhook mensaje de recibido de tipo image, audio, video, document o sticker, recibe como parámetro el objeto de contacto y el objeto de mensaje
+                 */
+                'received' => \Scriptdevelop\WhatsappManager\Events\MediaMessageReceived::class,
+            ],
+            'message' => [
+                'deleted' => \Scriptdevelop\WhatsappManager\Events\MessageDeleted::class, //Aun no se implementa
+                /**
+                 * Se dispara cuando se envía al webhook mensaje de entregado de tipo message, recibe como parámetro el objeto de mensaje
+                 */
+                'delivered' => \Scriptdevelop\WhatsappManager\Events\MessageDelivered::class,
+                /**
+                 * Se dispara cuando se envía al webhook mensaje de falla de tipo message, recibe como parámetro el objeto de mensaje
+                 */
+                'failed' => \Scriptdevelop\WhatsappManager\Events\MessageFailed::class,
+                /**
+                 * Se dispara cuando se envía al webhook mensaje de leído de tipo message, recibe como parámetro el objeto de mensaje
+                 */
+                'read' => \Scriptdevelop\WhatsappManager\Events\MessageRead::class,
+                /**
+                 * Se dispara cuando se envía al webhook mensaje de recibido de tipo message, recibe como parámetro el objeto de mensaje
+                 */
+                'received' => \Scriptdevelop\WhatsappManager\Events\MessageReceived::class,
+                'sent' => \Scriptdevelop\WhatsappManager\Events\MessageSent::class, //No implementado en webhook
+            ],
+            'reaction' => [
+                /**
+                 * Se dispara cuando se envía al webhook mensaje de recibido de tipo reaction, recibe como parámetro el objeto de contacto y el objeto de mensaje
+                 */
+                'received' => \Scriptdevelop\WhatsappManager\Events\ReactionReceived::class,
+            ],
+            'text' => [
+                /**
+                 * Se dispara cuando se envía al webhook mensaje de recibido de tipo text, recibe como parámetro el objeto de contacto y el objeto de mensaje
+                 */
+                'received' => \Scriptdevelop\WhatsappManager\Events\TextMessageReceived::class,
+            ],
+        ],
+        'phone_number' => [
+            'updated' => \Scriptdevelop\WhatsappManager\Events\PhoneNumberStatusUpdated::class, //Aun no se implementa
+        ],
+        'template' => [
+            'approved' => \Scriptdevelop\WhatsappManager\Events\TemplateApproved::class, //Aun no se implementa
+            'created' => \Scriptdevelop\WhatsappManager\Events\TemplateCreated::class, //Aun no se implementa
+            'sent' => \Scriptdevelop\WhatsappManager\Events\TemplateMessageSent::class, //Aun no se implementa
+            'rejected' => \Scriptdevelop\WhatsappManager\Events\TemplateRejected::class, //Aun no se implementa
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Configuración de la API de WhatsApp
     |--------------------------------------------------------------------------
     |
