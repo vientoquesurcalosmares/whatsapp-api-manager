@@ -1550,9 +1550,86 @@ Add whatsapp channel:
 ```
 
 4. **Publish routes (REQUIRED):**
-    Needed for webhook
-    ```php
-        php artisan vendor:publish --tag=whatsapp-migrations
-    ```
-    
-5. 
+Needed for webhook
+```php
+    php artisan vendor:publish --tag=whatsapp-migrations
+```
+
+5. **Send Message Replies**
+```php
+    $message = Whatsapp::message()->sendReplyTextMessage(
+        $phone->phone_number_id,
+        '57',
+        '3237121901',
+        'wamid.HBgMNTczMTM3MTgxOTA4FQIAEhggNzVCNUQzRDMxRjhEMUJEM0JERjAzNkZCNDk5RDcyQjQA',
+        'This is a reply to the previous message.'
+    );
+```
+
+6. **Message Reactions**
+```php
+    // Red heart ❤️ reaction
+    $message = Whatsapp::message()->sendReplyReactionMessage(
+        $phone->phone_number_id,
+        '57',
+        '3237121901',
+        'wamid.HBgMNTczMTM3MTgxOTA4FQIAEhggNzZENDMzMEI0MDRFQzg0OUUwRTI1M0JBQjEzMUZFRUYA',
+        "\u{2764}\u{FE0F}"
+    );
+```
+
+7. **Send Media Messages**
+Send Image
+```php
+    $filePath = storage_path('app/public/laravel-whatsapp-manager.png');
+    $file = new \SplFileInfo($filePath);
+
+    $message = Whatsapp::message()->sendImageMessage(
+        $phone->phone_number_id,
+        '57',
+        '3237121901',
+        $file
+    );
+```
+
+Send Sticker (WebP only)
+```php
+    $filePath = storage_path('app/public/sticker.webp');
+    $file = new \SplFileInfo($filePath);
+
+    $message = Whatsapp::message()->sendStickerMessage(
+        $phone->phone_number_id,
+        '57',
+        '3237121901',
+        $file
+    );
+```
+
+Send Audio
+```php
+    $filePath = storage_path('app/public/audio.ogg');
+    $file = new \SplFileInfo($filePath);
+
+    $message = Whatsapp::message()->sendAudioMessage(
+        $phone->phone_number_id,
+        '57',
+        '3237121901',
+        $file
+    );
+```
+
+Send Document
+```php
+    $filePath = storage_path('app/public/document.pdf');
+    $file = new \SplFileInfo($filePath);
+
+    $message = Whatsapp::message()->sendDocumentMessage(
+        $phone->phone_number_id,
+        '57',
+        '3237121901',
+        $file
+    );
+```
+
+
+
