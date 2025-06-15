@@ -1509,3 +1509,50 @@ https://www.youtube.com/watch?v=of6dEsKSh-0&ab_channel=AdBoostPro
 https://www.youtube.com/watch?v=gdD_0ernIqM&ab_channel=BismarckArag%C3%B3n
 
 ---
+
+1. **Install package via Composer**:
+
+```bash
+   composer require scriptdevelop/whatsapp-manager
+```
+
+2. **Publish configuration (optional)**:
+
+
+```bash
+    php artisan vendor:publish --tag=whatsapp-config
+```
+
+## ⚙️ Configuration
+
+Main configuration (config/whatsapp.php):
+
+Logging configuration (config/logging.php):
+
+Add whatsapp channel:
+
+```php
+    'channels' => [
+        'whatsapp' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/whatsapp.log'),
+            'level' => 'debug',
+            'days' => 7,
+            'tap' => [\ScriptDevelop\WhatsappManager\Logging\CustomizeFormatter::class],
+        ],
+    ],
+```
+
+3. **Publish migrations (optional):**
+
+```php
+    php artisan vendor:publish --tag=whatsapp-migrations
+```
+
+4. **Publish routes (REQUIRED):**
+    Needed for webhook
+    ```php
+        php artisan vendor:publish --tag=whatsapp-migrations
+    ```
+    
+5. 
