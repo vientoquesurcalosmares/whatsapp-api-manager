@@ -10,6 +10,17 @@ LARAVEL WHatsapp Manager
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-8892BF.svg?style=flat-square)](https://php.net/)
 [![Laravel Version](https://img.shields.io/badge/Laravel-10%2B-FF2D20.svg?style=flat-square)](https://laravel.com)
 
+
+## 🌐 Language / Idioma
+
+[🇺🇸 English](#-english) | [🇪🇸 Español](#-español)
+
+
+
+## 🇪🇸 Español
+
+> Toda la documentación para usuarios que prefieren español.
+
 **Un paquete elegante y potente para integrar WhatsApp Business API en tus aplicaciones Laravel 12+.**  
 ✨ Gestión de mensajes, plantillas, campañas, flujos conversacionales, métricas y más.
 
@@ -1446,5 +1457,55 @@ Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través d
 o tambien por Mercadopago Colombia.
 [![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
 Gracias por tu apoyo 💙
+
+---
+
+## 🇺🇸 English
+
+> All documentation for users who prefer English.
+
+# 📱 WhatsApp Business API Manager for Laravel
+
+**An elegant and powerful package for integrating WhatsApp Business API into your Laravel 12+ applications.**  
+✨ Message management, templates, campaigns, conversational flows, metrics and more.
+
+# This package is in ALPHA version.
+## Migrations and code are subject to change until Stable Version is achieved
+
+---
+
+## ❤️ Support us with a donation on GitHub Sponsors
+
+You can support me as an open source developer on GitHub Sponsors:
+If this project has been useful to you, you can support it with a donation through:
+[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?logo=github)](https://github.com/sponsors/djdang3r)
+
+or via Mercadopago Colombia:
+[![Donate with Mercado Pago](https://img.shields.io/badge/Donate%20with-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+Thank you for your support 💙
+
+---
+
+## 🚀 Key Features
+
+- **Send messages** - text, multimedia, interactive, and templates
+- **Template Management** - Create, List, Delete and Test templates
+- **Integrated webhooks** for receiving messages and updates
+- **Conversation management** with billing metrics 💰
+- **Conversational bots** with dynamic flows 🤖
+- **Automatic synchronization** of phone numbers and profiles
+- **Campaign support** for scheduled bulk messaging 📅
+- 100% compatible with **Laravel Echo and Reverb** for real-time notifications
+
+---
+
+## 🚀 Installation
+
+### You'll need a WhatsApp API Cloud account
+
+If you want to know how to get one completely FREE, watch these two videos:
+
+https://www.youtube.com/watch?v=of6dEsKSh-0&ab_channel=AdBoostPro  
+https://www.youtube.com/watch?v=gdD_0ernIqM&ab_channel=BismarckArag%C3%B3n
 
 ---
