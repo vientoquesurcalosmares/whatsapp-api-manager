@@ -220,19 +220,22 @@ class WhatsappWebhookController extends Controller
             return null;
         }
 
-        $messageRecord = Message::create([
-            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
-            'contact_id' => $contact->contact_id,
-            'wa_id' => $message['id'],
-            'conversation_id' => null, // Esto se puede actualizar más tarde si es necesario
-            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-            'message_from' => $message['from'],
-            'message_to' => $whatsappPhone->display_phone_number,
-            'message_type' => 'TEXT',
-            'message_content' => $textContent,
-            'json_content' => json_encode($message),
-            'status' => 'received'
-        ]);
+        $messageRecord = Message::firstOrCreate(
+            [
+                'wa_id' => $message['id'],
+            ],
+            [
+                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+                'contact_id' => $contact->contact_id,
+                'conversation_id' => null, // Esto se puede actualizar más tarde si es necesario
+                'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+                'message_from' => $message['from'],
+                'message_to' => $whatsappPhone->display_phone_number,
+                'message_type' => 'TEXT',
+                'message_content' => $textContent,
+                'json_content' => json_encode($message),
+                'status' => 'received'
+            ]);
 
         Log::channel('whatsapp')->info('Text message processed and saved.', [
             'message_id' => $messageRecord->message_id,
@@ -260,19 +263,22 @@ class WhatsappWebhookController extends Controller
         }
 
         // Guardar el mensaje en la base de datos como tipo INTERACTIVE
-        $messageRecord = Message::create([
-            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
-            'contact_id' => $contact->contact_id,
-            'wa_id' => $message['id'],
-            'conversation_id' => null,
-            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-            'message_from' => $message['from'],
-            'message_to' => $whatsappPhone->display_phone_number,
-            'message_type' => strtoupper($message['type']),
-            'message_content' => $textContent,
-            'json_content' => json_encode($message),
-            'status' => 'received'
-        ]);
+        $messageRecord = Message::firstOrCreate(
+            [
+                'wa_id' => $message['id'],
+            ],
+            [
+                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+                'contact_id' => $contact->contact_id,
+                'conversation_id' => null,
+                'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+                'message_from' => $message['from'],
+                'message_to' => $whatsappPhone->display_phone_number,
+                'message_type' => strtoupper($message['type']),
+                'message_content' => $textContent,
+                'json_content' => json_encode($message),
+                'status' => 'received'
+            ]);
 
         Log::channel('whatsapp')->info('Mensaje interactivo procesado y guardado.', [
             'message_id' => $messageRecord->message_id,
@@ -340,30 +346,36 @@ class WhatsappWebhookController extends Controller
         $publicPath = Storage::url("public/whatsapp/{$message['type']}s/{$fileName}");
 
         // Crear el registro del mensaje en la base de datos
-        $messageRecord = Message::create([
-            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
-            'contact_id' => $contact->contact_id,
-            'wa_id' => $message['id'],
-            'conversation_id' => null, // Esto se puede actualizar más tarde si es necesario
-            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-            'message_from' => $message['from'],
-            'message_to' => $whatsappPhone->display_phone_number,
-            'message_type' => strtoupper($message['type']),
-            'message_content' => $caption,
-            'json_content' => json_encode($message),
-            'status' => 'received'
-        ]);
+        $messageRecord = Message::firstOrCreate(
+            [
+                'wa_id' => $message['id'],
+            ],
+            [
+                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+                'contact_id' => $contact->contact_id,
+                'conversation_id' => null, // Esto se puede actualizar más tarde si es necesario
+                'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+                'message_from' => $message['from'],
+                'message_to' => $whatsappPhone->display_phone_number,
+                'message_type' => strtoupper($message['type']),
+                'message_content' => $caption,
+                'json_content' => json_encode($message),
+                'status' => 'received'
+            ]);
 
-        // Crear el registro del archivo multimedia en la base de datos
-        MediaFile::create([
-            'message_id' => $messageRecord->message_id,
-            'media_type' => $message['type'],
-            'file_name' => $fileName,
-            'url' => $publicPath,
-            'media_id' => $mediaId,
-            'mime_type' => $mimeType,
-            'sha256' => $message[$message['type']]['sha256'] ?? null,
-        ]);
+        // Actualizar ó Crear el registro del archivo multimedia en la base de datos
+        MediaFile::updateOrCreate(
+            [
+                'message_id' => $messageRecord->message_id,
+                'media_id' => $mediaId,
+            ],
+            [
+                'media_type' => $message['type'],
+                'file_name' => $fileName,
+                'url' => $publicPath,
+                'mime_type' => $mimeType,
+                'sha256' => $message[$message['type']]['sha256'] ?? null,
+            ]);
 
         Log::channel('whatsapp')->info('Media file and message saved.', [
             'message_id' => $messageRecord->message_id,
@@ -391,19 +403,22 @@ class WhatsappWebhookController extends Controller
         $content = "Ubicación: " . ($location['name'] ?? '') . " - " . ($location['address'] ?? '');
         $coordinates = "Lat: {$location['latitude']}, Lon: {$location['longitude']}";
 
-        $messageRecord = Message::create([
-            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
-            'contact_id' => $contact->contact_id,
-            'wa_id' => $message['id'],
-            'conversation_id' => null,
-            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-            'message_from' => $message['from'],
-            'message_to' => $whatsappPhone->display_phone_number,
-            'message_type' => 'LOCATION',
-            'message_content' => $content . ' | ' . $coordinates,
-            'json_content' => json_encode($message),
-            'status' => 'received'
-        ]);
+        $messageRecord = Message::firstOrCreate(
+            [
+                'wa_id' => $message['id'],
+            ],
+            [
+                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+                'contact_id' => $contact->contact_id,
+                'conversation_id' => null,
+                'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+                'message_from' => $message['from'],
+                'message_to' => $whatsappPhone->display_phone_number,
+                'message_type' => 'LOCATION',
+                'message_content' => $content . ' | ' . $coordinates,
+                'json_content' => json_encode($message),
+                'status' => 'received'
+            ]);
 
         Log::channel('whatsapp')->info('Location message processed.', [
             'message_id' => $messageRecord->message_id,
@@ -428,19 +443,22 @@ class WhatsappWebhookController extends Controller
 
         $content = "Nombre: {$name} | Teléfonos: {$phones} | Correos: {$emails}";
 
-        $messageRecord = Message::create([
-            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
-            'contact_id' => $contact->contact_id,
-            'wa_id' => $message['id'],
-            'conversation_id' => null,
-            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-            'message_from' => $message['from'],
-            'message_to' => $whatsappPhone->display_phone_number,
-            'message_type' => 'CONTACT',
-            'message_content' => $content,
-            'json_content' => json_encode($message),
-            'status' => 'received'
-        ]);
+        $messageRecord = Message::firstOrCreate(
+            [
+                'wa_id' => $message['id'],
+            ],
+            [
+                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+                'contact_id' => $contact->contact_id,
+                'conversation_id' => null,
+                'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+                'message_from' => $message['from'],
+                'message_to' => $whatsappPhone->display_phone_number,
+                'message_type' => 'CONTACT',
+                'message_content' => $content,
+                'json_content' => json_encode($message),
+                'status' => 'received'
+            ]);
 
         Log::channel('whatsapp')->info('Contact shared message processed.', [
             'message_id' => $messageRecord->message_id,
@@ -462,19 +480,22 @@ class WhatsappWebhookController extends Controller
         // Opcional: guardar la reacción asociada al mensaje original
         $originalMessage = Message::where('wa_id', $reaction['message_id'])->first();
 
-        $messageRecord = Message::create([
-            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
-            'contact_id' => $contact->contact_id,
-            'wa_id' => $message['id'],
-            'conversation_id' => $originalMessage?->conversation_id,
-            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-            'message_from' => $message['from'],
-            'message_to' => $whatsappPhone->display_phone_number,
-            'message_type' => 'REACTION',
-            'message_content' => $reaction['emoji'],
-            'json_content' => json_encode($message),
-            'status' => 'received'
-        ]);
+        $messageRecord = Message::firstOrCreate(
+            [
+                'wa_id' => $message['id'],
+            ],
+            [
+                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+                'contact_id' => $contact->contact_id,
+                'conversation_id' => $originalMessage?->conversation_id,
+                'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+                'message_from' => $message['from'],
+                'message_to' => $whatsappPhone->display_phone_number,
+                'message_type' => 'REACTION',
+                'message_content' => $reaction['emoji'],
+                'json_content' => json_encode($message),
+                'status' => 'received'
+            ]);
 
         Log::channel('whatsapp')->info('Reacción procesada.', [
             'message_id' => $messageRecord->message_id,
