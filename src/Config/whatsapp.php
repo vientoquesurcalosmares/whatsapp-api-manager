@@ -13,14 +13,59 @@ return [
     |
     */
     'models' => [
+        //Contactos
+        'contact' => \ScriptDevelop\WhatsappManager\Models\Contact::class,
+
+        'conversation' => \ScriptDevelop\WhatsappManager\Models\Conversation::class,
+
+        //Archivos multimedia
+        'media_file' => \ScriptDevelop\WhatsappManager\Models\MediaFile::class,
+
+        //Mensajes
+        'message' => \ScriptDevelop\WhatsappManager\Models\Message::class,
+
+        //Plantillas
+        'template' => \ScriptDevelop\WhatsappManager\Models\Template::class,
+
+        //Categorías de Plantillas
+        'template_category' => \ScriptDevelop\WhatsappManager\Models\TemplateCategory::class,
+
+        //Componentes de Plantillas
+        'template_component' => \ScriptDevelop\WhatsappManager\Models\TemplateComponent::class,
+
+        //Idiomas de Plantillas
+        'template_language' => \ScriptDevelop\WhatsappManager\Models\TemplateLanguage::class,
+
+        'website' => \ScriptDevelop\WhatsappManager\Models\Website::class,
+
         // Modelo para la cuenta empresarial de WhatsApp
         'business_account' => \ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount::class,
+
+        //Perfil de la cuenta de Whatsapp
+        'business_profile' => \ScriptDevelop\WhatsappManager\Models\WhatsappBusinessProfile::class,
+
+        'flow' => \ScriptDevelop\WhatsappManager\Models\WhatsappFlow::class,
+
+        'flow_event' => \ScriptDevelop\WhatsappManager\Models\WhatsappFlowEvent::class,
+
+        'flow_response' => \ScriptDevelop\WhatsappManager\Models\WhatsappFlowResponse::class,
+
+        'flow_screen' => \ScriptDevelop\WhatsappManager\Models\WhatsappFlowScreen::class,
+
+        'flow_session' => \ScriptDevelop\WhatsappManager\Models\WhatsappFlowSession::class,
+
+        //Números de celular configurados en Whatsapp Business
+        'phone_number' => \ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber::class,
+
+        'screen_element' => \ScriptDevelop\WhatsappManager\Models\WhatsappScreenElement::class,
+
+        'template_flow' => \ScriptDevelop\WhatsappManager\Models\WhatsappTemplateFlow::class,
 
         // Modelo de usuario (puede ser personalizado)
         'user_model' => env('AUTH_MODEL', App\Models\User::class),
 
         // Tabla de usuarios (puede ser personalizada)
-        'user_table' => env('AUTH_TABLE', 'users'),
+        //'user_table' => env('AUTH_TABLE', 'users'),
     ],
 
     /*
