@@ -10,13 +10,38 @@ LARAVEL WHatsapp Manager
 [![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-8892BF.svg?style=flat-square)](https://php.net/)
 [![Laravel Version](https://img.shields.io/badge/Laravel-10%2B-FF2D20.svg?style=flat-square)](https://laravel.com)
 
+
+# 🌐 Language / Idioma
+
+[🇺🇸 English](#-english) | [🇪🇸 Español](#-español)
+
+
+
+## 🇪🇸 Español
+
+> Toda la documentación para usuarios que prefieren español.
+
 **Un paquete elegante y potente para integrar WhatsApp Business API en tus aplicaciones Laravel 12+.**  
 ✨ Gestión de mensajes, plantillas, campañas, flujos conversacionales, métricas y más.
 
 # Este paquete esta en version ALPHA.
 ## Las migraciones y codigo estan en constante cambio hasta lograr la Version Estable
 
-
+- [❤️ Apóyanos](#❤️apóyanos-con-una-donación-en-github-sponsors)
+- [🚀 Características](#-características-principales)
+- [⚙️ Instalación](#-instalación)
+  - [Prerequisitos](#necesitaras-una-cuenta-de-whatsapp-api-cloud)
+  - [Pasos básicos](#-instalación-1)
+  - [Configuración](#⚙️-configuración)
+  - [Webhooks](#-configuración-de-webhooks-en-meta)
+- [📖 Guía de Usuario](#📖-guía-de-usuario)
+  - [Gestión de cuentas](#1-registro-de-cuentas-de-negocios)
+  - [Mensajes](#4-enviar-mensajes-de-texto)
+  - [Plantillas](#11-obtener-todas-las-plantillas-de-una-cuenta-de-whatsapp)
+  - [Bots](#14-bot-builder-contructor-de-bot-y-mensajes-automatizados)
+- [🛠️ Herramientas Adicionales](#-instalación-de-laravel-reverb)
+- [🤝 Contribuir](#-contribuir)
+  
 ---
 
 ## ❤️Apóyanos con una donación en GitHub Sponsors
@@ -1448,3 +1473,193 @@ o tambien por Mercadopago Colombia.
 Gracias por tu apoyo 💙
 
 ---
+
+## 🇺🇸 English
+
+> All documentation for users who prefer English.
+
+# 📱 WhatsApp Business API Manager for Laravel
+
+**An elegant and powerful package for integrating WhatsApp Business API into your Laravel 12+ applications.**  
+✨ Message management, templates, campaigns, conversational flows, metrics and more.
+
+# This package is in ALPHA version.
+## Migrations and code are subject to change until Stable Version is achieved
+
+---
+
+## ❤️ Support us with a donation on GitHub Sponsors
+
+You can support me as an open source developer on GitHub Sponsors:
+If this project has been useful to you, you can support it with a donation through:
+[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?logo=github)](https://github.com/sponsors/djdang3r)
+
+or via Mercadopago Colombia:
+[![Donate with Mercado Pago](https://img.shields.io/badge/Donate%20with-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+Thank you for your support 💙
+
+---
+
+## 🚀 Key Features
+
+- **Send messages** - text, multimedia, interactive, and templates
+- **Template Management** - Create, List, Delete and Test templates
+- **Integrated webhooks** for receiving messages and updates
+- **Conversation management** with billing metrics 💰
+- **Conversational bots** with dynamic flows 🤖
+- **Automatic synchronization** of phone numbers and profiles
+- **Campaign support** for scheduled bulk messaging 📅
+- 100% compatible with **Laravel Echo and Reverb** for real-time notifications
+
+---
+
+## 🚀 Installation
+
+### You'll need a WhatsApp API Cloud account
+
+If you want to know how to get one completely FREE, watch these two videos:
+
+https://www.youtube.com/watch?v=of6dEsKSh-0&ab_channel=AdBoostPro  
+https://www.youtube.com/watch?v=gdD_0ernIqM&ab_channel=BismarckArag%C3%B3n
+
+---
+
+1. **Install package via Composer**:
+
+```bash
+   composer require scriptdevelop/whatsapp-manager
+```
+
+2. **Publish configuration (optional)**:
+
+
+```bash
+    php artisan vendor:publish --tag=whatsapp-config
+```
+
+## ⚙️ Configuration
+
+Main configuration (config/whatsapp.php):
+
+Logging configuration (config/logging.php):
+
+Add whatsapp channel:
+
+```php
+    'channels' => [
+        'whatsapp' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/whatsapp.log'),
+            'level' => 'debug',
+            'days' => 7,
+            'tap' => [\ScriptDevelop\WhatsappManager\Logging\CustomizeFormatter::class],
+        ],
+    ],
+```
+
+3. **Publish migrations (optional):**
+
+```php
+    php artisan vendor:publish --tag=whatsapp-migrations
+```
+
+4. **Publish routes (REQUIRED):**
+Needed for webhook
+```php
+    php artisan vendor:publish --tag=whatsapp-migrations
+```
+
+5. **Send Message Replies**
+```php
+    $message = Whatsapp::message()->sendReplyTextMessage(
+        $phone->phone_number_id,
+        '57',
+        '3237121901',
+        'wamid.HBgMNTczMTM3MTgxOTA4FQIAEhggNzVCNUQzRDMxRjhEMUJEM0JERjAzNkZCNDk5RDcyQjQA',
+        'This is a reply to the previous message.'
+    );
+```
+
+6. **Message Reactions**
+```php
+    // Red heart ❤️ reaction
+    $message = Whatsapp::message()->sendReplyReactionMessage(
+        $phone->phone_number_id,
+        '57',
+        '3237121901',
+        'wamid.HBgMNTczMTM3MTgxOTA4FQIAEhggNzZENDMzMEI0MDRFQzg0OUUwRTI1M0JBQjEzMUZFRUYA',
+        "\u{2764}\u{FE0F}"
+    );
+```
+
+7. **Send Media Messages**
+Send Image
+```php
+    $filePath = storage_path('app/public/laravel-whatsapp-manager.png');
+    $file = new \SplFileInfo($filePath);
+
+    $message = Whatsapp::message()->sendImageMessage(
+        $phone->phone_number_id,
+        '57',
+        '3237121901',
+        $file
+    );
+```
+
+Send Sticker (WebP only)
+```php
+    $filePath = storage_path('app/public/sticker.webp');
+    $file = new \SplFileInfo($filePath);
+
+    $message = Whatsapp::message()->sendStickerMessage(
+        $phone->phone_number_id,
+        '57',
+        '3237121901',
+        $file
+    );
+```
+
+Send Audio
+```php
+    $filePath = storage_path('app/public/audio.ogg');
+    $file = new \SplFileInfo($filePath);
+
+    $message = Whatsapp::message()->sendAudioMessage(
+        $phone->phone_number_id,
+        '57',
+        '3237121901',
+        $file
+    );
+```
+
+Send Document
+```php
+    $filePath = storage_path('app/public/document.pdf');
+    $file = new \SplFileInfo($filePath);
+
+    $message = Whatsapp::message()->sendDocumentMessage(
+        $phone->phone_number_id,
+        '57',
+        '3237121901',
+        $file
+    );
+```
+
+8. **Send Location Messages**
+Send Document
+```php
+    $message = Whatsapp::message()->sendLocationMessage(
+        $phone->phone_number_id,
+        '57',
+        '3237121901',
+        4.7110,
+        -74.0721,
+        'Bogotá',
+        'Colombia'
+    );
+```
+
+
+
+
+
