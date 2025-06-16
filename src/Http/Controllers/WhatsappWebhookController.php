@@ -373,7 +373,7 @@ class WhatsappWebhookController extends Controller
 
         //Cargar los datos de archivos multimedia, para que también se transmita en los eventos correspondientes
         $messageRecord->loadMissing([
-            'media_files',
+            'mediaFiles',
         ]);
 
         return $messageRecord;
