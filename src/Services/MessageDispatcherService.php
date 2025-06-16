@@ -3,10 +3,10 @@
 namespace ScriptDevelop\WhatsappManager\Services;
 
 use ScriptDevelop\WhatsappManager\Enums\MessageStatus;
-use ScriptDevelop\WhatsappManager\Models\Contact;
-use ScriptDevelop\WhatsappManager\Models\MediaFile;
-use ScriptDevelop\WhatsappManager\Models\Message;
-use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+//use ScriptDevelop\WhatsappManager\Models\Contact;
+//use ScriptDevelop\WhatsappManager\Models\MediaFile;
+//use ScriptDevelop\WhatsappManager\Models\Message;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Exceptions\WhatsappApiException;
@@ -14,6 +14,9 @@ use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log; // <-- Agregamos esto
 use Illuminate\Support\Str; // <-- Agregamos esto
+
+use Illuminate\Database\Eloquent\Model;
+use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
 
 /**
  * Servicio para enviar mensajes a través de WhatsApp Business API
@@ -41,7 +44,7 @@ class MessageDispatcherService
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param string $text Contenido del mensaje
      * @param bool $previewUrl Habilitar vista previa de enlaces
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws WhatsappApiException Si falla el envío por la API
      */
     public function sendTextMessage(
@@ -50,7 +53,7 @@ class MessageDispatcherService
         string $phoneNumber,
         string $text,
         bool $previewUrl = false
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -68,7 +71,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -116,7 +119,7 @@ class MessageDispatcherService
      * @param string $contextMessageId ID del mensaje original (WA)
      * @param string $text Contenido del mensaje
      * @param bool $previewUrl Habilitar vista previa de enlaces
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si el mensaje de contexto no existe
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -127,7 +130,7 @@ class MessageDispatcherService
         string $contextMessageId,
         string $text,
         bool $previewUrl = false
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío replica de mensaje.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -138,7 +141,7 @@ class MessageDispatcherService
         ]);
 
         // Verificar que el mensaje de contexto exista
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
 
         Log::channel('whatsapp')->info('Mensaje de replica.', ['message' => $contextMessage, 'message_id' => $contextMessage->message_id, 'wa_id' => $contextMessage->wa_id]);
 
@@ -154,7 +157,7 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -202,7 +205,7 @@ class MessageDispatcherService
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param string $contextMessageId ID del mensaje original (WA)
      * @param string $emoji Emoji a enviar
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si el emoji está vacío o no existe el contexto
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -212,7 +215,7 @@ class MessageDispatcherService
         string $phoneNumber,
         string $contextMessageId,
         string $emoji
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío replica de mensaje.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -227,7 +230,7 @@ class MessageDispatcherService
         }
 
         // Verificar que el mensaje de contexto exista
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
 
         Log::channel('whatsapp')->info('Mensaje de replica.', ['message' => $contextMessage, 'message_id' => $contextMessage->message_id, 'wa_id' => $contextMessage->wa_id]);
 
@@ -243,7 +246,7 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -291,7 +294,7 @@ class MessageDispatcherService
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param \SplFileInfo $file Archivo de imagen
      * @param string|null $caption Texto descriptivo opcional
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \RuntimeException Si falla la subida del archivo
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -301,7 +304,7 @@ class MessageDispatcherService
         string $phoneNumber,
         \SplFileInfo $file,
         ?string $caption = null
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de imagen.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -329,7 +332,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -341,7 +344,7 @@ class MessageDispatcherService
         ]);
 
         // Crear un registro del archivo en el modelo MediaFile
-        $mediaFile = MediaFile::create([
+        $mediaFile = WhatsappModelResolver::media_file()->create([
             'message_id' => $message->message_id,
             'media_type' => 'image',
             'file_name' => $file->getFilename(),
@@ -394,7 +397,7 @@ class MessageDispatcherService
      * @param string $contextMessageId ID del mensaje original (WA)
      * @param \SplFileInfo $file Archivo de imagen
      * @param string|null $caption Texto descriptivo opcional
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si no existe el mensaje de contexto
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -405,7 +408,7 @@ class MessageDispatcherService
         string $contextMessageId,
         \SplFileInfo $file,
         ?string $caption = null
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de imagen.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -416,7 +419,7 @@ class MessageDispatcherService
         ]);
 
         // Verificar que el mensaje de contexto exista
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
 
         Log::channel('whatsapp')->info('Mensaje de replica.', ['message' => $contextMessage, 'message_id' => $contextMessage->message_id, 'wa_id' => $contextMessage->wa_id]);
 
@@ -445,7 +448,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -458,7 +461,7 @@ class MessageDispatcherService
         ]);
 
         // Crear un registro del archivo en el modelo MediaFile
-        $mediaFile = MediaFile::create([
+        $mediaFile = WhatsappModelResolver::media_file()->create([
             'message_id' => $message->message_id,
             'media_type' => 'image',
             'file_name' => $file->getFilename(),
@@ -509,7 +512,7 @@ class MessageDispatcherService
      * @param string $countryCode Código de país del destinatario
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param string $link URL de la imagen
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si la URL no es válida
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -518,7 +521,7 @@ class MessageDispatcherService
         string $countryCode,
         string $phoneNumber,
         string $link
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de imagen por url.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -543,7 +546,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -595,7 +598,7 @@ class MessageDispatcherService
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param string $contextMessageId ID del mensaje original (WA)
      * @param string $link URL de la imagen
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si no existe el contexto o URL inválida
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -605,7 +608,7 @@ class MessageDispatcherService
         string $phoneNumber,
         string $contextMessageId,
         string $link
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de imagen por url.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -614,7 +617,7 @@ class MessageDispatcherService
         ]);
 
         // Verificar que el mensaje de contexto exista
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
 
         Log::channel('whatsapp')->info('Mensaje de replica.', ['message' => $contextMessage, 'message_id' => $contextMessage->message_id, 'wa_id' => $contextMessage->wa_id]);
 
@@ -642,7 +645,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -694,7 +697,7 @@ class MessageDispatcherService
      * @param string $countryCode Código de país del destinatario
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param \SplFileInfo $file Archivo de audio
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \RuntimeException Si falla la subida del archivo
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -703,7 +706,7 @@ class MessageDispatcherService
         string $countryCode,
         string $phoneNumber,
         \SplFileInfo $file
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de audio.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -731,7 +734,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -743,7 +746,7 @@ class MessageDispatcherService
         ]);
 
         // Crear un registro del archivo en el modelo MediaFile
-        $mediaFile = MediaFile::create([
+        $mediaFile = WhatsappModelResolver::media_file()->create([
             'message_id' => $message->message_id,
             'media_type' => 'audio',
             'file_name' => $file->getFilename(),
@@ -791,7 +794,7 @@ class MessageDispatcherService
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param string $contextMessageId ID del mensaje original (WA)
      * @param \SplFileInfo $file Archivo de audio
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si no existe el mensaje de contexto
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -801,7 +804,7 @@ class MessageDispatcherService
         string $phoneNumber,
         string $contextMessageId,
         \SplFileInfo $file
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de audio.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -812,7 +815,7 @@ class MessageDispatcherService
         ]);
 
         // Verificar que el mensaje de contexto exista
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
 
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
@@ -839,7 +842,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -852,7 +855,7 @@ class MessageDispatcherService
         ]);
 
         // Crear un registro del archivo en el modelo MediaFile
-        $mediaFile = MediaFile::create([
+        $mediaFile = WhatsappModelResolver::media_file()->create([
             'message_id' => $message->message_id,
             'media_type' => 'audio',
             'file_name' => $file->getFilename(),
@@ -899,7 +902,7 @@ class MessageDispatcherService
      * @param string $countryCode Código de país del destinatario
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param string $link URL del audio
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si la URL no es válida
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -908,7 +911,7 @@ class MessageDispatcherService
         string $countryCode,
         string $phoneNumber,
         string $link
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de audio por URL.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -933,7 +936,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -982,7 +985,7 @@ class MessageDispatcherService
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param string $contextMessageId ID del mensaje original (WA)
      * @param string $link URL del audio
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si no existe el contexto o URL inválida
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -992,7 +995,7 @@ class MessageDispatcherService
         string $phoneNumber,
         string $contextMessageId,
         string $link
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de audio por URL.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -1001,7 +1004,7 @@ class MessageDispatcherService
         ]);
 
         // Verificar que el mensaje de contexto exista
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
 
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
@@ -1027,7 +1030,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -1077,7 +1080,7 @@ class MessageDispatcherService
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param \SplFileInfo $file Archivo de documento
      * @param string|null $caption Texto descriptivo opcional
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws WhatsappApiException Si falla el envío por la API
      */
     public function sendDocumentMessage(
@@ -1086,7 +1089,7 @@ class MessageDispatcherService
         string $phoneNumber,
         \SplFileInfo $file,
         ?string $caption = null
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de documento.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -1115,7 +1118,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -1127,7 +1130,7 @@ class MessageDispatcherService
         ]);
 
         // Crear un registro del archivo en el modelo MediaFile
-        $mediaFile = MediaFile::create([
+        $mediaFile = WhatsappModelResolver::media_file()->create([
             'message_id' => $message->message_id,
             'media_type' => 'document',
             'file_name' => $file->getFilename(),
@@ -1178,7 +1181,7 @@ class MessageDispatcherService
      * @param string $contextMessageId ID del mensaje original (WA)
      * @param \SplFileInfo $file Archivo de documento
      * @param string|null $caption Texto descriptivo opcional
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si no existe el mensaje de contexto
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -1189,7 +1192,7 @@ class MessageDispatcherService
         string $contextMessageId,
         \SplFileInfo $file,
         ?string $caption = null
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de documento como respuesta.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -1202,7 +1205,7 @@ class MessageDispatcherService
         ]);
 
         // Verificar que el mensaje de contexto exista
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
 
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
@@ -1229,7 +1232,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -1242,7 +1245,7 @@ class MessageDispatcherService
         ]);
 
         // Crear un registro del archivo en el modelo MediaFile
-        $mediaFile = MediaFile::create([
+        $mediaFile = WhatsappModelResolver::media_file()->create([
             'message_id' => $message->message_id,
             'media_type' => 'audio',
             'file_name' => $file->getFilename(),
@@ -1292,7 +1295,7 @@ class MessageDispatcherService
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param string $link URL del documento
      * @param string|null $caption Texto descriptivo opcional
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si la URL no es válida
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -1302,7 +1305,7 @@ class MessageDispatcherService
         string $phoneNumber,
         string $link,
         ?string $caption = null
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de documento por URL.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -1328,7 +1331,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -1379,7 +1382,7 @@ class MessageDispatcherService
      * @param string $contextMessageId ID del mensaje original (WA)
      * @param string $link URL del documento
      * @param string|null $caption Texto descriptivo opcional
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si no existe el contexto o URL inválida
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -1390,7 +1393,7 @@ class MessageDispatcherService
         string $contextMessageId,
         string $link,
         ?string $caption = null
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de documento por URL como respuesta.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -1401,7 +1404,7 @@ class MessageDispatcherService
         ]);
 
         // Verificar que el mensaje de contexto exista
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
 
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
@@ -1427,7 +1430,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -1477,7 +1480,7 @@ class MessageDispatcherService
      * @param string $countryCode Código de país del destinatario
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param \SplFileInfo $file Archivo de sticker
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws WhatsappApiException Si falla el envío por la API
      */
     public function sendStickerMessage(
@@ -1485,7 +1488,7 @@ class MessageDispatcherService
         string $countryCode,
         string $phoneNumber,
         \SplFileInfo $file
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de sticker.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -1522,7 +1525,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -1534,7 +1537,7 @@ class MessageDispatcherService
         ]);
 
         // Crear un registro del archivo en el modelo MediaFile
-        $mediaFile = MediaFile::create([
+        $mediaFile = WhatsappModelResolver::media_file()->create([
             'message_id' => $message->message_id,
             'media_type' => 'sticker',
             'file_name' => $file->getFilename(),
@@ -1582,7 +1585,7 @@ class MessageDispatcherService
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param string $contextMessageId ID del mensaje original (WA)
      * @param \SplFileInfo $file Archivo de sticker
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si no existe el mensaje de contexto
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -1592,7 +1595,7 @@ class MessageDispatcherService
         string $phoneNumber,
         string $contextMessageId,
         \SplFileInfo $file
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de sticker como respuesta.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -1613,7 +1616,7 @@ class MessageDispatcherService
         }
 
         // Verificar que el mensaje de contexto exista
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
 
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
@@ -1640,7 +1643,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -1653,7 +1656,7 @@ class MessageDispatcherService
         ]);
 
         // Crear un registro del archivo en el modelo MediaFile
-        $mediaFile = MediaFile::create([
+        $mediaFile = WhatsappModelResolver::media_file()->create([
             'message_id' => $message->message_id,
             'media_type' => 'audio',
             'file_name' => $file->getFilename(),
@@ -1700,7 +1703,7 @@ class MessageDispatcherService
      * @param string $countryCode Código de país del destinatario
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param string $link URL del sticker
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si la URL no es válida
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -1710,7 +1713,7 @@ class MessageDispatcherService
         string $phoneNumber,
         string $contextMessageId,
         string $link
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de sticker por URL como respuesta.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -1720,7 +1723,7 @@ class MessageDispatcherService
         ]);
 
         // Verificar que el mensaje de contexto exista
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
 
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
@@ -1746,7 +1749,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -1796,7 +1799,7 @@ class MessageDispatcherService
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param \SplFileInfo $file Archivo de video
      * @param string|null $caption Texto descriptivo opcional
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws WhatsappApiException Si falla el envío por la API
      */
     public function sendVideoMessage(
@@ -1805,7 +1808,7 @@ class MessageDispatcherService
         string $phoneNumber,
         \SplFileInfo $file,
         ?string $caption = null
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de video.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -1834,7 +1837,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -1846,7 +1849,7 @@ class MessageDispatcherService
         ]);
 
         // Crear un registro del archivo en el modelo MediaFile
-        $mediaFile = MediaFile::create([
+        $mediaFile = WhatsappModelResolver::media_file()->create([
             'message_id' => $message->message_id,
             'media_type' => 'video',
             'file_name' => $file->getFilename(),
@@ -1896,7 +1899,7 @@ class MessageDispatcherService
      * @param string $contextMessageId ID del mensaje original (WA)
      * @param \SplFileInfo $file Archivo de video
      * @param string|null $caption Texto descriptivo opcional
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si no existe el mensaje de contexto
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -1907,7 +1910,7 @@ class MessageDispatcherService
         string $contextMessageId,
         \SplFileInfo $file,
         ?string $caption = null
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de video como respuesta.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -1920,7 +1923,7 @@ class MessageDispatcherService
         ]);
 
         // Verificar que el mensaje de contexto exista
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
 
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
@@ -1947,7 +1950,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -1960,7 +1963,7 @@ class MessageDispatcherService
         ]);
 
         // Crear un registro del archivo en el modelo MediaFile
-        $mediaFile = MediaFile::create([
+        $mediaFile = WhatsappModelResolver::media_file()->create([
             'message_id' => $message->message_id,
             'media_type' => 'video',
             'file_name' => $file->getFilename(),
@@ -2009,7 +2012,7 @@ class MessageDispatcherService
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param string $link URL del video
      * @param string|null $caption Texto descriptivo opcional
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si la URL no es válida
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -2019,7 +2022,7 @@ class MessageDispatcherService
         string $phoneNumber,
         string $link,
         ?string $caption = null
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de video por URL.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -2045,7 +2048,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -2096,7 +2099,7 @@ class MessageDispatcherService
      * @param string $contextMessageId ID del mensaje original (WA)
      * @param string $link URL del video
      * @param string|null $caption Texto descriptivo opcional
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si la URL no es válida o el mensaje de contexto no existe
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -2107,7 +2110,7 @@ class MessageDispatcherService
         string $contextMessageId,
         string $link,
         ?string $caption = null
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de video por URL como respuesta.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -2118,7 +2121,7 @@ class MessageDispatcherService
         ]);
 
         // Verificar que el mensaje de contexto exista
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
 
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
@@ -2144,7 +2147,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -2194,7 +2197,7 @@ class MessageDispatcherService
      * @param string $countryCode Código de país del destinatario
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param string $contactId ID del contacto a enviar
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws WhatsappApiException Si falla el envío por la API
      */
     public function sendContactMessage(
@@ -2202,7 +2205,7 @@ class MessageDispatcherService
         string $countryCode,
         string $phoneNumber,
         string $contactId
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de contacto.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -2216,13 +2219,13 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
         // Validar que el contacto a enviar exista
-        $contact = Contact::findOrFail($contactId);
+        $contact = WhatsappModelResolver::contact()->findOrFail($contactId);
 
         // Resolver el contacto del destinatario
         $recipientContact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $recipientContact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -2317,7 +2320,7 @@ class MessageDispatcherService
      * @param string $phoneNumber Número de teléfono del destinatario
      * @param string $contextMessageId ID del mensaje original (WA)
      * @param string $contactId ID del contacto a enviar
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si no existe el mensaje de contexto o el contacto
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -2327,7 +2330,7 @@ class MessageDispatcherService
         string $phoneNumber,
         string $contextMessageId,
         string $contactId
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de contacto como respuesta.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -2342,10 +2345,10 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
         // Validar que el contacto a enviar exista
-        $contact = Contact::findOrFail($contactId);
+        $contact = WhatsappModelResolver::contact()->findOrFail($contactId);
 
         // Verificar que el mensaje de contexto exista
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
 
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
@@ -2358,7 +2361,7 @@ class MessageDispatcherService
         $recipientContact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $recipientContact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -2456,7 +2459,7 @@ class MessageDispatcherService
      * @param float $longitude Longitud de la ubicación
      * @param string|null $name Nombre opcional del lugar
      * @param string|null $address Dirección opcional del lugar
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws WhatsappApiException Si falla el envío por la API
      */
     public function sendLocationMessage(
@@ -2467,7 +2470,7 @@ class MessageDispatcherService
         float $longitude,
         ?string $name = null,
         ?string $address = null
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de localización.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -2487,7 +2490,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -2546,7 +2549,7 @@ class MessageDispatcherService
      * @param float $longitude Longitud de la ubicación
      * @param string|null $name Nombre opcional del lugar
      * @param string|null $address Dirección opcional del lugar
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws \InvalidArgumentException Si no existe el mensaje de contexto
      * @throws WhatsappApiException Si falla el envío por la API
      */
@@ -2559,7 +2562,7 @@ class MessageDispatcherService
         float $longitude,
         ?string $name = null,
         ?string $address = null
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje de localización como respuesta.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -2572,7 +2575,7 @@ class MessageDispatcherService
         ]);
 
         // Verificar que el mensaje de contexto exista
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
 
         if (!$contextMessage) {
             Log::channel('whatsapp')->error('El mensaje de contexto no existe en la base de datos.', [
@@ -2590,7 +2593,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear el mensaje en la base de datos
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -2649,7 +2652,7 @@ class MessageDispatcherService
      * @param array $buttons Array de botones (máximo 3, cada uno con 'id' y 'title')
      * @param string|null $footer Texto opcional en el pie
      * @param string|null $contextMessageId ID del mensaje original (WA) para respuesta
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws WhatsappApiException|InvalidArgumentException
      */
     public function sendInteractiveButtonsMessage(
@@ -2660,7 +2663,7 @@ class MessageDispatcherService
         array $buttons,
         ?string $footer = null,
         ?string $contextMessageId = null
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje con botones interactivos.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -2692,14 +2695,14 @@ class MessageDispatcherService
         // Manejar contexto de respuesta
         $contextMessage = null;
         if ($contextMessageId) {
-            $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+            $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
             if (!$contextMessage) {
                 throw new \InvalidArgumentException('El mensaje de contexto no existe.');
             }
         }
 
         // Crear mensaje en BD
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -2750,7 +2753,7 @@ class MessageDispatcherService
      * @param string|null $header Encabezado opcional
      * @param string|null $footer Texto opcional en el pie
      * @param string|null $contextMessageId ID del mensaje original (WA) para respuesta
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws WhatsappApiException|InvalidArgumentException
      */
     public function sendListMessage(
@@ -2763,7 +2766,7 @@ class MessageDispatcherService
         ?string $header = null,
         ?string $footer = null,
         ?string $contextMessageId = null
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje con lista interactiva.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -2809,14 +2812,14 @@ class MessageDispatcherService
         // Manejar contexto de respuesta
         $contextMessage = null;
         if ($contextMessageId) {
-            $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+            $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
             if (!$contextMessage) {
                 throw new \InvalidArgumentException('El mensaje de contexto no existe.');
             }
         }
 
         // Crear mensaje en BD
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -2871,7 +2874,7 @@ class MessageDispatcherService
      * @param string $body Texto principal del mensaje
      * @param string|null $header Encabezado opcional
      * @param string|null $footer Texto opcional en el pie
-     * @return Message Modelo del mensaje creado
+     * @return Model Modelo del mensaje creado
      * @throws WhatsappApiException|InvalidArgumentException
      */
     public function sendReplyToListMessage(
@@ -2884,7 +2887,7 @@ class MessageDispatcherService
         string $body,
         ?string $header = null,
         ?string $footer = null
-    ): Message {
+    ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de lista interactiva como respuesta.', [
             'phoneNumberId' => $phoneNumberId,
             'countryCode' => $countryCode,
@@ -2898,7 +2901,7 @@ class MessageDispatcherService
         ]);
 
         // Validar el mensaje de contexto
-        $contextMessage = Message::where('wa_id', $contextMessageId)->first();
+        $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
         if (!$contextMessage) {
             throw new \InvalidArgumentException('El mensaje de contexto no existe.');
         }
@@ -2930,7 +2933,7 @@ class MessageDispatcherService
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
         // Crear mensaje en BD con contexto
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
             'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
@@ -2987,7 +2990,7 @@ class MessageDispatcherService
 
         try {
             // Obtener el mensaje de la base de datos
-            $message = Message::findOrFail($messageId);
+            $message = WhatsappModelResolver::message()->findOrFail($messageId);
 
             // Verificar que el mensaje fue recibido (INPUT)
             if ($message->message_method !== 'INPUT') {
@@ -3055,14 +3058,14 @@ class MessageDispatcherService
      * Valida el número de teléfono y verifica que tenga un token API válido
      *
      * @param string $phoneNumberId ID del número telefónico registrado
-     * @return WhatsappPhoneNumber Modelo del número telefónico
+     * @return Model Modelo del número telefónico
      * @throws \InvalidArgumentException Si el número no tiene un token API válido asociado
      */
-    private function validatePhoneNumber(string $phoneNumberId): WhatsappPhoneNumber
+    private function validatePhoneNumber(string $phoneNumberId): Model
     {
         Log::channel('whatsapp')->info('Validando número de teléfono.', ['phone_number_id' => $phoneNumberId]);
 
-        $phone = WhatsappPhoneNumber::with('businessAccount')
+        $phone = WhatsappModelResolver::phone_number()->with('businessAccount')
             ->findOrFail($phoneNumberId);
 
         if (!$phone->businessAccount?->api_token) {
@@ -3078,9 +3081,9 @@ class MessageDispatcherService
      *
      * @param string $countryCode Código de país del destinatario
      * @param string $phoneNumber Número de teléfono del destinatario
-     * @return Contact Modelo del contacto
+     * @return Model Modelo del contacto
      */
-    private function resolveContact(string $countryCode, string $phoneNumber): Contact
+    private function resolveContact(string $countryCode, string $phoneNumber): Model
     {
         $normalizedPhone  = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber);
         $phoneNumber     = $normalizedPhone['phoneNumber'];
@@ -3088,7 +3091,7 @@ class MessageDispatcherService
 
         Log::channel('whatsapp')->info('Resolviendo contacto.', ['full_phone_number' => $fullPhoneNumber]);
 
-        $contact = Contact::firstOrCreate(
+        $contact = WhatsappModelResolver::contact()->firstOrCreate(
             [
             'phone_number' => $phoneNumber,
             'country_code' => $countryCode
@@ -3103,7 +3106,7 @@ class MessageDispatcherService
     /**
      * Envía un mensaje a través de la API de WhatsApp
      *
-     * @param WhatsappPhoneNumber $phone Número telefónico registrado
+     * @param Model $phone Número telefónico registrado
      * @param string $to Número de teléfono del destinatario
      * @param string $type Tipo de mensaje (text, image, video, etc.)
      * @param array $parameters Parámetros específicos del tipo de mensaje
@@ -3111,7 +3114,7 @@ class MessageDispatcherService
      * @return array Respuesta de la API
      */
     private function sendViaApi(
-        WhatsappPhoneNumber $phone,
+        Model $phone,
         string $to,
         string $type,
         array $parameters,
@@ -3279,13 +3282,13 @@ class MessageDispatcherService
     /**
      * Crea una sesión de subida para archivos grandes
      *
-     * @param WhatsappPhoneNumber $phone Número telefónico registrado
+     * @param Model $phone Número telefónico registrado
      * @param string $fileName Nombre del archivo
      * @param string $fileType Tipo MIME del archivo
      * @param int $fileLength Tamaño del archivo en bytes
      * @return string ID de la sesión de subida
      */
-    private function createUploadSession(WhatsappPhoneNumber $phone,string $fileName, string $fileType, int $fileLength): string
+    private function createUploadSession(Model $phone,string $fileName, string $fileType, int $fileLength): string
     {
         $endpoint = Endpoints::build(Endpoints::CREATE_RESUMABLE_UPLOAD_SESSION, [
             'version' => config('whatsapp.api.version'),
@@ -3379,13 +3382,13 @@ class MessageDispatcherService
     /**
      * Sube un archivo a la API de WhatsApp
      *
-     * @param WhatsappPhoneNumber $phone Número telefónico registrado
+     * @param Model $phone Número telefónico registrado
      * @param \SplFileInfo $file Archivo a subir
      * @param string $type_file Tipo de archivo (image, video, document, etc.)
      * @return string ID del archivo subido
      * @throws \RuntimeException Si falla la subida del archivo
      */
-    private function uploadFile(WhatsappPhoneNumber $phone, \SplFileInfo $file, string $type_file): string
+    private function uploadFile(Model $phone, \SplFileInfo $file, string $type_file): string
     {
         $endpoint = Endpoints::build(Endpoints::UPLOAD_MEDIA, [
             'phone_number_id' => $phone->api_phone_number_id,
@@ -3448,11 +3451,11 @@ class MessageDispatcherService
     /**
      * Recupera la información de un archivo subido
      *
-     * @param WhatsappPhoneNumber $phone Número telefónico registrado
+     * @param Model $phone Número telefónico registrado
      * @param string $fileId ID del archivo subido
      * @return array Información del archivo
      */
-    private function retrieveMediaInfo(WhatsappPhoneNumber $phone, string $fileId): array
+    private function retrieveMediaInfo(Model $phone, string $fileId): array
     {
         $endpoint = Endpoints::build(Endpoints::RETRIEVE_MEDIA_URL, [
             'version' => config('whatsapp.api.version'),
@@ -3475,13 +3478,13 @@ class MessageDispatcherService
     /**
      * Descarga un archivo de medios desde la URL proporcionada
      *
-     * @param WhatsappPhoneNumber $phone Número telefónico registrado
+     * @param Model $phone Número telefónico registrado
      * @param string $url URL del archivo a descargar
      * @param string $fileName Nombre del archivo local
      * @param string $mediaType Tipo de medio (image, video, document, etc.)
      * @return string Ruta local del archivo descargado
      */
-    private function downloadMedia(WhatsappPhoneNumber $phone, string $url, string $fileName, string $mediaType): string
+    private function downloadMedia(Model $phone, string $url, string $fileName, string $mediaType): string
     {
         // Obtener la ruta de almacenamiento desde la configuración
         $storagePath = config("whatsapp.media.storage_path.$mediaType");
@@ -3544,11 +3547,11 @@ class MessageDispatcherService
     /**
      * Maneja el éxito del envío de un mensaje
      *
-     * @param Message $message Modelo del mensaje
+     * @param Model $message Modelo del mensaje
      * @param array $response Respuesta de la API
-     * @return Message Modelo del mensaje actualizado
+     * @return Model Modelo del mensaje actualizado
      */
-    private function handleSuccess(Message $message, array $response): Message
+    private function handleSuccess(Model $message, array $response): Model
     {
         Log::channel('whatsapp')->info('Mensaje enviado exitosamente.', [
             'message_id' => $message->message_id,
@@ -3568,11 +3571,11 @@ class MessageDispatcherService
     /**
      * Maneja el error del envío de un mensaje
      *
-     * @param Message $message Modelo del mensaje
+     * @param Model $message Modelo del mensaje
      * @param WhatsappApiException $e Excepción lanzada por la API
-     * @return Message Modelo del mensaje actualizado
+     * @return Model Modelo del mensaje actualizado
      */
-    private function handleError(Message $message, WhatsappApiException $e): Message
+    private function handleError(Model $message, WhatsappApiException $e): Model
     {
         Log::channel('whatsapp')->error('Error al manejar envío de mensaje.', [
             'message_id' => $message->id,

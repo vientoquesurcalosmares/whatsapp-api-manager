@@ -3,7 +3,7 @@
 namespace ScriptDevelop\WhatsappManager\Facades;
 
 use Illuminate\Support\Facades\Facade;
-use ScriptDevelop\WhatsappManager\Models\Flow;
+//use ScriptDevelop\WhatsappManager\Models\Flow;
 
 /**
  * @method static \ScriptDevelop\WhatsappManager\Services\AccountRegistrationService account()
