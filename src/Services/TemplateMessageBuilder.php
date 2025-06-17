@@ -1,8 +1,8 @@
 <?php
 namespace ScriptDevelop\WhatsappManager\Services;
 
-use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 use InvalidArgumentException;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
@@ -11,15 +11,18 @@ use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\Exceptions\WhatsappApiException;
 use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
-use ScriptDevelop\WhatsappManager\Models\Contact;
-use ScriptDevelop\WhatsappManager\Models\Message;
-use ScriptDevelop\WhatsappManager\Models\Template;
+//use ScriptDevelop\WhatsappManager\Models\Contact;
+//use ScriptDevelop\WhatsappManager\Models\Message;
+//use ScriptDevelop\WhatsappManager\Models\Template;
 use ScriptDevelop\WhatsappManager\Enums\MessageStatus;
+
+use Illuminate\Database\Eloquent\Model;
+use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
 
 class TemplateMessageBuilder
 {
-    protected WhatsappBusinessAccount $account;
-    protected WhatsappPhoneNumber $phone;
+    protected Model $account;
+    protected Model $phone;
     protected ApiClient $apiClient;
     protected TemplateService $templateService;
     protected string $phoneNumber;
@@ -27,16 +30,16 @@ class TemplateMessageBuilder
     protected ?string $language = null; // Opcional
     protected array $components = [];
     protected array $templateStructure = []; // Estructura de la plantilla
-    protected ?Contact $contact = null;
+    protected ?Model $contact = null;
 
     /**
      * Constructor de la clase TemplateMessageBuilder.
      *
      * @param ApiClient $apiClient Cliente API para realizar solicitudes.
-     * @param WhatsappPhoneNumber $phone Número de teléfono de WhatsApp.
+     * @param Model $phone Número de teléfono de WhatsApp.
      * @param TemplateService $templateService Servicio para gestionar plantillas.
      */
-    public function __construct(ApiClient $apiClient, WhatsappPhoneNumber $phone, TemplateService $templateService)
+    public function __construct(ApiClient $apiClient, Model $phone, TemplateService $templateService)
     {
         $this->phone = $phone;
         $this->apiClient = $apiClient;
@@ -66,7 +69,7 @@ class TemplateMessageBuilder
 
         $this->phoneNumber = $normalizedPhone['fullPhoneNumber'];
 
-        $this->contact = Contact::updateOrCreate(
+        $this->contact = WhatsappModelResolver::contact()->updateOrCreate(
         ['wa_id' => $this->phoneNumber], // Buscar por wa_id (número completo)
             [
                 'phone_number' => $cleanedPhoneNumber,
@@ -272,7 +275,7 @@ class TemplateMessageBuilder
     // protected function fetchTemplateStructure(): void
     // {
     //     // Buscar la plantilla en la base de datos
-    //     $template = Template::with('components')
+    //     $template = WhatsappModelResolver::template()->with('components')
     //         ->where('name', $this->templateIdentifier)
     //         ->where('whatsapp_business_id', $this->account->whatsapp_business_id)
     //         ->first();
@@ -295,7 +298,7 @@ class TemplateMessageBuilder
 
     protected function fetchTemplateStructure(): void
     {
-        $template = Template::with('components')
+        $template = WhatsappModelResolver::template()->with('components')
             ->where('name', $this->templateIdentifier)
             ->where('whatsapp_business_id', $this->phone->businessAccount->whatsapp_business_id)
             ->first();
@@ -447,9 +450,9 @@ class TemplateMessageBuilder
             'phone_number' => $this->phoneNumber,
         ]);
 
-        //$contact = Contact::where('wa_id', $this->phoneNumber)->first(); //Es innecesario, ya se creó/actualizó dentro del método "to", no tiene caso volver a llamar a la base de datos
+        //$contact = WhatsappModelResolver::contact()->where('wa_id', $this->phoneNumber)->first(); //Es innecesario, ya se creó/actualizó dentro del método "to", no tiene caso volver a llamar a la base de datos
 
-        $message = Message::create([
+        $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $this->phone->phone_number_id,
             'contact_id' => $this->contact->contact_id,
             'message_from' => preg_replace('/[\D+]/', '', $this->phone->display_phone_number),

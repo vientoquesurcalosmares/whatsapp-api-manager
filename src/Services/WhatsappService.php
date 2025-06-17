@@ -5,8 +5,11 @@ namespace ScriptDevelop\WhatsappManager\Services;
 use Illuminate\Support\Facades\Log;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 use ScriptDevelop\WhatsappManager\Repositories\WhatsappBusinessAccountRepository;
+
+use Illuminate\Database\Eloquent\Model;
+use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
 
 /**
  * Servicio para interactuar con la API de WhatsApp Business.
@@ -17,9 +20,9 @@ class WhatsappService
     /**
      * La cuenta empresarial de WhatsApp actualmente configurada.
      *
-     * @var WhatsappBusinessAccount|null
+     * @var Model|null
      */
-    protected ?WhatsappBusinessAccount $businessAccount = null;
+    protected ?Model $businessAccount = null;
 
     /**
      * Constructor de la clase.
@@ -184,7 +187,9 @@ class WhatsappService
      */
     public function withTempToken(string $token): self
     {
-        $this->businessAccount = new WhatsappBusinessAccount([
+        $businessAccountClass = WhatsappModelResolver::business_account();
+
+        $this->businessAccount = new $businessAccountClass([
             'api_token' => $token
         ]);
         return $this;

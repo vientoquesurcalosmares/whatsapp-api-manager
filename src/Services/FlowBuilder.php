@@ -19,9 +19,9 @@ class FlowBuilder
     protected ?ScreenBuilder $currentScreen = null;
     protected ApiClient $apiClient;
     protected Model $account;
-    protected Model $flowService;
+    protected FlowService $flowService;
 
-    public function __construct(ApiClient $apiClient, Model $account, Model $flowService)
+    public function __construct(ApiClient $apiClient, Model $account, FlowService $flowService)
     {
         $this->apiClient = $apiClient;
         $this->account = $account;

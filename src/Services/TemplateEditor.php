@@ -2,7 +2,7 @@
 
 namespace ScriptDevelop\WhatsappManager\Services;
 
-use ScriptDevelop\WhatsappManager\Models\Template;
+//use ScriptDevelop\WhatsappManager\Models\Template;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Exceptions\TemplateComponentException;
@@ -10,23 +10,26 @@ use ScriptDevelop\WhatsappManager\Exceptions\TemplateUpdateException;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
+use Illuminate\Database\Eloquent\Model;
+use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
+
 class TemplateEditor extends TemplateBuilder
 {
     /**
      * Instancia de la plantilla existente
-     * @var Template
+     * @var Model
      */
-    protected Template $template;
+    protected Model $template;
 
     /**
      * Constructor del editor de plantillas
      *
-     * @param Template $template Plantilla existente a editar
+     * @param Model $template Plantilla existente a editar
      * @param ApiClient $apiClient Cliente API
      * @param TemplateService $templateService Servicio de plantillas
      */
     public function __construct(
-        Template $template,
+        Model $template,
         ApiClient $apiClient,
         TemplateService $templateService,
         FlowService $flowService
@@ -70,10 +73,10 @@ class TemplateEditor extends TemplateBuilder
     /**
      * Actualiza la plantilla en la API y en la base de datos
      *
-     * @return Template Plantilla actualizada
+     * @return Model Plantilla actualizada
      * @throws TemplateUpdateException
      */
-    public function update(): Template
+    public function update(): Model
     {
         try {
             $this->validateForUpdate();

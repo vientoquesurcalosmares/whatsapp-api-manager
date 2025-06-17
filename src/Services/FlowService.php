@@ -3,12 +3,15 @@
 namespace ScriptDevelop\WhatsappManager\Services;
 
 use InvalidArgumentException;
-use ScriptDevelop\WhatsappManager\Models\WhatsappFlow;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappFlow;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Collection;
+
+use Illuminate\Database\Eloquent\Model;
+use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
 
 class FlowService
 {
@@ -19,7 +22,7 @@ class FlowService
         $this->apiClient = $apiClient;
     }
 
-    public function edit(WhatsappFlow $flow): FlowEditor
+    public function edit(Model $flow): FlowEditor
     {
         return new FlowEditor(
             $flow,
@@ -28,7 +31,7 @@ class FlowService
         );
     }
 
-    public function editor(WhatsappFlow $flow): FlowEditor
+    public function editor(Model $flow): FlowEditor
     {
         return $this->edit($flow);
     }
@@ -36,7 +39,7 @@ class FlowService
     /**
      * Sincroniza flujos desde la API de WhatsApp
      */
-    public function syncFlows(WhatsappBusinessAccount $account): Collection
+    public function syncFlows(Model $account): Collection
     {
         $endpoint = Endpoints::build(Endpoints::GET_FLOWS, [
             'waba_id' => $account->whatsapp_business_id,
@@ -71,11 +74,11 @@ class FlowService
 
             // Marcar flujos no encontrados como inactivos
             $apiFlowIds = collect($flows)->pluck('id')->toArray();
-            WhatsappFlow::where('whatsapp_business_account_id', $account->whatsapp_business_id)
+            WhatsappModelResolver::flow()->where('whatsapp_business_account_id', $account->whatsapp_business_id)
                 ->whereNotIn('wa_flow_id', $apiFlowIds)
                 ->update(['status' => 'INACTIVE']);
 
-            return WhatsappFlow::where('whatsapp_business_account_id', $account->whatsapp_business_id)->get();
+            return WhatsappModelResolver::flow()->where('whatsapp_business_account_id', $account->whatsapp_business_id)->get();
 
         } catch (\Exception $e) {
             Log::channel('whatsapp')->error('Error al sincronizar flujos: ' . $e->getMessage(), [
@@ -89,9 +92,9 @@ class FlowService
     /**
      * Crea o actualiza un flujo en la base de datos
      */
-    protected function storeOrUpdateFlow(string $businessId, array $flowData): WhatsappFlow
+    protected function storeOrUpdateFlow(string $businessId, array $flowData): Model
     {
-        $flow = WhatsappFlow::updateOrCreate(
+        $flow = WhatsappModelResolver::flow()->updateOrCreate(
             ['wa_flow_id' => $flowData['id']],
             [
                 'whatsapp_business_account_id' => $businessId,
@@ -127,15 +130,15 @@ class FlowService
     /**
      * Obtiene un flujo por ID de API
      */
-    public function getFlowById(string $flowId): ?WhatsappFlow
+    public function getFlowById(string $flowId): ?Model
     {
-        return WhatsappFlow::where('wa_flow_id', $flowId)->first();
+        return WhatsappModelResolver::flow()->where('wa_flow_id', $flowId)->first();
     }
 
     /**
      * Crea un nuevo constructor de flujos
      */
-    public function createFlowBuilder(WhatsappBusinessAccount $account): FlowBuilder
+    public function createFlowBuilder(Model $account): FlowBuilder
     {
         return new FlowBuilder($this->apiClient, $account, $this);
     }
@@ -143,15 +146,15 @@ class FlowService
     /**
      * Crea un nuevo builder de flujos (alias para createFlowBuilder)
      *
-     * @param WhatsappBusinessAccount $account
+     * @param Model $account
      * @return FlowBuilder
      */
-    public function builder(WhatsappBusinessAccount $account): FlowBuilder
+    public function builder(Model $account): FlowBuilder
     {
         return $this->createFlowBuilder($account);
     }
 
-    public function syncFlowById(WhatsappBusinessAccount $account, string $flowId): ?WhatsappFlow
+    public function syncFlowById(Model $account, string $flowId): ?Model
     {
         $endpoint = Endpoints::build(Endpoints::GET_FLOW, [
             'flow_id' => $flowId,
@@ -195,11 +198,11 @@ class FlowService
     /**
      * Sincroniza las pantallas y elementos de un flujo.
      *
-     * @param WhatsappFlow $flow
+     * @param Model $flow
      * @param array $screens
      * @return void
      */
-    public function syncScreensAndElements(WhatsappFlow $flow, array $screens): void
+    public function syncScreensAndElements(Model $flow, array $screens): void
     {
         foreach ($screens as $screenData) {
             if (empty($screenData['name'])) {
@@ -241,12 +244,12 @@ class FlowService
     /**
      * Publica un flujo en la API de WhatsApp.
      *
-     * @param WhatsappFlow $flow El flujo que se desea publicar.
+     * @param Model $flow El flujo que se desea publicar.
      * @return bool Indica si la publicación fue exitosa.
      * @throws InvalidArgumentException Si el flujo no tiene un ID válido.
      * @throws \RuntimeException Si ocurre un error durante la publicación.
      */
-    public function publish(WhatsappFlow $flow): bool
+    public function publish(Model $flow): bool
     {
         // Validar que el flujo tenga un ID válido
         if (empty($flow->wa_flow_id)) {
