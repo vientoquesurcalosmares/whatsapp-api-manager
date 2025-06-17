@@ -1,31 +1,54 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/djdang3r/whatsapp-api-manager)
-![Ejemplo de plantilla de marketing](assets/laravel-whatsapp-manager.png "Plantilla de Marketing")
 
+![Ejemplo de plantilla de marketing](assets/Whatsapp'Manager.png "Plantilla de Marketing")
 
-# 📱 WhatsApp Business API Manager for Laravel
+# WhatsApp Business API Manager for Laravel
 
 LARAVEL WHatsapp Manager
 
-[![Latest Version](https://img.shields.io/packagist/v/scriptdevelop/whatsapp-manager.svg?style=flat-square)](https://packagist.org/packages/scriptdevelop/whatsapp-manager)
-[![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-8892BF.svg?style=flat-square)](https://php.net/)
-[![Laravel Version](https://img.shields.io/badge/Laravel-10%2B-FF2D20.svg?style=flat-square)](https://laravel.com)
+[![Latest Version](https://img.shields.io/packagist/v/scriptdevelop/whatsapp-manager.svg?style=flat-square)](https://packagist.org/packages/scriptdevelop/whatsapp-manager) [![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-8892BF.svg?style=flat-square)](https://php.net/) [![Laravel Version](https://img.shields.io/badge/Laravel-10%2B-FF2D20.svg?style=flat-square)](https://laravel.com)
 
+---
+### 🌐 Language / Idioma
 
-# 🌐 Language / Idioma
-
-[🇺🇸 English](#-english) | [🇪🇸 Español](#-español)
+<a href="#english"><img src="https://flagcdn.com/us.svg" width="20"></a> [🇺🇸 English](#-english) | [🇪🇸 Español](#-español) <a href="#espanol"><img src="https://flagcdn.com/es.svg" width="20"></a>
 
 
 
-## 🇪🇸 Español
+#### 🇪🇸 Español
 
-> Toda la documentación para usuarios que prefieren español.
+---
 
-**Un paquete elegante y potente para integrar WhatsApp Business API en tus aplicaciones Laravel 12+.**  
-✨ Gestión de mensajes, plantillas, campañas, flujos conversacionales, métricas y más.
+# scriptdevelop/whatsapp-api-manager
 
-# Este paquete esta en version ALPHA.
-## Las migraciones y codigo estan en constante cambio hasta lograr la Version Estable
+## Introducción
+
+`@djdang3r/whatsapp-api-manager` es un paquete diseñado para facilitar la integración y gestión de la API de WhatsApp en tus proyectos. Su objetivo es simplificar la comunicación, el envío y la recepción de mensajes, así como la administración de sesiones y contactos a través de una interfaz intuitiva y fácil de usar.
+
+## Descripción
+
+Con este paquete podrás:
+
+- Conectarte fácilmente a la API de WhatsApp.
+- Enviar y recibir mensajes de texto, multimedia y archivos.
+- Gestionar múltiples sesiones de WhatsApp simultáneamente.
+- Administrar contactos, grupos y listas de difusión.
+- Integrar tu aplicación o servicio con flujos automatizados de mensajes.
+- Recibir eventos en tiempo real para reaccionar ante mensajes, cambios de estado y notificaciones.
+
+`@djdang3r/whatsapp-api-manager` está pensado para desarrolladores que buscan una solución robusta y flexible para interactuar con WhatsApp de manera eficiente, segura y escalable.
+
+---
+> ## Politicas de Whatsapp
+> Nota: Asegúrate de cumplir con los términos de uso y políticas de WhatsApp al utilizar este paquete.
+
+> ## ⚠️ **Advertencia:**  
+> Este paquete se encuentra actualmente en versión **alpha**. Esto significa que está en desarrollo activo, puede contener errores y su API está sujeta a cambios importantes.  
+> Próximamente se lanzará la versión **beta**. Se recomienda no usarlo en entornos de producción por el momento.
+
+---
+
+## Documentación
 
 - [❤️ Apóyanos](#❤️apóyanos-con-una-donación-en-github-sponsors)
 - [🚀 Características](#-características-principales)
@@ -47,28 +70,25 @@ LARAVEL WHatsapp Manager
 ## ❤️Apóyanos con una donación en GitHub Sponsors
 
 Me puedes apoyar como desarrollador open source en GitHub Sponsors:
-Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
-[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?logo=github)](https://github.com/sponsors/djdang3r)
+- Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
+[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
 
-o tambien por Mercadopago Colombia.
+- O tambien por Mercadopago Colombia.
 [![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
 Gracias por tu apoyo 💙
 
 ---
-
-## 🚀 Características Principales
-
-- **Envía mensajes** de texto, multimedia, interactivos y de plantilla.
-- **Gestion de Templates** para Crear, Listar, Eliminar y Probar plantillas.
-- **Webhooks integrados** para recibir mensajes y actualizaciones.
-- **Gestión de conversaciones** con métricas de cobro. 💰
-- **Bots conversacionales** con flujos dinámicos. 🤖
-- **Sincronización automática** de números telefónicos y perfiles.
-- **Soporte para campañas** masivas programadas. 📅
-- 100% compatible con **Laravel Echo y Reverb** para notificaciones en tiempo real.
-
----
-
+>## 🚀 Características Principales
+>
+>- **Envía mensajes** de texto, multimedia, interactivos y de plantilla.
+>- **Gestion de Templates** para Crear, Listar, Eliminar y Probar plantillas.
+>- **Webhooks integrados** para recibir mensajes y actualizaciones.
+>- **Gestión de conversaciones** con métricas de cobro.
+>- **Bots conversacionales** con flujos dinámicos.
+>- **Sincronización automática** de números telefónicos y perfiles.
+>- **Soporte para campañas** masivas programadas.
+>- 100% compatible con **Laravel Echo y Reverb** para notificaciones en tiempo real.
+> 
 ---
 
 ## 🚀 Instalación
@@ -77,33 +97,33 @@ Gracias por tu apoyo 💙
 
 Si quieres saber como obtener una completamente GRATIS mira estos dos videos:
 
-https://www.youtube.com/watch?v=of6dEsKSh-0&ab_channel=AdBoostPro
+- https://www.youtube.com/watch?v=of6dEsKSh-0&ab_channel=AdBoostPro
 
-https://www.youtube.com/watch?v=gdD_0ernIqM&ab_channel=BismarckArag%C3%B3n
-
+- https://www.youtube.com/watch?v=gdD_0ernIqM&ab_channel=BismarckArag%C3%B3n
 
 ---
 
 1. **Instala el paquete vía Composer**:
-   ```bash
-        composer require scriptdevelop/whatsapp-manager
-   ```
+    ```bash
+    composer require scriptdevelop/whatsapp-manager
+    ```
 
 2. **Publica la configuración (opcional)**:
-   ```bash
-        php artisan vendor:publish --tag=whatsapp-config
-   ```
+    ```bash
+    php artisan vendor:publish --tag=whatsapp-config
+    ```
 
-   ⚙️ Configuración
+2. **Configuración**
 
-   Configuración principal (config/whatsapp.php):
+   - Configuración principal (config/whatsapp.php):
       
-   Configuración de logs (config/logging.php):
+   - Configuración de logs (config/logging.php):
 
-   Configuración principal del paquete:
-   Añadir el canal whatsapp.
+   - Configuración principal del paquete:
+   
+        Añadir el canal whatsapp.
 
-    ```php
+        ```php
         'channels' => [
             'whatsapp' => [
                 'driver' => 'daily',
@@ -113,164 +133,116 @@ https://www.youtube.com/watch?v=gdD_0ernIqM&ab_channel=BismarckArag%C3%B3n
                 'tap' => [\ScriptDevelop\WhatsappManager\Logging\CustomizeFormatter::class],
             ],
         ],
-    ```
+        ```
 
 3. **Publica las migraciones (opcional)**:
-    ```bash
-        php artisan vendor:publish --tag=whatsapp-migrations
-    ```
     Este comando publicará las migraciones del paquete en tu directorio `database/migrations`. Puedes personalizarlas según tus necesidades antes de ejecutarlas.
+    ```bash
+    php artisan vendor:publish --tag=whatsapp-migrations
+    ```
+    
 
 
 4. **Publica las rutas (OBLIGATORIO)**:
-   Se necesita para el webhook.
+   - Se necesita para el webhook.
 
-    ```bash
+        ```bash
         php artisan vendor:publish --tag=whatsapp-routes
-    ```
+        ```
 
-   Excluir rutas del webhook de CSRF:
+    - Excluir rutas del webhook de CSRF:
 
-   Al publicar las rutas es importante anexar las rutas del webhook a las excepciones del CSRF.
-   En bootstrap/app.php:
+        Al publicar las rutas es importante anexar las rutas del webhook a las excepciones del CSRF.
+        En bootstrap/app.php:
 
-   ```php
-    ->withMiddleware(function (Middleware $middleware) {
-            $middleware->validateCsrfTokens(except: [
-                '/whatsapp-webhook',
-            ]);
-        })
-   ```
+        ```php
+        ->withMiddleware(function (Middleware $middleware) {
+                $middleware->validateCsrfTokens(except: [
+                    '/whatsapp-webhook',
+                ]);
+            })
+        ```
 
 5. **Configura tus credenciales en .env**:
+    Variables de configuracion necesarias en el archivo `.env`
     ```bash
-        WHATSAPP_API_URL=https://graph.facebook.com
-        WHATSAPP_API_VERSION=v21.0
-        WHATSAPP_VERIFY_TOKEN=your-verify-token
-        WHATSAPP_USER_MODEL=App\Models\User
-        WHATSAPP_BROADCAST_CHANNEL_TYPE=private
+    WHATSAPP_API_URL=https://graph.facebook.com
+    WHATSAPP_API_VERSION=v21.0
+    WHATSAPP_VERIFY_TOKEN=your-verify-token
+    WHATSAPP_USER_MODEL=App\Models\User
+    WHATSAPP_BROADCAST_CHANNEL_TYPE=private
     ```
 
-🔄 Personalizar el Modelo User
+6.  **Migraciones**
+    - Ejecuta las migraciones para crear las tablas necesarias:
+        ```bash
+        php artisan migrate
+        ```
 
-Si usas un modelo User personalizado:
+    - Esto ejecutará las migraciones necesarias para crear las tablas requeridas por el paquete en tu base de datos.
 
-   Si estás utilizando un modelo User personalizado, asegúrate de especificarlo en tu archivo `.env`:
+7.  **Seeder de idiomas para plantillas**
+    Puedes publicar el seeder que incluye todos los idiomas compatibles con plantillas de WhatsApp con el siguiente comando:
 
-   ```bash
-    WHATSAPP_USER_MODEL=App\Models\YourCustomUserModel
-   ```
+    ```bash
+        php artisan vendor:publish --tag=whatsapp-seeders
+    ```
 
-Además, verifica que el modelo implementa las interfaces necesarias o extiende el modelo base esperado por el paquete. Por ejemplo:
+    > ⚠️ **¡Advertencia!**  ⚠️
+    > Los seeders son necesarios para trabajar con plantillas. Debes tomarlo en cuenta. 
+    > Luego de publicarlo, puedes ejecutarlo con:
+    ```bash
+        php artisan db:seed --class=WhatsappTemplateLanguageSeeder
+    ```
 
-```php
-    namespace App\Modules\Auth\Models;
+8.  **Publicar directorios multimedia para WhatsApp.**
+    Para almacenar mensajes multimedia entrantes (audios, imágenes, documentos, etc.) necesitas crear los siguientes directorios en storage/app/public/whatsapp:
 
-    use Illuminate\Foundation\Auth\User as Authenticatable;
+    ```bash
+    storage/app/public/whatsapp/
+    ├── audios/
+    ├── documents/
+    ├── images/
+    ├── stickers/
+    └── videos/
+    ```
 
-    class Admin extends Authenticatable
-    {
-    // Tu lógica personalizada aquí
-    }
-```
+    - Puedes crearlos automáticamente ejecutando:
 
-
-6.  🗃️ Migraciones
-
-🔍 Verificar configuración del User Model
-
-**Verifica el modelo de usuario configurado**:
-
-Ejecuta el siguiente comando para asegurarte de que el modelo de usuario está correctamente configurado:
-
-```bash
-    php artisan whatsapp:check-user-model
-```
-
-Este comando validará que el modelo especificado en el archivo `.env` cumple con los requisitos del paquete.
-
-Salida esperada (ejemplo):
-
-```plaintext
-    ✅ Modelo User configurado: App\Models\User
-```
-
-Si hay algún problema, revisa la configuración en tu archivo `.env` y asegúrate de que el modelo implementa las interfaces necesarias.
-
-
-Ejecuta las migraciones para crear las tablas necesarias:
-   
-```bash
-    php artisan migrate
-```
-
-Esto ejecutará las migraciones necesarias para crear las tablas requeridas por el paquete en tu base de datos.
-
-## 💾 Seeder de idiomas para plantillas
-
-Puedes publicar el seeder que incluye todos los idiomas compatibles con plantillas de WhatsApp con el siguiente comando:
-
-```bash
-    php artisan vendor:publish --tag=whatsapp-seeders
-```
-
-### Los seeder son necesarios para trabajar con plantillas. Debes tomarlo en cuenta.
-
-Luego de publicarlo, puedes ejecutarlo con:
-
-```bash
-    php artisan db:seed --class=WhatsappTemplateLanguageSeeder
-```
-
-###  📁 Publicar directorios multimedia para WhatsApp
-Para almacenar mensajes multimedia entrantes (audios, imágenes, documentos, etc.) necesitas crear los siguientes directorios en storage/app/public/whatsapp:
-
-audio/
-
-documents/
-
-images/
-
-stickers/
-
-videos/
-
-- Puedes crearlos automáticamente ejecutando:
-
-```bash
+    ```bash
     php artisan vendor:publish --tag=whatsapp-media
-```
+    ```
 
-- O, si no se crean automáticamente, puedes hacerlo manualmente:
-```bash
+    - O, si no se crean automáticamente, puedes hacerlo manualmente:
+    ```bash
     mkdir -p storage/app/public/whatsapp/{audio,documents,images,stickers,videos}
-```
+    ```
 
-## 🔗 Crear enlace simbólico del storage
-Para que los archivos sean accesibles públicamente, ejecuta:
+9.  **Crear enlace simbólico del storage.**
+    Para que los archivos sean accesibles públicamente, ejecuta:
 
-```bash
+    ```bash
     php artisan storage:link
-```
+    ```
 
-Esto crea el enlace public/storage apuntando a storage/app/public, requerido por Laravel para servir archivos correctamente.
+    Esto crea el enlace public/storage apuntando a storage/app/public, requerido por Laravel para servir archivos correctamente.
 
 
 
-## 📡 Configuración de Webhooks en Meta
-Ir a Meta Developers
+10.  **Configuración de Webhooks en Meta**
+    Ir a Meta Developers
 
-Configurar Webhook:
-- Define la URL del webhook en la consola de Meta Developers.
-- La URL debe apuntar a la ruta publicada por el paquete, por ejemplo
+    Configurar Webhook:
+    - Define la URL del webhook en la consola de Meta Developers.
+    - La URL debe apuntar a la ruta publicada por el paquete, por ejemplo
 
-URL: https://tudominio.com/whatsapp-webhook
+    URL: https://tudominio.com/whatsapp-webhook
 
-Token: EL_TOKEN_DE_TU_.ENV
+    Token: EL_TOKEN_DE_TU_.ENV
 
-Eventos a suscribir: messages, message_statuses
+    Eventos a suscribir: messages, message_statuses
 
-## Tambien puedes usar la herramienta nrock
+    **Tambien puedes usar la herramienta nrock**
 
 
 ## 🧩 Estructura del Paquete
@@ -352,30 +324,32 @@ Eventos a suscribir: messages, message_statuses
 ## ❤️Apóyanos con una donación en GitHub Sponsors
 
 Me puedes apoyar como desarrollador open source en GitHub Sponsors:
-Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
-[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?logo=github)](https://github.com/sponsors/djdang3r)
+- Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
+[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
 
-o tambien por Mercadopago Colombia.
+- O tambien por Mercadopago Colombia.
 [![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
 Gracias por tu apoyo 💙
 
 ---
 
-📖 Guía de Usuario
+# Guía de Usuario
+---
+## 1. Registro de Cuentas de Negocios.
 
-## 1. Registro de Cuentas de Negocios
-Registra una cuenta de negocios en WhatsApp Business API.
-Se hace la peticion a la API de whatsapp, se obtienen los datos de la cuenta y se almacenan en la base de datos. Este metodo obtiene los datos de la cuenta, los telefonos de whatsapp asociados a la cuenta y el perfil de cada numero de telefono.
+**Registra una cuenta de negocios en WhatsApp Business API.**
+
+- Se hace la peticion a la API de whatsapp, se obtienen los datos de la cuenta y se almacenan en la base de datos. Este metodo obtiene los datos de la cuenta, los telefonos de whatsapp asociados a la cuenta y el perfil de cada numero de telefono.
 - Se usa para Obtener los datos desde la API y alojarlos en la base de datos.
 
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
     $account = Whatsapp::account()->register([
-    'api_token' => '***********************',
-    'business_id' => '1243432234423'
+        'api_token' => '***********************',
+        'business_id' => '1243432234423'
     ]);
-```
+    ```
 
 
 ## 2. Obtener Detalles de Números de Teléfono
@@ -733,10 +707,10 @@ Los sticker solo se permiten archivos webp.
 ## ❤️Apóyanos con una donación en GitHub Sponsors
 
 Me puedes apoyar como desarrollador open source en GitHub Sponsors:
-Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
-[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?logo=github)](https://github.com/sponsors/djdang3r)
+- Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
+[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
 
-o tambien por Mercadopago Colombia.
+- O tambien por Mercadopago Colombia.
 [![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
 Gracias por tu apoyo 💙
 
@@ -951,8 +925,13 @@ Las plantillas transaccionales son ideales para notificaciones como confirmacion
         ->save();
 ```
 
-## 🙌 Apóyanos con una donación
-Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]
+## ❤️Apóyanos con una donación en GitHub Sponsors
+
+Me puedes apoyar como desarrollador open source en GitHub Sponsors:
+- Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
+[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
+
+- O tambien por Mercadopago Colombia.
 [![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
 Gracias por tu apoyo 💙
 
@@ -1087,10 +1066,17 @@ Puedes crear múltiples variaciones de plantillas para diferentes propósitos.
 - Revisa los logs para depurar cualquier problema durante la creación de plantillas.
 
 
-## 🙌 Apóyanos con una donación
-Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]
+---
+## ❤️Apóyanos con una donación en GitHub Sponsors
+
+Me puedes apoyar como desarrollador open source en GitHub Sponsors:
+- Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
+[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
+
+- O tambien por Mercadopago Colombia.
 [![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
 Gracias por tu apoyo 💙
+---
 
 ## 13. Enviar Mensajes a partir de Plantilla creada.
 ### Enviar mensajes de plantillas
@@ -1141,12 +1127,17 @@ Puedes enviar diferentes mensajes de plantillas segun la estructura de la planti
         ->send();
 ```
 
+## ❤️Apóyanos con una donación en GitHub Sponsors
 
-## 🙌 Apóyanos con una donación
-Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de [Mercado Pago]
+Me puedes apoyar como desarrollador open source en GitHub Sponsors:
+- Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
+[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
+
+- O tambien por Mercadopago Colombia.
 [![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
 Gracias por tu apoyo 💙
 
+---
 
 
 # 📦 Instalación de Laravel Reverb
@@ -1465,201 +1456,12 @@ MIT License. Ver LICENSE para más detalles.
 ## ❤️Apóyanos con una donación en GitHub Sponsors
 
 Me puedes apoyar como desarrollador open source en GitHub Sponsors:
-Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
-[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?logo=github)](https://github.com/sponsors/djdang3r)
+- Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
+[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
 
-o tambien por Mercadopago Colombia.
+- O tambien por Mercadopago Colombia.
 [![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
 Gracias por tu apoyo 💙
-
 ---
 
 ## 🇺🇸 English
-
-> All documentation for users who prefer English.
-
-# 📱 WhatsApp Business API Manager for Laravel
-
-**An elegant and powerful package for integrating WhatsApp Business API into your Laravel 12+ applications.**  
-✨ Message management, templates, campaigns, conversational flows, metrics and more.
-
-# This package is in ALPHA version.
-## Migrations and code are subject to change until Stable Version is achieved
-
----
-
-## ❤️ Support us with a donation on GitHub Sponsors
-
-You can support me as an open source developer on GitHub Sponsors:
-If this project has been useful to you, you can support it with a donation through:
-[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?logo=github)](https://github.com/sponsors/djdang3r)
-
-or via Mercadopago Colombia:
-[![Donate with Mercado Pago](https://img.shields.io/badge/Donate%20with-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
-Thank you for your support 💙
-
----
-
-## 🚀 Key Features
-
-- **Send messages** - text, multimedia, interactive, and templates
-- **Template Management** - Create, List, Delete and Test templates
-- **Integrated webhooks** for receiving messages and updates
-- **Conversation management** with billing metrics 💰
-- **Conversational bots** with dynamic flows 🤖
-- **Automatic synchronization** of phone numbers and profiles
-- **Campaign support** for scheduled bulk messaging 📅
-- 100% compatible with **Laravel Echo and Reverb** for real-time notifications
-
----
-
-## 🚀 Installation
-
-### You'll need a WhatsApp API Cloud account
-
-If you want to know how to get one completely FREE, watch these two videos:
-
-https://www.youtube.com/watch?v=of6dEsKSh-0&ab_channel=AdBoostPro  
-https://www.youtube.com/watch?v=gdD_0ernIqM&ab_channel=BismarckArag%C3%B3n
-
----
-
-1. **Install package via Composer**:
-
-```bash
-   composer require scriptdevelop/whatsapp-manager
-```
-
-2. **Publish configuration (optional)**:
-
-
-```bash
-    php artisan vendor:publish --tag=whatsapp-config
-```
-
-## ⚙️ Configuration
-
-Main configuration (config/whatsapp.php):
-
-Logging configuration (config/logging.php):
-
-Add whatsapp channel:
-
-```php
-    'channels' => [
-        'whatsapp' => [
-            'driver' => 'daily',
-            'path' => storage_path('logs/whatsapp.log'),
-            'level' => 'debug',
-            'days' => 7,
-            'tap' => [\ScriptDevelop\WhatsappManager\Logging\CustomizeFormatter::class],
-        ],
-    ],
-```
-
-3. **Publish migrations (optional):**
-
-```php
-    php artisan vendor:publish --tag=whatsapp-migrations
-```
-
-4. **Publish routes (REQUIRED):**
-Needed for webhook
-```php
-    php artisan vendor:publish --tag=whatsapp-migrations
-```
-
-5. **Send Message Replies**
-```php
-    $message = Whatsapp::message()->sendReplyTextMessage(
-        $phone->phone_number_id,
-        '57',
-        '3237121901',
-        'wamid.HBgMNTczMTM3MTgxOTA4FQIAEhggNzVCNUQzRDMxRjhEMUJEM0JERjAzNkZCNDk5RDcyQjQA',
-        'This is a reply to the previous message.'
-    );
-```
-
-6. **Message Reactions**
-```php
-    // Red heart ❤️ reaction
-    $message = Whatsapp::message()->sendReplyReactionMessage(
-        $phone->phone_number_id,
-        '57',
-        '3237121901',
-        'wamid.HBgMNTczMTM3MTgxOTA4FQIAEhggNzZENDMzMEI0MDRFQzg0OUUwRTI1M0JBQjEzMUZFRUYA',
-        "\u{2764}\u{FE0F}"
-    );
-```
-
-7. **Send Media Messages**
-Send Image
-```php
-    $filePath = storage_path('app/public/laravel-whatsapp-manager.png');
-    $file = new \SplFileInfo($filePath);
-
-    $message = Whatsapp::message()->sendImageMessage(
-        $phone->phone_number_id,
-        '57',
-        '3237121901',
-        $file
-    );
-```
-
-Send Sticker (WebP only)
-```php
-    $filePath = storage_path('app/public/sticker.webp');
-    $file = new \SplFileInfo($filePath);
-
-    $message = Whatsapp::message()->sendStickerMessage(
-        $phone->phone_number_id,
-        '57',
-        '3237121901',
-        $file
-    );
-```
-
-Send Audio
-```php
-    $filePath = storage_path('app/public/audio.ogg');
-    $file = new \SplFileInfo($filePath);
-
-    $message = Whatsapp::message()->sendAudioMessage(
-        $phone->phone_number_id,
-        '57',
-        '3237121901',
-        $file
-    );
-```
-
-Send Document
-```php
-    $filePath = storage_path('app/public/document.pdf');
-    $file = new \SplFileInfo($filePath);
-
-    $message = Whatsapp::message()->sendDocumentMessage(
-        $phone->phone_number_id,
-        '57',
-        '3237121901',
-        $file
-    );
-```
-
-8. **Send Location Messages**
-Send Document
-```php
-    $message = Whatsapp::message()->sendLocationMessage(
-        $phone->phone_number_id,
-        '57',
-        '3237121901',
-        4.7110,
-        -74.0721,
-        'Bogotá',
-        'Colombia'
-    );
-```
-
-
-
-
-
