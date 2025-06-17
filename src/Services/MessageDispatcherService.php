@@ -74,7 +74,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'text',
             'message_content' => $text,
@@ -160,7 +160,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'text',
             'message_content' => $text,
@@ -249,7 +249,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'reaction',
             'message_content' => $emoji,
@@ -335,7 +335,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'image',
             'message_content' => $caption !== null ? $caption : null,
@@ -451,7 +451,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'image',
             'message_content' => $caption !== null ? $caption : null,
@@ -549,7 +549,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'image',
             'message_content' => $link,
@@ -648,7 +648,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'image',
             'message_content' => $link,
@@ -737,7 +737,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'audio',
             'message_content' => null,
@@ -845,7 +845,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'audio',
             'message_content' => null,
@@ -939,7 +939,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'audio',
             'message_content' => $link,
@@ -1033,7 +1033,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'audio',
             'message_content' => $link,
@@ -1121,7 +1121,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'document',
             'message_content' => $caption, // Puede ser null
@@ -1235,7 +1235,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'document',
             'message_content' => $caption, // Puede ser null
@@ -1334,7 +1334,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'document',
             'message_content' => $caption.' '.$link, // Puede ser null
@@ -1433,7 +1433,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'document',
             'message_content' => $caption . ' ' . $link, // Puede ser null
@@ -1528,7 +1528,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'sticker',
             'message_content' => null,
@@ -1646,7 +1646,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'sticker',
             'message_content' => null,
@@ -1752,7 +1752,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'sticker',
             'message_content' => $link,
@@ -1840,7 +1840,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'video',
             'message_content' => $caption, // Puede ser null
@@ -1953,7 +1953,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'video',
             'message_content' => $caption, // Puede ser null
@@ -2051,7 +2051,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'video',
             'message_content' => $caption, // Puede ser null
@@ -2150,7 +2150,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'video',
             'message_content' => $caption, // Puede ser null
@@ -2228,7 +2228,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $recipientContact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'contacts',
             'message_content' => $contact->contact_id,
@@ -2364,7 +2364,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $recipientContact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'contacts',
             'message_content' => $contact->contact_id,
@@ -2493,7 +2493,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'location',
             'message_content' => json_encode([
@@ -2596,7 +2596,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'location',
             'message_content' => json_encode([
@@ -2705,7 +2705,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'interactive',
             'message_content' => json_encode([
@@ -2822,7 +2822,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'interactive',
             'message_content' => json_encode([
@@ -2936,7 +2936,7 @@ class MessageDispatcherService
         $message = WhatsappModelResolver::message()->create([
             'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
             'contact_id' => $contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $phoneNumberModel->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'interactive',
             'message_content' => json_encode([

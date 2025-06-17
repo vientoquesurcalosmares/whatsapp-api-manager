@@ -452,7 +452,7 @@ class TemplateMessageBuilder
         $message = Message::create([
             'whatsapp_phone_id' => $this->phone->phone_number_id,
             'contact_id' => $this->contact->contact_id,
-            'message_from' => preg_replace('/[\s+]/', '', $this->phone->display_phone_number),
+            'message_from' => preg_replace('/[\D+]/', '', $this->phone->display_phone_number),
             'message_to' => $this->contact->wa_id, //Se corrige esta variable, usar $this->contact en lugar de $contact
             'message_type' => 'template',
             'message_content' => NULL,
