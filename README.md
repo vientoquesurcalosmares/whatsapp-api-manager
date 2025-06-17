@@ -3065,3 +3065,11 @@ You can support me as an open source developer on GitHub Sponsors:
 
 Thank you for your support 💙
 ---
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/djdang3r/whatsapp-api-manager)
+
+![Ejemplo de plantilla de marketing](assets/Whatsapp'Manager.png "Plantilla de Marketing")
+
+# WhatsApp Business API Manager for Laravel
+
+LARAVEL WHatsapp Manager
