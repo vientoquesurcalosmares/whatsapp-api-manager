@@ -460,7 +460,8 @@ class TemplateMessageBuilder
             'message_type' => 'template',
             'message_content' => NULL,
             'message_method' => 'OUTPUT',
-            'status' => MessageStatus::PENDING
+            'status' => MessageStatus::PENDING,
+            'json_template_payload' => json_encode($payload, JSON_UNESCAPED_UNICODE),
         ]);
 
 
