@@ -732,32 +732,32 @@ Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuen
     );
     ```
 
-## Marcar mensaje como leido
+## 5. Marcar mensaje como leido
 Se encarga de marcar el mensaje recibido como leido, con los dos checks azules.
 
 ```php
     $message = Whatsapp::message()->markMessageAsRead('01JW939646VBZTS7JEJN21FGVE'); // ID del Mensaje a marcar como leidoo
 ```
----
-
-## ❤️Apóyanos con una donación en GitHub Sponsors
-
-Me puedes apoyar como desarrollador open source en GitHub Sponsors:
-- Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
-[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
-
-- O tambien por Mercadopago Colombia.
-[![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
-Gracias por tu apoyo 💙
 
 ---
+> ## ❤️Apóyanos con una donación en GitHub Sponsors
+>
+>Me puedes apoyar como desarrollador open source en GitHub Sponsors:
+>- Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
+>[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
+>
+>- O tambien por Mercadopago Colombia.
+>[![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+>Gracias por tu apoyo 💙
+---
 
+## 6. Administracion de Plantillas
 
-## 11. Obtener todas las plantillas de una cuenta de whatsapp
-Se obtienen todas las plantillas de una cuenta de whatsapp y se almacenan en la base de datos.
-Se hace la peticion a la API de whatsapp para obtener todas las plantillas que estan asociadas a la cuenta de whatsapp.
+- **Obtener todas las plantillas de una cuenta de whatsapp**
+    Se obtienen todas las plantillas de una cuenta de whatsapp y se almacenan en la base de datos.
+    Se hace la peticion a la API de whatsapp para obtener todas las plantillas que estan asociadas a la cuenta de whatsapp.
 
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
@@ -766,144 +766,144 @@ Se hace la peticion a la API de whatsapp para obtener todas las plantillas que e
 
     // Obtener todas las plantillas de la cuenta
     Whatsapp::template()->getTemplates($account);
-```
-
-- ### Obtener una plantilla por el nombre.
-  Se hace la peticion a la API de whatsapp para obtener una plantilla por el nombre y se almacena en la base de datos.
-
-   ```php
-        use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-        use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
-
-        // Obtener una instancia de WhatsApp Business Account
-        $account = WhatsappBusinessAccount::find($accountId);
-
-        // Obtener plantilla por su nombre
-        $template = Whatsapp::template()->getTemplateByName($account, 'order_confirmation');
-   ```
-
-
-- ### Obtener una plantilla por el ID.
-  Se hace la peticion a la API de whatsapp para obtener una plantilla por el ID y se almacena en la base de datos.
-
-   ```php
-        use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-        use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
-
-        // Obtener una instancia de WhatsApp Business Account
-        $account = WhatsappBusinessAccount::find($accountId);
-
-        // Obtener plantilla por su ID
-        $template = Whatsapp::template()->getTemplateById($account, '559947779843204');
-   ```
-
-- ### Eliminar plantilla de la API y de la base de datos al mismo tiempo.
-  Se hace la peticion a la API de whatsapp para obtener una plantilla por el ID y se elimina la plantilla seleccionada, Existen dos maneras de eliminar Soft Delete y Hard Delete.
-
-   ```php
-        use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-        use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
-
-        // Obtener una instancia de WhatsApp Business Account
-        $account = WhatsappBusinessAccount::find($accountId);
-
-        // Soft delete
-        // Eliminar plantilla por su ID
-        $template = Whatsapp::template()->gdeleteTemplateById($account, $templateId);
-
-        // Eliminar plantilla por su Nombre
-        $template = Whatsapp::template()->deleteTemplateByName($account, 'order_confirmation');
-
-
-        // Hard delete
-        // Eliminar plantilla por su ID
-        $template = Whatsapp::template()->gdeleteTemplateById($account, $templateId, true);
-
-        // Eliminar plantilla por su Nombre
-        $template = Whatsapp::template()->deleteTemplateByName($account, 'order_confirmation', true);
-   ```
-
-
-
-
-- ### Editar plantilla de la API y de la base de datos al mismo tiempo.
-  Se hace la peticion a la API de whatsapp para editar la plantilla seleccionada.
-
-    ```php
-        use ScriptDevelop\WhatsappManager\Models\Template;
-        use ScriptDevelop\WhatsappManager\Exceptions\TemplateComponentException;
-        use ScriptDevelop\WhatsappManager\Exceptions\TemplateUpdateException;
-
-        $template = Template::find('template-id');
-
-        try {
-            $updatedTemplate = $template->edit()
-                ->setName('nuevo-nombre-plantilla')
-                ->changeBody('Nuevo contenido del cuerpo {{1}}', [['Ejemplo nuevo']])
-                ->removeHeader()
-                ->addFooter('Nuevo texto de pie de página')
-                ->removeAllButtons()
-                ->addButton('URL', 'Visitar sitio', 'https://mpago.li/2qe5G7E')
-                ->addButton('QUICK_REPLY', 'Confirmar')
-                ->update();
-            
-            return response()->json($updatedTemplate);
-            
-        } catch (TemplateComponentException $e) {
-            // Manejar error de componente
-            return response()->json(['error' => $e->getMessage()], 400);
-            
-        } catch (TemplateUpdateException $e) {
-            // Manejar error de actualización
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
     ```
 
-    Agregar componentes a plantillas que no lo tenian:
+- **Obtener una plantilla por el nombre.**
+    Se hace la peticion a la API de whatsapp para obtener una plantilla por el nombre y se almacena en la base de datos.
 
     ```php
-        $template->edit()
-            ->addHeader('TEXT', 'Encabezado agregado')
-            ->addFooter('Pie de página nuevo')
-            ->addButton('PHONE_NUMBER', 'Llamar', '+1234567890')
-            ->update();
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+
+    // Obtener una instancia de WhatsApp Business Account
+    $account = WhatsappBusinessAccount::find($accountId);
+
+    // Obtener plantilla por su nombre
+    $template = Whatsapp::template()->getTemplateByName($account, 'order_confirmation');
     ```
 
-    Eliminar componentes existentes:
-    
+
+- **Obtener una plantilla por el ID.**
+    Se hace la peticion a la API de whatsapp para obtener una plantilla por el ID y se almacena en la base de datos.
+
     ```php
-        $template->edit()
-            ->removeFooter()
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+
+    // Obtener una instancia de WhatsApp Business Account
+    $account = WhatsappBusinessAccount::find($accountId);
+
+    // Obtener plantilla por su ID
+    $template = Whatsapp::template()->getTemplateById($account, '559947779843204');
+    ```
+
+- **Eliminar plantilla de la API y de la base de datos al mismo tiempo.**
+    Se hace la peticion a la API de whatsapp para obtener una plantilla por el ID y se elimina la plantilla seleccionada, Existen dos maneras de eliminar Soft Delete y Hard Delete.
+
+    ```php
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+
+    // Obtener una instancia de WhatsApp Business Account
+    $account = WhatsappBusinessAccount::find($accountId);
+
+    // Soft delete
+    // Eliminar plantilla por su ID
+    $template = Whatsapp::template()->gdeleteTemplateById($account, $templateId);
+
+    // Eliminar plantilla por su Nombre
+    $template = Whatsapp::template()->deleteTemplateByName($account, 'order_confirmation');
+
+
+    // Hard delete
+    // Eliminar plantilla por su ID
+    $template = Whatsapp::template()->gdeleteTemplateById($account, $templateId, true);
+
+    // Eliminar plantilla por su Nombre
+    $template = Whatsapp::template()->deleteTemplateByName($account, 'order_confirmation', true);
+    ```
+
+
+
+
+- **Editar plantilla de la API y de la base de datos al mismo tiempo.**
+    Se hace la peticion a la API de whatsapp para editar la plantilla seleccionada.
+
+    ```php
+    use ScriptDevelop\WhatsappManager\Models\Template;
+    use ScriptDevelop\WhatsappManager\Exceptions\TemplateComponentException;
+    use ScriptDevelop\WhatsappManager\Exceptions\TemplateUpdateException;
+
+    $template = Template::find('template-id');
+
+    try {
+        $updatedTemplate = $template->edit()
+            ->setName('nuevo-nombre-plantilla')
+            ->changeBody('Nuevo contenido del cuerpo {{1}}', [['Ejemplo nuevo']])
+            ->removeHeader()
+            ->addFooter('Nuevo texto de pie de página')
             ->removeAllButtons()
+            ->addButton('URL', 'Visitar sitio', 'https://mpago.li/2qe5G7E')
+            ->addButton('QUICK_REPLY', 'Confirmar')
             ->update();
+        
+        return response()->json($updatedTemplate);
+        
+    } catch (TemplateComponentException $e) {
+        // Manejar error de componente
+        return response()->json(['error' => $e->getMessage()], 400);
+        
+    } catch (TemplateUpdateException $e) {
+        // Manejar error de actualización
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
     ```
 
-    Trabajar con componentes específicos:
+    **Agregar componentes a plantillas que no lo tenian:**
+
+    ```php
+    $template->edit()
+        ->addHeader('TEXT', 'Encabezado agregado')
+        ->addFooter('Pie de página nuevo')
+        ->addButton('PHONE_NUMBER', 'Llamar', '+1234567890')
+        ->update();
+    ```
+
+    **Eliminar componentes existentes:**
     
     ```php
-        $editor = $template->edit();
+    $template->edit()
+        ->removeFooter()
+        ->removeAllButtons()
+        ->update();
+    ```
 
-        // Verificar y modificar header
-        if ($editor->hasHeader()) {
-            $headerData = $editor->getHeader();
-            if ($headerData['format'] === 'TEXT') {
-                $editor->changeHeader('TEXT', 'Encabezado actualizado');
-            }
-        } else {
-            $editor->addHeader('TEXT', 'Nuevo encabezado');
+    **Trabajar con componentes específicos:**
+    
+    ```php
+    $editor = $template->edit();
+
+    // Verificar y modificar header
+    if ($editor->hasHeader()) {
+        $headerData = $editor->getHeader();
+        if ($headerData['format'] === 'TEXT') {
+            $editor->changeHeader('TEXT', 'Encabezado actualizado');
         }
+    } else {
+        $editor->addHeader('TEXT', 'Nuevo encabezado');
+    }
 
-        // Modificar botones
-        $buttons = $editor->getButtons();
-        foreach ($buttons as $index => $button) {
-            if ($button['type'] === 'URL' && str_contains($button['url'], 'old-domain.com')) {
-                $newUrl = str_replace('old-domain.com', 'new-domain.com', $button['url']);
-                $editor->removeButtonAt($index);
-                $editor->addButton('URL', $button['text'], $newUrl);
-            }
+    // Modificar botones
+    $buttons = $editor->getButtons();
+    foreach ($buttons as $index => $button) {
+        if ($button['type'] === 'URL' && str_contains($button['url'], 'old-domain.com')) {
+            $newUrl = str_replace('old-domain.com', 'new-domain.com', $button['url']);
+            $editor->removeButtonAt($index);
+            $editor->addButton('URL', $button['text'], $newUrl);
         }
+    }
 
-        $editor->update();
+    $editor->update();
     ```
 
 ## Características Clave del Edit Template
@@ -934,14 +934,25 @@ Se hace la peticion a la API de whatsapp para obtener todas las plantillas que e
         - Encadenamiento de métodos para modificaciones
         - update() aplica los cambios
 
-## 12. Crear las plantillas en una cuenta de whatsapp
-### Crear Plantillas de Utilidad
+## ❤️Apóyanos con una donación en GitHub Sponsors
 
-Las plantillas transaccionales son ideales para notificaciones como confirmaciones de pedidos, actualizaciones de envío, etc.
+Me puedes apoyar como desarrollador open source en GitHub Sponsors:
+- Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
+[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
 
-![Ejemplo de plantilla de marketing](assets/template_1.png "Plantilla de Marketing")
+- O tambien por Mercadopago Colombia.
+[![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+Gracias por tu apoyo 💙
+---
 
-```php
+## Crear las plantillas en una cuenta de whatsapp
+- ### Crear Plantillas de Utilidad
+
+    Las plantillas transaccionales son ideales para notificaciones como confirmaciones de pedidos, actualizaciones de envío, etc.
+
+    ![Ejemplo de plantilla de marketing](assets/template_1.png "Plantilla de Marketing")
+
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
@@ -959,27 +970,16 @@ Las plantillas transaccionales son ideales para notificaciones como confirmacion
         ->addButton('QUICK_REPLY', 'Track Order')
         ->addButton('QUICK_REPLY', 'Contact Support')
         ->save();
-```
-
-## ❤️Apóyanos con una donación en GitHub Sponsors
-
-Me puedes apoyar como desarrollador open source en GitHub Sponsors:
-- Si este proyecto te ha sido útil, puedes apoyarlo con una donación a través de
-[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
-
-- O tambien por Mercadopago Colombia.
-[![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
-Gracias por tu apoyo 💙
-
+    ```
 ---
 
-### Crear Plantillas de Marketing
+  - ### Crear Plantillas de Marketing
 
-Las plantillas de marketing son útiles para promociones, descuentos y campañas masivas.
+    Las plantillas de marketing son útiles para promociones, descuentos y campañas masivas.
 
-![Ejemplo de plantilla de marketing](assets/template_2.png "Plantilla de Marketing")
+    ![Ejemplo de plantilla de marketing](assets/template_2.png "Plantilla de Marketing")
 
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
@@ -1000,17 +1000,17 @@ Las plantillas de marketing son útiles para promociones, descuentos y campañas
         ->addButton('QUICK_REPLY', 'Unsubscribe from Promos')
         ->addButton('QUICK_REPLY', 'Unsubscribe from All')
         ->save();
-```
+    ```
 
 ---
 
-### Crear Plantillas de Marketing con Imágenes
+  - ### Crear Plantillas de Marketing con Imágenes
 
-Las plantillas de marketing también pueden incluir imágenes en el encabezado para hacerlas más atractivas.
+    Las plantillas de marketing también pueden incluir imágenes en el encabezado para hacerlas más atractivas.
 
-![Ejemplo de plantilla de marketing](assets/template_3.png "Plantilla de Marketing")
+    ![Ejemplo de plantilla de marketing](assets/template_3.png "Plantilla de Marketing")
 
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
@@ -1030,17 +1030,17 @@ Las plantillas de marketing también pueden incluir imágenes en el encabezado p
         ->addBody('Hi {{1}}, your order {{2}} has been shipped!', ['John', '12345'])
         ->addFooter('Thank you for your purchase!')
         ->save();
-```
+    ```
 
 ---
 
-### Crear Plantillas de Marketing con Botones de URL
+- ### Crear Plantillas de Marketing con Botones de URL
 
-Puedes agregar botones de URL personalizados para redirigir a los usuarios a páginas específicas.
+    Puedes agregar botones de URL personalizados para redirigir a los usuarios a páginas específicas.
 
-![Ejemplo de plantilla de marketing](assets/template_3.png "Plantilla de Marketing")
+    ![Ejemplo de plantilla de marketing](assets/template_3.png "Plantilla de Marketing")
 
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
@@ -1062,44 +1062,42 @@ Puedes agregar botones de URL personalizados para redirigir a los usuarios a pá
         ->addButton('PHONE_NUMBER', 'Call Us', '+573234255686')
         ->addButton('URL', 'Track Order', 'https://mpago.li/{{1}}', ['2qe5G7E'])
         ->save();
-```
-
+    ```
 ---
 
-### Crear Variaciones de Plantillas de Marketing
+- ### Crear Variaciones de Plantillas de Marketing
 
-Puedes crear múltiples variaciones de plantillas para diferentes propósitos.
+    Puedes crear múltiples variaciones de plantillas para diferentes propósitos.
 
-![Ejemplo de plantilla de marketing](assets/template_4.png "Plantilla de Marketing")
+    ![Ejemplo de plantilla de marketing](assets/template_4.png "Plantilla de Marketing")
 
-```php
-    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    ```php
+        use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+        use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 
-    // Obtener la cuenta empresarial
-    $account = WhatsappBusinessAccount::first();
+        // Obtener la cuenta empresarial
+        $account = WhatsappBusinessAccount::first();
 
-    // Crear una variación de plantilla de marketing
-    $template = Whatsapp::template()
-        ->createMarketingTemplate($account)
-        ->setName('personal_promotion_text_only_22')
-        ->setLanguage('en')
-        ->addHeader('TEXT', 'Our {{1}} is on!', ['Summer Sale'])
-        ->addBody(
-            'Shop now through {{1}} and use code {{2}} to get {{3}} off of all merchandise.',
-            ['the end of August', '25OFF', '25%']
-        )
-        ->addFooter('Use the buttons below to manage your marketing subscriptions')
-        ->addButton('QUICK_REPLY', 'Unsubscribe from Promos')
-        ->addButton('QUICK_REPLY', 'Unsubscribe from All')
-        ->save();
-```
+        // Crear una variación de plantilla de marketing
+        $template = Whatsapp::template()
+            ->createMarketingTemplate($account)
+            ->setName('personal_promotion_text_only_22')
+            ->setLanguage('en')
+            ->addHeader('TEXT', 'Our {{1}} is on!', ['Summer Sale'])
+            ->addBody(
+                'Shop now through {{1}} and use code {{2}} to get {{3}} off of all merchandise.',
+                ['the end of August', '25OFF', '25%']
+            )
+            ->addFooter('Use the buttons below to manage your marketing subscriptions')
+            ->addButton('QUICK_REPLY', 'Unsubscribe from Promos')
+            ->addButton('QUICK_REPLY', 'Unsubscribe from All')
+            ->save();
+    ```
+    # Notas
 
-# Notas
-
-- Asegúrate de que las imágenes utilizadas en las plantillas cumplan con los requisitos de la API de WhatsApp (tamaño y formato).
-- Los botones de URL pueden incluir parámetros dinámicos utilizando las variables de las plantillas (`{{1}}`, `{{2}}`, etc.).
-- Revisa los logs para depurar cualquier problema durante la creación de plantillas.
+    - Verifica que las imágenes usadas en las plantillas cumplan con los requisitos de la API de WhatsApp: formato (JPEG, PNG), tamaño máximo permitido y dimensiones recomendadas.
+    - Los botones de tipo URL pueden aceptar parámetros dinámicos mediante variables de plantilla (`{{1}}`, `{{2}}`, etc.), lo que permite personalizar los enlaces para cada destinatario.
+    - Si experimentas problemas al crear plantillas, consulta los archivos de log para obtener información detallada sobre posibles errores y su solución.
 
 
 ---
@@ -1114,13 +1112,12 @@ Me puedes apoyar como desarrollador open source en GitHub Sponsors:
 Gracias por tu apoyo 💙
 ---
 
-## 13. Enviar Mensajes a partir de Plantilla creada.
-### Enviar mensajes de plantillas
+## Enviar Mensajes a partir de Plantilla creada.
+  - ### Enviar mensajes de plantillas
 
-Puedes enviar diferentes mensajes de plantillas segun la estructura de la plantilla.
+    Puedes enviar diferentes mensajes de plantillas segun la estructura de la plantilla.
 
-
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
     use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -1147,7 +1144,7 @@ Puedes enviar diferentes mensajes de plantillas segun la estructura de la planti
         ->addBody(['20000'])
         ->addButton('URL', 'Pagar', '1QFwRV', ['[https://mpago.li/1QFwRV]'])
         ->send();
-    
+
     $message = Whatsapp::template()
         ->sendTemplateMessage($phone)
         ->to('57', '3135666627')
@@ -1161,7 +1158,7 @@ Puedes enviar diferentes mensajes de plantillas segun la estructura de la planti
             ['[https://mpago.li/1QFwRV]'] // URL de ejemplo 'No se envia solo se toma de ejemplo'
         )
         ->send();
-```
+    ```
 
 ## ❤️Apóyanos con una donación en GitHub Sponsors
 
@@ -1320,6 +1317,416 @@ Puedes emitir manualmente un evento de prueba con:
             console.log('Nuevo mensaje recibido:', e.data);
         });
 ```
+
+
+Collecting workspace informationAquí tienes una sección de documentación para incluir en el README.md que explica cómo configurar y usar los eventos del paquete, incluyendo compatibilidad con Laravel Echo y Laravel Reverb.
+
+---
+
+### 📡 **Eventos del Paquete**
+
+El paquete incluye una serie de eventos que se disparan automáticamente en diferentes situaciones. Estos eventos son compatibles con **Laravel Echo** y **Laravel Reverb**, lo que permite escuchar y reaccionar a ellos en tiempo real desde el frontend.
+
+---
+
+#### **Configuración de Eventos**
+
+1. **Configurar el tipo de canal de transmisión:**
+   En el archivo whatsapp.php, asegúrate de definir el tipo de canal (`public` o `private`):
+
+   ```php
+   return [
+       'broadcast_channel_type' => env('WHATSAPP_BROADCAST_CHANNEL_TYPE', 'private'),
+   ];
+   ```
+
+   En tu archivo `.env`:
+   ```bash
+   WHATSAPP_BROADCAST_CHANNEL_TYPE=private
+   ```
+
+2. **Configurar Laravel Echo o Laravel Reverb:**
+   - Instala Laravel Echo y PusherJS:
+     ```bash
+     npm install --save laravel-echo pusher-js
+     ```
+
+   - Configura Echo en `resources/js/bootstrap.js`:
+     ```js
+     import Echo from 'laravel-echo';
+
+     window.Pusher = require('pusher-js');
+
+     window.Echo = new Echo({
+         broadcaster: 'reverb',
+         key: import.meta.env.VITE_REVERB_APP_KEY,
+         wsHost: import.meta.env.VITE_REVERB_HOST,
+         wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
+         forceTLS: false,
+         enabledTransports: ['ws'],
+     });
+     ```
+
+   - Asegúrate de tener las variables necesarias en tu `.env` frontend:
+     ```bash
+     VITE_REVERB_APP_KEY=whatsapp-key
+     VITE_REVERB_HOST=127.0.0.1
+     VITE_REVERB_PORT=8080
+     ```
+
+---
+
+#### **Eventos Disponibles**
+
+A continuación, se describen los eventos disponibles en el paquete, cómo se configuran y cómo escucharlos desde el frontend.
+
+---
+
+##### **1. `BusinessSettingsUpdated`**
+
+- **Descripción:** Se dispara cuando se actualizan los ajustes de la cuenta empresarial.
+- **Canal:** `whatsapp.business`
+- **Alias:** `business.settings.updated`
+
+**Ejemplo de uso en el frontend:**
+```js
+window.Echo.private('whatsapp.business')
+    .listen('.business.settings.updated', (e) => {
+        console.log('Ajustes empresariales actualizados:', e.data);
+    });
+```
+
+---
+
+##### **2. `MessageReceived`**
+
+- **Descripción:** Se dispara cuando se recibe un mensaje de texto.
+- **Canal:** `whatsapp.messages`
+- **Alias:** `message.received`
+
+**Ejemplo de uso en el frontend:**
+```js
+window.Echo.private('whatsapp.messages')
+    .listen('.message.received', (e) => {
+        console.log('Nuevo mensaje recibido:', e.data);
+    });
+```
+
+---
+
+##### **3. `MessageDelivered`**
+
+- **Descripción:** Se dispara cuando un mensaje es entregado.
+- **Canal:** `whatsapp.status`
+- **Alias:** `message.delivered`
+
+**Ejemplo de uso en el frontend:**
+```js
+window.Echo.private('whatsapp.status')
+    .listen('.message.delivered', (e) => {
+        console.log('Mensaje entregado:', e.data);
+    });
+```
+
+---
+
+##### **4. `MessageRead`**
+
+- **Descripción:** Se dispara cuando un mensaje es leído.
+- **Canal:** `whatsapp.status`
+- **Alias:** `message.read`
+
+**Ejemplo de uso en el frontend:**
+```js
+window.Echo.private('whatsapp.status')
+    .listen('.message.read', (e) => {
+        console.log('Mensaje leído:', e.data);
+    });
+```
+
+---
+
+##### **5. `TemplateCreated`**
+
+- **Descripción:** Se dispara cuando se crea una plantilla.
+- **Canal:** `whatsapp.templates`
+- **Alias:** `template.created`
+
+**Ejemplo de uso en el frontend:**
+```js
+window.Echo.private('whatsapp.templates')
+    .listen('.template.created', (e) => {
+        console.log('Plantilla creada:', e.data);
+    });
+```
+
+---
+
+##### **6. `TemplateApproved`**
+
+- **Descripción:** Se dispara cuando una plantilla es aprobada.
+- **Canal:** `whatsapp.templates`
+- **Alias:** `template.approved`
+
+**Ejemplo de uso en el frontend:**
+```js
+window.Echo.private('whatsapp.templates')
+    .listen('.template.approved', (e) => {
+        console.log('Plantilla aprobada:', e.data);
+    });
+```
+
+---
+
+##### **7. `TemplateRejected`**
+
+- **Descripción:** Se dispara cuando una plantilla es rechazada.
+- **Canal:** `whatsapp.templates`
+- **Alias:** `template.rejected`
+
+**Ejemplo de uso en el frontend:**
+```js
+window.Echo.private('whatsapp.templates')
+    .listen('.template.rejected', (e) => {
+        console.log('Plantilla rechazada:', e.data);
+    });
+```
+
+---
+
+##### **8. `InteractiveMessageReceived`**
+
+- **Descripción:** Se dispara cuando se recibe un mensaje interactivo (botones o listas).
+- **Canal:** `whatsapp.messages`
+- **Alias:** `interactive.received`
+
+**Ejemplo de uso en el frontend:**
+```js
+window.Echo.private('whatsapp.messages')
+    .listen('.interactive.received', (e) => {
+        console.log('Mensaje interactivo recibido:', e.data);
+    });
+```
+
+---
+
+##### **9. `MediaMessageReceived`**
+
+- **Descripción:** Se dispara cuando se recibe un mensaje multimedia (imagen, video, audio, documento, sticker).
+- **Canal:** `whatsapp.messages`
+- **Alias:** `media.received`
+
+**Ejemplo de uso en el frontend:**
+```js
+window.Echo.private('whatsapp.messages')
+    .listen('.media.received', (e) => {
+        console.log('Mensaje multimedia recibido:', e.data);
+    });
+```
+
+---
+
+#### **Prueba de Eventos**
+
+Puedes emitir manualmente un evento de prueba con Laravel Tinker:
+
+```bash
+php artisan tinker
+```
+
+```php
+event(new \Scriptdevelop\WhatsappManager\Events\MessageReceived([
+    'from' => '51987654321',
+    'message' => 'Hola desde Reverb'
+]));
+```
+
+---
+
+Con esta configuración, puedes escuchar y reaccionar a los eventos del paquete desde tu frontend utilizando Laravel Echo o Laravel Reverb. Esto te permite implementar funcionalidades en tiempo real como notificaciones, actualizaciones de estado y más.
+
+## Configuración de Eventos
+Configurar el tipo de canal de transmisión: En el archivo whatsapp.php, asegúrate de definir el tipo de canal (public o private):
+
+```php
+return [
+    'broadcast_channel_type' => env('WHATSAPP_BROADCAST_CHANNEL_TYPE', 'private'),
+];
+```
+En tu archivo .env:
+```bash
+WHATSAPP_BROADCAST_CHANNEL_TYPE=private
+```
+Configurar Laravel Echo o Laravel Reverb:
+
+Instala Laravel Echo y PusherJS:
+```bash
+npm install --save laravel-echo pusher-js
+```
+
+Configura Echo en resources/js/bootstrap.js:
+
+```js
+import Echo from 'laravel-echo';
+
+window.Pusher = require('pusher-js');
+
+window.Echo = new Echo({
+    broadcaster: 'reverb',
+    key: import.meta.env.VITE_REVERB_APP_KEY,
+    wsHost: import.meta.env.VITE_REVERB_HOST,
+    wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
+    forceTLS: false,
+    enabledTransports: ['ws'],
+});
+
+```
+Asegúrate de tener las variables necesarias en tu .env frontend:
+
+```bash
+VITE_REVERB_APP_KEY=whatsapp-key
+VITE_REVERB_HOST=127.0.0.1
+VITE_REVERB_PORT=8080
+```
+
+
+
+# Eventos Disponibles
+A continuación, se describen los eventos disponibles en el paquete, cómo se configuran y cómo escucharlos desde el frontend.
+
+
+1. BusinessSettingsUpdated
+Descripción: Se dispara cuando se actualizan los ajustes de la cuenta empresarial.
+Canal: whatsapp.business
+Alias: business.settings.updated
+Ejemplo de uso en el frontend:
+```js
+window.Echo.private('whatsapp.business')
+    .listen('.business.settings.updated', (e) => {
+        console.log('Ajustes empresariales actualizados:', e.data);
+    });
+```
+
+2. MessageReceived
+Descripción: Se dispara cuando se recibe un mensaje de texto.
+Canal: whatsapp.messages
+Alias: message.received
+Ejemplo de uso en el frontend:
+```js
+window.Echo.private('whatsapp.messages')
+    .listen('.message.received', (e) => {
+        console.log('Nuevo mensaje recibido:', e.data);
+    });
+```
+
+
+3. MessageDelivered
+Descripción: Se dispara cuando un mensaje es entregado.
+Canal: whatsapp.status
+Alias: message.delivered
+Ejemplo de uso en el frontend:
+```js
+window.Echo.private('whatsapp.status')
+    .listen('.message.delivered', (e) => {
+        console.log('Mensaje entregado:', e.data);
+    });
+```
+
+
+4. MessageRead
+Descripción: Se dispara cuando un mensaje es leído.
+Canal: whatsapp.status
+Alias: message.read
+Ejemplo de uso en el frontend:
+```js
+window.Echo.private('whatsapp.status')
+    .listen('.message.read', (e) => {
+        console.log('Mensaje leído:', e.data);
+    });
+```
+
+
+5. TemplateCreated
+Descripción: Se dispara cuando se crea una plantilla.
+Canal: whatsapp.templates
+Alias: template.created
+Ejemplo de uso en el frontend:
+
+```js
+window.Echo.private('whatsapp.templates')
+    .listen('.template.created', (e) => {
+        console.log('Plantilla creada:', e.data);
+    });
+```
+
+
+6. TemplateApproved
+Descripción: Se dispara cuando una plantilla es aprobada.
+Canal: whatsapp.templates
+Alias: template.approved
+Ejemplo de uso en el frontend:
+```js
+window.Echo.private('whatsapp.templates')
+    .listen('.template.approved', (e) => {
+        console.log('Plantilla aprobada:', e.data);
+    });
+```
+
+
+7. TemplateRejected
+Descripción: Se dispara cuando una plantilla es rechazada.
+Canal: whatsapp.templates
+Alias: template.rejected
+Ejemplo de uso en el frontend:
+
+```js
+window.Echo.private('whatsapp.templates')
+    .listen('.template.rejected', (e) => {
+        console.log('Plantilla rechazada:', e.data);
+    });
+```
+
+
+8. InteractiveMessageReceived
+Descripción: Se dispara cuando se recibe un mensaje interactivo (botones o listas).
+Canal: whatsapp.messages
+Alias: interactive.received
+Ejemplo de uso en el frontend:
+
+```js
+window.Echo.private('whatsapp.messages')
+    .listen('.interactive.received', (e) => {
+        console.log('Mensaje interactivo recibido:', e.data);
+    });
+```
+
+9. MediaMessageReceived
+Descripción: Se dispara cuando se recibe un mensaje multimedia (imagen, video, audio, documento, sticker).
+Canal: whatsapp.messages
+Alias: media.received
+Ejemplo de uso en el frontend:
+
+```js
+window.Echo.private('whatsapp.messages')
+    .listen('.media.received', (e) => {
+        console.log('Mensaje multimedia recibido:', e.data);
+    });
+```
+
+Prueba de Eventos
+Puedes emitir manualmente un evento de prueba con Laravel Tinker:
+```bash
+php artisan tinker
+```
+
+```php
+event(new \Scriptdevelop\WhatsappManager\Events\MessageReceived([
+    'from' => '51987654321',
+    'message' => 'Hola desde Reverb'
+]));
+```
+
+
 
 
 # BOT BUILDER SERA MOVIDO A OTRO PAQUETE
