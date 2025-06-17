@@ -32,19 +32,23 @@ Con este paquete podrás:
 - Conectarte fácilmente a la API de WhatsApp.
 - Enviar y recibir mensajes de texto, multimedia y archivos.
 - Gestionar múltiples sesiones de WhatsApp simultáneamente.
-- Administrar contactos, grupos y listas de difusión.
+- Administrar contactos, plantillas y mensajes.
 - Integrar tu aplicación o servicio con flujos automatizados de mensajes.
 - Recibir eventos en tiempo real para reaccionar ante mensajes, cambios de estado y notificaciones.
 
 `@djdang3r/whatsapp-api-manager` está pensado para desarrolladores que buscan una solución robusta y flexible para interactuar con WhatsApp de manera eficiente, segura y escalable.
 
----
-> ## Politicas de Whatsapp
-> Nota: Asegúrate de cumplir con los términos de uso y políticas de WhatsApp al utilizar este paquete.
+> ## 📢 Políticas de WhatsApp
+>
+> 🚫 **Importante:** 🚫
+> - Asegúrate de cumplir siempre con las [Políticas de WhatsApp](https://www.whatsapp.com/legal/business-policy/) y sus términos de uso al utilizar este paquete.  
+> - El uso indebido puede resultar en la suspensión de tu cuenta o acciones legales por parte de WhatsApp.
+> - Revisa periódicamente las actualizaciones de las políticas para evitar inconvenientes.
 
-> ## ⚠️ **Advertencia:**  
-> Este paquete se encuentra actualmente en versión **alpha**. Esto significa que está en desarrollo activo, puede contener errores y su API está sujeta a cambios importantes.  
-> Próximamente se lanzará la versión **beta**. Se recomienda no usarlo en entornos de producción por el momento.
+
+> ## ⚠️ **Advertencia:**  ⚠️
+> - Este paquete se encuentra actualmente en versión **alpha**. Esto significa que está en desarrollo activo, puede contener errores y su API está sujeta a cambios importantes.  
+> - Próximamente se lanzará la versión **beta**. Se recomienda no usarlo en entornos de producción por el momento.
 
 ---
 
@@ -339,8 +343,8 @@ Gracias por tu apoyo 💙
 
 **Registra una cuenta de negocios en WhatsApp Business API.**
 
-- Se hace la peticion a la API de whatsapp, se obtienen los datos de la cuenta y se almacenan en la base de datos. Este metodo obtiene los datos de la cuenta, los telefonos de whatsapp asociados a la cuenta y el perfil de cada numero de telefono.
-- Se usa para Obtener los datos desde la API y alojarlos en la base de datos.
+  - Se hace la peticion a la API de whatsapp, se obtienen los datos de la cuenta y se almacenan en la base de datos. Este metodo obtiene los datos de la cuenta, los telefonos de whatsapp asociados a la cuenta y el perfil de cada numero de telefono.
+  - Se usa para Obtener los datos desde la API y alojarlos en la base de datos.
 
     ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
@@ -353,14 +357,15 @@ Gracias por tu apoyo 💙
 
 
 ## 2. Obtener Detalles de Números de Teléfono
-Obtén información detallada sobre un número de teléfono registrado.
-Se hace la peticion a la API de whatsapp para obtener detalles del numero de whatsapp y se almacenan en la base de datos, si el numero ya existe actualiza la informacion.
+**Obtén información detallada sobre un número de teléfono registrado.**
 
-```php
+- Se hace la peticion a la API de whatsapp para obtener detalles del numero de whatsapp y se almacenan en la base de datos, si el numero ya existe actualiza la informacion.
+
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
     $phoneDetails = Whatsapp::phone()->getPhoneNumberDetails('564565346546');
-```
+    ```
 
 
 ## 3. Obtener Cuentas de Negocios
@@ -374,10 +379,10 @@ Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuen
 ```
 
 
-## 4. Enviar Mensajes de Texto
-Envía mensajes de texto simples.
+## 4. Enviar Mensajes.
+- **Envía mensajes de texto simples.**
 
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
     use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -391,13 +396,12 @@ Envía mensajes de texto simples.
         '3237121901',                // Número de teléfono
         'Hola, este es un mensaje de prueba.' // Contenido del mensaje
     );
-```
+    ```
 
+- **Enviar Mensajes de Texto con Enlaces**
+    Envía mensajes de texto simples con link o enlace.
 
-Enviar Mensajes de Texto con Enlaces
-Envía mensajes de texto simples.
-
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
     use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -407,24 +411,19 @@ Envía mensajes de texto simples.
 
     $message = Whatsapp::message()->sendTextMessage(
         $phone->phone_number_id, // ID del número de teléfono
-        '57',
-        '3237121901',
-        'Visítanos en YouTube: http://youtube.com',
+        '57',                        // Código de país
+        '3237121901',                // Número de teléfono
+        'Visítanos en YouTube: http://youtube.com', // Enlace
         true // Habilitar vista previa de enlaces
     );
-```
+    ```
 
-## Marcar mensaje como leido
-Se encarga de marcar el mensaje recibido como leido, con los dos checks azules.
 
-```php
-    $message = Whatsapp::message()->markMessageAsRead('01JW939646VBZTS7JEJN21FGVE'); // ID del Mensaje a marcar como leidoo
-```
 
-## 5. Enviar Respuestas a Mensajes
-Responde a un mensaje existente.
+- **Enviar Respuestas a Mensajes**
+    Responde a un mensaje existente.
 
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
     use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -434,21 +433,22 @@ Responde a un mensaje existente.
 
     $message = Whatsapp::message()->sendReplyTextMessage(
         $phone->phone_number_id, // ID del número de teléfono
-        '57',
-        '3237121901',
+        '57',                        // Código de país
+        '3237121901',                // Número de teléfono
         'wamid.HBgMNTczMTM3MTgxOTA4FQIAEhggNzVCNUQzRDMxRjhEMUJEM0JERjAzNkZCNDk5RDcyQjQA', // ID del mensaje de contexto
-        'Esta es una respuesta al mensaje anterior.'
+        'Esta es una respuesta al mensaje anterior.' // Mensaje
     );
-```
+    ```
 
 
 
-## 6. Reacciones a Mensajes
-Envía una reacción a un mensaje existente.
+- **Enviar Reacciones a Mensajes**
+    Envía una reacción a un mensaje existente.
 
-### Sintaxis Unicode requerida - Usa la codificación \u{código_hex} para emojis:
+    **Sintaxis Unicode requerida** 
+    - Usa la codificación \u{código_hex} para emojis:
 
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
     use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -459,8 +459,8 @@ Envía una reacción a un mensaje existente.
     // Reacción con corazón rojo ❤️
     $message = Whatsapp::message()->sendReplyReactionMessage(
         $phone->phone_number_id, // ID del número de teléfono
-        '57',
-        '3237121901',
+        '57',                        // Código de país
+        '3237121901',                // Número de teléfono
         'wamid.HBgMNTczMTM3MTgxOTA4FQIAEhggNzZENDMzMEI0MDRFQzg0OUUwRTI1M0JBQjEzMUZFRUYA', // ID del mensaje de contexto
         "\u{2764}\u{FE0F}" // Emoji de reacción
     );
@@ -475,14 +475,20 @@ Envía una reacción a un mensaje existente.
     "\u{1F680}" // 🚀
     "\u{2705}" // ✅
     "\u{274C}" // ❌
-```
+    ```
 
 
 
-## 7. Enviar Mensajes Multimedia
-### Enviar Imágenes
+- **Enviar Mensajes Multimedia**
+    Enviar mensajes con Imágenes
 
-```php
+    > ⚠️ **Advertencia:** Asegúrate de que la imagen que envíes cumpla con los requisitos de WhatsApp:  
+    > - Formato soportado: JPEG, PNG  
+    > - Tamaño máximo recomendado: 5 MB  
+    > - Dimensiones recomendadas: al menos 640x640 px  
+    > Si la imagen no cumple con estos requisitos, el envío puede fallar.
+
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
     use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -495,15 +501,16 @@ Envía una reacción a un mensaje existente.
 
     $message = Whatsapp::message()->sendImageMessage(
         $phone->phone_number_id, // ID del número de teléfono
-        '57',
-        '3237121901',
-        $file
+        '57',                        // Código de país
+        '3237121901',                // Número de teléfono
+        $file                       // Archivo de imagen.
     );
-```
+    ```
 
-### Enviar Imágenes por URL
+- **Enviar Imágenes por URL**
+    Enviar mensaaje con url de imagen.
 
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
     use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -513,16 +520,21 @@ Envía una reacción a un mensaje existente.
 
     $message = Whatsapp::message()->sendImageMessageByUrl(
         $phone->phone_number_id, // ID del número de teléfono
-        '57',
-        '3237121901',
-        'https://example.com/image.png'
+        '57',                        // Código de país
+        '3237121901',                // Número de teléfono
+        'https://example.com/image.png' // Enlace de imagen
     );
-```
+    ```
 
-### Enviar Sticker
-Los sticker solo se permiten archivos webp.
+- **Enviar Sticker**
+    Enviar mensajes con sticker.
 
-```php
+    > ⚠️ **Advertencia:** Asegúrate de que el sticker que envíes cumpla con los requisitos de WhatsApp:  
+    > - Formato soportado: WEBP  
+    > - Tamaño máximo recomendado: 100 KB  
+    > Si el sticker no cumple con estos requisitos, el envío puede fallar.
+
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
     use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -535,15 +547,21 @@ Los sticker solo se permiten archivos webp.
 
     $message = Whatsapp::message()->sendStickerMessage(
         $phone->phone_number_id, // ID del número de teléfono
-        '57',
-        '3237121901',
-        $file
+        '57',                        // Código de país
+        '3237121901',                // Número de teléfono
+        $file                       // Archivo de stiker
     );
-```
+    ```
 
-### Enviar Audio
+- **Enviar Audio**
+    Enviar mensajes con archivo de audio.
 
-```php
+    > ⚠️ **Advertencia:** Asegúrate de que el archivo de audio que envíes cumpla con los requisitos de WhatsApp:  
+    > - Formato soportado: AAC, MP4, MPEG, AMR, OGG.  
+    > - Tamaño máximo recomendado: 16 MB  
+    > Si el archivo de audio no cumple con estos requisitos, el envío puede fallar.
+    
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
     use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -556,15 +574,16 @@ Los sticker solo se permiten archivos webp.
 
     $message = Whatsapp::message()->sendAudioMessage(
         $phone->phone_number_id, // ID del número de teléfono
-        '57',
-        '3237121901',
-        $file
+        '57',                        // Código de país
+        '3237121901',                // Número de teléfono
+        $file                       // Archivo de Audio
     );
-```
+    ```
 
-### Enviar Audio por URL
+- **Enviar Audio por URL**
+    Enviar mensaje con Enlace de audio
 
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
     use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -574,15 +593,21 @@ Los sticker solo se permiten archivos webp.
 
     $message = Whatsapp::message()->sendAudioMessageByUrl(
         $phone->phone_number_id, // ID del número de teléfono
-        '57',
-        '3237121901',
-        'https://example.com/audio.ogg'
+        '57',                        // Código de país
+        '3237121901',                // Número de teléfono
+        'https://example.com/audio.ogg' // URL o Enlace
     );
-```
+    ```
 
-### Enviar Documentos
+- **Enviar Documentos**
+    Enviar mensaje con Documento
 
-```php
+    > ⚠️ **Advertencia:** Asegúrate de que el archivo de documento que envíes cumpla con los requisitos de WhatsApp:  
+    > - Formatos soportados: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, CSV, ZIP, RAR, entre otros.  
+    > - Tamaño máximo recomendado: 100 MB  
+    > Si el archivo no cumple con estos requisitos, el envío puede fallar.
+
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
     use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -595,15 +620,16 @@ Los sticker solo se permiten archivos webp.
 
     $message = Whatsapp::message()->sendDocumentMessage(
         $phone->phone_number_id, // ID del número de teléfono
-        '57',
-        '3237121901',
-        $file
+        '57',                        // Código de país
+        '3237121901',                // Número de teléfono
+        $file                       // Archivo del documento
     );
-```
+    ```
 
-### Enviar Documentos por URL
+- **Enviar Documentos por URL**
+    Enviar mensaje de enlace de documento.
 
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
     use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -613,16 +639,16 @@ Los sticker solo se permiten archivos webp.
 
     $message = Whatsapp::message()->sendDocumentMessageByUrl(
         $phone->phone_number_id, // ID del número de teléfono
-        '57',
-        '3237121901',
-        'https://example.com/document.pdf'
+        '57',                        // Código de país
+        '3237121901',                // Número de teléfono
+        'https://example.com/document.pdf' // URL o Enlace de documento
     );
-```
+    ```
 
-## 8. Enviar Mensajes de Ubicación
-### Envía un mensaje con coordenadas de ubicación.
+- **Enviar Mensajes de Ubicación**
+    Envía un mensaje con coordenadas de ubicación.
 
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
     use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -630,30 +656,33 @@ Los sticker solo se permiten archivos webp.
     $account = WhatsappBusinessAccount::first();
     $phone = $account->phoneNumbers->first();
 
+    // Ejemplo 1
     $message = Whatsapp::message()->sendLocationMessage(
         $phone->phone_number_id, // ID del número de teléfono
-        '57',
-        '3237121901',
-        4.7110, // Latitud
-        -74.0721, // Longitud
-        'Bogotá', // Nombre del lugar
-        'Colombia' // Dirección
+        '57',                        // Código de país
+        '3237121901',                // Número de teléfono
+        4.7110,                     // Latitud
+        -74.0721,                   // Longitud
+        'Bogotá',                   // Nombre del lugar
+        'Colombia'                  // Dirección
     );
 
+    // Ejemplo 2
     $message = Whatsapp::message()->sendLocationMessage(
         phoneNumberId: $phone->phone_number_id,
-        countryCode: '57',
-        phoneNumber: '3137183308',
-        latitude: 19.4326077,  // Latitud
-        longitude: -99.133208, // Longitud
-        name: 'Ciudad de México',
-        address: 'Plaza de la Constitución'
+        countryCode: '57',                  // Código de país
+        phoneNumber: '3137183308',          // Número de teléfono
+        latitude: 19.4326077,               // Latitud
+        longitude: -99.133208,              // Longitud
+        name: 'Ciudad de México',           // Nombre del lugar
+        address: 'Plaza de la Constitución' // Dirección
     );
-```
+    ```
 
-## 9. Mensajes con Botones Interactivos
+- **Mensajes con Botones Interactivos**
+    Enviar mensajes con botones interactivos:
 
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
     use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -663,8 +692,8 @@ Los sticker solo se permiten archivos webp.
 
     $message = Whatsapp::message()->sendInteractiveButtonsMessage(
         phoneNumberId: $phone->phone_number_id,
-        countryCode: '57',
-        phoneNumber: '3136133508',
+        '57',                        // Código de país
+        '3237121901',                // Número de teléfono
         body: 'Selecciona una opción:',
         buttons: [
             ['id' => 'op1', 'title' => 'Opción 1'], // Máximo 3 botones
@@ -672,11 +701,12 @@ Los sticker solo se permiten archivos webp.
         ],
         footer: 'Footer opcional' // Texto secundario
     );
-```
+    ```
 
-## 10. Listas Desplegables Interactivas
+- **Listas Desplegables Interactivas**
+    Enveria mensajes con Listas desplegables interactivas:
 
-```php
+    ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
     use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
     use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
@@ -700,8 +730,14 @@ Los sticker solo se permiten archivos webp.
         ],
         body: 'Selecciona de la lista:' // Texto principal
     );
-```
+    ```
 
+## Marcar mensaje como leido
+Se encarga de marcar el mensaje recibido como leido, con los dos checks azules.
+
+```php
+    $message = Whatsapp::message()->markMessageAsRead('01JW939646VBZTS7JEJN21FGVE'); // ID del Mensaje a marcar como leidoo
+```
 ---
 
 ## ❤️Apóyanos con una donación en GitHub Sponsors
