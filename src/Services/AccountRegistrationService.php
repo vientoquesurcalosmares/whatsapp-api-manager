@@ -5,13 +5,16 @@ namespace ScriptDevelop\WhatsappManager\Services;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
-use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessProfile;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessProfile;
 use ScriptDevelop\WhatsappManager\Traits\GeneratesUlid;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Exceptions\ApiException;
 use ScriptDevelop\WhatsappManager\Exceptions\InvalidApiResponseException;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Validators\BusinessProfileValidator;
+
+use Illuminate\Database\Eloquent\Model;
+use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
 
 /**
  * Servicio para registrar cuentas empresariales de WhatsApp y gestionar sus números telefónicos.
@@ -38,14 +41,14 @@ class AccountRegistrationService
      * Registra una cuenta empresarial de WhatsApp y sus números telefónicos.
      *
      * @param array $data Datos de la cuenta empresarial.
-     * @return WhatsappBusinessAccount La cuenta empresarial registrada o actualizada.
+     * @return Model La cuenta empresarial registrada o actualizada.
      * @throws ApiException Si ocurre un error al interactuar con la API de WhatsApp.
      * @throws InvalidApiResponseException Si la respuesta de la API es inválida.
      */
-    public function register(array $data): WhatsappBusinessAccount
+    public function register(array $data): Model
     {
         Log::channel('whatsapp')->info('Iniciando registro de cuenta', ['business_id' => $data['business_id']]);
-        
+
         $this->validateInput($data);
 
         try {
@@ -54,10 +57,10 @@ class AccountRegistrationService
             $suscriptions = $this->fetchAccountDataSuscriptions($data);
 
             $account = $this->upsertBusinessAccount($data['api_token'], $accountData, $suscriptions);
-            
+
             // 2. Registrar números telefónicos
             $this->registerPhoneNumbers($account);
-            
+
             // 3. Vincular perfiles empresariales
             $this->linkBusinessProfilesToPhones($account);
 
@@ -93,14 +96,14 @@ class AccountRegistrationService
     {
         // Usa el token temporal SIN encriptar para la verificación inicial
         $response = $this->whatsappService
-            ->withTempToken($data['api_token']) 
+            ->withTempToken($data['api_token'])
             ->getBusinessAccount($data['business_id']);
 
         Log::channel('whatsapp')->debug('RESPUESTA API BUSINESS ACCOUNT:', [
             'business_id' => $data['business_id'],
             'response' => $response
         ]);
-        
+
         return $response;
     }
 
@@ -108,14 +111,14 @@ class AccountRegistrationService
     {
         // Usa el token temporal SIN encriptar para la verificación inicial
         $response = $this->whatsappService
-            ->withTempToken($data['api_token']) 
+            ->withTempToken($data['api_token'])
             ->getBusinessAccountApp($data['business_id']);
 
         Log::channel('whatsapp')->debug('RESPUESTA API BUSINESS ACCOUNT SUSCRIPTIONS:', [
             'business_id' => $data['business_id'],
             'response' => $response
         ]);
-        
+
         return $response;
     }
 
@@ -124,18 +127,18 @@ class AccountRegistrationService
      *
      * @param string $apiToken Token de la API.
      * @param array $apiData Datos de la cuenta empresarial.
-     * @return WhatsappBusinessAccount La cuenta empresarial registrada o actualizada.
+     * @return Model La cuenta empresarial registrada o actualizada.
      */
-    private function upsertBusinessAccount(string $apiToken, array $apiData, $subscriptions = null): WhatsappBusinessAccount
+    private function upsertBusinessAccount(string $apiToken, array $apiData, $subscriptions = null): Model
     {
         $appData = [];
-    
+
         if (!empty($subscriptions['data'][0]['whatsapp_business_api_data'])) {
             $appData = $subscriptions['data'][0]['whatsapp_business_api_data'];
         }
-        
+
         // El token se encripta automáticamente al guardar (vía mutador)
-        return WhatsappBusinessAccount::updateOrCreate(
+        return WhatsappModelResolver::business_account()->updateOrCreate(
             ['whatsapp_business_id' => $apiData['id']],
             [
                 'name' => $apiData['name'] ?? 'Sin nombre',
@@ -153,10 +156,10 @@ class AccountRegistrationService
     /**
      * Registra los números telefónicos asociados a la cuenta empresarial.
      *
-     * @param WhatsappBusinessAccount $account La cuenta empresarial.
+     * @param Model $account La cuenta empresarial.
      * @throws ApiException Si ocurre un error al interactuar con la API de WhatsApp.
      */
-    private function registerPhoneNumbers(WhatsappBusinessAccount $account): void
+    private function registerPhoneNumbers(Model $account): void
     {
         try {
             // Usa el token DESENCRIPTADO automáticamente (vía accessor)
@@ -176,12 +179,12 @@ class AccountRegistrationService
     /**
      * Actualiza o crea un número telefónico en la base de datos.
      *
-     * @param WhatsappBusinessAccount $account La cuenta empresarial.
+     * @param Model $account La cuenta empresarial.
      * @param array $phoneData Datos del número telefónico.
-     * @return WhatsappPhoneNumber El número telefónico registrado o actualizado.
+     * @return Model El número telefónico registrado o actualizado.
      * @throws ApiException Si ocurre un error al interactuar con la API de WhatsApp.
      */
-    private function updateOrCreatePhoneNumber(WhatsappBusinessAccount $account, array $phoneData): WhatsappPhoneNumber
+    private function updateOrCreatePhoneNumber(Model $account, array $phoneData): Model
     {
         try {
             $phoneDetails = $this->whatsappService->getPhoneNumberDetails($phoneData['id']);
@@ -191,7 +194,7 @@ class AccountRegistrationService
             usort($countryCodes, function($a, $b) {
                 return strlen($b) <=> strlen($a);
             });
-            
+
             // Extraer código de país y número
             $rawNumber = preg_replace('/[^\d]/', '', $phoneDetails['display_phone_number']);
             $countryCode = null;
@@ -206,7 +209,7 @@ class AccountRegistrationService
                 }
             }
 
-            return WhatsappPhoneNumber::updateOrCreate(
+            return WhatsappModelResolver::phone_number()->updateOrCreate(
                 ['api_phone_number_id' => $phoneData['id']],
                 [
                     'whatsapp_business_account_id' => $account->whatsapp_business_id,
@@ -234,10 +237,10 @@ class AccountRegistrationService
     /**
      * Vincula los perfiles empresariales a los números telefónicos.
      *
-     * @param WhatsappBusinessAccount $account La cuenta empresarial.
+     * @param Model $account La cuenta empresarial.
      * @throws ApiException Si ocurre un error al interactuar con la API de WhatsApp.
      */
-    private function linkBusinessProfilesToPhones(WhatsappBusinessAccount $account): void
+    private function linkBusinessProfilesToPhones(Model $account): void
     {
         foreach ($account->phoneNumbers as $phone) {
             $this->processPhoneNumberProfile($phone);
@@ -247,11 +250,11 @@ class AccountRegistrationService
     /**
      * Procesa el perfil empresarial de un número telefónico.
      *
-     * @param WhatsappPhoneNumber $phone El número telefónico.
+     * @param Model $phone El número telefónico.
      * @throws ApiException Si ocurre un error al interactuar con la API de WhatsApp.
      * @throws InvalidApiResponseException Si la respuesta de la API es inválida.
      */
-    private function processPhoneNumberProfile(WhatsappPhoneNumber $phone): void
+    private function processPhoneNumberProfile(Model $phone): void
     {
         try {
             $profileData = $this->whatsappService
@@ -272,11 +275,11 @@ class AccountRegistrationService
     /**
      * Actualiza o crea un perfil empresarial en la base de datos.
      *
-     * @param WhatsappPhoneNumber $phone El número telefónico.
+     * @param Model $phone El número telefónico.
      * @param array $profileData Datos del perfil empresarial.
      * @throws InvalidApiResponseException Si la respuesta de la API es inválida.
      */
-    private function upsertBusinessProfile(WhatsappPhoneNumber $phone, array $profileData): void
+    private function upsertBusinessProfile(Model $phone, array $profileData): void
     {
         try {
             $validator = new BusinessProfileValidator();
@@ -289,13 +292,13 @@ class AccountRegistrationService
                 $profile->update($validData);
             } else {
                 // Crear nuevo perfil solo si no existe
-                $profile = WhatsappBusinessProfile::create($validData);
+                $profile = WhatsappModelResolver::business_profile()->create($validData);
                 $phone->update(['whatsapp_business_profile_id' => $profile->whatsapp_business_profile_id]);
             }
 
             // Sincronizar websites
             $this->syncWebsites(
-                $profile, 
+                $profile,
                 $this->parseWebsites($profileData['websites'] ?? [])
             );
         } catch (InvalidApiResponseException $e) {
@@ -319,13 +322,13 @@ class AccountRegistrationService
     /**
      * Sincroniza los sitios web del perfil empresarial en la base de datos.
      *
-     * @param WhatsappBusinessProfile $profile El perfil empresarial.
+     * @param Model $profile El perfil empresarial.
      * @param array $websites Datos de los sitios web.
      */
-    private function syncWebsites(WhatsappBusinessProfile $profile, array $websites): void
+    private function syncWebsites(Model $profile, array $websites): void
     {
         $profile->websites()->delete();
-        
+
         foreach ($websites as $website) {
             if (!empty($website['website']) && filter_var($website['website'], FILTER_VALIDATE_URL)) {
                 $profile->websites()->create($website);
