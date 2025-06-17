@@ -1980,6 +1980,13 @@ Me puedes apoyar como desarrollador open source en GitHub Sponsors:
 [![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
 Gracias por tu apoyo 💙
 ---
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/djdang3r/whatsapp-api-manager)
+
+![Ejemplo de plantilla de marketing](assets/Whatsapp'Manager.png "Plantilla de Marketing")
+
+# WhatsApp Business API Manager for Laravel
+
+LARAVEL WHatsapp Manager
 
 ## 🇺🇸 English
 
