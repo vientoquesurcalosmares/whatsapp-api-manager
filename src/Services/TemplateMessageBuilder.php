@@ -32,6 +32,8 @@ class TemplateMessageBuilder
     protected array $components = [];
     protected array $templateStructure = []; // Estructura de la plantilla
     protected ?Model $contact = null;
+    protected array $buttonParameters = [];
+    protected array $buttonTextIndexMap = [];
 
     /**
      * Constructor de la clase TemplateMessageBuilder.
@@ -187,38 +189,75 @@ class TemplateMessageBuilder
         return $this;
     }
 
-    /**
-     * Agrega un botón a la plantilla.
-     *
-     * @param string $type El tipo de botón ("QUICK_REPLY" o "URL")
-     * @param string $text El texto del botón
-     * @param string|null $url URL (solo para tipo URL)
-     * @param array $parameters Parámetros dinámicos (formato correcto para la API)
-     * @return self
-     * @throws InvalidArgumentException
-     */
-    public function addButton(
-        string $type,
-        string $text,
-        ?string $url = null,
-        array $parameters = []
-    ): self {
+
+
+    public function addButton(string $buttonText, array $parameters): self
+    {
         $this->ensureTemplateStructureLoaded();
-        $this->validateComponent('BUTTONS');
+        
+        // Crear mapa texto->índice si no existe
+        if (empty($this->buttonTextIndexMap)) {
+            foreach ($this->templateStructure['BUTTONS'] as $index => $button) {
+                $this->buttonTextIndexMap[$button['text']] = $index;
+            }
+        }
+        
+        if (!isset($this->buttonTextIndexMap[$buttonText])) {
+            $availableButtons = implode("', '", array_keys($this->buttonTextIndexMap));
+            throw new InvalidArgumentException(
+                "Botón '$buttonText' no encontrado. Botones disponibles: '$availableButtons'"
+            );
+        }
+        
+        $this->buttonParameters[$this->buttonTextIndexMap[$buttonText]] = $parameters;
+        return $this;
+    }
 
-        $button = [
-            'type' => strtoupper($type),
-            'text' => $text,
-            'url' => $url
-        ];
-
-        if (!isset($this->components['BUTTONS'])) {
-            $this->components['BUTTONS'] = ['buttons' => []];
+    protected function buildButtonComponents(): array
+    {
+        $buttonComponents = [];
+        
+        if (!isset($this->templateStructure['BUTTONS'])) {
+            return [];
         }
 
-        $this->components['BUTTONS']['buttons'][] = $button;
+        foreach ($this->templateStructure['BUTTONS'] as $index => $button) {
+            $buttonType = strtoupper($button['type'] ?? '');
+            $subType = strtolower($buttonType);
+            
+            // Solo agregar componente si tiene parámetros dinámicos
+            if ($this->buttonRequiresParameters($button) && isset($this->buttonParameters[$index])) {
+                $parameters = [];
+                foreach ($this->buttonParameters[$index] as $param) {
+                    $parameters[] = [
+                        'type' => 'text',
+                        'text' => $param
+                    ];
+                }
 
-        return $this;
+                $buttonComponents[] = [
+                    'type' => 'button',
+                    'sub_type' => $subType,
+                    'index' => $index,
+                    'parameters' => $parameters
+                ];
+            }
+        }
+
+        return $buttonComponents;
+    }
+
+    protected function buttonRequiresParameters(array $button): bool
+    {
+        $type = strtoupper($button['type'] ?? '');
+        
+        // Solo botones de URL pueden tener parámetros dinámicos
+        if ($type !== 'URL') {
+            return false;
+        }
+
+        // Verificar si la URL contiene placeholders (ej: {{1}})
+        return isset($button['url']) && preg_match('/\{\{\d+\}\}/', $button['url']);
     }
 
     /**
@@ -299,18 +338,16 @@ class TemplateMessageBuilder
 
     protected function fetchTemplateStructure(): void
     {
-        $template = WhatsappModelResolver::template()->with('components')
+        $template = WhatsappModelResolver::template()
+            ->with('components')
             ->where('name', $this->templateIdentifier)
             ->where('whatsapp_business_id', $this->phone->businessAccount->whatsapp_business_id)
             ->first();
 
-        Log::channel('whatsapp')->info('Plantilla obtenida de la base de datos.', ['template' => $template]);
-
         if (!$template) {
-            throw new InvalidArgumentException("La plantilla '{$this->templateIdentifier}' no existe en la base de datos.");
+            throw new InvalidArgumentException("Plantilla '{$this->templateIdentifier}' no encontrada.");
         }
 
-        // Normalizar tipos a mayúsculas
         $structure = [
             'language' => $template->language,
             'HEADER' => null,
@@ -319,31 +356,64 @@ class TemplateMessageBuilder
             'BUTTONS' => [],
         ];
 
-        foreach ($template->components as $component) {
-            $type = strtoupper($component->type);
-            switch ($type) {
-                case 'HEADER':
-                    $structure['HEADER'] = [
-                        'type' => 'HEADER',
-                        'formats' => isset($component->content['format'])
-                            ? (array)$component->content['format']
-                            : ['TEXT'] // Valor por defecto si no hay formato
-                    ];
-                    break;
-                case 'BODY':
-                case 'FOOTER':
-                    $structure[$type] = $component;
-                    break;
-                case 'BUTTON':
-                case 'BUTTONS':
-                    $structure['BUTTONS'][] = $component;
-                    break;
+        // Intentar usar el campo json si está disponible
+        if (!empty($template->json)) {
+            $templateData = is_array($template->json) ? $template->json : json_decode($template->json, true);
+            
+            if ($templateData && isset($templateData['components'])) {
+                foreach ($templateData['components'] as $component) {
+                    $this->processComponent($component, $structure);
+                }
+            }
+        }
+        
+        // Si no hay datos en json o no se procesaron, usar los componentes relacionados
+        if (empty($structure['BUTTONS']) && $template->relationLoaded('components')) {
+            foreach ($template->components as $component) {
+                $componentData = is_array($component->content) ? $component->content : json_decode($component->content, true);
+                $this->processComponent(array_merge(['type' => $component->type], $componentData), $structure);
             }
         }
 
         $this->templateStructure = $structure;
 
-        Log::channel('whatsapp')->info('Estructura de la plantilla obtenida.', ['templateStructure' => $this->templateStructure]);
+        Log::channel('whatsapp')->info('Estructura de plantilla procesada', [
+            'structure' => $this->templateStructure
+        ]);
+    }
+
+    protected function processComponent(array $component, array &$structure): void
+    {
+        $type = strtoupper($component['type'] ?? '');
+        
+        switch ($type) {
+            case 'HEADER':
+                $structure['HEADER'] = [
+                    'formats' => $component['format'] ?? ['TEXT'],
+                    'example' => $component['example'] ?? []
+                ];
+                break;
+                
+            case 'BODY':
+                $structure['BODY'] = $component;
+                break;
+                
+            case 'FOOTER':
+                $structure['FOOTER'] = $component;
+                break;
+                
+            case 'BUTTONS':
+                $buttons = $component['buttons'] ?? [];
+                foreach ($buttons as $index => $button) {
+                    $structure['BUTTONS'][$index] = [
+                        'type' => $button['type'] ?? 'UNKNOWN',
+                        'text' => $button['text'] ?? '',
+                        'url' => $button['url'] ?? null,
+                        'phone_number' => $button['phone_number'] ?? null
+                    ];
+                }
+                break;
+        }
     }
 
     /**
@@ -382,37 +452,19 @@ class TemplateMessageBuilder
     {
         $components = [];
 
-        foreach ($this->components as $componentType => $component) {
-            if ($componentType === 'BUTTONS') {
-                // Procesar botones como componentes individuales
-                foreach ($component['buttons'] as $index => $button) {
-                    $buttonComponent = [
-                        'type' => 'button',
-                        'sub_type' => strtolower($button['type']),
-                        'index' => $index,
-                        'parameters' => [
-                            [
-                                'type' => 'text',
-                                'text' => $button['text']
-                            ]
-                        ]
-                    ];
-
-                    if ($button['type'] === 'URL') {
-                        $buttonComponent['parameters'][0]['type'] = 'payload';
-                        $buttonComponent['parameters'][0]['payload'] = $button['url'];
-                    }
-
-                    $components[] = $buttonComponent;
-                }
-            } else {
-                // Otros componentes
+        // Procesar HEADER, BODY, FOOTER
+        foreach (['HEADER', 'BODY', 'FOOTER'] as $componentType) {
+            if (isset($this->components[$componentType])) {
                 $components[] = [
                     'type' => strtolower($componentType),
-                    'parameters' => $component['parameters'] ?? []
+                    'parameters' => $this->components[$componentType]['parameters'] ?? []
                 ];
             }
         }
+
+        // Procesar botones dinámicos
+        $buttonComponents = $this->buildButtonComponents();
+        $components = array_merge($components, $buttonComponents);
 
         $payload = [
             'messaging_product' => 'whatsapp',
