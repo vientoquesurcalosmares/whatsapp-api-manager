@@ -46,6 +46,7 @@ class Message extends Model
         'message_error',
         'details_error',
         'json',
+        'json_template_payload',
     ];
 
     protected $casts = [
@@ -53,7 +54,7 @@ class Message extends Model
         'json_content' => 'array',
         'json' => 'array'
     ];
-    
+
 
     public function contact()
     {

@@ -39,6 +39,7 @@ return new class extends Migration
             $table->text('message_error')->nullable();
             $table->text('details_error')->nullable();
             $table->json('json')->nullable();
+            $table->json('json_template_payload')->nullable();
             $table->boolean('bot')->default(false);
             $table->timestamps();
             $table->softDeletes();
@@ -57,7 +58,7 @@ return new class extends Migration
                   ->references('phone_number_id')
                   ->on('whatsapp_phone_numbers')
                   ->onDelete('cascade');
-            
+
             $table->foreign('message_context_id')
                   ->references('message_id')
                   ->on('whatsapp_messages')
