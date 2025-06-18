@@ -5,6 +5,7 @@ namespace ScriptDevelop\WhatsappManager\Services;
 //use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 use InvalidArgumentException;
 use Illuminate\Support\Str;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
@@ -461,7 +462,10 @@ class TemplateMessageBuilder
             'message_content' => NULL,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
-            'json_template_payload' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+            'json_template_payload' => json_encode([
+                    'body_text' => Arr::get($this->templateStructure, 'BODY.content.text', ''),
+                    'payload' => $payload,
+                ], JSON_UNESCAPED_UNICODE),
         ]);
 
 
