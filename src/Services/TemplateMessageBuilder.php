@@ -194,21 +194,21 @@ class TemplateMessageBuilder
     public function addButton(string $buttonText, array $parameters): self
     {
         $this->ensureTemplateStructureLoaded();
-        
+
         // Crear mapa texto->índice si no existe
         if (empty($this->buttonTextIndexMap)) {
             foreach ($this->templateStructure['BUTTONS'] as $index => $button) {
                 $this->buttonTextIndexMap[$button['text']] = $index;
             }
         }
-        
+
         if (!isset($this->buttonTextIndexMap[$buttonText])) {
             $availableButtons = implode("', '", array_keys($this->buttonTextIndexMap));
             throw new InvalidArgumentException(
                 "Botón '$buttonText' no encontrado. Botones disponibles: '$availableButtons'"
             );
         }
-        
+
         $this->buttonParameters[$this->buttonTextIndexMap[$buttonText]] = $parameters;
         return $this;
     }
@@ -216,7 +216,7 @@ class TemplateMessageBuilder
     protected function buildButtonComponents(): array
     {
         $buttonComponents = [];
-        
+
         if (!isset($this->templateStructure['BUTTONS'])) {
             return [];
         }
@@ -224,7 +224,7 @@ class TemplateMessageBuilder
         foreach ($this->templateStructure['BUTTONS'] as $index => $button) {
             $buttonType = strtoupper($button['type'] ?? '');
             $subType = strtolower($buttonType);
-            
+
             // Solo agregar componente si tiene parámetros dinámicos
             if ($this->buttonRequiresParameters($button) && isset($this->buttonParameters[$index])) {
                 $parameters = [];
@@ -250,7 +250,7 @@ class TemplateMessageBuilder
     protected function buttonRequiresParameters(array $button): bool
     {
         $type = strtoupper($button['type'] ?? '');
-        
+
         // Solo botones de URL pueden tener parámetros dinámicos
         if ($type !== 'URL') {
             return false;
@@ -359,14 +359,14 @@ class TemplateMessageBuilder
         // Intentar usar el campo json si está disponible
         if (!empty($template->json)) {
             $templateData = is_array($template->json) ? $template->json : json_decode($template->json, true);
-            
+
             if ($templateData && isset($templateData['components'])) {
                 foreach ($templateData['components'] as $component) {
                     $this->processComponent($component, $structure);
                 }
             }
         }
-        
+
         // Si no hay datos en json o no se procesaron, usar los componentes relacionados
         if (empty($structure['BUTTONS']) && $template->relationLoaded('components')) {
             foreach ($template->components as $component) {
@@ -385,7 +385,7 @@ class TemplateMessageBuilder
     protected function processComponent(array $component, array &$structure): void
     {
         $type = strtoupper($component['type'] ?? '');
-        
+
         switch ($type) {
             case 'HEADER':
                 $structure['HEADER'] = [
@@ -393,15 +393,15 @@ class TemplateMessageBuilder
                     'example' => $component['example'] ?? []
                 ];
                 break;
-                
+
             case 'BODY':
                 $structure['BODY'] = $component;
                 break;
-                
+
             case 'FOOTER':
                 $structure['FOOTER'] = $component;
                 break;
-                
+
             case 'BUTTONS':
                 $buttons = $component['buttons'] ?? [];
                 foreach ($buttons as $index => $button) {
@@ -515,7 +515,7 @@ class TemplateMessageBuilder
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
             'json_template_payload' => json_encode([
-                    'body_text' => Arr::get($this->templateStructure, 'BODY.content.text', ''),
+                    'body_text' => Arr::get($this->templateStructure, 'BODY.text', ''),
                     'payload' => $payload,
                 ], JSON_UNESCAPED_UNICODE),
         ]);
