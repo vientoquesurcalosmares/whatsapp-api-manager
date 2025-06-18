@@ -2,10 +2,14 @@
 
 namespace ScriptDevelop\WhatsappManager\Services;
 
-use ScriptDevelop\WhatsappManager\Models\WhatsappFlow;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappFlow;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use Illuminate\Support\Facades\Log;
+
+use Illuminate\Database\Eloquent\Model;
+use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
+
 use InvalidArgumentException;
 
 /**
@@ -13,7 +17,7 @@ use InvalidArgumentException;
  */
 class FlowEditor
 {
-    protected WhatsappFlow $flow;
+    protected Model $flow;
     protected ApiClient $apiClient;
     protected FlowService $flowService;
     protected array $flowData;
@@ -22,7 +26,7 @@ class FlowEditor
     protected ?array $currentElement = null;
     protected ?int $currentElementIndex = null;
 
-    public function __construct(WhatsappFlow $flow, ApiClient $apiClient, FlowService $flowService)
+    public function __construct(Model $flow, ApiClient $apiClient, FlowService $flowService)
     {
         $this->flow = $flow;
         $this->apiClient = $apiClient;
@@ -219,7 +223,7 @@ class FlowEditor
 
     // --- Guardar cambios en API y base de datos ---
 
-    public function save(): WhatsappFlow
+    public function save(): Model
     {
         if (empty($this->flow->wa_flow_id)) {
             throw new InvalidArgumentException('El flujo no tiene wa_flow_id, no puede ser editado en la API.');

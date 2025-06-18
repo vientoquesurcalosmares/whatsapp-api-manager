@@ -3,17 +3,20 @@
 namespace ScriptDevelop\WhatsappManager\Services;
 
 use InvalidArgumentException;
-use ScriptDevelop\WhatsappManager\Models\Template;
-use ScriptDevelop\WhatsappManager\Models\TemplateComponent;
-use ScriptDevelop\WhatsappManager\Models\TemplateCategory;
-use ScriptDevelop\WhatsappManager\Models\TemplateLanguage;
+//use ScriptDevelop\WhatsappManager\Models\Template;
+//use ScriptDevelop\WhatsappManager\Models\TemplateComponent;
+//use ScriptDevelop\WhatsappManager\Models\TemplateCategory;
+//use ScriptDevelop\WhatsappManager\Models\TemplateLanguage;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
-use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
-use ScriptDevelop\WhatsappManager\Models\WhatsappTemplateFlow;
-use ScriptDevelop\WhatsappManager\Models\WhatsappFlow;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappTemplateFlow;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappFlow;
 use Illuminate\Support\Facades\Log;
+
+use Illuminate\Database\Eloquent\Model;
+use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
 
 /**
  * Servicio para gestionar las plantillas de WhatsApp.
@@ -47,10 +50,10 @@ class TemplateService
     /**
      * Sincroniza todas las plantillas desde la API de WhatsApp.
      *
-     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param Model $account La cuenta empresarial de WhatsApp.
      * @return \Illuminate\Database\Eloquent\Collection Colección de plantillas sincronizadas.
      */
-    public function getTemplates(WhatsappBusinessAccount $account)
+    public function getTemplates(Model $account)
     {
         $this->flowService->syncFlows($account);
 
@@ -94,11 +97,11 @@ class TemplateService
             }
 
             $apiTemplateIds = collect($templates)->pluck('id')->toArray();
-            Template::where('whatsapp_business_id', $account->whatsapp_business_id)
+            WhatsappModelResolver::template()->where('whatsapp_business_id', $account->whatsapp_business_id)
                     ->whereNotIn('wa_template_id', $apiTemplateIds)
                     ->update(['status' => 'INACTIVE']);
 
-            return Template::where('whatsapp_business_id', $account->whatsapp_business_id)
+            return WhatsappModelResolver::template()->where('whatsapp_business_id', $account->whatsapp_business_id)
                 ->with(['category', 'components'])
                 ->get();
 
@@ -115,11 +118,11 @@ class TemplateService
     /**
      * Obtiene una plantilla por su ID desde la API de WhatsApp.
      *
-     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param Model $account La cuenta empresarial de WhatsApp.
      * @param string $templateId El ID de la plantilla.
-     * @return Template La plantilla obtenida.
+     * @return Model La plantilla obtenida.
      * @throws InvalidArgumentException Si el ID de la plantilla no es válido.
-     */    public function getTemplateById(WhatsappBusinessAccount $account, string $templateId): Template
+     */    public function getTemplateById(Model $account, string $templateId): Model
     {
         if (empty($templateId)) {
             throw new InvalidArgumentException('El ID de la plantilla es obligatorio.');
@@ -169,11 +172,11 @@ class TemplateService
     /**
      * Obtiene una plantilla por su nombre desde la API de WhatsApp.
      *
-     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param Model $account La cuenta empresarial de WhatsApp.
      * @param string $templateName El nombre de la plantilla.
-     * @return Template|null La plantilla obtenida o null si no existe.
+     * @return Model|null La plantilla obtenida o null si no existe.
      */
-    public function getTemplateByName(WhatsappBusinessAccount $account, string $templateName): ?Template
+    public function getTemplateByName(Model $account, string $templateName): ?Model
     {
         $endpoint = Endpoints::build(Endpoints::GET_TEMPLATES, [
             'waba_id' => $account->whatsapp_business_id,
@@ -233,10 +236,10 @@ class TemplateService
     /**
      * Crea una plantilla de utilidad.
      *
-     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param Model $account La cuenta empresarial de WhatsApp.
      * @return TemplateBuilder El constructor de plantillas.
      */
-    public function createUtilityTemplate(WhatsappBusinessAccount $account): TemplateBuilder
+    public function createUtilityTemplate(Model $account): TemplateBuilder
     {
         return (new TemplateBuilder($this->apiClient, $account, $this, $this->flowService))
             ->setCategory('UTILITY'); // Categoría específica para plantillas transaccionales
@@ -245,10 +248,10 @@ class TemplateService
     /**
      * Crea una plantilla de marketing.
      *
-     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param Model $account La cuenta empresarial de WhatsApp.
      * @return TemplateBuilder El constructor de plantillas.
      */
-    public function createMarketingTemplate(WhatsappBusinessAccount $account): TemplateBuilder
+    public function createMarketingTemplate(Model $account): TemplateBuilder
     {
         return (new TemplateBuilder($this->apiClient, $account, $this, $this->flowService))
             ->setCategory('MARKETING'); // Categoría específica para plantillas de marketing
@@ -257,10 +260,10 @@ class TemplateService
     /**
      * Crea una plantilla de autenticación.
      *
-     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param Model $account La cuenta empresarial de WhatsApp.
      * @return TemplateBuilder El constructor de plantillas.
      */
-    public function createAuthenticationTemplate(WhatsappBusinessAccount $account): TemplateBuilder
+    public function createAuthenticationTemplate(Model $account): TemplateBuilder
     {
         return (new TemplateBuilder($this->apiClient, $account, $this, $this->flowService))
             ->setCategory('AUTHENTICATION'); // Categoría específica para plantillas de autenticación
@@ -269,14 +272,14 @@ class TemplateService
     /**
      * Elimina una plantilla por su ID.
      *
-     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param Model $account La cuenta empresarial de WhatsApp.
      * @param string $templateId El ID de la plantilla.
      * @param bool $hardDelete Indica si se debe realizar un borrado permanente.
      * @return bool True si la plantilla fue eliminada, false en caso contrario.
      */
-    public function deleteTemplateById(WhatsappBusinessAccount $account, string $templateId, bool $hardDelete = false): bool
+    public function deleteTemplateById(Model $account, string $templateId, bool $hardDelete = false): bool
     {
-        $template = Template::where('wa_template_id', $templateId)->first();
+        $template = WhatsappModelResolver::template()->where('wa_template_id', $templateId)->first();
 
         if(!$template){
             Log::channel('whatsapp')->error('La plantilla no existe!', [
@@ -345,14 +348,14 @@ class TemplateService
     /**
      * Elimina una plantilla por su nombre.
      *
-     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param Model $account La cuenta empresarial de WhatsApp.
      * @param string $templateName El nombre de la plantilla.
      * @param bool $hardDelete Indica si se debe realizar un borrado permanente.
      * @return bool True si la plantilla fue eliminada, false en caso contrario.
      */
-    public function deleteTemplateByName(WhatsappBusinessAccount $account, string $templateName, bool $hardDelete = false): bool
+    public function deleteTemplateByName(Model $account, string $templateName, bool $hardDelete = false): bool
     {
-        $template = Template::where('name', $templateName)->first();
+        $template = WhatsappModelResolver::template()->where('name', $templateName)->first();
 
         if(!$template){
             Log::channel('whatsapp')->error('La plantilla no existe!', [
@@ -420,10 +423,10 @@ class TemplateService
     /**
      * Crea un mensaje de plantilla para enviar.
      *
-     * @param WhatsappPhoneNumber $phone Numero de telefono de WhatsApp.
+     * @param Model $phone Numero de telefono de WhatsApp.
      * @return TemplateMessageBuilder El constructor del mensaje de plantilla.
      */
-    public function sendTemplateMessage(WhatsappPhoneNumber $phone): TemplateMessageBuilder
+    public function sendTemplateMessage(Model $phone): TemplateMessageBuilder
     {
         return new TemplateMessageBuilder($this->apiClient, $phone, $this);
     }
@@ -433,16 +436,16 @@ class TemplateService
      *
      * @param string $businessId El ID de la cuenta empresarial.
      * @param array $templateData Los datos de la plantilla.
-     * @return Template La plantilla creada o actualizada.
+     * @return Model La plantilla creada o actualizada.
      */
-    protected function storeOrUpdateTemplate(WhatsappBusinessAccount $account, array $templateData): Template
+    protected function storeOrUpdateTemplate(Model $account, array $templateData): Model
     {
         Log::channel('whatsapp')->info('Procesando plantilla.', [
             'template_id' => $templateData['id'],
             'template_name' => $templateData['name'],
         ]);
 
-        $template = Template::updateOrCreate(
+        $template = WhatsappModelResolver::template()->updateOrCreate(
             [
                 'wa_template_id' => $templateData['id'],
             ],
@@ -469,7 +472,7 @@ class TemplateService
     /**
      * Sincroniza la relación entre plantilla y flujo
      */
-    protected function syncTemplateFlowRelation(WhatsappBusinessAccount $account, string $templateId, string $apiFlowId, string $buttonLabel): ?WhatsappFlow
+    protected function syncTemplateFlowRelation(Model $account, string $templateId, string $apiFlowId, string $buttonLabel): ?Model
     {
         try {
             // Validar que el flujo existe en la base de datos
@@ -483,7 +486,7 @@ class TemplateService
             }
 
             // Usar el ULID local del flujo
-            WhatsappTemplateFlow::updateOrCreate(
+            WhatsappModelResolver::template_flow()->updateOrCreate(
                 [
                     'template_id' => $templateId,
                     'flow_id' => $flow->flow_id, // ULID local
@@ -507,7 +510,7 @@ class TemplateService
 
     protected function getLanguageId(string $templateData): string
     {
-        $language = TemplateLanguage::find($templateData);
+        $language = WhatsappModelResolver::template_language()->find($templateData);
 
         return $language->category_id;
     }
@@ -520,7 +523,7 @@ class TemplateService
      */
     protected function getCategoryId(string $categoryName): string
     {
-        $category = TemplateCategory::firstOrCreate(
+        $category = WhatsappModelResolver::template_category()->firstOrCreate(
             ['name' => $categoryName],
             ['description' => ucfirst($categoryName)]
         );
@@ -536,11 +539,11 @@ class TemplateService
     /**
      * Sincroniza los componentes de una plantilla.
      *
-     * @param Template $template La plantilla a sincronizar.
+     * @param Model $template La plantilla a sincronizar.
      * @param array $components Los componentes de la plantilla.
      * @return void
      */
-    protected function syncTemplateComponents(WhatsappBusinessAccount $account, Template $template, array $components): void
+    protected function syncTemplateComponents(Model $account, Model $template, array $components): void
     {
         Log::channel('whatsapp')->info('Sincronizando componentes de la plantilla.', [
             'template_id' => $template->template_id,
@@ -557,7 +560,7 @@ class TemplateService
                 }
 
                 // 1. Sincronizar componente principal
-                $component = TemplateComponent::updateOrCreate(
+                $component = WhatsappModelResolver::template_component()->updateOrCreate(
                     [
                         'template_id' => $template->template_id,
                         'type' => $type,
@@ -589,7 +592,7 @@ class TemplateService
             }
 
             // 3. Eliminar relaciones obsoletas
-            WhatsappTemplateFlow::where('template_id', $template->template_id)
+            WhatsappModelResolver::template_flow()->where('template_id', $template->template_id)
                 ->whereNotIn('flow_id', $currentLocalFlowIds)
                 ->delete();
 
@@ -661,7 +664,7 @@ class TemplateService
         }
 
         $validCategories = ['AUTHENTICATION', 'MARKETING', 'UTILITY'];
-        
+
         if (!in_array($templateData['category'], $validCategories)) {
             throw new InvalidArgumentException('Categoría inválida');
         }
@@ -670,13 +673,13 @@ class TemplateService
     /**
      * Crea una sesión de carga para un archivo.
      *
-     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param Model $account La cuenta empresarial de WhatsApp.
      * @param string $filePath La ruta del archivo.
      * @param string $mimeType El tipo MIME del archivo.
      * @return string El ID de la sesión de carga.
      * @throws \RuntimeException Si ocurre un error durante la creación de la sesión.
      */
-    public function createUploadSession(WhatsappBusinessAccount $account, string $filePath, string $mimeType): string
+    public function createUploadSession(Model $account, string $filePath, string $mimeType): string
     {
         // Extraer solo el nombre del archivo
         $fileName = basename($filePath);
@@ -763,7 +766,7 @@ class TemplateService
     /**
      * Sube un archivo a la sesión de carga.
      *
-     * @param WhatsappBusinessAccount $account La cuenta empresarial de WhatsApp.
+     * @param Model $account La cuenta empresarial de WhatsApp.
      * @param string $sessionId El ID de la sesión de carga.
      * @param string $filePath La ruta del archivo.
      * @param string $mimeType El tipo MIME del archivo.
@@ -771,7 +774,7 @@ class TemplateService
      * @throws InvalidArgumentException Si el archivo no existe.
      * @throws \RuntimeException Si ocurre un error durante la carga.
      */
-    public function uploadMedia(WhatsappBusinessAccount $account, string $sessionId, string $filePath, string $mimeType): string
+    public function uploadMedia(Model $account, string $sessionId, string $filePath, string $mimeType): string
     {
         // Validar que el archivo exista
         if (!file_exists($filePath)) {

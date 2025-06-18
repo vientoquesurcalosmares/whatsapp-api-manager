@@ -2,11 +2,14 @@
 
 namespace ScriptDevelop\WhatsappManager\Services;
 
-use ScriptDevelop\WhatsappManager\Models\WhatsappFlow;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappFlow;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use Illuminate\Support\Facades\Log;
+
+use Illuminate\Database\Eloquent\Model;
+use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
 use InvalidArgumentException;
 
 class FlowBuilder
@@ -15,10 +18,10 @@ class FlowBuilder
     protected array $screens = [];
     protected ?ScreenBuilder $currentScreen = null;
     protected ApiClient $apiClient;
-    protected WhatsappBusinessAccount $account;
+    protected Model $account;
     protected FlowService $flowService;
 
-    public function __construct(ApiClient $apiClient, WhatsappBusinessAccount $account, FlowService $flowService)
+    public function __construct(ApiClient $apiClient, Model $account, FlowService $flowService)
     {
         $this->apiClient = $apiClient;
         $this->account = $account;
@@ -256,7 +259,7 @@ class FlowBuilder
                     'required' => $element['required'] ?? false
                 ]);
                 break;
-                
+
             case 'dropdown':
                 $converted = array_merge($base, [
                     'type' => 'Dropdown',
@@ -268,7 +271,7 @@ class FlowBuilder
                     }, $element['options'] ?? [])
                 ]);
                 break;
-                
+
             case 'checkbox':
                 $converted = array_merge($base, [
                     'type' => 'Checkbox',
@@ -286,7 +289,7 @@ class FlowBuilder
                     ],
                 ];
                 break;
-                
+
             default:
                 throw new InvalidArgumentException("Tipo de elemento no soportado: {$element['type']}");
         }
@@ -300,7 +303,7 @@ class FlowBuilder
     /**
      * Guarda el flujo en la API y base de datos
      */
-    public function save(): WhatsappFlow
+    public function save(): Model
     {
         $flowData = $this->build();
 
@@ -332,7 +335,7 @@ class FlowBuilder
             );
 
             // Crear registro en base de datos
-            $flow = WhatsappFlow::create([
+            $flow = WhatsappModelResolver::flow()->create([
                 'whatsapp_business_account_id' => $this->account->whatsapp_business_id,
                 'wa_flow_id' => $response['id'],
                 'name' => $flowData['name'],

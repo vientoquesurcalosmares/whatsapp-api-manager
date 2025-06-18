@@ -3,12 +3,15 @@
 namespace ScriptDevelop\WhatsappManager\Services;
 
 use InvalidArgumentException;
-use ScriptDevelop\WhatsappManager\Models\Template;
+//use ScriptDevelop\WhatsappManager\Models\Template;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use Illuminate\Support\Facades\Log;
-use ScriptDevelop\WhatsappManager\Models\TemplateCategory;
-use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+//use ScriptDevelop\WhatsappManager\Models\TemplateCategory;
+//use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+
+use Illuminate\Database\Eloquent\Model;
+use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
 
 /**
  * Constructor de plantillas para mensajes de WhatsApp Business API
@@ -32,8 +35,8 @@ class TemplateBuilder
     /** @var TemplateService Servicio auxiliar para plantillas */
     protected TemplateService $templateService;
 
-    /** @var WhatsappBusinessAccount Cuenta empresarial asociada */
-    protected WhatsappBusinessAccount $account;
+    /** @var Model Cuenta empresarial asociada */
+    protected Model $account;
 
     /** @var FlowService Servicio auxiliar para flujos */
     protected FlowService $flowService;
@@ -42,11 +45,11 @@ class TemplateBuilder
      * Constructor de la clase
      *
      * @param ApiClient $apiClient
-     * @param WhatsappBusinessAccount $account
+     * @param Model $account
      * @param TemplateService $templateService
      * @param FlowService $flowService
      */
-    public function __construct(ApiClient $apiClient, WhatsappBusinessAccount $account, TemplateService $templateService, FlowService $flowService)
+    public function __construct(ApiClient $apiClient, Model $account, TemplateService $templateService, FlowService $flowService)
     {
         $this->apiClient = $apiClient;
         $this->account = $account;
@@ -496,10 +499,10 @@ class TemplateBuilder
     /**
      * Guarda la plantilla en la API y la base de datos
      *
-     * @return Template Modelo de plantilla creado
+     * @return Model Modelo de plantilla creado
      * @throws \Exception En caso de error durante el proceso
      */
-    public function save(): Template
+    public function save(): Model
     {
         try {
             $this->validateTemplate();
@@ -553,7 +556,7 @@ class TemplateBuilder
             ]);
 
             // Crear el registro de la plantilla en la base de datos
-            $template = Template::create([
+            $template = WhatsappModelResolver::template()->create([
                 'whatsapp_business_id' => $this->account->whatsapp_business_id,
                 'wa_template_id' => $response['id'] ?? null,
                 'name' => $this->templateData['name'],
@@ -625,7 +628,7 @@ class TemplateBuilder
             throw new InvalidArgumentException('El nombre de la categoría es obligatorio.');
         }
 
-        $category = TemplateCategory::firstOrCreate(
+        $category = WhatsappModelResolver::template_category()->firstOrCreate(
             ['name' => $categoryName],
             ['description' => ucfirst($categoryName)]
         );
