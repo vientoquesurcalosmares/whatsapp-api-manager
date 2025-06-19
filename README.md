@@ -1215,13 +1215,13 @@ Gracias por tu apoyo 💙
 ## 1. Instala Laravel Reverb vía Composer
 En una nueva terminal, ejecuta el siguiente comando:
 ```php
-    composer require laravel/reverb
+composer require laravel/reverb
 ```
 
 ## 2. Publica los archivos de configuración de Reverb
 
 ```php
-    php artisan reverb:install
+php artisan reverb:install
 ```
 Esto generará el archivo config/reverb.php y ajustará tu broadcasting.php para incluir el driver reverb.
 
@@ -1229,12 +1229,12 @@ Esto generará el archivo config/reverb.php y ajustará tu broadcasting.php para
 ## 3. Configura tu archivo .env
 Agrega o ajusta las siguientes variables:
 ```bash
-    BROADCAST_CONNECTION=reverb
-    REVERB_APP_ID=whatsapp-app
-    REVERB_APP_KEY=whatsapp-key
-    REVERB_APP_SECRET=whatsapp-secret
-    REVERB_HOST=127.0.0.1
-    REVERB_PORT=8080
+BROADCAST_CONNECTION=reverb
+REVERB_APP_ID=whatsapp-app
+REVERB_APP_KEY=whatsapp-key
+REVERB_APP_SECRET=whatsapp-secret
+REVERB_HOST=127.0.0.1
+REVERB_PORT=8080
 ```
 ⚠️ Estos valores deben coincidir con los definidos en config/reverb.php.
 
@@ -1242,37 +1242,37 @@ Agrega o ajusta las siguientes variables:
 ## 4. Configura config/broadcasting.php
 Asegúrate de que el driver predeterminado sea reverb:
 ```php
-    'default' => env('BROADCAST_CONNECTION', 'null'),
+'default' => env('BROADCAST_CONNECTION', 'null'),
 ```
 
 Y dentro del array connections, asegúrate de tener esto:
 ```php
-    'reverb' => [
-        'driver' => 'reverb',
-        'key' => env('REVERB_APP_KEY'),
-        'secret' => env('REVERB_APP_SECRET'),
-        'app_id' => env('REVERB_APP_ID'),
-        'options' => [
-            'host' => env('REVERB_HOST'),
-            'port' => env('REVERB_PORT', 443),
-            'scheme' => env('REVERB_SCHEME', 'https'),
-            'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
-        ],
-        'client_options' => [
-            // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
-        ],
+'reverb' => [
+    'driver' => 'reverb',
+    'key' => env('REVERB_APP_KEY'),
+    'secret' => env('REVERB_APP_SECRET'),
+    'app_id' => env('REVERB_APP_ID'),
+    'options' => [
+        'host' => env('REVERB_HOST'),
+        'port' => env('REVERB_PORT', 443),
+        'scheme' => env('REVERB_SCHEME', 'https'),
+        'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
     ],
+    'client_options' => [
+        // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
+    ],
+],
 ```
 
 # 🚀 Levantar el servidor Reverb
 En una nueva terminal, ejecuta el siguiente comando:
 ```php
-    php artisan reverb:start
+php artisan reverb:start
 ```
 
 Deberías ver algo como:
 ```php
-    Reverb server started on 127.0.0.1:8080
+Reverb server started on 127.0.0.1:8080
 ```
 
 El servidor WebSocket quedará activo en 127.0.0.1:8080.
@@ -1282,56 +1282,64 @@ El servidor WebSocket quedará activo en 127.0.0.1:8080.
 ## 1. Instala las dependencias de frontend:
 Instalar Laravel Echo y PusherJS
 ```bash
-    npm install --save laravel-echo pusher-js
+npm install --save laravel-echo pusher-js
 ```
 
 ## 2. Configura Echo en resources/js/bootstrap.js o donde inicialices tu JS:
 
 ```js
-    import Echo from 'laravel-echo';
+import Echo from 'laravel-echo';
 
-    window.Pusher = require('pusher-js');
+window.Pusher = require('pusher-js');
 
-    window.Echo = new Echo({
-        broadcaster: 'reverb',
-        key: import.meta.env.VITE_REVERB_APP_KEY,
-        wsHost: import.meta.env.VITE_REVERB_HOST,
-        wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
-        forceTLS: false,
-        enabledTransports: ['ws'],
-    });
+window.Echo = new Echo({
+    broadcaster: 'reverb',
+    key: import.meta.env.VITE_REVERB_APP_KEY,
+    wsHost: import.meta.env.VITE_REVERB_HOST,
+    wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
+    forceTLS: false,
+    enabledTransports: ['ws'],
+});
 ```
 
 ## 3. Asegúrate de tener las variables necesarias en tu .env frontend (Vite):
 
 ```bash
-    VITE_REVERB_APP_KEY=whatsapp-key
-    VITE_REVERB_HOST=127.0.0.1
-    VITE_REVERB_PORT=8080
+VITE_REVERB_APP_KEY=whatsapp-key
+VITE_REVERB_HOST=127.0.0.1
+VITE_REVERB_PORT=8080
 ```
 
 
 # 📡 Escuchar eventos (ejemplo en JS)
 
 ```js
-    window.Echo.private('whatsapp.messages')
-        .listen('.message.received', (e) => {
-            console.log('Nuevo mensaje recibido:', e.data);
-        });
+window.Echo.private('whatsapp-messages')
+    .listen('.MessageReceived', (e) => {
+        console.log('Nuevo mensaje recibido:', e);
+    });
 ```
 
 
 # 📁 Configuración en el paquete
 En tu archivo config/whatsapp.php asegúrate de tener:
 ```php
-    return [
-        'broadcast_channel_type' => env('WHATSAPP_BROADCAST_TYPE', 'private'),
-    ];
+return [
+    'broadcast_channel_type' => env('WHATSAPP_BROADCAST_TYPE', 'private'),
+];
 ```
 
 Y en tu .env:
 ```bash
-    WHATSAPP_BROADCAST_TYPE=private
+WHATSAPP_BROADCAST_TYPE=private
+```
+
+Recuerde que si decide utilizar canales privados debe utilizar los caneles en routes-channel.php
+```php
+Broadcast::channel('whatsapp-messages', function ($user) {
+    // Puedes personalizar la lógica de acceso aquí
+    return $user !== null;
+});
 ```
 
 # 🧪 Prueba de Eventos
@@ -1348,14 +1356,21 @@ Puedes emitir manualmente un evento de prueba con:
 ```
 
 # 🖥️ Escuchar desde el frontend
-
+Canal Privado
 ```js
-    window.Echo.private('whatsapp.messages')
-        .listen('.message.received', (e) => {
-            console.log('Nuevo mensaje recibido:', e.data);
+    window.Echo.private('whatsapp-messages')
+        .listen('.MessageReceived', (e) => {
+            console.log('Nuevo mensaje recibido:', e);
         });
 ```
 
+Canal publico
+```js
+    window.Echo.channel('whatsapp-messages')
+        .listen('.MessageReceived', (e) => {
+            console.log('Nuevo mensaje recibido:', e);
+        });
+```
 ---
 
 ### 📡 **Eventos del Paquete**
