@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('flow_type')->nullable();
             $table->text('description')->nullable();
             $table->json('json_structure')->nullable()->comment('Estructura JSON del flow');
-            $table->enum('status', ['draft', 'published', 'archived'])->default('draft');
+            $table->enum('status', ['draft', 'published', 'archived', 'deprecated'])->default('draft');
             $table->string('version')->default('3.0');
 
             $table->json('categories')->nullable();
