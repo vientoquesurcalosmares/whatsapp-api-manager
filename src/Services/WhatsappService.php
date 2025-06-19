@@ -187,11 +187,12 @@ class WhatsappService
      */
     public function withTempToken(string $token): self
     {
-        $businessAccountClass = WhatsappModelResolver::business_account();
+        // Resolver el modelo configurado para la cuenta empresarial
+        $businessAccount = WhatsappModelResolver::make('business_account', ['api_token' => $token]);
 
-        $this->businessAccount = new $businessAccountClass([
-            'api_token' => $token
-        ]);
+        // Asignar la instancia del modelo a la propiedad
+        $this->businessAccount = $businessAccount;
+
         return $this;
     }
 }
