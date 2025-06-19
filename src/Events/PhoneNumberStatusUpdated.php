@@ -22,7 +22,7 @@ class PhoneNumberStatusUpdated implements ShouldBroadcast
 
     public function broadcastOn(): Channel
     {
-        $channelName = 'whatsapp.business';
+        $channelName = 'whatsapp-business';
 
         return config('whatsapp.broadcast_channel_type') === 'private'
             ? new PrivateChannel($channelName)
@@ -31,6 +31,6 @@ class PhoneNumberStatusUpdated implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return 'phone.status.updated';
+        return 'PhoneNumberStatusUpdated';
     }
 }

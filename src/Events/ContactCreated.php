@@ -22,7 +22,7 @@ class ContactCreated implements ShouldBroadcast
 
     public function broadcastOn(): Channel
     {
-        $channelName = 'whatsapp.contacts';
+        $channelName = 'whatsapp-contacts';
 
         return config('whatsapp.broadcast_channel_type') === 'private'
             ? new PrivateChannel($channelName)
@@ -31,6 +31,6 @@ class ContactCreated implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return 'contact.created';
+        return 'ContactCreated';
     }
 }

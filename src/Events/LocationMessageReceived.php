@@ -22,7 +22,7 @@ class LocationMessageReceived implements ShouldBroadcast
 
     public function broadcastOn(): Channel
     {
-        $channelName = 'whatsapp.messages';
+        $channelName = 'whatsapp-messages';
 
         return config('whatsapp.broadcast_channel_type') === 'private'
             ? new PrivateChannel($channelName)
@@ -31,6 +31,6 @@ class LocationMessageReceived implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return 'location.received';
+        return 'LocationMessageReceived';
     }
 }

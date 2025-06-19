@@ -2,26 +2,30 @@
 
 use Illuminate\Support\Facades\Broadcast;
 
-Broadcast::channel('whatsapp.messages', function ($user) {
-    return Auth::check();
-});
+if (config('whatsapp.broadcast_channel_type') === 'private') {
 
-Broadcast::channel('whatsapp.outgoing', function ($user) {
-    return Auth::check();
-});
+    Broadcast::channel('whatsapp-messages', function ($user) {
+        // Puedes personalizar la lógica de acceso aquí
+        return $user !== null;
+    });
 
-Broadcast::channel('whatsapp.status', function ($user) {
-    return Auth::check();
-});
+    Broadcast::channel('whatsapp-outgoing', function ($user) {
+        return Auth::check();
+    });
 
-Broadcast::channel('whatsapp.contacts', function ($user) {
-    return Auth::check();
-});
+    Broadcast::channel('whatsapp-status', function ($user) {
+        return Auth::check();
+    });
 
-Broadcast::channel('whatsapp.templates', function ($user) {
-    return Auth::check();
-});
+    Broadcast::channel('whatsapp-contacts', function ($user) {
+        return Auth::check();
+    });
 
-Broadcast::channel('whatsapp.business', function ($user) {
-    return Auth::check();
-});
+    Broadcast::channel('whatsapp-templates', function ($user) {
+        return Auth::check();
+    });
+
+    Broadcast::channel('whatsapp-business', function ($user) {
+        return Auth::check();
+    });
+}

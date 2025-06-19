@@ -24,7 +24,7 @@ class TextMessageReceived implements ShouldBroadcast
 
     public function broadcastOn(): Channel
     {
-        $channelName = 'whatsapp.messages';
+        $channelName = 'whatsapp-messages';
 
         return config('whatsapp.broadcast_channel_type') === 'private'
             ? new PrivateChannel($channelName)
@@ -33,6 +33,6 @@ class TextMessageReceived implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return 'text.received';
+        return 'TextMessageReceived';
     }
 }

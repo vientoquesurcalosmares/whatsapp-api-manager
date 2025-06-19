@@ -22,7 +22,7 @@ class TemplateCreated implements ShouldBroadcast
 
     public function broadcastOn(): Channel
     {
-        $channelName = 'whatsapp.templates';
+        $channelName = 'whatsapp-templates';
 
         return config('whatsapp.broadcast_channel_type') === 'private'
             ? new PrivateChannel($channelName)
@@ -31,6 +31,6 @@ class TemplateCreated implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return 'template.created';
+        return 'TemplateCreated';
     }
 }

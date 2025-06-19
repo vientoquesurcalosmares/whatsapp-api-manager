@@ -22,7 +22,7 @@ class MessageRead implements ShouldBroadcast
 
     public function broadcastOn(): Channel
     {
-        $channelName = 'whatsapp.status';
+        $channelName = 'whatsapp-status';
 
         return config('whatsapp.broadcast_channel_type') === 'private'
             ? new PrivateChannel($channelName)
@@ -31,6 +31,6 @@ class MessageRead implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return 'message.read';
+        return 'MessageRead';
     }
 }
