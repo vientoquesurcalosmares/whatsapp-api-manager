@@ -515,7 +515,7 @@ class TemplateMessageBuilder
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
             'json_template_payload' => json_encode([
-                    'body_text' => Arr::get($this->templateStructure, 'BODY.text', ''),
+                    //'body_text' => Arr::get($this->templateStructure, 'BODY.text', ''), // No es necesario, ya ahora los datos del template pasarán a guardarse en otra tabla relacionada
                     'payload' => $payload,
                 ], JSON_UNESCAPED_UNICODE),
         ]);
