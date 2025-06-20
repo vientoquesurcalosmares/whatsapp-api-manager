@@ -21,13 +21,14 @@ return new class extends Migration
             $table->string('message_method', 45)->default('INPUT');
             $table->string('message_from', 45);
             $table->string('message_to', 45);
-            $table->string('message_type', 45);
+            $table->string('message_type', 45);// Tipo de mensaje soportados: 'text', 'image', 'video', 'audio', 'document', 'sticker', 'location', 'contact', 'button', 'template'
             $table->text('message_content')->nullable();
             $table->string('media_url', 512)->nullable();
             $table->text('message_context')->nullable();
             $table->string('message_context_id', 45)->nullable();
             $table->string('message_context_from', 45)->nullable();
             $table->string('caption', 45)->nullable();
+            $table->ulid('template_version_id')->nullable();
             $table->json('json_content')->nullable();
             $table->enum('status', ['pending', 'sent', 'delivered', 'read', 'failed', 'received'])->default('pending');
             $table->timestamp('delivered_at')->nullable();
@@ -58,6 +59,11 @@ return new class extends Migration
                   ->references('phone_number_id')
                   ->on('whatsapp_phone_numbers')
                   ->onDelete('cascade');
+            
+            $table->foreign('template_version_id')
+                  ->references('version_id')
+                  ->on('whatsapp_template_versions')
+                  ->onDelete('set null');
 
             $table->foreign('message_context_id')
                   ->references('message_id')

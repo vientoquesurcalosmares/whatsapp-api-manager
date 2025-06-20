@@ -30,6 +30,7 @@ class Template extends Model
         'status',
         'file',
         'json',
+        'rejection_reason',
     ];
 
     public function businessAccount()
@@ -88,5 +89,19 @@ class Template extends Model
             'apiClient' => app(ApiClient::class),
             'templateService' => app(TemplateService::class)
         ]);
+    }
+
+    // Relación con versiones
+    public function versions()
+    {
+        return $this->hasMany(TemplateVersion::class, 'template_id');
+    }
+
+    // Relación con la última versión aprobada
+    public function activeVersion()
+    {
+        return $this->hasOne(TemplateVersion::class, 'template_id')
+            ->where('status', 'APPROVED')
+            ->latest();
     }
 }
