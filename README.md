@@ -277,21 +277,84 @@ Si quieres saber como obtener una completamente GRATIS mira estos dos videos:
     Esto crea el enlace public/storage apuntando a storage/app/public, requerido por Laravel para servir archivos correctamente.
 
 
+# **Configuración de Webhooks en Meta**
 
-10.  **Configuración de Webhooks en Meta**
-    Ir a Meta Developers
+Para que tu aplicación reciba notificaciones en tiempo real de WhatsApp (mensajes entrantes, cambios de estado, etc.), debes configurar correctamente el webhook en la plataforma de Meta Developers. Sigue estos pasos:
 
-    Configurar Webhook:
-    - Define la URL del webhook en la consola de Meta Developers.
-    - La URL debe apuntar a la ruta publicada por el paquete, por ejemplo
+### a) Accede a Meta Developers
 
-    URL: https://tudominio.com/whatsapp-webhook
+1. Ingresa a [Meta for Developers](https://developers.facebook.com/).
+2. Selecciona tu aplicación o crea una nueva si aún no la tienes.
 
-    Token: EL_TOKEN_DE_TU_.ENV
+### b) Configura el Webhook
 
-    Eventos a suscribir: messages, message_statuses
+3. Ve al menú **Productos** y selecciona **WhatsApp** > **Configuración**.
+4. Busca la sección **Webhooks** y haz clic en **Configurar** o **Editar**.
 
-    **Tambien puedes usar la herramienta nrock**
+### c) Define la URL del Webhook
+
+- La URL debe apuntar a la ruta publicada por el paquete, por ejemplo:
+    ```
+    https://tudominio.com/whatsapp-webhook
+    ```
+- Asegúrate de que esta ruta sea accesible públicamente (puedes usar [ngrok](https://ngrok.com/) para pruebas locales).
+
+### d) Establece el Token de Verificación
+
+- El **Token** debe coincidir exactamente con el valor de la variable `WHATSAPP_VERIFY_TOKEN` que definiste en tu archivo `.env`.
+- Ejemplo:
+    ```
+    WHATSAPP_VERIFY_TOKEN=EL_TOKEN_DE_TU_.ENV
+    ```
+
+### e) Selecciona los Eventos a Suscribir
+
+- Marca los siguientes eventos para recibir notificaciones relevantes:
+    - `messages`
+    - `message_statuses`
+- Puedes agregar otros eventos según tus necesidades (por ejemplo, `message_template_status_update`).
+
+### f) Guarda y Verifica
+
+- Al guardar, Meta enviará una solicitud de verificación a tu endpoint. El paquete responderá automáticamente si la configuración es correcta.
+- Si usas HTTPS, asegúrate de que tu certificado SSL sea válido.
+
+---
+
+**Resumen de configuración:**
+
+| Parámetro         | Valor recomendado                                  |
+|-------------------|---------------------------------------------------|
+| URL del Webhook   | `https://tudominio.com/whatsapp-webhook`          |
+| Token             | El valor de `WHATSAPP_VERIFY_TOKEN` en tu `.env`  |
+| Eventos           | `messages`, `message_statuses`                    |
+
+---
+
+> **Tip:** Si desarrollas localmente, puedes exponer tu servidor con ngrok:
+> ```bash
+> ngrok http http://localhost:8000
+> ```
+> Usa la URL pública generada por ngrok como URL del webhook en Meta.
+
+
+---
+
+# NROCK
+
+[ngrok](https://ngrok.com/) es una utilidad que te permite exponer tu servidor local a Internet de forma segura mediante túneles. Es ideal para pruebas, desarrollo y para compartir tu aplicación local con servicios externos (por ejemplo, para recibir webhooks de WhatsApp o Meta).
+
+**Cómo usar ngrok:**
+
+1. Descarga ngrok desde [https://ngrok.com/](https://ngrok.com/).
+2. Instálalo siguiendo las instrucciones de la página oficial.
+3. Ejecuta el siguiente comando para exponer tu servidor local (por ejemplo, en el puerto 8000):
+
+    ```bash
+    ngrok http http://localhost:8000
+    ```
+
+Esto generará una URL pública que podrás compartir para acceder a tu aplicación local desde cualquier lugar, útil para pruebas de webhooks y desarrollo remoto.
 
 
 ## 🧩 Estructura del Paquete
@@ -1988,6 +2051,14 @@ Puedes diferentes tipos de Bots para whatsapp.
 Cada contribución, por pequeña que sea, ayuda a mejorar el proyecto y a la comunidad.  
 ¡No dudes en participar, proponer ideas o reportar problemas!
 
+
+---
+
+## Descargo de responsabilidad
+
+Este paquete es un proyecto independiente y **no está afiliado, respaldado ni soportado por Meta Platforms, Inc.**  
+Todas las marcas registradas, marcas de servicio y logotipos utilizados en esta documentación, incluidos "WhatsApp" y "Facebook", son propiedad de Meta Platforms, Inc.
+
 ---
 
 ## 📄 Licencia
@@ -3120,6 +3191,12 @@ Would you like to help improve this package? Your collaboration is essential for
 
 Every contribution, no matter how small, helps improve the project and the community.  
 Don’t hesitate to participate, propose ideas, or report issues!
+
+---
+## Disclaimer
+
+This package is an independent project and is **not affiliated with, endorsed, or supported by Meta Platforms, Inc.**  
+All trademarks, service marks, and logos used in this documentation, including "WhatsApp" and "Facebook," are the property of Meta Platforms, Inc.
 
 ---
 
