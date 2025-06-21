@@ -272,6 +272,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Mark messages as read in WhatsApp API
+    |--------------------------------------------------------------------------
+    |
+    | When true, messages will be marked as read in the WhatsApp API when marked
+    | as read in the database.
+    |
+    */
+    'mark_read_in_api' => env('WHATSAPP_MARK_READ_IN_API', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Configuración del bots
     |--------------------------------------------------------------------------
     |
