@@ -3513,11 +3513,47 @@ class MessageDispatcherService
                 $interactiveData = ['type' => $interactiveType];
 
                 if ($interactiveType === 'button') {
-                    // ... manejo de botones ...
+                    $interactiveData = [
+                        'type' => 'button',
+                        'body' => ['text' => $parameters['body']],
+                        'action' => [
+                            'buttons' => array_map(function($button) {
+                                return [
+                                    'type' => 'reply',
+                                    'reply' => [
+                                        'id' => $button['id'],
+                                        'title' => $button['title']
+                                    ]
+                                ];
+                            }, $parameters['buttons'])
+                        ]
+                    ];
+                    
+                    if (!empty($parameters['footer'])) {
+                        $interactiveData['footer'] = ['text' => $parameters['footer']];
+                    }
                 } 
                 elseif ($interactiveType === 'list') {
-                    // ... manejo de listas ...
-                } 
+                    $interactiveData = [
+                        'type' => 'list',
+                        'body' => ['text' => $parameters['body']],
+                        'action' => [
+                            'button' => $parameters['button'],
+                            'sections' => $parameters['sections']
+                        ]
+                    ];
+                    
+                    if (!empty($parameters['header'])) {
+                        $interactiveData['header'] = [
+                            'type' => 'text',
+                            'text' => $parameters['header']
+                        ];
+                    }
+                    
+                    if (!empty($parameters['footer'])) {
+                        $interactiveData['footer'] = ['text' => $parameters['footer']];
+                    }
+                }
                 elseif ($interactiveType === 'product_list') {
                     $interactiveData = [
                         'type' => 'product_list',
