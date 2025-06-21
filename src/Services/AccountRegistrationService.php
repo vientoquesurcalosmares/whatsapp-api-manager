@@ -162,10 +162,9 @@ class AccountRegistrationService
     private function registerPhoneNumbers(Model $account): void
     {
         try {
-            // Usa el token DESENCRIPTADO automáticamente (vía accessor)
-            $response = $this->whatsappService
-                ->forAccount($account->whatsapp_business_id)
-                ->getPhoneNumbers($account->whatsapp_business_id);
+            $whatsappService = app(WhatsappService::class)->forAccount($account->whatsapp_business_id);
+    
+            $response = $whatsappService->getPhoneNumbers($account->whatsapp_business_id);
 
             foreach ($response as $phoneData) {
                 $this->updateOrCreatePhoneNumber($account, $phoneData);
@@ -334,5 +333,15 @@ class AccountRegistrationService
                 $profile->websites()->create($website);
             }
         }
+    }
+
+    /**
+     * Registra un solo número telefónico
+     */
+    public function registerSinglePhoneNumber(Model $account, array $phoneData): Model
+    {
+        $phone = $this->updateOrCreatePhoneNumber($account, $phoneData);
+        $this->processPhoneNumberProfile($phone);
+        return $phone;
     }
 }

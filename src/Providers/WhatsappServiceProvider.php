@@ -44,22 +44,29 @@ class WhatsappServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->singleton('whatsapp.phone', function ($app) {
+        $this->app->singleton(AccountRegistrationService::class, function ($app) {
+            return new AccountRegistrationService(
+                $app->make(WhatsappService::class)
+            );
+        });
+
+        $this->app->singleton(WhatsappService::class, function ($app) {
             return new WhatsappService(
                 $app->make(ApiClient::class),
                 $app->make(WhatsappBusinessAccountRepository::class)
             );
         });
 
-        $this->app->alias(MessageDispatcherService::class, 'whatsapp.message');
-
-        $this->app->singleton('whatsapp.account', function ($app) {
-            return new AccountRegistrationService(
-                $app->make('whatsapp.phone')
+        $this->app->singleton('whatsapp.manager', function ($app) {
+            return new WhatsappManager(
+                $app->make(MessageDispatcherService::class)
             );
         });
 
-        // Registrar el servicio de plantillas
+        $this->app->alias(WhatsappService::class, 'whatsapp.phone');
+        $this->app->alias(MessageDispatcherService::class, 'whatsapp.message');
+        $this->app->alias(AccountRegistrationService::class, 'whatsapp.account');
+
         $this->app->singleton('whatsapp.template', function ($app) {
             return new TemplateService(
                 $app->make(ApiClient::class),

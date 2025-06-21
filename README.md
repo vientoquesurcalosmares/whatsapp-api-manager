@@ -449,43 +449,79 @@ Gracias por tu apoyo 💙
 ---
 ## 1. Registro de Cuentas de Negocios.
 
-**Registra una cuenta de negocios en WhatsApp Business API.**
+- **Registra una cuenta de negocios en WhatsApp Business API.**
+    Registra y sincroniza cuentas empresariales de WhatsApp con sus números de teléfono asociados.
+    - Se hace la peticion a la API de whatsapp, se obtienen los datos de la cuenta y se almacenan en la base de datos. Este metodo obtiene los datos de la cuenta, los telefonos de whatsapp asociados a la cuenta y el perfil de cada numero de telefono.
+    - Se usa para Obtener los datos desde la API y alojarlos en la base de datos.
+  > **Observations:**
+  > - Requires a valid access token with `whatsapp_business_management` permissions.
+  > - The `business_id` must be the numeric ID of your WhatsApp Business Account.
 
-  - Se hace la peticion a la API de whatsapp, se obtienen los datos de la cuenta y se almacenan en la base de datos. Este metodo obtiene los datos de la cuenta, los telefonos de whatsapp asociados a la cuenta y el perfil de cada numero de telefono.
-  - Se usa para Obtener los datos desde la API y alojarlos en la base de datos.
+  ```php
+  use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
-    ```php
-    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-
-    $account = Whatsapp::account()->register([
-        'api_token' => '***********************',
-        'business_id' => '1243432234423'
-    ]);
-    ```
-
+  $account = Whatsapp::account()->register([
+      'api_token' => '***********************',
+      'business_id' => '1243432234423'
+  ]);
+  ```
 
 ## 2. Obtener Detalles de Números de Teléfono
 **Obtén información detallada sobre un número de teléfono registrado.**
 
 - Se hace la peticion a la API de whatsapp para obtener detalles del numero de whatsapp y se almacenan en la base de datos, si el numero ya existe actualiza la informacion.
 
+    Obtén y administra los números de teléfono asociados a una cuenta de WhatsApp Business.
     ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
+    // Obtener todos los números asociados a una cuenta empresarial (por Business ID)
+    $phones = Whatsapp::phone()
+        ->forAccount('4621942164157') // Business ID
+        ->getPhoneNumbers('4621942164157');
+
     $phoneDetails = Whatsapp::phone()->getPhoneNumberDetails('564565346546');
     ```
-
+    > **Notas:**
+    > - Utiliza siempre el **Phone Number ID** para realizar operaciones sobre números de teléfono.
+    > - El **Business ID** se emplea únicamente para identificar la cuenta empresarial.
 
 ## 3. Obtener Cuentas de Negocios
 Obtén información sobre una cuenta de negocios específica.
 Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuenta en especifico, se almacenan los datos en la base de datos.
 
 ```php
-    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
-    $account = Whatsapp::phone()->getBusinessAccount('356456456456');
+$account = Whatsapp::phone()->getBusinessAccount('356456456456');
 ```
 
+## Configuración de Webhooks
+Configura los webhooks para recibir notificaciones en tu servidor.
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+$response = Whatsapp::phone()->configureWebhook(
+    '123456789012345', // Phone Number ID
+    'https://tudominio.com/webhook',
+    'mi_token_secreto'
+);
+```
+
+### ✅ Requisitos para el Webhook
+Ejemplo de handler de verificación en Laravel:
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+$account = WhatsappBusinessAccount::first();
+$phone = $account->phoneNumbers->first();
+
+$response = Whatsapp::phone()->configureWebhook(
+    $phone->phone_number_id, // Phone Number ID
+        'https://tudominio.com/whatsapp-webhook', //URL Routes whatsapp_webhook use domain or nrock url
+        env('WHATSAPP_VERIFY_TOKEN') // Token from your .env
+);
+```
 
 ## 4. Enviar Mensajes.
 - **Envía mensajes de texto simples.**

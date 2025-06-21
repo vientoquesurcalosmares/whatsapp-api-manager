@@ -58,4 +58,14 @@ class WhatsappManager
     {
         return app('whatsapp.account');
     }
+
+    public function webhook()
+    {
+        return app('whatsapp.service');
+    }
+
+    public function deletePhoneNumber(string $phoneNumberId): bool
+    {
+        return $this->phone()->deletePhoneNumber($phoneNumberId);
+    }
 }

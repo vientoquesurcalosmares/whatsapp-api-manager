@@ -20,6 +20,7 @@ class Endpoints
     const GET_PHONE_NUMBERS = '{whatsapp_business_id}/phone_numbers';
     const GET_PHONE_DETAILS = '{phone_number_id}';
     const GET_BUSINESS_PROFILE = '{phone_number_id}/whatsapp_business_profile';
+    const CONFIGURE_WEBHOOK = '{phone_number_id}/webhooks';
 
     // Message Endpoints
     const SEND_MESSAGE = '{phone_number_id}/messages';
