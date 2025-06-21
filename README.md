@@ -800,7 +800,7 @@ Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuen
 
     //EJEMPLO 1
     $buttonResponse = Whatsapp::sendButtonMessage($phone->phone_number_id)
-        ->to('57', '3137181908')
+        ->to('57', '31371235638')
         ->withBody('¿Confirmas tu cita para mañana a las 3 PM?')
         ->addButton('confirmar', '✅ Confirmar')
         ->addButton('reagendar', '🔄 Reagendar')
@@ -809,7 +809,7 @@ Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuen
     
     //EJEMPLO 2
     $buttonResponse = Whatsapp::sendButtonMessage($phone->phone_number_id)
-        ->to('57', '3137181908')
+        ->to('57', '31371235638')
         ->withBody('¿Cómo calificarías nuestro servicio?')
         ->addButton('excelente', '⭐️⭐️⭐️⭐️⭐️ Excelente')
         ->addButton('bueno', '⭐️⭐️⭐️⭐️ Bueno')
@@ -823,7 +823,7 @@ Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuen
     $contextId = $contextMessage->wa_id;
 
     $buttonResponse = Whatsapp::sendButtonMessage($phone->phone_number_id)
-        ->to('57', '3137181908')
+        ->to('57', '31371235638')
         ->withBody('Selecciona el tipo de soporte que necesitas:')
         ->addButton('soporte-tecnico', '🛠️ Soporte Técnico')
         ->addButton('facturacion', '🧾 Facturación')
@@ -846,7 +846,7 @@ Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuen
 
     // EJEMLPO 1
     $listBuilder = Whatsapp::sendListMessage($phone->phone_number_id)
-        ->to('57', '3137181908')
+        ->to('57', '31371235638')
         ->withButtonText('Ver Productos')
         ->withBody('Nuestros productos destacados:')
         ->withHeader('Catálogo Digital')
@@ -866,7 +866,7 @@ Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuen
 
     // EJEMLPO 2
     $listBuilder = Whatsapp::sendListMessage($phone->phone_number_id)
-        ->to('57', '3137181908')
+        ->to('57', '31371235638')
         ->withButtonText('Ver Servicios')
         ->withBody('Selecciona el servicio que deseas agendar:')
         ->withFooter('Desliza para ver todas las opciones');
@@ -892,7 +892,7 @@ Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuen
     $contextId = $contextMessage->wa_id;
 
     $listBuilder = Whatsapp::sendListMessage($phone->phone_number_id)
-        ->to('57', '3137181908')
+        ->to('57', '31371235638')
         ->withButtonText('Seleccionar Servicio')
         ->withBody('Para el tipo de cita que mencionaste, tenemos estas opciones:')
         ->inReplyTo($contextId); // Aquí especificas el mensaje al que respondes
@@ -909,6 +909,153 @@ Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuen
 
     $response = $listBuilder->send();
     ```
+
+
+- **Mensaje de Producto Individual**
+    Enviar mensaje de Producto Simple.
+
+    ```php
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $productId = 'PROD-12345'; // ID del producto en tu catálogo
+
+    // Enviar un solo producto con texto descriptivo
+    WhatsappManager::message()->sendSingleProductMessage(
+        $phone->phone_number_id,
+        '52',         // Código de país (México)
+        '5512345678', // Número de destino
+        $productId,
+        '¡Mira este increíble producto que tenemos para ti!'
+    );
+    ```
+
+- **Mensaje con Múltiples Productos**
+    Enviar mensaje de Multiples Productos.
+
+    ```php
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+    use ScriptDevelop\WhatsappManager\Services\CatalogProductBuilder;
+
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $builder = new CatalogProductBuilder(
+        WhatsappManager::getDispatcher(), 
+        $phone->phone_number_id,
+    );
+
+    $builder->to('52', '5512345678')
+        ->withBody('Productos recomendados para ti:')
+        ->withHeader('Ofertas Especiales')
+        ->withFooter('Válido hasta el 30 de Junio')
+        
+        // Sección 1
+        ->startSection('Productos Destacados')
+            ->addProduct('PROD-12345')
+            ->addProduct('PROD-67890')
+        ->endSection()
+        
+        // Sección 2
+        ->startSection('Nuevos Lanzamientos')
+            ->addProduct('PROD-54321')
+            ->addProduct('PROD-09876')
+        ->endSection()
+        
+        ->send();
+    ```
+
+- **Mensaje de Catálogo Completo**
+    Enviar mensaje de Catalogo completo.
+
+    ```php
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+    use ScriptDevelop\WhatsappManager\Services\CatalogProductBuilder;
+
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    WhatsappManager::message()->sendFullCatalogMessage(
+        $phone->phone_number_id,
+        '52',
+        '5512345678',
+        'Ver Catálogo',      // Texto del botón
+        'Explora nuestro catálogo completo de productos',
+        '¡Envíanos un mensaje para más información!' // Footer
+    );
+    ```
+
+- **Mensaje de Producto como Respuesta o Replica**
+    Enviar mensaje de Producto simple con replica o contecto.
+
+    ```php
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+    use ScriptDevelop\WhatsappManager\Services\CatalogProductBuilder;
+
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    // Responder a un mensaje específico con un producto
+    $contextMessageId = 'wamid.XXXXXX'; // ID del mensaje original
+
+    WhatsappManager::message()->sendSingleProductMessage(
+        $phone->phone_number_id,
+        '52',
+        '5512345678',
+        'PROD-12345',
+        'Este es el producto que mencionaste:',
+        $contextMessageId
+    );
+    ```
+
+- **Mensaje Interactivo con Productos (Avanzado)**
+    Enviar mensaje de Productos Interactivos Avanzados y con Replica o contexto.
+
+    ```php
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+    use ScriptDevelop\WhatsappManager\Services\CatalogProductBuilder;
+
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    WhatsappManager::message()->sendMultiProductMessage(
+        $phone->phone_number_id,
+        '52',
+        '5512345678',
+        [
+            [
+                'title' => 'Ofertas',
+                'product_items' => [
+                    ['product_retailer_id' => 'PROD-123'],
+                    ['product_retailer_id' => 'PROD-456']
+                ]
+            ],
+            [
+                'title' => 'Nuevos',
+                'product_items' => [
+                    ['product_retailer_id' => 'PROD-789']
+                ]
+            ]
+        ],
+        '¡Estos productos podrían interesarte!',
+        'Descuentos Especiales', // Header
+        null, // Footer
+        $contextMessageId // Respuesta a mensaje
+    );
+    ```
+
 
 ## 5. Marcar mensaje como leido
 Se encarga de marcar el mensaje recibido como leido, con los dos checks azules.
