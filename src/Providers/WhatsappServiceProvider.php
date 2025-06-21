@@ -3,6 +3,7 @@
 namespace ScriptDevelop\WhatsappManager\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use ScriptDevelop\WhatsappManager\Services\WhatsappManager;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\Services\AccountRegistrationService;
 use ScriptDevelop\WhatsappManager\Services\WhatsappService;
@@ -31,8 +32,16 @@ class WhatsappServiceProvider extends ServiceProvider
 
         $this->app->singleton(WhatsappBusinessAccountRepository::class);
 
-        $this->app->singleton('whatsapp.manager', function($app){
-            return new \ScriptDevelop\WhatsappManager\Services\WhatsappManager;
+        $this->app->singleton(MessageDispatcherService::class, function ($app) {
+            return new MessageDispatcherService(
+                $app->make(ApiClient::class)
+            );
+        });
+
+        $this->app->singleton('whatsapp.manager', function ($app) {
+            return new WhatsappManager(
+                $app->make(MessageDispatcherService::class)
+            );
         });
 
         $this->app->singleton('whatsapp.phone', function ($app) {
@@ -42,11 +51,7 @@ class WhatsappServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->singleton('whatsapp.message', function ($app) {
-            return new MessageDispatcherService(
-                $app->make(ApiClient::class)
-            );
-        });
+        $this->app->alias(MessageDispatcherService::class, 'whatsapp.message');
 
         $this->app->singleton('whatsapp.account', function ($app) {
             return new AccountRegistrationService(
@@ -58,7 +63,7 @@ class WhatsappServiceProvider extends ServiceProvider
         $this->app->singleton('whatsapp.template', function ($app) {
             return new TemplateService(
                 $app->make(ApiClient::class),
-                $app->make(FlowService::class) // Inyectar FlowService
+                $app->make(FlowService::class)
             );
         });
 
@@ -67,7 +72,6 @@ class WhatsappServiceProvider extends ServiceProvider
                 $app->make(ApiClient::class)
             );
         });
-
     }
 
     public function boot()
@@ -133,7 +137,7 @@ class WhatsappServiceProvider extends ServiceProvider
     protected function createStorageDirectories()
     {
         $basePath = storage_path('app/public/whatsapp');
-        $folders = ['audio', 'documents', 'images', 'stickers', 'videos'];
+        $folders = ['audios', 'documents', 'images', 'stickers', 'videos'];
 
         foreach ($folders as $folder) {
             $path = "{$basePath}/{$folder}";

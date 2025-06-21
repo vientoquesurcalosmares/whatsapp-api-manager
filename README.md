@@ -13,7 +13,9 @@ LARAVEL WHatsapp Manager
 <a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/dt/scriptdevelop/whatsapp-manager" alt="Total Downloads"></a>
 <a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/l/scriptdevelop/whatsapp-manager" alt="License"></a>
 </p>
+
 ---
+
 ### 🌐 Language / Idioma
 
 <a href="#english"><img src="https://flagcdn.com/us.svg" width="20"></a> [🇺🇸 English](#-english) | [🇪🇸 Español](#-español) <a href="#espanol"><img src="https://flagcdn.com/es.svg" width="20"></a>
@@ -796,17 +798,39 @@ Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuen
     $account = WhatsappBusinessAccount::first();
     $phone = $account->phoneNumbers->first();
 
-    $message = Whatsapp::message()->sendInteractiveButtonsMessage(
-        phoneNumberId: $phone->phone_number_id,
-        '57',                        // Código de país
-        '3237121901',                // Número de teléfono
-        body: 'Selecciona una opción:',
-        buttons: [
-            ['id' => 'op1', 'title' => 'Opción 1'], // Máximo 3 botones
-            ['id' => 'op2', 'title' => 'Opción 2']
-        ],
-        footer: 'Footer opcional' // Texto secundario
-    );
+    //EJEMPLO 1
+    $buttonResponse = Whatsapp::sendButtonMessage($phone->phone_number_id)
+        ->to('57', '3137181908')
+        ->withBody('¿Confirmas tu cita para mañana a las 3 PM?')
+        ->addButton('confirmar', '✅ Confirmar')
+        ->addButton('reagendar', '🔄 Reagendar')
+        ->withFooter('Por favor selecciona una opción')
+        ->send();
+    
+    //EJEMPLO 2
+    $buttonResponse = Whatsapp::sendButtonMessage($phone->phone_number_id)
+        ->to('57', '3137181908')
+        ->withBody('¿Cómo calificarías nuestro servicio?')
+        ->addButton('excelente', '⭐️⭐️⭐️⭐️⭐️ Excelente')
+        ->addButton('bueno', '⭐️⭐️⭐️⭐️ Bueno')
+        ->addButton('regular', '⭐️⭐️⭐️ Regular')
+        ->withFooter('Tu opinión nos ayuda a mejorar')
+        ->send();
+
+    //EJEMPLO 3
+    // Obtener ID de un mensaje anterior (debes tener uno real)
+    $contextMessage = \ScriptDevelop\WhatsappManager\Models\Message::first();
+    $contextId = $contextMessage->wa_id;
+
+    $buttonResponse = Whatsapp::sendButtonMessage($phone->phone_number_id)
+        ->to('57', '3137181908')
+        ->withBody('Selecciona el tipo de soporte que necesitas:')
+        ->addButton('soporte-tecnico', '🛠️ Soporte Técnico')
+        ->addButton('facturacion', '🧾 Facturación')
+        ->addButton('quejas', '📣 Quejas y Reclamos')
+        ->withFooter('Horario de atención: L-V 8am-6pm')
+        ->inReplyTo($contextId)  // Aquí especificas el mensaje al que respondes
+        ->send();
     ```
 
 - **Listas Desplegables Interactivas**
@@ -820,22 +844,70 @@ Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuen
     $account = WhatsappBusinessAccount::first();
     $phone = $account->phoneNumbers->first();
 
-    $message = Whatsapp::message()->sendListMessage(
-        phoneNumberId: $phone->phone_number_id,
-        countryCode: '57',
-        phoneNumber: '3137555558',
-        buttonText: 'Ver opciones', // Máximo 20 caracteres
-        sections: [
-            [
-                'title' => 'Sección 1', // Encabezado de sección
-                'rows' => [
-                    ['id' => 'row1', 'title' => 'Fila 1'], // Hasta 10 filas
-                    ['id' => 'row2', 'title' => 'Fila 2']
-                ]
-            ]
-        ],
-        body: 'Selecciona de la lista:' // Texto principal
-    );
+    // EJEMLPO 1
+    $listBuilder = Whatsapp::sendListMessage($phone->phone_number_id)
+        ->to('57', '3137181908')
+        ->withButtonText('Ver Productos')
+        ->withBody('Nuestros productos destacados:')
+        ->withHeader('Catálogo Digital')
+        ->withFooter('Desliza para ver más opciones');
+
+    $listBuilder->startSection('Laptops')
+        ->addRow('laptop-pro', 'MacBook Pro', '16" - 32GB RAM - 1TB SSD')
+        ->addRow('laptop-air', 'MacBook Air', '13" - M2 Chip - 8GB RAM')
+        ->endSection();
+
+    $listBuilder->startSection('Smartphones')
+        ->addRow('iphone-15', 'iPhone 15 Pro', 'Cámara 48MP - 5G')
+        ->addRow('samsung-s23', 'Samsung S23', 'Pantalla AMOLED 120Hz')
+        ->endSection();
+
+    $response = $listBuilder->send();
+
+    // EJEMLPO 2
+    $listBuilder = Whatsapp::sendListMessage($phone->phone_number_id)
+        ->to('57', '3137181908')
+        ->withButtonText('Ver Servicios')
+        ->withBody('Selecciona el servicio que deseas agendar:')
+        ->withFooter('Desliza para ver todas las opciones');
+
+    $listBuilder->startSection('Cortes de Cabello')
+        ->addRow('corte-mujer', 'Corte Mujer', 'Estilo profesional')
+        ->addRow('corte-hombre', 'Corte Hombre', 'Técnicas modernas')
+        ->addRow('corte-niños', 'Corte Niños', 'Diseños infantiles')
+        ->endSection();
+
+    $listBuilder->startSection('Tratamientos')
+        ->addRow('keratina', 'Keratina', 'Tratamiento reparador')
+        ->addRow('coloracion', 'Coloración', 'Tintes profesionales')
+        ->addRow('mascarilla', 'Mascarilla', 'Hidratación profunda')
+        ->endSection();
+
+    $response = $listBuilder->send();
+
+
+    // EJEMLPO 3
+    // Obtener ID de un mensaje anterior (debes tener uno real)
+    $contextMessage = \ScriptDevelop\WhatsappManager\Models\Message::first();
+    $contextId = $contextMessage->wa_id;
+
+    $listBuilder = Whatsapp::sendListMessage($phone->phone_number_id)
+        ->to('57', '3137181908')
+        ->withButtonText('Seleccionar Servicio')
+        ->withBody('Para el tipo de cita que mencionaste, tenemos estas opciones:')
+        ->inReplyTo($contextId); // Aquí especificas el mensaje al que respondes
+
+    $listBuilder->startSection('Consultas')
+        ->addRow('consulta-general', 'Consulta General', '30 min - $50.000')
+        ->addRow('consulta-especial', 'Consulta Especializada', '60 min - $90.000')
+        ->endSection();
+
+    $listBuilder->startSection('Tratamientos')
+        ->addRow('tratamiento-basico', 'Tratamiento Básico', 'Sesión individual')
+        ->addRow('tratamiento-premium', 'Tratamiento Premium', 'Incluye seguimiento')
+        ->endSection();
+
+    $response = $listBuilder->send();
     ```
 
 ## 5. Marcar mensaje como leido

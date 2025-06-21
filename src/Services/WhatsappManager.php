@@ -3,6 +3,8 @@
 namespace ScriptDevelop\WhatsappManager\Services;
 
 use ScriptDevelop\WhatsappManager\Models\Flow;
+use ScriptDevelop\WhatsappManager\Services\InteractiveButtonBuilder;
+use ScriptDevelop\WhatsappManager\Services\InteractiveListBuilder;
 
 /**
  * Clase principal para gestionar los servicios de WhatsApp.
@@ -10,6 +12,13 @@ use ScriptDevelop\WhatsappManager\Models\Flow;
  */
 class WhatsappManager
 {
+    protected MessageDispatcherService $dispatcher;
+
+    public function __construct(MessageDispatcherService $dispatcher)
+    {
+        $this->dispatcher = $dispatcher;
+    }
+    
     /**
      * Obtiene el servicio relacionado con los números de teléfono de WhatsApp.
      *
@@ -28,6 +37,16 @@ class WhatsappManager
     public function message()
     {
         return app('whatsapp.message');
+    }
+
+    public function sendButtonMessage(string $phoneNumberId): InteractiveButtonBuilder
+    {
+        return new InteractiveButtonBuilder($this->dispatcher, $phoneNumberId);
+    }
+
+    public function sendListMessage(string $phoneNumberId): InteractiveListBuilder
+    {
+        return new InteractiveListBuilder($this->dispatcher, $phoneNumberId);
     }
 
     /**
