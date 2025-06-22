@@ -145,6 +145,12 @@ return [
                  */
                 'received' => \Scriptdevelop\WhatsappManager\Events\TextMessageReceived::class,
             ],
+            'unsupported' => [
+                /**
+                 * Se dispara cuando se envía al webhook mensaje de recibido de tipo unsupported, recibe como parámetro el objeto de contacto y el objeto de mensaje
+                 */
+                'received' => \Scriptdevelop\WhatsappManager\Events\TextMessageReceived::class,
+            ],
         ],
         'phone_number' => [
             'updated' => \Scriptdevelop\WhatsappManager\Events\PhoneNumberStatusUpdated::class, //Aun no se implementa

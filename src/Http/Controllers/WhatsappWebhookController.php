@@ -187,6 +187,15 @@ class WhatsappWebhookController extends Controller
             $this->fireMediaMessageReceived($contactRecord, $messageRecord);
         }
 
+        // Manejar mensajes no soportados
+        if ($messageType === 'unsupported') {
+            $title_error = $message['errors'][0]['title'] ?? 'Unsupported message type';
+            $message_error = $message['errors'][0]['message'] ?? 'This message type is not supported by the current implementation.';
+            $error_details = $message['errors'][0]['error_data']['details'] ?? 'No additional details available';
+            $messageRecord = $this->processUnsupportedMessage($message, $contactRecord, $whatsappPhone);
+            $this->fireUnsupportedMessageReceived($contactRecord, $messageRecord, $title_error, $message_error, $error_details);
+        }
+
         $logMessage = $textContent ?? ($message['text']['body'] ?? $message['type'] . ' content not available');
 
         $this->fireMessageReceived($contactRecord, $messageRecord);
@@ -778,6 +787,44 @@ class WhatsappWebhookController extends Controller
         }
     }
 
+    protected function processUnsupportedMessage(array $message, Model $contact, Model $whatsappPhone): ?Model
+    {
+        $errorCode = $message['errors'][0]['code'] ?? null;
+        $errorTitle = $message['errors'][0]['title'] ?? 'Unsupported content';
+        $errorDetails = $message['errors'][0]['error_data']['details'] ?? 'Unknown error';
+
+        $content = "Unsupported message. Error: $errorCode - $errorTitle: $errorDetails";
+
+        $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
+            [
+                'wa_id' => $message['id'],
+            ],
+            [
+                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+                'contact_id' => $contact->contact_id,
+                'conversation_id' => null,
+                'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+                'message_from' => preg_replace('/[\D+]/', '', $message['from']),
+                'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+                'message_type' => 'UNSUPPORTED',
+                'message_content' => $content,
+                'json_content' => json_encode($message),
+                'status' => 'received',
+                'code_error' => $errorCode,
+                'title_error' => $errorTitle,
+                'details_error' => $errorDetails
+            ]
+        );
+
+        Log::channel('whatsapp')->warning('Unsupported message processed', [
+            'message_id' => $messageRecord->message_id,
+            'error_code' => $errorCode,
+            'error_details' => $errorDetails
+        ]);
+
+        return $messageRecord;
+    }
+
     protected function handleTemplateEvent(array $templateData): void
     {
         $event = $templateData['event'] ?? null;
@@ -1064,6 +1111,18 @@ class WhatsappWebhookController extends Controller
         event(new $event([
             'contact' => $contactRecord,
             'message' => $messageRecord,
+        ]));
+    }
+
+    protected function fireUnsupportedMessageReceived($contactRecord, $messageRecord, $titleError, $messageError, $detailsError)
+    {
+        $event = config('whatsapp.events.messages.unsupported.received');
+        event(new $event([
+            'contact' => $contactRecord,
+            'message' => $messageRecord,
+            'title_error' => $titleError,
+            'message_error' => $messageError,
+            'details_error' => $detailsError
         ]));
     }
 
