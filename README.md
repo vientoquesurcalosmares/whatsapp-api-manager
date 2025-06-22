@@ -157,12 +157,12 @@ Si quieres saber como obtener una completamente GRATIS mira estos dos videos:
     composer require scriptdevelop/whatsapp-manager
     ```
 
-2. **Publica la configuración (opcional)**:
+2. **Publica la configuración**:
     ```bash
     php artisan vendor:publish --tag=whatsapp-config
     ```
 
-2. **Configuración**
+3. **Configuración**
 
    - Configuración principal (config/whatsapp.php):
       
@@ -184,7 +184,7 @@ Si quieres saber como obtener una completamente GRATIS mira estos dos videos:
         ],
         ```
 
-3. **Publica las migraciones (opcional)**:
+4. **Publica las migraciones (opcional)**:
     Este comando publicará las migraciones del paquete en tu directorio `database/migrations`. Puedes personalizarlas según tus necesidades antes de ejecutarlas.
     ```bash
     php artisan vendor:publish --tag=whatsapp-migrations
