@@ -486,6 +486,53 @@ Gracias por tu apoyo 💙
     > - Utiliza siempre el **Phone Number ID** para realizar operaciones sobre números de teléfono.
     > - El **Business ID** se emplea únicamente para identificar la cuenta empresarial.
 
+
+## Registrar número de teléfono
+
+Puedes registrar un nuevo número de teléfono en tu sistema para asociarlo a una cuenta de WhatsApp Business. Esto es útil para gestionar múltiples números y recibir notificaciones específicas por cada uno.
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+// Registra un nuevo número de teléfono en tu base de datos local
+$newPhone = Whatsapp::phone()->registerPhoneNumber('BUSINESS_ACCOUNT_ID', [
+    'id' => 'NUEVO_PHONE_NUMBER_ID'
+]);
+```
+
+- **Nota:** Este proceso solo agrega el número a tu sistema local, no crea el número en Meta. El número debe existir previamente en la cuenta de WhatsApp Business en Meta.
+
+---
+
+## Eliminar número de teléfono
+
+Puedes eliminar un número de teléfono de tu sistema si ya no deseas gestionarlo o recibir notificaciones asociadas a él. Esto ayuda a mantener tu base de datos limpia y actualizada.
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+// Elimina el número de teléfono de tu sistema local
+Whatsapp::phone()->deletePhoneNumber('PHONE_NUMBER_ID');
+```
+
+- **Importante:**  
+  - Eliminar un número solo lo remueve de tu sistema local, **no lo elimina de la cuenta de Meta**.
+  - Los Phone Number IDs son diferentes a los Business Account IDs.
+  - Para que los webhooks funcionen correctamente, asegúrate de que tus endpoints sean accesibles mediante HTTPS válido.
+
+---
+
+**Resumen:**
+- Usa estos métodos para sincronizar y limpiar los números de teléfono que gestionas localmente.
+- Los cambios aquí no afectan la configuración de números en la plataforma de Meta, solo en tu aplicación.
+- Mantén tus endpoints de webhook actualizados para recibir notificaciones de los números activos.
+
+
+
+
+
+
+
 ## 3. Obtener Cuentas de Negocios
 Obtén información sobre una cuenta de negocios específica.
 Se hace la peticion a la API de whatsapp para obtener informacion sobre una cuenta en especifico, se almacenan los datos en la base de datos.
@@ -509,7 +556,10 @@ $response = Whatsapp::phone()->configureWebhook(
 ```
 
 ### ✅ Requisitos para el Webhook
-Ejemplo de handler de verificación en Laravel:
+
+Para que tu aplicación reciba notificaciones en tiempo real de WhatsApp, debes configurar correctamente el webhook en la plataforma de Meta. Puedes usar tu dominio propio o una URL pública temporal generada por herramientas como [ngrok](https://ngrok.com/) para pruebas locales.
+
+**Ejemplo de handler de verificación en Laravel:**
 ```php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
@@ -517,11 +567,13 @@ $account = WhatsappBusinessAccount::first();
 $phone = $account->phoneNumbers->first();
 
 $response = Whatsapp::phone()->configureWebhook(
-    $phone->phone_number_id, // Phone Number ID
-        'https://tudominio.com/whatsapp-webhook', //URL Routes whatsapp_webhook use domain or nrock url
-        env('WHATSAPP_VERIFY_TOKEN') // Token from your .env
+    $phone->phone_number_id, // ID del número de teléfono
+    'https://tudominio.com/whatsapp-webhook', // URL del webhook (puede ser tu dominio o la URL de ngrok)
+    env('WHATSAPP_VERIFY_TOKEN') // Token de verificación desde tu .env
 );
 ```
+> **Nota:**  
+> Puedes usar tu dominio propio (por ejemplo, `https://midominio.com/whatsapp-webhook`) o una URL pública de ngrok (por ejemplo, `https://xxxxxx.ngrok.io/whatsapp-webhook`) para la configuración del webhook, según si estás en producción o en desarrollo local.
 
 ## 4. Enviar Mensajes.
 - **Envía mensajes de texto simples.**
