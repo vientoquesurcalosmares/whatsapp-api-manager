@@ -94,4 +94,13 @@ class Message extends Model
     {
         return $this->belongsTo(TemplateVersion::class, 'template_version_id');
     }
+
+    public function getDisplayContentAttribute()
+    {
+        if ($this->message_type === 'INTERACTIVE') {
+            return $this->json['body'] ?? 'Mensaje interactivo';
+        }
+        
+        return $this->message_content ?? 'Sin contenido';
+    }
 }

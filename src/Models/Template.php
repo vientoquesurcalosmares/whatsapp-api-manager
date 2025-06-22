@@ -21,6 +21,8 @@ class Template extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
+    protected $with = ['components'];
+
     protected $fillable = [
         'whatsapp_business_id',
         'wa_template_id',

@@ -2708,7 +2708,7 @@ class MessageDispatcherService
             'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'interactive',
-            'message_content' => json_encode([
+            'json' => json_encode([
                 'sub_type' => 'button',
                 'body' => $body,
                 'footer' => $footer,
@@ -2825,7 +2825,7 @@ class MessageDispatcherService
             'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'interactive',
-            'message_content' => json_encode([
+            'json' => json_encode([
                 'sub_type' => 'list',
                 'button_text' => $buttonText,
                 'sections' => $sections,
@@ -2939,7 +2939,7 @@ class MessageDispatcherService
             'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'interactive',
-            'message_content' => json_encode([
+            'json' => json_encode([
                 'sub_type' => 'list',
                 'button_text' => $buttonText,
                 'sections' => $sections,
@@ -3026,7 +3026,7 @@ class MessageDispatcherService
             'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'product',
-            'message_content' => $body ?? $productId,
+            'json' => $body ?? $productId,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessageId ? $this->getContextMessageId($contextMessageId) : null,
@@ -3120,7 +3120,7 @@ class MessageDispatcherService
             'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'interactive',
-            'message_content' => json_encode([
+            'json' => json_encode([
                 'sub_type' => 'product_list',
                 'body' => $body,
                 'header' => $header,
@@ -3212,7 +3212,7 @@ class MessageDispatcherService
             'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'interactive',
-            'message_content' => json_encode([
+            'json' => json_encode([
                 'sub_type' => 'catalog',
                 'body' => $body,
                 'button_text' => $buttonText,
