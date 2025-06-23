@@ -56,6 +56,32 @@ class TemplateMessageBuilder
     }
 
     /**
+     * Especifica la versión de plantilla a usar.
+     */
+    public function withVersion(string $versionId): self
+    {
+        $this->templateVersion = WhatsappModelResolver::template_version()->find($versionId);
+        return $this;
+    }
+
+    /**
+     * Obtiene la versión aprobada más reciente.
+     */
+    protected function getLatestApprovedTemplateVersion(string $templateName): ?Model
+    {
+        $template = WhatsappModelResolver::template()
+            ->where('name', $templateName)
+            ->first();
+
+        if (!$template) return null;
+
+        return $template->versions()
+            ->where('status', 'APPROVED')
+            ->latest()
+            ->first();
+    }
+
+    /**
      * Establece el número de teléfono del destinatario.
      *
      * @param string $phoneNumber El número de teléfono sin el código de país.
@@ -281,6 +307,16 @@ class TemplateMessageBuilder
      */
     public function send(): array
     {
+        // Obtener versión si no se especificó
+        if (!$this->templateVersion) {
+            $this->templateVersion = $this->getLatestApprovedTemplateVersion($this->templateIdentifier);
+        }
+
+        if (!$this->templateVersion) {
+            throw new \Exception("No hay versión aprobada para la plantilla: {$this->templateIdentifier}");
+        }
+
+
         // Consultar la estructura de la plantilla si es necesario
         $this->fetchTemplateStructure();
 
@@ -360,18 +396,13 @@ class TemplateMessageBuilder
             throw new InvalidArgumentException("Plantilla '{$this->templateIdentifier}' no encontrada.");
         }
 
-        // Obtener la última versión aprobada
-        $this->templateVersion = $template->versions()
-            ->where('status', 'APPROVED')
-            ->latest()
-            ->first();
-
+        // Obtener versión activa si no se especificó
         if (!$this->templateVersion) {
-            throw new InvalidArgumentException("No se encontró versión aprobada para la plantilla '{$this->templateIdentifier}'");
+            $this->templateVersion = $this->template->activeVersion;
         }
 
         // Cargar la estructura desde la versión
-        $this->templateStructure = json_decode($this->templateVersion->template_structure, true);
+        $this->templateStructure = $this->templateVersion->template_structure;
 
         Log::channel('whatsapp')->info('Estructura de plantilla cargada desde versión', [
             'version_id' => $this->templateVersion->version_id,

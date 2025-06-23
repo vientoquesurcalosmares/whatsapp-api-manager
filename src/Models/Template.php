@@ -103,7 +103,20 @@ class Template extends Model
     public function activeVersion()
     {
         return $this->hasOne(TemplateVersion::class, 'template_id')
-            ->where('status', 'APPROVED')
-            ->latest();
+            ->where('is_active', true);
+    }
+
+    public function createNewVersion(array $newStructure): Model
+    {
+        // Desactivar todas las versiones anteriores
+        $this->versions()->update(['is_active' => false]);
+
+        // Crear nueva versión
+        return $this->versions()->create([
+            'version_hash' => md5(json_encode($newStructure)),
+            'template_structure' => $newStructure,
+            'status' => 'PENDING',
+            'is_active' => true,
+        ]);
     }
 }

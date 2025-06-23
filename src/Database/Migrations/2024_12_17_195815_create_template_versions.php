@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('version_hash', 64)->comment('Hash SHA256 del contenido para control de cambios');
             $table->json('template_structure')->comment('JSON completo de la plantilla en esta versión');
             $table->enum('status', ['APPROVED', 'PENDING', 'REJECTED'])->default('PENDING');
+            $table->boolean('is_active')->default(false)->comment('Indica si es la versión activa actual');
             $table->string('rejection_reason', 512)->nullable();
             $table->timestamps();
             $table->softDeletes();
@@ -27,6 +28,9 @@ return new class extends Migration
                   ->onDelete('cascade');
 
             $table->unique(['template_id', 'version_hash']);
+
+            $table->index('is_active');
+            $table->index('status');
         });
     }
 

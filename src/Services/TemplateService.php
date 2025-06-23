@@ -93,7 +93,10 @@ class TemplateService
 
             foreach ($templates as $templateData) {
                 $this->validateTemplateData($templateData);
-                $this->storeOrUpdateTemplate($account, $templateData);
+                $template = $this->storeOrUpdateTemplate($account, $templateData);
+
+                // Crear nueva versión si la plantilla fue actualizada
+                $this->createOrUpdateVersion($template, $templateData);
             }
 
             $apiTemplateIds = collect($templates)->pluck('id')->toArray();
@@ -113,6 +116,55 @@ class TemplateService
             ]);
             throw $e;
         }
+    }
+
+    /**
+     * Crea una nueva versión de plantilla.
+     */
+    protected function createOrUpdateVersion(Model $template, array $templateData): Model
+    {
+        // Generar hash único de la estructura actual
+        $structureHash = md5(json_encode($templateData['components'] ?? []));
+        
+        // Buscar si ya existe esta versión
+        $existingVersion = WhatsappModelResolver::template_version()
+            ->where('template_id', $template->template_id)
+            ->where('version_hash', $structureHash)
+            ->first();
+
+        if ($existingVersion) {
+            // Actualizar estado si cambió
+            if ($existingVersion->status !== $templateData['status']) {
+                $existingVersion->update(['status' => $templateData['status']]);
+            }
+            return $existingVersion;
+        }
+
+        // Crear nueva versión
+        return WhatsappModelResolver::template_version()->create([
+            'template_id' => $template->template_id,
+            'version_hash' => $structureHash,
+            'template_structure' => $templateData['components'] ?? [],
+            'status' => $templateData['status'],
+            'is_active' => ($templateData['status'] === 'APPROVED'),
+        ]);
+    }
+
+    public function activateVersion(string $versionId): void
+    {
+        $version = WhatsappModelResolver::template_version()->findOrFail($versionId);
+        
+        // Desactivar todas las demás versiones de esta plantilla
+        WhatsappModelResolver::template_version()
+            ->where('template_id', $version->template_id)
+            ->where('version_id', '!=', $versionId)
+            ->update(['is_active' => false]);
+
+        // Activar esta versión
+        $version->update(['is_active' => true]);
+        
+        // Actualizar estado de la plantilla principal
+        $version->template->update(['status' => $version->status]);
     }
 
     /**

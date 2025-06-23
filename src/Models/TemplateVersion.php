@@ -23,11 +23,13 @@ class TemplateVersion extends Model
         'version_hash',
         'template_structure',
         'status',
+        'is_active',
         'rejection_reason',
     ];
 
     protected $casts = [
         'template_structure' => 'array',
+        'is_active' => 'boolean',
     ];
 
     public function template()

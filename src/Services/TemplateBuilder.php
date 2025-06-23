@@ -566,6 +566,9 @@ class TemplateBuilder
                 'json' => json_encode($this->templateData, JSON_UNESCAPED_UNICODE),
             ]);
 
+            // Crear versión inicial
+            $this->createInitialVersion($template, $response);
+
             // Reiniciar el estado del builder
             $this->templateData = ['components' => []];
             $this->buttonCount = 0;
@@ -577,6 +580,20 @@ class TemplateBuilder
             ]);
             throw $e;
         }
+    }
+
+    /**
+     * Crea la versión inicial de una plantilla.
+     */
+    protected function createInitialVersion(Model $template, array $apiResponse): Model
+    {
+        return WhatsappModelResolver::template_version()->create([
+            'template_id' => $template->template_id,
+            'version_hash' => md5(json_encode($this->templateData['components'])),
+            'template_structure' => $this->templateData['components'],
+            'status' => $apiResponse['status'] ?? 'PENDING',
+            'is_active' => ($apiResponse['status'] === 'APPROVED'),
+        ]);
     }
 
     /**
