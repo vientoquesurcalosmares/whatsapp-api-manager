@@ -36,6 +36,9 @@ return [
         //Idiomas de Plantillas
         'template_language' => \ScriptDevelop\WhatsappManager\Models\TemplateLanguage::class,
 
+        //Versiones de plantillas
+        'template_version' => \ScriptDevelop\WhatsappManager\Models\TemplateVersion::class,
+
         'website' => \ScriptDevelop\WhatsappManager\Models\Website::class,
 
         // Modelo para la cuenta empresarial de WhatsApp
