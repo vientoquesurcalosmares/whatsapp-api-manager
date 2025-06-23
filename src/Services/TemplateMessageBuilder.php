@@ -25,6 +25,7 @@ class TemplateMessageBuilder
     protected Model $account;
     protected Model $phone;
     protected ApiClient $apiClient;
+    protected ?Model $template = null;
     protected TemplateService $templateService;
     protected string $phoneNumber;
     protected string $templateIdentifier; // Puede ser nombre o ID
