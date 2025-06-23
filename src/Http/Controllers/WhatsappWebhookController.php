@@ -54,14 +54,27 @@ class WhatsappWebhookController extends Controller
         $payload = $request->all();
         Log::channel('whatsapp')->info('Received WhatsApp Webhook Payload:', $payload);
 
-        $value = data_get($payload, 'entry.0.changes.0.value');
+        $change = data_get($payload, 'entry.0.changes.0');
+        $value = $change['value'] ?? null;
+        $field = $change['field'] ?? null;
+
+        if ($field === 'message_template') {
+            $this->handleTemplateEvent($value);
+            return response()->json(['success' => true]);
+        }
 
         if (!$value) {
             Log::channel('whatsapp')->warning('No value found in webhook payload.', $payload);
             return response()->json(['error' => 'Invalid payload.'], 422);
         }
 
-        if (isset($value['messages'][0])) {
+        // Si es evento de estado de plantilla
+        if ($field === 'message_template_status_update' && isset($value['statuses'][0])) {
+            $this->handleTemplateStatusUpdate($value['statuses'][0]);
+        }
+
+        // Si es mensaje normal
+        elseif (isset($value['messages'][0])) {
             $this->handleIncomingMessage(
                 $value['messages'][0] ?? [],
                 $value['contacts'][0] ?? null,
@@ -69,8 +82,9 @@ class WhatsappWebhookController extends Controller
             );
         }
 
-        if (isset($value['statuses'][0])) {
-            $this->handleStatusUpdate($value['statuses'][0] ?? []);
+        // Si es status de mensaje (entregado, leído, etc.)
+        elseif (isset($value['statuses'][0])) {
+            $this->handleStatusUpdate($value['statuses'][0]);
         }
 
         return response()->json(['success' => true]);
@@ -171,6 +185,15 @@ class WhatsappWebhookController extends Controller
             $messageRecord =  $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
 
             $this->fireMediaMessageReceived($contactRecord, $messageRecord);
+        }
+
+        // Manejar mensajes no soportados
+        if ($messageType === 'unsupported') {
+            $title_error = $message['errors'][0]['title'] ?? 'Unsupported message type';
+            $message_error = $message['errors'][0]['message'] ?? 'This message type is not supported by the current implementation.';
+            $error_details = $message['errors'][0]['error_data']['details'] ?? 'No additional details available';
+            $messageRecord = $this->processUnsupportedMessage($message, $contactRecord, $whatsappPhone);
+            $this->fireUnsupportedMessageReceived($contactRecord, $messageRecord, $title_error, $message_error, $error_details);
         }
 
         $logMessage = $textContent ?? ($message['text']['body'] ?? $message['type'] . ' content not available');
@@ -736,29 +759,6 @@ class WhatsappWebhookController extends Controller
         return $data['body'] ?? 'Mensaje no disponible';
     }
 
-    private function compareValues($value1, string $operator, $value2): bool
-    {
-        try {
-            switch ($operator) {
-                case '==': return $value1 == $value2;
-                case '!=': return $value1 != $value2;
-                case '>': return $value1 > $value2;
-                case '<': return $value1 < $value2;
-                case '>=': return $value1 >= $value2;
-                case '<=': return $value1 <= $value2;
-                case 'contains': return stripos($value1, $value2) !== false;
-                default: return false;
-            }
-        } catch (\Throwable $e) {
-            Log::channel('whatsapp')->error("Error comparando valores: {$e->getMessage()}", [
-                'value1' => $value1,
-                'operator' => $operator,
-                'value2' => $value2
-            ]);
-            return false;
-        }
-    }
-
     private function sendInteractiveResponse($message, Model $contact, Model $phoneNumber): void
     {
         $service = app(MessageDispatcherService::class);
@@ -787,33 +787,312 @@ class WhatsappWebhookController extends Controller
         }
     }
 
-    private function handleUnrecognizedMessage(Model $whatsappPhone, Model $contact): void
+    protected function processUnsupportedMessage(array $message, Model $contact, Model $whatsappPhone): ?Model
     {
-        $this->sendDefaultFallbackMessage($whatsappPhone, $contact);
+        $errorCode = $message['errors'][0]['code'] ?? null;
+        $errorTitle = $message['errors'][0]['title'] ?? 'Unsupported content';
+        $errorDetails = $message['errors'][0]['error_data']['details'] ?? 'Unknown error';
+
+        $content = "Unsupported message. Error: $errorCode - $errorTitle: $errorDetails";
+
+        $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
+            [
+                'wa_id' => $message['id'],
+            ],
+            [
+                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+                'contact_id' => $contact->contact_id,
+                'conversation_id' => null,
+                'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+                'message_from' => preg_replace('/[\D+]/', '', $message['from']),
+                'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+                'message_type' => 'UNSUPPORTED',
+                'message_content' => $content,
+                'json_content' => json_encode($message),
+                'status' => 'received',
+                'code_error' => $errorCode,
+                'title_error' => $errorTitle,
+                'details_error' => $errorDetails
+            ]
+        );
+
+        Log::channel('whatsapp')->warning('Unsupported message processed', [
+            'message_id' => $messageRecord->message_id,
+            'error_code' => $errorCode,
+            'error_details' => $errorDetails
+        ]);
+
+        return $messageRecord;
     }
 
-    private function sendDefaultFallbackMessage($whatsappPhone, $contact): void
+    protected function handleTemplateEvent(array $templateData): void
     {
-        try {
-            $service = app(MessageDispatcherService::class);
-            [$countryCode, $number] = $this->splitPhoneNumber($contact->wa_id);
+        $event = $templateData['event'] ?? null;
+        $templateId = $templateData['id'] ?? null;
 
-            $service->sendTextMessage(
-                $whatsappPhone->phone_number_id,
-                $countryCode,
-                $number,
-                "Lo siento, no entendí tu mensaje. Por favor intenta con otra opción.",
-                false
-            );
-        } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Fallback message failed: '.$e->getMessage());
+        if (!$event || !$templateId) {
+            Log::channel('whatsapp')->warning('Invalid template event payload.', $templateData);
+            return;
+        }
+
+        switch ($event) {
+            case 'APPROVED':
+            case 'REJECTED':
+            case 'PENDING':
+                $this->handleTemplateStatusUpdate($templateData);
+                break;
+            case 'CREATE':
+                $this->handleTemplateCreation($templateData);
+                break;
+            case 'UPDATE':
+                $this->handleTemplateUpdate($templateData);
+                break;
+            case 'DELETE':
+                $this->handleTemplateDeletion($templateData);
+                break;
+            case 'DISABLE':
+                $this->handleTemplateDisable($templateData);
+                break;
+            default:
+                Log::channel('whatsapp')->warning("Unhandled template event: {$event}", $templateData);
         }
     }
 
-    private function sendErrorFallbackMessage($whatsappPhone, $contact): void
+    protected function handleTemplateStatusUpdate(array $status): void
     {
-        $this->sendDefaultFallbackMessage($whatsappPhone, $contact);
+        $templateId = $status['id'] ?? null;
+        $newStatus = $status['event'] ?? null; // APPROVED, REJECTED, PENDING
+        $reason = $status['reason'] ?? null;
+        $components = $status['components'] ?? [];
+
+        if (!$templateId || !$newStatus) {
+            Log::channel('whatsapp')->warning('Invalid template status update payload.', $status);
+            return;
+        }
+
+        $template = WhatsappModelResolver::template()
+            ->where('wa_template_id', $templateId)
+            ->first();
+
+        if (!$template) {
+            Log::channel('whatsapp')->warning("Template not found: {$templateId}");
+            return;
+        }
+
+        // Actualizar plantilla principal
+        $template->update([
+            'status' => $newStatus,
+            'rejection_reason' => $reason
+        ]);
+
+        // Crear nueva versión si hay cambios
+        if (!empty($components)) {
+            // Hay cambios en la estructura -> nueva versión
+            $this->createTemplateVersion($template, $status);
+        } else {
+            // No hay cambios -> actualizar última versión existente
+            $lastVersion = $template->versions()->latest()->first();
+            if ($lastVersion) {
+                $lastVersion->update([
+                    'status' => $newStatus,
+                    'rejection_reason' => $reason
+                ]);
+            } else {
+                // Caso excepcional: no hay versiones pero debemos crear una
+                $this->createTemplateVersion($template, array_merge($status, [
+                    'components' => $template->components->toArray() ?? []
+                ]));
+            }
+        }
+
+        Log::channel('whatsapp')->info("Template status updated: {$newStatus}", [
+            'template_id' => $template->template_id,
+            'reason' => $reason
+        ]);
     }
+
+    protected function createTemplateVersion(Model $template, array $templateData): void
+    {
+        $components = $templateData['components'] ?? $template->components->toArray();
+        $event = $templateData['event'] ?? null;
+        $reason = $templateData['reason'] ?? null;
+
+        // Calcular hash del contenido
+        $contentHash = sha1(json_encode($components));
+
+        // Verificar si ya existe una versión con este hash
+        $existingVersion = $template->versions()
+            ->where('version_hash', $contentHash)
+            ->first();
+
+        if ($existingVersion) {
+            // Actualizar versión existente
+            $existingVersion->update([
+                'status' => $event,
+                'rejection_reason' => $reason
+            ]);
+            return;
+        }
+
+        // Crear nueva versión
+        $version = WhatsappModelResolver::template_version()->create([
+            'template_id' => $template->template_id,
+            'version_hash' => $contentHash,
+            'template_structure' => json_encode($components),
+            'status' => $event,
+            'rejection_reason' => $reason
+        ]);
+
+        Log::channel('whatsapp')->info('New template version created', [
+            'template_id' => $template->template_id,
+            'version_id' => $version->version_id
+        ]);
+    }
+
+    protected function handleTemplateCreation(array $templateData): void
+    {
+        $templateId = $templateData['id'] ?? null;
+        $businessAccountId = $templateData['business_account_id'] ?? null;
+        $name = $templateData['name'] ?? null;
+        $language = $templateData['language'] ?? null;
+        $components = $templateData['components'] ?? [];
+        $category = $templateData['category'] ?? null;
+        $status = $templateData['status'] ?? 'PENDING';
+
+        if (!$templateId || !$businessAccountId || !$name || !$language) {
+            Log::channel('whatsapp')->warning('Missing required fields for template creation.', $templateData);
+            return;
+        }
+
+        $businessAccount = WhatsappModelResolver::business_account()
+            ->where('whatsapp_business_id', $businessAccountId)
+            ->first();
+
+        if (!$businessAccount) {
+            Log::channel('whatsapp')->warning("Business account not found: {$businessAccountId}");
+            return;
+        }
+
+        // Crear plantilla principal
+        $template = WhatsappModelResolver::template()->create([
+            'wa_template_id' => $templateId,
+            'whatsapp_business_id' => $businessAccount->whatsapp_business_id,
+            'name' => $name,
+            'language' => $language,
+            'status' => $status,
+            'category_id' => $this->resolveCategoryId($category),
+            'json' => json_encode($templateData)
+        ]);
+
+        // Crear versión inicial
+        $this->createTemplateVersion($template, array_merge($templateData, ['event' => 'CREATE']));
+
+        Log::channel('whatsapp')->info("Template created: {$name}", [
+            'template_id' => $template->template_id,
+            'status' => $status
+        ]);
+    }
+
+    protected function handleTemplateUpdate(array $templateData): void
+    {
+        $templateId = $templateData['id'] ?? null;
+        $components = $templateData['components'] ?? [];
+
+        if (!$templateId) {
+            Log::channel('whatsapp')->warning('Missing template ID for update', $templateData);
+            return;
+        }
+
+        $template = WhatsappModelResolver::template()
+            ->where('wa_template_id', $templateId)
+            ->first();
+
+        if (!$template) {
+            Log::channel('whatsapp')->warning("Template not found for update: {$templateId}");
+            return;
+        }
+
+        // Actualizar plantilla principal
+        $template->update([
+            'name' => $templateData['name'] ?? $template->name,
+            'language' => $templateData['language'] ?? $template->language,
+            'category_id' => $this->resolveCategoryId($templateData['category'] ?? null),
+            'json' => json_encode($templateData)
+        ]);
+
+        // Crear nueva versión
+        $this->createTemplateVersion($template, $templateData);
+
+        Log::channel('whatsapp')->info("Template updated: {$template->name}", [
+            'template_id' => $template->template_id
+        ]);
+    }
+
+    protected function handleTemplateDeletion(array $templateData): void
+    {
+        $templateId = $templateData['id'] ?? null;
+
+        if (!$templateId) {
+            Log::channel('whatsapp')->warning('Missing template ID for deletion', $templateData);
+            return;
+        }
+
+        $template = WhatsappModelResolver::template()
+            ->where('wa_template_id', $templateId)
+            ->first();
+
+        if (!$template) {
+            Log::channel('whatsapp')->warning("Template not found for deletion: {$templateId}");
+            return;
+        }
+
+        // Soft delete de la plantilla y sus versiones
+        $template->delete();
+        $template->versions()->delete();
+
+        Log::channel('whatsapp')->info("Template deleted: {$template->name}", [
+            'template_id' => $template->template_id
+        ]);
+    }
+
+    protected function handleTemplateDisable(array $templateData): void
+    {
+        $templateId = $templateData['id'] ?? null;
+
+        if (!$templateId) {
+            Log::channel('whatsapp')->warning('Missing template ID for disable', $templateData);
+            return;
+        }
+
+        $template = WhatsappModelResolver::template()
+            ->where('wa_template_id', $templateId)
+            ->first();
+
+        if (!$template) {
+            Log::channel('whatsapp')->warning("Template not found for disable: {$templateId}");
+            return;
+        }
+
+        // Desactivar plantilla y versiones
+        $template->update(['status' => 'DISABLED']);
+        $template->versions()->update(['status' => 'DISABLED']);
+
+        Log::channel('whatsapp')->info("Template disabled: {$template->name}", [
+            'template_id' => $template->template_id
+        ]);
+    }
+
+    protected function resolveCategoryId(?string $categoryName): ?string
+    {
+        if (!$categoryName) return null;
+
+        $category = WhatsappModelResolver::template_category()
+            ->where('name', $categoryName)
+            ->first();
+
+        return $category ? $category->category_id : null;
+    }
+
 
     /**
      * Ahora el disparo de los eventos estáran en métodos, y se usarán las clases de los eventos configuradas en el archivo de configuración whatsapp.events!
@@ -832,6 +1111,18 @@ class WhatsappWebhookController extends Controller
         event(new $event([
             'contact' => $contactRecord,
             'message' => $messageRecord,
+        ]));
+    }
+
+    protected function fireUnsupportedMessageReceived($contactRecord, $messageRecord, $titleError, $messageError, $detailsError)
+    {
+        $event = config('whatsapp.events.messages.unsupported.received');
+        event(new $event([
+            'contact' => $contactRecord,
+            'message' => $messageRecord,
+            'title_error' => $titleError,
+            'message_error' => $messageError,
+            'details_error' => $detailsError
         ]));
     }
 

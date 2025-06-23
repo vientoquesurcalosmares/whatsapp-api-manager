@@ -34,6 +34,7 @@ class TemplateMessageBuilder
     protected ?Model $contact = null;
     protected array $buttonParameters = [];
     protected array $buttonTextIndexMap = [];
+    protected ?Model $templateVersion = null;
 
     /**
      * Constructor de la clase TemplateMessageBuilder.
@@ -42,11 +43,16 @@ class TemplateMessageBuilder
      * @param Model $phone Número de teléfono de WhatsApp.
      * @param TemplateService $templateService Servicio para gestionar plantillas.
      */
-    public function __construct(ApiClient $apiClient, Model $phone, TemplateService $templateService)
+    public function __construct(ApiClient $apiClient, Model $phone, TemplateService $templateService, ?string $versionId = null)
     {
         $this->phone = $phone;
         $this->apiClient = $apiClient;
         $this->templateService = $templateService;
+
+        // Si se especificó una versión, cargarla
+        if ($versionId) {
+            $this->templateVersion = WhatsappModelResolver::template_version()->find($versionId);
+        }
     }
 
     /**
@@ -89,9 +95,15 @@ class TemplateMessageBuilder
      * @param string $templateIdentifier El identificador de la plantilla.
      * @return self
      */
-    public function usingTemplate(string $templateIdentifier): self
+    public function usingTemplate(string $templateIdentifier, ?string $versionId = null): self
     {
         $this->templateIdentifier = $templateIdentifier;
+
+        // Si se especificó una versión, cargarla
+        if ($versionId) {
+            $this->templateVersion = WhatsappModelResolver::template_version()->find($versionId);
+        }
+        
         $this->fetchTemplateStructure();
         return $this;
     }
@@ -348,36 +360,21 @@ class TemplateMessageBuilder
             throw new InvalidArgumentException("Plantilla '{$this->templateIdentifier}' no encontrada.");
         }
 
-        $structure = [
-            'language' => $template->language,
-            'HEADER' => null,
-            'BODY' => null,
-            'FOOTER' => null,
-            'BUTTONS' => [],
-        ];
+        // Obtener la última versión aprobada
+        $this->templateVersion = $template->versions()
+            ->where('status', 'APPROVED')
+            ->latest()
+            ->first();
 
-        // Intentar usar el campo json si está disponible
-        if (!empty($template->json)) {
-            $templateData = is_array($template->json) ? $template->json : json_decode($template->json, true);
-
-            if ($templateData && isset($templateData['components'])) {
-                foreach ($templateData['components'] as $component) {
-                    $this->processComponent($component, $structure);
-                }
-            }
+        if (!$this->templateVersion) {
+            throw new InvalidArgumentException("No se encontró versión aprobada para la plantilla '{$this->templateIdentifier}'");
         }
 
-        // Si no hay datos en json o no se procesaron, usar los componentes relacionados
-        if (empty($structure['BUTTONS']) && $template->relationLoaded('components')) {
-            foreach ($template->components as $component) {
-                $componentData = is_array($component->content) ? $component->content : json_decode($component->content, true);
-                $this->processComponent(array_merge(['type' => $component->type], $componentData), $structure);
-            }
-        }
+        // Cargar la estructura desde la versión
+        $this->templateStructure = json_decode($this->templateVersion->template_structure, true);
 
-        $this->templateStructure = $structure;
-
-        Log::channel('whatsapp')->info('Estructura de plantilla procesada', [
+        Log::channel('whatsapp')->info('Estructura de plantilla cargada desde versión', [
+            'version_id' => $this->templateVersion->version_id,
             'structure' => $this->templateStructure
         ]);
     }
@@ -429,7 +426,18 @@ class TemplateMessageBuilder
         $componentType = strtoupper($componentType);
 
         if (!isset($this->templateStructure[$componentType])) {
-            throw new InvalidArgumentException("Componente '$componentType' no definido en la plantilla.");
+            // Si no está en la estructura principal, verificar en los componentes
+            $found = false;
+            foreach ($this->templateStructure['components'] ?? [] as $component) {
+                if (strtoupper($component['type'] ?? '') === $componentType) {
+                    $found = true;
+                    break;
+                }
+            }
+            
+            if (!$found) {
+                throw new InvalidArgumentException("Componente '$componentType' no definido en la plantilla.");
+            }
         }
 
         // Validación especial para headers
@@ -453,7 +461,9 @@ class TemplateMessageBuilder
         $components = [];
 
         // Procesar HEADER, BODY, FOOTER
-        foreach (['HEADER', 'BODY', 'FOOTER'] as $componentType) {
+        foreach ($this->templateStructure['components'] ?? [] as $componentDef) {
+            $componentType = strtoupper($componentDef['type'] ?? '');
+            
             if (isset($this->components[$componentType])) {
                 $components[] = [
                     'type' => strtolower($componentType),
@@ -514,10 +524,8 @@ class TemplateMessageBuilder
             'message_content' => NULL,
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
-            'json_template_payload' => json_encode([
-                    //'body_text' => Arr::get($this->templateStructure, 'BODY.text', ''), // No es necesario, ya ahora los datos del template pasarán a guardarse en otra tabla relacionada
-                    'payload' => $payload,
-                ], JSON_UNESCAPED_UNICODE),
+            'template_version_id' => $this->templateVersion->version_id, // <-- AQUÍ GUARDAMOS LA VERSIÓN
+            'json_template_payload' => json_encode(['payload' => $payload], JSON_UNESCAPED_UNICODE),
         ]);
 
 

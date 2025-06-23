@@ -35,6 +35,7 @@ class Message extends Model
         'message_context_id',
         'message_context_from',
         'caption',
+        'template_version_id',
         'json_content',
         'status',
         'delivered_at',
@@ -86,5 +87,20 @@ class Message extends Model
     {
         // Relación uno a muchos: este mensaje tiene múltiples réplicas
         return $this->hasMany(Message::class, 'message_context_id', 'message_id');
+    }
+
+    // Relación con la versión de plantilla
+    public function templateVersion()
+    {
+        return $this->belongsTo(TemplateVersion::class, 'template_version_id');
+    }
+
+    public function getDisplayContentAttribute()
+    {
+        if ($this->message_type === 'INTERACTIVE') {
+            return $this->json['body'] ?? 'Mensaje interactivo';
+        }
+        
+        return $this->message_content ?? 'Sin contenido';
     }
 }
