@@ -222,7 +222,7 @@ class Message extends Model
     public function replies()
     {
         // Relación uno a muchos: este mensaje tiene múltiples réplicas
-        return $this->hasMany(Message::class, 'message_context_id', 'message_id');
+        return $this->hasMany(Message::class, 'message_id', 'message_context_id');
     }
 
     // Relación con la versión de plantilla
