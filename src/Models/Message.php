@@ -62,7 +62,7 @@ class Message extends Model
      * Cuando un mensaje es de tipo plantailla, hay que devolver un objeto con el contenido del template formateado
      * @return void
      */
-    public function getTemplateContentFormatAttribute()
+    public function getTemplateContentFormatAttribute(): array
     {
         $content = [];
 
