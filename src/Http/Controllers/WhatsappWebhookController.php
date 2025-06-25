@@ -259,7 +259,8 @@ class WhatsappWebhookController extends Controller
                 'message_type' => 'TEXT',
                 'message_content' => $textContent,
                 'json_content' => json_encode($message),
-                'status' => 'received'
+                'status' => 'received',
+                'message_context_id' => $this->getContextMessageId($message),
             ]);
 
         Log::channel('whatsapp')->info('Text message processed and saved.', [
@@ -302,7 +303,8 @@ class WhatsappWebhookController extends Controller
                 'message_type' => strtoupper($message['type']),
                 'message_content' => $textContent,
                 'json_content' => json_encode($message),
-                'status' => 'received'
+                'status' => 'received',
+                'message_context_id' => $this->getContextMessageId($message),
             ]);
 
         Log::channel('whatsapp')->info('Mensaje interactivo procesado y guardado.', [
@@ -385,7 +387,8 @@ class WhatsappWebhookController extends Controller
                 'message_type' => strtoupper($message['type']),
                 'message_content' => $caption,
                 'json_content' => json_encode($message),
-                'status' => 'received'
+                'status' => 'received',
+                'message_context_id' => $this->getContextMessageId($message),
             ]);
 
         // Actualizar ó Crear el registro del archivo multimedia en la base de datos
@@ -442,7 +445,8 @@ class WhatsappWebhookController extends Controller
                 'message_type' => 'LOCATION',
                 'message_content' => $content . ' | ' . $coordinates,
                 'json_content' => json_encode($message),
-                'status' => 'received'
+                'status' => 'received',
+                'message_context_id' => $this->getContextMessageId($message),
             ]);
 
         Log::channel('whatsapp')->info('Location message processed.', [
@@ -482,7 +486,8 @@ class WhatsappWebhookController extends Controller
                 'message_type' => 'CONTACT',
                 'message_content' => $content,
                 'json_content' => json_encode($message),
-                'status' => 'received'
+                'status' => 'received',
+                'message_context_id' => $this->getContextMessageId($message),
             ]);
 
         Log::channel('whatsapp')->info('Contact shared message processed.', [
@@ -519,7 +524,8 @@ class WhatsappWebhookController extends Controller
                 'message_type' => 'REACTION',
                 'message_content' => $reaction['emoji'],
                 'json_content' => json_encode($message),
-                'status' => 'received'
+                'status' => 'received',
+                'message_context_id' => $this->getContextMessageId($message),
             ]);
 
         Log::channel('whatsapp')->info('Reacción procesada.', [
@@ -528,6 +534,28 @@ class WhatsappWebhookController extends Controller
         ]);
 
         return $messageRecord;
+    }
+
+    /**
+     * Si un mensaje es una respuesta a otro mensaje, se busca el message_id del mensaje
+     * @param array $message
+     * @return string|null
+     */
+    protected function getContextMessageId(array $message): ?string
+    {
+        if( isset($message['context']) and isset($message['context']['id']) )
+        {
+            // Si el mensaje tiene contexto, buscar ese id en la base de datos
+            $context_message = WhatsappModelResolver::message()
+                ->select('message_id')
+                ->where('wa_id', '=', $message['context']['id'])
+                ->first();
+
+            if( $context_message ){
+                return $context_message->message_id;
+            }
+        }
+        return null;
     }
 
     private function getMediaUrl(string $mediaId, Model $whatsappPhone): ?string
@@ -812,7 +840,8 @@ class WhatsappWebhookController extends Controller
                 'status' => 'received',
                 'code_error' => $errorCode,
                 'title_error' => $errorTitle,
-                'details_error' => $errorDetails
+                'details_error' => $errorDetails,
+                'message_context_id' => $this->getContextMessageId($message),
             ]
         );
 
