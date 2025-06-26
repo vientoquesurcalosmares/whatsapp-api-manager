@@ -525,7 +525,7 @@ class WhatsappWebhookController extends Controller
                 'message_content' => $reaction['emoji'],
                 'json_content' => json_encode($message),
                 'status' => 'received',
-                'message_context_id' => $this->getContextMessageId($message),
+                'message_context_id' => $reaction['message_id'],
             ]);
 
         Log::channel('whatsapp')->info('Reacción procesada.', [
