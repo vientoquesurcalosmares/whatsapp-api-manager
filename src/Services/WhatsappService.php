@@ -214,6 +214,30 @@ class WhatsappService
     }
 
     /**
+     * Suscribe una aplicación a la cuenta empresarial
+     * 
+     * @param string $whatsappBusinessId
+     * @return array
+     */
+    public function subscribeApp(string $whatsappBusinessId): array
+    {
+        $this->ensureAccountIsSet();
+        
+        $endpointUrl = Endpoints::build(
+            Endpoints::GET_BUSINESS_ACCOUNT_SUSCRIPTIONS,
+            ['whatsapp_business_id' => $whatsappBusinessId]
+        );
+        
+        return $this->apiClient->request(
+            'POST',
+            $endpointUrl,
+            [], // Sin parámetros de query
+            [], // Cuerpo vacío como requiere la API
+            ['headers' => $this->getAuthHeaders()]
+        );
+    }
+
+    /**
      * Registra un nuevo número telefónico
      */
     public function registerPhoneNumber(string $businessAccountId, array $phoneData): Model
@@ -246,31 +270,50 @@ class WhatsappService
      */
     public function configureWebhook(string $phoneNumberId, string $url, string $verifyToken): array
     {
+        $this->ensureAccountIsSet();
+
+        $phone = WhatsappModelResolver::phone_number()->find($phoneNumberId);
+        if (!$phone) {
+            throw new \RuntimeException('Número telefónico no encontrado');
+        }
+        
+        $apiPhoneId = $phone->api_phone_number_id;
+
         $endpointUrl = Endpoints::build(Endpoints::CONFIGURE_WEBHOOK, [
-            'phone_number_id' => $phoneNumberId
+            'phone_number_id' => $apiPhoneId
+        ]);
+        
+        Log::channel('whatsapp')->debug('Configurando webhook', [
+            'url' => $endpointUrl,
+            'webhook_url' => $url,
+            'verify_token' => $verifyToken
+        ]);
+
+        Log::channel('whatsapp')->debug('Configurando webhook', [
+            'url' => $endpointUrl,
+            'webhook_url' => $url,
+            'verify_token' => $verifyToken
         ]);
         
         $response = $this->apiClient->request(
             'POST',
             $endpointUrl,
-            [
-                'json' => [
-                    'webhook_url' => $url,
-                    'verify_token' => $verifyToken,
-                ],
+            [], // Parámetros de consulta
+            [   // Cuerpo de la solicitud
+                'webhook_url' => $url,
+                'verify_token' => $verifyToken,
+            ],
+            [   // Opciones
                 'headers' => $this->getAuthHeaders()
             ]
         );
         
-        $phone = WhatsappModelResolver::phone_number()->find($phoneNumberId);
-        if ($phone) {
-            $phone->update([
-                'webhook_configuration' => [
-                    'url' => $url,
-                    'verify_token' => $verifyToken
-                ]
-            ]);
-        }
+        $phone->update([
+            'webhook_configuration' => [
+                'url' => $url,
+                'verify_token' => $verifyToken
+            ]
+        ]);
         
         return $response;
     }
