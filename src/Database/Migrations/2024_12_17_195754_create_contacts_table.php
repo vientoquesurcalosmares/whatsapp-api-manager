@@ -34,6 +34,8 @@ return new class extends Migration
             $table->string('country')->nullable();
             $table->date('birthday')->nullable();
             $table->string('url')->nullable();
+            $table->boolean('accepts_marketing')->default(true);
+            $table->timestamp('marketing_opt_out_at')->nullable();
 
             $table->timestamps();
             $table->softDeletes();

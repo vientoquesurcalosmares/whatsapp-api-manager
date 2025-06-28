@@ -39,6 +39,8 @@ class Contact extends Model
         'country',
         'birthday',
         'url',
+        'accepts_marketing',
+        'marketing_opt_out_at'
     ];
 
     public function messages()
@@ -61,5 +63,10 @@ class Contact extends Model
 
     public function getFullNameAttribute(): string {
         return trim("{$this->prefix} {$this->first_name} {$this->middle_name} {$this->last_name} {$this->suffix}");
+    }
+
+    public function hasOptedOutOfMarketing(): bool
+    {
+        return !$this->accepts_marketing && $this->marketing_opt_out_at !== null;
     }
 }

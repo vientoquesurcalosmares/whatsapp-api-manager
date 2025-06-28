@@ -135,6 +135,10 @@ return [
                  */
                 'received' => \Scriptdevelop\WhatsappManager\Events\MessageReceived::class,
                 'sent' => \Scriptdevelop\WhatsappManager\Events\MessageSent::class, //No implementado en webhook
+                'marketing_opt_out' => \Scriptdevelop\WhatsappManager\Events\WhatsappMarketingOptOut::class,
+                'system' => [
+                    'received' => \Scriptdevelop\WhatsappManager\Events\SystemMessageReceived::class,
+                ],
             ],
             'reaction' => [
                 /**

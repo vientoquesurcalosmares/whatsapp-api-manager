@@ -141,10 +141,18 @@ class WhatsappWebhookController extends Controller
             $whatsappPhone = WhatsappModelResolver::phone_number()->where('api_phone_number_id', $apiPhoneNumberId)->first();
         }
 
+        // Manejar mensajes de sistema
         if (!$whatsappPhone) {
             Log::channel('whatsapp')->error('No matching WhatsappPhoneNumber found for api_phone_number_id.', [
                 'api_phone_number_id' => $apiPhoneNumberId,
             ]);
+            return;
+        }
+
+        // Manejar mensajes de sistema
+        if ($messageType === 'system') {
+            $messageRecord = $this->processSystemMessage($message, $contactRecord, $whatsappPhone);
+            $this->fireSystemMessageReceived($contactRecord, $messageRecord);
             return;
         }
 
@@ -634,7 +642,13 @@ class WhatsappWebhookController extends Controller
             case 'read': $this->fireMessageRead($messageUpdated);
                 break;
 
-            case 'failed': $this->fireMessageFailed($messageUpdated);
+            case 'failed': 
+                // Manejar caso específico de opt-out de marketing
+                if (isset($status['errors'][0]['code']) && $status['errors'][0]['code'] == 131050) {
+                    $this->fireMarketingOptOut($messageUpdated);
+                } else {
+                    $this->fireMessageFailed($messageUpdated);
+                }
                 break;
         }
 
@@ -673,6 +687,7 @@ class WhatsappWebhookController extends Controller
     {
         $statusValue = $status['status'] ?? null;
         $timestamp = $status['timestamp'] ?? null;
+        $errorCode = $status['errors'][0]['code'] ?? null;
 
         $updateData = ['status' => $statusValue];
 
@@ -685,6 +700,12 @@ class WhatsappWebhookController extends Controller
                 'failed' => $updateData['failed_at'] = $date,
                 default => null
             };
+        }
+
+        if ($statusValue == 'failed' && $errorCode == 131050) {
+            $updateData['is_marketing_opt_out'] = true;
+            
+            $this->updateContactMarketingPreference($message->contact_id, false);
         }
 
         //Si falló el mensaje, guardar los datos del error
@@ -1214,5 +1235,111 @@ class WhatsappWebhookController extends Controller
         event(new $event([
             'message' => $messageUpdated,
         ]));
+    }
+
+    protected function fireSystemMessageReceived($contactRecord, $messageRecord)
+    {
+        $event = config('whatsapp.events.messages.system.received');
+        event(new $event([
+            'contact' => $contactRecord,
+            'message' => $messageRecord,
+        ]));
+    }
+
+    protected function fireMarketingOptOut($messageUpdated)
+    {
+        $event = config('whatsapp.events.messages.message.marketing_opt_out');
+        event(new $event([
+            'message' => $messageUpdated,
+        ]));
+    }
+
+    protected function processSystemMessage(array $message, Model $contact, Model $whatsappPhone): ?Model
+    {
+        $systemType = $message['system']['type'] ?? '';
+        $body = $message['system']['body'] ?? '';
+        $newWaId = $message['system']['new_wa_id'] ?? null;
+
+        // Caso especial: cambio de número
+        if ($systemType === 'user_changed_number') {
+            return $this->processUserChangedNumber($message, $contact, $whatsappPhone, $body, $newWaId);
+        }
+
+        // Otros tipos de mensajes de sistema
+        $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
+            ['wa_id' => $message['id']],
+            [
+                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+                'contact_id' => $contact->contact_id,
+                'conversation_id' => null,
+                'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+                'message_from' => preg_replace('/[\D+]/', '', $message['from']),
+                'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+                'message_type' => 'SYSTEM',
+                'message_content' => $body,
+                'json_content' => json_encode($message),
+                'status' => 'received',
+                'message_context_id' => $this->getContextMessageId($message),
+            ]
+        );
+
+        Log::channel('whatsapp')->info('System message processed', [
+            'message_id' => $messageRecord->message_id,
+            'system_type' => $systemType
+        ]);
+
+        return $messageRecord;
+    }
+
+    protected function processUserChangedNumber(
+        array $message, 
+        Model $contact, 
+        Model $whatsappPhone,
+        string $body,
+        ?string $newWaId
+    ): ?Model
+    {
+        // Actualizar el contacto con el nuevo wa_id
+        if ($newWaId) {
+            $contact->update(['wa_id' => $newWaId]);
+            
+            Log::channel('whatsapp')->info('Contact phone number updated', [
+                'contact_id' => $contact->contact_id,
+                'old_wa_id' => $contact->getOriginal('wa_id'),
+                'new_wa_id' => $newWaId
+            ]);
+        }
+
+        // Crear registro del mensaje
+        $messageRecord = WhatsappModelResolver::message()->create([
+            'wa_id' => $message['id'],
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'conversation_id' => null,
+            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+            'message_from' => preg_replace('/[\D+]/', '', $message['from']),
+            'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+            'message_type' => 'SYSTEM',
+            'message_content' => $body,
+            'json_content' => json_encode($message),
+            'status' => 'received',
+            'message_context_id' => $this->getContextMessageId($message),
+        ]);
+
+        return $messageRecord;
+    }
+
+    protected function updateContactMarketingPreference($contactId, $acceptsMarketing): void
+    {
+        $contact = WhatsappModelResolver::contact()->find($contactId);
+        
+        if ($contact) {
+            $contact->update(['accepts_marketing' => $acceptsMarketing]);
+            
+            Log::channel('whatsapp')->info('Contact marketing preference updated', [
+                'contact_id' => $contactId,
+                'accepts_marketing' => $acceptsMarketing
+            ]);
+        }
     }
 }
