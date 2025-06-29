@@ -3664,32 +3664,43 @@ class MessageDispatcherService
     }
 
     /**
-     * Marca un mensaje como leído en WhatsApp
+     * Maneja acciones de mensajes: marcar como leído o enviar indicadores de escritura
      *
      * @param string $messageId ID interno del mensaje en tu base de datos
-     * @return bool True si se marcó correctamente, false en caso contrario
+     * @param array|null $typingIndicator Configuración de indicador de escritura
+     *        ['type' => 'text'|'audio'|'cancel']
+     * @return bool True si se ejecutó correctamente
      * @throws WhatsappApiException Si falla la operación en la API
      */
-    public function markMessageAsRead(string $messageId): bool
-    {
-        Log::channel('whatsapp')->info('Marcando mensaje como leído.', ['message_id' => $messageId]);
+    public function handleMessageAction(
+        string $messageId, 
+        ?array $typingIndicator = null
+    ): bool {
+        $action = $typingIndicator ? 'typing indicator' : 'mark as read';
+        Log::channel('whatsapp')->info("Ejecutando acción: $action", ['message_id' => $messageId]);
 
         try {
             // Obtener el mensaje de la base de datos
             $message = WhatsappModelResolver::message()->findOrFail($messageId);
-
-            // Verificar que el mensaje fue recibido (INPUT)
-            if ($message->message_method !== 'INPUT') {
-                throw new \InvalidArgumentException('Solo se pueden marcar como leídos mensajes recibidos');
-            }
-
-            // Obtener el número telefónico asociado
             $phoneNumber = $message->phoneNumber;
 
             // Construir el endpoint
             $endpoint = Endpoints::build(Endpoints::MARK_MESSAGE_AS_READ, [
                 'phone_number_id' => $phoneNumber->api_phone_number_id
             ]);
+
+            // Construir payload según el tipo de acción
+            $payload = [
+                'messaging_product' => 'whatsapp',
+                'status' => 'read',
+                'message_id' => $message->wa_id
+            ];
+
+            if ($typingIndicator) {
+                $payload['typing_indicator'] = [
+                    'type' => $typingIndicator['type'] ?? 'text'
+                ];
+            }
 
             // Enviar solicitud a la API
             $response = $this->apiClient->request(
@@ -3699,32 +3710,31 @@ class MessageDispatcherService
                     'Authorization' => 'Bearer ' . $phoneNumber->businessAccount->api_token,
                     'Content-Type' => 'application/json'
                 ],
-                data: [
-                    'messaging_product' => 'whatsapp',
-                    'status' => 'read',
-                    'message_id' => $message->wa_id
-                ]
+                data: $payload
             );
 
-            // Actualizar estado en base de datos
-            $message->update(['status' => MessageStatus::READ]);
+            // Actualizar estado si es marcado como leído
+            if (!$typingIndicator) {
+                $message->update(['status' => MessageStatus::READ]);
+            }
 
-            Log::channel('whatsapp')->info('Mensaje marcado como leído exitosamente.', [
+            Log::channel('whatsapp')->info("Acción completada: $action", [
                 'message_id' => $messageId,
-                'wa_id' => $message->wa_id
+                'wa_id' => $message->wa_id,
+                'response' => $response
             ]);
 
             return true;
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::channel('whatsapp')->error('Mensaje no encontrado para marcar como leído.', [
+            Log::channel('whatsapp')->error('Mensaje no encontrado', [
                 'message_id' => $messageId,
                 'error' => $e->getMessage()
             ]);
             throw new \InvalidArgumentException('El mensaje no existe en la base de datos');
 
         } catch (WhatsappApiException $e) {
-            Log::channel('whatsapp')->error('Error al marcar mensaje como leído.', [
+            Log::channel('whatsapp')->error("Error en $action", [
                 'message_id' => $messageId,
                 'error' => $e->getMessage(),
                 'details' => $e->getDetails()
@@ -3732,7 +3742,7 @@ class MessageDispatcherService
             throw $e;
 
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error inesperado al marcar mensaje como leído.', [
+            Log::channel('whatsapp')->error("Error inesperado en $action", [
                 'message_id' => $messageId,
                 'error' => $e->getMessage()
             ]);
