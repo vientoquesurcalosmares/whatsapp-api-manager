@@ -12,6 +12,12 @@ LARAVEL WHatsapp Manager
 <a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/l/scriptdevelop/whatsapp-manager" alt="License"></a>
 </p>
 
+<div align="center">
+<sub>Documentación del Webhook de WhatsApp Manager | 
+<a href="https://github.com/djdang3r/whatsapp-api-manager">Ver en GitHub</a></sub>
+</div>
+
+
 ---
 
 ## Documentación
@@ -65,3 +71,25 @@ LARAVEL WHatsapp Manager
    - Configuracion del Webhook
    - Estructura de eventos
    - Tipos de mensajes soportados
+
+
+
+---
+
+
+## ❤️ Apoyo
+
+Si este proyecto te resulta útil, considera apoyar su desarrollo:
+
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
+[![Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+
+## 📄 Licencia
+
+MIT License - Ver [LICENSE](LICENSE) para más detalles
+
+
+<div align="center">
+<sub>Documentación del Webhook de WhatsApp Manager | 
+<a href="https://github.com/djdang3r/whatsapp-api-manager">Ver en GitHub</a></sub>
+</div>
