@@ -23,7 +23,7 @@ LARAVEL WHatsapp Manager
 ## Documentación
 
 ## 📚 Tabla de Contenidos
-<a href="documentation/es/01-instalacion.md" title="Documentación en Español">
+<a href="01-instalacion.md" title="Documentación en Español">
 1. 🚀 Instalación
 </a>
 
@@ -31,7 +31,7 @@ LARAVEL WHatsapp Manager
    - Configuración inicial
    - Migraciones
 
-<a href="documentation/es/02-config-api.md" title="Documentación en Español">
+<a href="02-config-api.md" title="Documentación en Español">
 2. 🧩 Configuración de API
 </a>
 
@@ -39,7 +39,7 @@ LARAVEL WHatsapp Manager
    - Configuración de webhooks
    - Gestión de números telefónicos
 
-<a href="documentation/es/03-mensajes.md" title="Documentación en Español">
+<a href="03-mensajes.md" title="Documentación en Español">
 3. 💬 Gestión de Mensajes
 </a>
 
@@ -48,7 +48,7 @@ LARAVEL WHatsapp Manager
    - Plantillas de mensajes
    - Recepción de mensajes
 
-<a href="documentation/es/04-plantillas.md" title="Documentación en Español">
+<a href="04-plantillas.md" title="Documentación en Español">
 4. 📋 Gestión de Plantillas
 </a>
 
@@ -56,7 +56,7 @@ LARAVEL WHatsapp Manager
    - Envío de plantillas
    - Administración de versiones
 
-<a href="documentation/es/05-eventos.md" title="Documentación en Español">
+<a href="05-eventos.md" title="Documentación en Español">
 5. 📡 Eventos en Tiempo Real
 </a>
 
@@ -64,7 +64,7 @@ LARAVEL WHatsapp Manager
    - Webhooks integrados
    - Tipos de eventos soportados
 
-<a href="documentation/es/06-webhook.md" title="Documentación en Español">
+<a href="06-webhook.md" title="Documentación en Español">
 5. 🧪 Webhook
 </a>
 
