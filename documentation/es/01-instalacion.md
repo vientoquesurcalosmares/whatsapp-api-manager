@@ -5,7 +5,7 @@
 <table>
   <tr>
     <td align="left">
-      <a href="../intro.md" title="Sección anterior: Inicio">◄◄ Inicio</a>
+      <a href="../../README.md" title="Sección anterior: Inicio">◄◄ Inicio</a>
     </td>
     <td align="center">
       <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>
@@ -213,7 +213,7 @@ Antes de instalar el paquete, necesitarás una cuenta de WhatsApp API Cloud:
 <table>
   <tr>
     <td align="left">
-      <a href="../intro.md" title="Sección anterior: Inicio">◄◄ Inicio</a>
+      <a href="../../README.md" title="Sección anterior: Inicio">◄◄ Inicio</a>
     </td>
     <td align="center">
       <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>

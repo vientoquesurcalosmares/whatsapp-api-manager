@@ -5,7 +5,7 @@
 <table>
   <tr>
     <td align="left">
-      <a href="06-eventos.md" title="Sección anterior">◄◄ Plantillas</a>
+      <a href="05-eventos.md" title="Sección anterior">◄◄ Eventos</a>
     </td>
     <td align="center">
       <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>
@@ -179,7 +179,7 @@ Maneja el ciclo de vida de plantillas:
 <table>
   <tr>
     <td align="left">
-      <a href="06-eventos.md" title="Sección anterior">◄◄ Plantillas</a>
+      <a href="05-eventos.md" title="Sección anterior">◄◄ Eventos</a>
     </td>
     <td align="center">
       <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>

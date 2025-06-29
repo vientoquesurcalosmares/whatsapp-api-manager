@@ -5,7 +5,7 @@
 <table>
   <tr>
     <td align="left">
-      <a href="02-config-api.md" title="Sección anterior: Configuración">◄◄ Instalacion</a>
+      <a href="02-config-api.md" title="Sección anterior: Configuración">◄◄ Configurar API</a>
     </td>
     <td align="center">
       <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>
@@ -650,7 +650,7 @@ Se encarga de marcar el mensaje recibido como leido, con los dos checks azules.
 <table>
   <tr>
     <td align="left">
-      <a href="02-config-api.md" title="Sección anterior: Configuración">◄◄ Instalacion</a>
+      <a href="02-config-api.md" title="Sección anterior: Configuración">◄◄ Configurar API</a>
     </td>
     <td align="center">
       <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>

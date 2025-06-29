@@ -17,7 +17,7 @@ LARAVEL WHatsapp Manager
 <a href="https://github.com/djdang3r/whatsapp-api-manager">Ver en GitHub</a></sub>
 </div>
 
-
+<a href="../../README.md" title="Sección anterior: Inicio">◄◄ Inicio</a>
 ---
 
 ## Documentación
