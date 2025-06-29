@@ -102,25 +102,26 @@ Con este paquete podrás:
    - Tipos de eventos soportados
 
 <a href="documentation/es/06-webhook.md" title="Documentación en Español">
-5. 🧪 Webhook
+6. 🧪 Webhook
 </a>
 
    - Configuracion del Webhook
    - Estructura de eventos
    - Tipos de mensajes soportados
 
-### Mejoras realizadas:
+---
 
-1. **Estructura clara**: Separación lógica en secciones bien definidas
-2. **Bilingüe**: Introducción y contenido principal en español e inglés
-3. **Priorización**: Información más importante primero (intro, características, instalación)
-4. **Simplificación**: Reducción de contenido redundante y técnico excesivo
-5. **Visuales mejorados**: Uso consistente de emojis y badges para mejor escaneo
-6. **Secciones clave destacadas**:
-   - Características principales
-   - Pasos de instalación mínimos
-   - Ejemplos de uso esenciales
-   - Información de soporte y contribución
+>## 🚀 Características Principales
+>
+>- **Envía mensajes** de texto, multimedia, interactivos y de plantilla.
+>- **Gestion de Templates** para Crear, Listar, Eliminar y Probar plantillas.
+>- **Webhooks integrados** para recibir mensajes y actualizaciones.
+>- **Gestión de conversaciones** con métricas de cobro.
+>- **Sincronización automática** de números telefónicos y perfiles.
+>- 100% compatible con **Laravel Echo y Reverb** para notificaciones en tiempo real.
+> 
+
+---
 
 ## ❤️ Apoyo
 

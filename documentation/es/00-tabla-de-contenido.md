@@ -65,7 +65,7 @@ LARAVEL WHatsapp Manager
    - Tipos de eventos soportados
 
 <a href="06-webhook.md" title="Documentación en Español">
-5. 🧪 Webhook
+6. 🧪 Webhook
 </a>
 
    - Configuracion del Webhook

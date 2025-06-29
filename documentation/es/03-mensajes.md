@@ -410,6 +410,28 @@ Características principales:
         ->withFooter('Horario de atención: L-V 8am-6pm')
         ->inReplyTo($contextId)  // Aquí especificas el mensaje al que respondes
         ->send();
+
+    // EJEMPLOS CON HEADER texto
+    $buttonResponse = Whatsapp::sendButtonMessage($phone->phone_number_id)
+        ->to('57', '313714R3534')
+        ->withHeader('Catálogo Digital')
+        ->withBody('¿Confirmas tu cita para mañana a las 3 PM?')
+        ->addButton('confirmar', '✅ Confirmar')
+        ->addButton('reagendar', '🔄 Reagendar')
+        ->withFooter('Por favor selecciona una opción')
+        ->send();
+
+    // EJEMPLOS CON HEADER imagen
+    $file = new \SplFileInfo(storage_path('app/public/laravel-whatsapp-manager.png'));
+
+    $buttonResponse = Whatsapp::sendButtonMessage($phone->phone_number_id)
+        ->to('57', '313714R3534')
+        ->withHeader($file)
+        ->withBody('¿Confirmas tu cita para mañana a las 3 PM?')
+        ->addButton('confirmar', '✅ Confirmar')
+        ->addButton('reagendar', '🔄 Reagendar')
+        ->withFooter('Por favor selecciona una opción')
+        ->send();
     ```
 
 - **Listas Desplegables Interactivas**
@@ -423,7 +445,7 @@ Características principales:
     $account = WhatsappBusinessAccount::first();
     $phone = $account->phoneNumbers->first();
 
-    // EJEMLPO 1
+    // EJEMLPO 1 - SIN ENCADENAR
     $listBuilder = Whatsapp::sendListMessage($phone->phone_number_id)
         ->to('57', '31371235638')
         ->withButtonText('Ver Productos')
@@ -443,29 +465,27 @@ Características principales:
 
     $response = $listBuilder->send();
 
-    // EJEMLPO 2
+    // EJEMLPO 2 - ENCADENADO
     $listBuilder = Whatsapp::sendListMessage($phone->phone_number_id)
         ->to('57', '31371235638')
         ->withButtonText('Ver Servicios')
         ->withBody('Selecciona el servicio que deseas agendar:')
-        ->withFooter('Desliza para ver todas las opciones');
-
-    $listBuilder->startSection('Cortes de Cabello')
-        ->addRow('corte-mujer', 'Corte Mujer', 'Estilo profesional')
-        ->addRow('corte-hombre', 'Corte Hombre', 'Técnicas modernas')
-        ->addRow('corte-niños', 'Corte Niños', 'Diseños infantiles')
-        ->endSection();
-
-    $listBuilder->startSection('Tratamientos')
-        ->addRow('keratina', 'Keratina', 'Tratamiento reparador')
-        ->addRow('coloracion', 'Coloración', 'Tintes profesionales')
-        ->addRow('mascarilla', 'Mascarilla', 'Hidratación profunda')
+        ->withFooter('Desliza para ver todas las opciones')
+        ->startSection('Cortes de Cabello')
+            ->addRow('corte-mujer', 'Corte Mujer', 'Estilo profesional')
+            ->addRow('corte-hombre', 'Corte Hombre', 'Técnicas modernas')
+            ->addRow('corte-niños', 'Corte Niños', 'Diseños infantiles')
+        ->endSection()
+        ->startSection('Tratamientos')
+            ->addRow('keratina', 'Keratina', 'Tratamiento reparador')
+            ->addRow('coloracion', 'Coloración', 'Tintes profesionales')
+            ->addRow('mascarilla', 'Mascarilla', 'Hidratación profunda')
         ->endSection();
 
     $response = $listBuilder->send();
 
 
-    // EJEMLPO 3
+    // EJEMLPO 3 - respuesta a mensajes o reply
     // Obtener ID de un mensaje anterior (debes tener uno real)
     $contextMessage = \ScriptDevelop\WhatsappManager\Models\Message::first();
     $contextId = $contextMessage->wa_id;
@@ -487,6 +507,23 @@ Características principales:
         ->endSection();
 
     $response = $listBuilder->send();
+
+    // EJEMPLO CON HEADER texto
+    $listBuilder = Whatsapp::sendListMessage($phone->phone_number_id)
+        ->to('57', '313714R3534')
+        ->withButtonText('Ver Productos')
+        ->withHeader('Catálogo Digital') // HEADER DE TECTO
+        ->withBody('Nuestros productos destacados:')
+        ->withFooter('Desliza para ver más opciones')
+        ->startSection('Laptops')
+            ->addRow('laptop-pro', 'MacBook Pro', '16" - 32GB RAM - 1TB SSD')
+            ->addRow('laptop-air', 'MacBook Air', '13" - M2 Chip - 8GB RAM')
+        ->endSection()
+        ->startSection('Smartphones')
+            ->addRow('iphone-15', 'iPhone 15 Pro', 'Cámara 48MP - 5G')
+            ->addRow('samsung-s23', 'Samsung S23', 'Pantalla AMOLED 120Hz')
+        ->endSection()
+        ->send();
     ```
 
 ## 5. Enviar Mensajes de Producto.
