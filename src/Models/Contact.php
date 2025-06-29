@@ -31,16 +31,25 @@ class Contact extends Model
         'organization',
         'department',
         'title',
-        'email',
-        'address',
         'city',
         'state',
         'zip',
         'country',
         'birthday',
-        'url',
+        'addresses',
+        'emails',
+        'phones',
+        'urls',
         'accepts_marketing',
         'marketing_opt_out_at'
+    ];
+
+    protected $casts = [
+        'addresses' => 'array',
+        'emails' => 'array',
+        'phones' => 'array',
+        'urls' => 'array',
+        'birthday' => 'date',
     ];
 
     public function messages()

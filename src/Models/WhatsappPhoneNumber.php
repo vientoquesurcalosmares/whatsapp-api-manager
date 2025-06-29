@@ -29,6 +29,7 @@ class WhatsappPhoneNumber extends Model
 
         'code_verification_status',
         'quality_rating',
+        'name_status',
         'platform_type',
         'throughput',
         'webhook_configuration'

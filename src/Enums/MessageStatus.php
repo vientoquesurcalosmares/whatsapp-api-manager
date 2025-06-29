@@ -11,6 +11,7 @@ enum MessageStatus: string
     case FAILED = 'failed';
     case RECEIVED = 'received';
     case DELETED = 'deleted';
+    case WARNING = 'warning';
     
     public static function fromApiStatus(string $apiStatus): self
     {
@@ -21,6 +22,7 @@ enum MessageStatus: string
             'failed' => self::FAILED,
             'received' => self::RECEIVED,
             'deleted' => self::DELETED,
+            'warning' => self::WARNING,
             default => self::PENDING
         };
     }
