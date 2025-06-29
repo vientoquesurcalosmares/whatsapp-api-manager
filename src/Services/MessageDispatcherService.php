@@ -3719,22 +3719,27 @@ class MessageDispatcherService
             $message = WhatsappModelResolver::message()->findOrFail($messageId);
             $phoneNumber = $message->phoneNumber;
 
-            // Construir payload base
-            $payload = [
-                'messaging_product' => 'whatsapp',
-                'status' => 'read',
-                'message_id' => $message->wa_id
-            ];
-
-            // Agregar parámetros de acción si existen
-            if ($actionParams) {
-                $payload = array_merge($payload, $actionParams);
-            }
-
             // Construir el endpoint
             $endpoint = Endpoints::build(Endpoints::MARK_MESSAGE_AS_READ, [
                 'phone_number_id' => $phoneNumber->api_phone_number_id
             ]);
+
+            // Construir payload base
+            $payload = [
+                'messaging_product' => 'whatsapp',
+                'message_id' => $message->wa_id
+            ];
+
+            // Agregar acción específica
+            if ($actionParams) {
+                // Para typing indicators
+                $payload['typing_indicator'] = [
+                    'type' => $actionParams['type'] ?? 'text'
+                ];
+            } else {
+                // Para marcar como leído
+                $payload['status'] = 'read';
+            }
 
             // Enviar solicitud a la API
             $response = $this->apiClient->request(
