@@ -8,7 +8,7 @@
       <a href="04-plantillas.md" title="Sección anterior">◄◄ Plantillas</a>
     </td>
     <td align="center">
-      <a href="../intro.md" title="Tabla de contenido">▲ Tabla de contenido</a>
+      <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>
     </td>
     <td align="right">
       <a href="06-webhook.md" title="Sección siguiente">Webhook ►►</a>
@@ -654,7 +654,7 @@ event(new \Scriptdevelop\WhatsappManager\Events\MessageReceived([
       <a href="04-plantillas.md" title="Sección anterior">◄◄ Plantillas</a>
     </td>
     <td align="center">
-      <a href="../intro.md" title="Tabla de contenido">▲ Tabla de contenido</a>
+      <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>
     </td>
     <td align="right">
       <a href="06-webhook.md" title="Sección siguiente">Webhook ►►</a>

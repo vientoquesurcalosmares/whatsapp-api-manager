@@ -8,7 +8,7 @@
       <a href="03-mensajes.md" title="Sección anterior">◄◄ Gestion de Mensajes</a>
     </td>
     <td align="center">
-      <a href="../intro.md" title="Tabla de contenido">▲ Tabla de contenido</a>
+      <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>
     </td>
     <td align="right">
       <a href="05-eventos.md" title="Sección siguiente">Eventos ►►</a>
@@ -485,7 +485,7 @@ Gracias por tu apoyo 💙
       <a href="03-mensajes.md" title="Sección anterior">◄◄ Gestion de Mensajes</a>
     </td>
     <td align="center">
-      <a href="../intro.md" title="Tabla de contenido">▲ Tabla de contenido</a>
+      <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>
     </td>
     <td align="right">
       <a href="05-eventos.md" title="Sección siguiente">Eventos ►►</a>

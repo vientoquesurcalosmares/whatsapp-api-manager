@@ -8,7 +8,7 @@
       <a href="01-instalacion.md" title="Sección anterior">◄◄ Instalacion</a>
     </td>
     <td align="center">
-      <a href="../intro.md" title="Tabla de contenido">▲ Tabla de contenido</a>
+      <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>
     </td>
     <td align="right">
       <a href="03-mensajes.md" title="Sección siguiente: Envío de Mensajes">Gestión de Mensajes ►►</a>
@@ -143,7 +143,7 @@ Whatsapp::phone()->deletePhoneNumber('PHONE_NUMBER_ID');
       <a href="01-instalacion.md" title="Sección anterior: Instalacion">◄◄ Instalacion</a>
     </td>
     <td align="center">
-      <a href="../intro.md" title="Tabla de contenido">▲ Tabla de contenido</a>
+      <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>
     </td>
     <td align="right">
       <a href="03-mensajes.md" title="Sección siguiente: Envío de Mensajes">Gestión de Mensajes ►►</a>

@@ -8,7 +8,7 @@
       <a href="02-config-api.md" title="Sección anterior: Configuración">◄◄ Instalacion</a>
     </td>
     <td align="center">
-      <a href="../intro.md" title="Tabla de contenido">▲ Tabla de contenido</a>
+      <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>
     </td>
     <td align="right">
       <a href="04-plantillas.md" title="Sección siguiente">Plantillas ►►</a>
@@ -653,7 +653,7 @@ Se encarga de marcar el mensaje recibido como leido, con los dos checks azules.
       <a href="02-config-api.md" title="Sección anterior: Configuración">◄◄ Instalacion</a>
     </td>
     <td align="center">
-      <a href="../intro.md" title="Tabla de contenido">▲ Tabla de contenido</a>
+      <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>
     </td>
     <td align="right">
       <a href="04-plantillas.md" title="Sección siguiente">Plantillas ►►</a>

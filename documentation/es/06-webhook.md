@@ -8,7 +8,7 @@
       <a href="06-eventos.md" title="Sección anterior">◄◄ Plantillas</a>
     </td>
     <td align="center">
-      <a href="../intro.md" title="Tabla de contenido">▲ Tabla de contenido</a>
+      <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>
     </td>
   </tr>
 </table>
@@ -182,7 +182,7 @@ Maneja el ciclo de vida de plantillas:
       <a href="06-eventos.md" title="Sección anterior">◄◄ Plantillas</a>
     </td>
     <td align="center">
-      <a href="../intro.md" title="Tabla de contenido">▲ Tabla de contenido</a>
+      <a href="00-tabla-de-contenido.md" title="Tabla de contenido">▲ Tabla de contenido</a>
     </td>
   </tr>
 </table>
