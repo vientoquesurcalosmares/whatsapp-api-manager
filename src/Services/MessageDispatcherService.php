@@ -3672,7 +3672,7 @@ class MessageDispatcherService
      * @return bool True si se ejecutó correctamente
      * @throws WhatsappApiException Si falla la operación en la API
      */
-    public function handleMessageAction(
+    public function markMessageAsRead(
         string $messageId, 
         ?array $typingIndicator = null
     ): bool {
