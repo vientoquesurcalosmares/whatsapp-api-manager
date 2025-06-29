@@ -704,7 +704,6 @@ class WhatsappWebhookController extends Controller
 
         if ($statusValue == 'failed' && $errorCode == 131050) {
             $updateData['is_marketing_opt_out'] = true;
-            
             $this->updateContactMarketingPreference($message->contact_id, false);
         }
 
@@ -1332,9 +1331,19 @@ class WhatsappWebhookController extends Controller
     protected function updateContactMarketingPreference($contactId, $acceptsMarketing): void
     {
         $contact = WhatsappModelResolver::contact()->find($contactId);
-        
+    
         if ($contact) {
-            $contact->update(['accepts_marketing' => $acceptsMarketing]);
+            $updateData = ['accepts_marketing' => $acceptsMarketing];
+            
+            // Cuando se establece en false (opt-out), registrar la marca de tiempo
+            if ($acceptsMarketing === false) {
+                $updateData['marketing_opt_out_at'] = now();
+            } else {
+                // Si se establece en true, limpiar la marca de tiempo
+                $updateData['marketing_opt_out_at'] = null;
+            }
+            
+            $contact->update($updateData);
             
             Log::channel('whatsapp')->info('Contact marketing preference updated', [
                 'contact_id' => $contactId,
