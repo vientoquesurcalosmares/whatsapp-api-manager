@@ -12,6 +12,7 @@ class InteractiveButtonBuilder
     private string $phoneNumberId;
     private string $countryCode;
     private string $phoneNumber;
+    private $header = null;
     private string $body;
     private array $buttons = [];
     private ?string $footer = null;
@@ -27,6 +28,12 @@ class InteractiveButtonBuilder
     {
         $this->countryCode = $countryCode;
         $this->phoneNumber = $phoneNumber;
+        return $this;
+    }
+
+    public function withHeader($header): self
+    {
+        $this->header = $header;
         return $this;
     }
 
@@ -73,6 +80,7 @@ class InteractiveButtonBuilder
             $this->body,
             $this->buttons,
             $this->footer,
+            $this->header,
             $this->contextMessageId
         );
     }
