@@ -731,11 +731,21 @@ Características principales:
 
 ## 6. Getion de mensajes.
 ### Marcar mensaje como leido
-Se encarga de marcar el mensaje recibido como leido, con los dos checks azules.
+  - Se encarga de marcar el mensaje recibido como leido, con los dos checks azules.
 
-```php
-    $message = Whatsapp::message()->markMessageAsRead('01JW939646VBZTS7JEJN21FGVE'); // ID del Mensaje a marcar como leidoo
-```
+    ```php
+    // Para marcar como leído (forma tradicional)
+    $message = Whatsapp::message()->markMessageAsRead('01JYYVWV7P6JX9MDBPGBW6P8ZG');
+
+    // Para enviar indicador de escritura de texto
+    $message = Whatsapp::message()->sendTypingIndicator('01JYYVWV7P6JX9MDBPGBW6P8ZG');
+
+    // Para enviar indicador de grabación de audio
+    $message = Whatsapp::message()->sendTypingIndicator('01JYYVWV7P6JX9MDBPGBW6P8ZG', 'audio');
+
+    // Para detener indicador
+    $message = Whatsapp::message()->stopTypingIndicator('01JYYVWV7P6JX9MDBPGBW6P8ZG');
+    ```
 
 
 ---
