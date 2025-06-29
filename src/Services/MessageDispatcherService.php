@@ -3664,19 +3664,54 @@ class MessageDispatcherService
     }
 
     /**
+     * Marca un mensaje como leído en WhatsApp
+     * (Mantiene compatibilidad con versiones anteriores)
+     *
+     * @param string $messageId ID interno del mensaje en tu base de datos
+     * @return bool True si se marcó correctamente, false en caso contrario
+     * @throws WhatsappApiException Si falla la operación en la API
+     */
+    public function markMessageAsRead(string $messageId): bool
+    {
+        return $this->handleMessageAction($messageId);
+    }
+
+    /**
+     * Envía un indicador de escritura para un mensaje
+     *
+     * @param string $messageId ID interno del mensaje en tu base de datos
+     * @param string $type Tipo de indicador ('text' o 'audio')
+     * @return bool True si se envió correctamente
+     * @throws WhatsappApiException Si falla la operación en la API
+     */
+    public function sendTypingIndicator(string $messageId, string $type = 'text'): bool
+    {
+        return $this->handleMessageAction($messageId, ['type' => $type]);
+    }
+
+    /**
+     * Detiene el indicador de escritura para un mensaje
+     *
+     * @param string $messageId ID interno del mensaje en tu base de datos
+     * @return bool True si se detuvo correctamente
+     * @throws WhatsappApiException Si falla la operación en la API
+     */
+    public function stopTypingIndicator(string $messageId): bool
+    {
+        return $this->handleMessageAction($messageId, ['type' => 'cancel']);
+    }
+
+    /**
      * Maneja acciones de mensajes: marcar como leído o enviar indicadores de escritura
      *
      * @param string $messageId ID interno del mensaje en tu base de datos
-     * @param array|null $typingIndicator Configuración de indicador de escritura
-     *        ['type' => 'text'|'audio'|'cancel']
+     * @param array|null $actionParams Parámetros de acción adicionales
      * @return bool True si se ejecutó correctamente
      * @throws WhatsappApiException Si falla la operación en la API
      */
-    public function markMessageAsRead(
-        string $messageId, 
-        ?array $typingIndicator = null
-    ): bool {
-        $action = $typingIndicator ? 'typing indicator' : 'mark as read';
+    private function handleMessageAction(string $messageId, ?array $actionParams = null): bool
+    {
+        $action = $actionParams ? 'typing indicator' : 'mark as read';
         Log::channel('whatsapp')->info("Ejecutando acción: $action", ['message_id' => $messageId]);
 
         try {
@@ -3684,23 +3719,22 @@ class MessageDispatcherService
             $message = WhatsappModelResolver::message()->findOrFail($messageId);
             $phoneNumber = $message->phoneNumber;
 
-            // Construir el endpoint
-            $endpoint = Endpoints::build(Endpoints::MARK_MESSAGE_AS_READ, [
-                'phone_number_id' => $phoneNumber->api_phone_number_id
-            ]);
-
-            // Construir payload según el tipo de acción
+            // Construir payload base
             $payload = [
                 'messaging_product' => 'whatsapp',
                 'status' => 'read',
                 'message_id' => $message->wa_id
             ];
 
-            if ($typingIndicator) {
-                $payload['typing_indicator'] = [
-                    'type' => $typingIndicator['type'] ?? 'text'
-                ];
+            // Agregar parámetros de acción si existen
+            if ($actionParams) {
+                $payload = array_merge($payload, $actionParams);
             }
+
+            // Construir el endpoint
+            $endpoint = Endpoints::build(Endpoints::MARK_MESSAGE_AS_READ, [
+                'phone_number_id' => $phoneNumber->api_phone_number_id
+            ]);
 
             // Enviar solicitud a la API
             $response = $this->apiClient->request(
@@ -3713,8 +3747,8 @@ class MessageDispatcherService
                 data: $payload
             );
 
-            // Actualizar estado si es marcado como leído
-            if (!$typingIndicator) {
+            // Actualizar estado solo para marcar como leído
+            if (!$actionParams) {
                 $message->update(['status' => MessageStatus::READ]);
             }
 
