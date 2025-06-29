@@ -49,6 +49,11 @@ class WhatsappManager
         return new InteractiveListBuilder($this->dispatcher, $phoneNumberId);
     }
 
+    public function sendCtaUrlMessage(string $phoneNumberId): InteractiveCtaUrlBuilder
+    {
+        return new InteractiveCtaUrlBuilder($this->dispatcher, $phoneNumberId);
+    }
+
     /**
      * Obtiene el servicio relacionado con las cuentas empresariales de WhatsApp.
      *

@@ -3168,6 +3168,142 @@ class MessageDispatcherService
     }
 
     /**
+     * Envía un mensaje interactivo CTA URL
+     *
+     * @param string $phoneNumberId
+     * @param string $countryCode
+     * @param string $phoneNumber
+     * @param string $body
+     * @param string $buttonText
+     * @param string $url
+     * @param mixed $header
+     * @param string|null $footer
+     * @param string|null $contextMessageId
+     * @return Model
+     */
+    public function sendCtaUrlMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $body,
+        string $buttonText,
+        string $url,
+        $header = null,
+        ?string $footer = null,
+        ?string $contextMessageId = null
+    ): Model {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje CTA URL.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'body' => $body,
+            'buttonText' => $buttonText,
+            'url' => $url,
+            'footer' => $footer,
+            'contextMessageId' => $contextMessageId,
+        ]);
+
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+
+        // Procesar el header
+        $processedHeader = null;
+        $mediaType = null;
+        $fileName = null;
+        $mediaInfo = null;
+
+        if ($header) {
+            if ($header instanceof \SplFileInfo) {
+                if ($header instanceof \SplFileInfo) {
+                    throw new \InvalidArgumentException(
+                        'Para mensajes CTA URL, el encabezado debe ser una URL pública o texto. '.
+                        'No se admiten archivos locales.'
+                    );
+                } elseif (filter_var($header, FILTER_VALIDATE_URL)) {
+                    $mediaType = $this->determineMediaTypeFromUrl($header);
+                    $processedHeader = [
+                        'type' => $mediaType,
+                        $mediaType => ['link' => $header]
+                    ];
+                } elseif (is_string($header)) {
+                    $processedHeader = [
+                        'type' => 'text',
+                        'text' => $header
+                    ];
+                } elseif (is_array($header)) {
+                    $processedHeader = $header;
+                }
+            } elseif (filter_var($header, FILTER_VALIDATE_URL)) {
+                $mediaType = $this->determineMediaTypeFromUrl($header);
+                $processedHeader = [
+                    'type' => $mediaType,
+                    $mediaType => ['link' => $header]
+                ];
+            } elseif (is_string($header)) {
+                $processedHeader = [
+                    'type' => 'text',
+                    'text' => $header
+                ];
+            } elseif (is_array($header)) {
+                $processedHeader = $header;
+            }
+        }
+
+        // Manejar contexto de respuesta
+        $contextMessage = null;
+        if ($contextMessageId) {
+            $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
+            if (!$contextMessage) {
+                throw new \InvalidArgumentException('El mensaje de contexto no existe.');
+            }
+        }
+
+        // Crear mensaje en BD
+        $message = WhatsappModelResolver::message()->create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'interactive',
+            'json' => json_encode([
+                'sub_type' => 'cta_url',
+                'body' => $body,
+                'button_text' => $buttonText,
+                'url' => $url,
+                'header' => $processedHeader,
+                'footer' => $footer,
+            ]),
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+            'message_context_id' => $contextMessage ? $contextMessage->message_id : null,
+        ]);
+
+        try {
+            $parameters = [
+                'interactive_type' => 'cta_url',
+                'body' => $body,
+                'button_text' => $buttonText,
+                'url' => $url,
+                'header' => $processedHeader,
+                'footer' => $footer,
+            ];
+
+            $response = $this->sendViaApi(
+                $phoneNumberModel,
+                $fullPhoneNumber,
+                'interactive',
+                $parameters,
+                $contextMessageId
+            );
+
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            return $this->handleError($message, $e);
+        }
+    }
+
+    /**
      * Envía un mensaje con un producto del catálogo
      *
      * @param string $phoneNumberId ID del número telefónico registrado
@@ -3742,6 +3878,44 @@ class MessageDispatcherService
                     // Manejar diferentes tipos de header
                     if (!empty($parameters['header'])) {
                         $interactiveData['header'] = $parameters['header'];
+                    }
+
+                    if (!empty($parameters['footer'])) {
+                        $interactiveData['footer'] = ['text' => $parameters['footer']];
+                    }
+                }
+                elseif ($interactiveType === 'cta_url') {
+                    $interactiveData = [
+                        'type' => 'cta_url',
+                        'body' => ['text' => $parameters['body']],
+                        'action' => [
+                            'name' => 'cta_url',  // Nombre fijo requerido
+                            'parameters' => [
+                                'display_text' => $parameters['button_text'],
+                                'url' => $parameters['url']
+                            ]
+                        ]
+                    ];
+
+                    // Añadir header si existe
+                    if (!empty($parameters['header'])) {
+                        $header = $parameters['header'];
+                        if (isset($header['type']) && in_array($header['type'], ['image', 'video', 'document'])) {
+                            $mediaType = $header['type'];
+                            if (isset($header[$mediaType]['id'])) {
+                                // Convertir ID a URL
+                                $phoneNumberModel = $this->validatePhoneNumber($phone->phone_number_id);
+                                $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $header[$mediaType]['id']);
+                                $interactiveData['header'] = [
+                                    'type' => $mediaType,
+                                    $mediaType => ['link' => $mediaInfo['url']]
+                                ];
+                            } else {
+                                $interactiveData['header'] = $header;
+                            }
+                        } else {
+                            $interactiveData['header'] = $header;
+                        }
                     }
 
                     if (!empty($parameters['footer'])) {

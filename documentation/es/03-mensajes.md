@@ -525,6 +525,52 @@ Características principales:
         ->endSection()
         ->send();
     ```
+- **Mensajes de botones URL de llamada a la acción interactivos**
+    Enveria Mensajes de botones URL de llamada a la acción interactivos:
+
+    ```php
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+    $phone = WhatsappPhoneNumber::first();
+
+    // Ejemplo básico
+    Whatsapp::sendCtaUrlMessage($phone->phone_number_id)
+        ->to('57', '31371235638')
+        ->withBody('¡Visita nuestra nueva tienda online!')
+        ->withButton('Ver Tienda', 'https://tienda.example.com')
+        ->send();
+
+    // Ejemplo con header y footer
+    Whatsapp::sendCtaUrlMessage($phone->phone_number_id)
+        ->to('57', '31371235638')
+        ->withHeader('Oferta Especial')
+        ->withBody('Descuento del 20% en todos los productos')
+        ->withButton('Ver Oferta', 'https://tienda.example.com/ofertas')
+        ->withFooter('Válido hasta fin de mes')
+        ->send();
+
+    // Ejemplo con header multimedia "Se debe usar un link de imagen publica para Image, Video, Documento"
+    $imageUrl = 'https://play-lh.googleusercontent.com/1-hPxafOxdYpYZEOKzNIkSP43HXCNftVJVttoo4ucl7rsMASXW3Xr6GlXURCubE1tA=w3840-h2160-rw';
+
+    Whatsapp::sendCtaUrlMessage($phone->phone_number_id)
+    ->to('57', '31371235638')
+    ->withHeader($imageUrl)
+    ->withBody('¡Nueva colección disponible!')
+    ->withButton('Ver Colección', 'https://tienda.example.com/nueva-coleccion')
+    ->send();
+
+    // Ejemplo como respuesta a otro mensaje
+    $contextMessage = \ScriptDevelop\WhatsappManager\Models\Message::first();
+    $contextId = $contextMessage->wa_id;
+
+    Whatsapp::sendCtaUrlMessage($phone->phone_number_id)
+    ->to('57', '31371235638')
+    ->withBody('Aquí tienes el enlace que solicitaste:')
+    ->withButton('Descargar Documento', 'https://example.com/documento.pdf')
+    ->inReplyTo($contextId)
+    ->send();
+    ```
+
 
 ## 5. Enviar Mensajes de Producto.
 - **Mensaje de Producto Individual**
