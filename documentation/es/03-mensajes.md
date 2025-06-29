@@ -435,7 +435,7 @@ Características principales:
     ```
 
 - **Listas Desplegables Interactivas**
-    Enveria mensajes con Listas desplegables interactivas:
+    Enviar mensajes con Listas desplegables interactivas:
 
     ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
@@ -526,7 +526,7 @@ Características principales:
         ->send();
     ```
 - **Mensajes de botones URL de llamada a la acción interactivos**
-    Enveria Mensajes de botones URL de llamada a la acción interactivos:
+    Enviar Mensajes de botones URL de llamada a la acción interactivos:
 
     ```php
     use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
@@ -553,23 +553,34 @@ Características principales:
     $imageUrl = 'https://play-lh.googleusercontent.com/1-hPxafOxdYpYZEOKzNIkSP43HXCNftVJVttoo4ucl7rsMASXW3Xr6GlXURCubE1tA=w3840-h2160-rw';
 
     Whatsapp::sendCtaUrlMessage($phone->phone_number_id)
-    ->to('57', '31371235638')
-    ->withHeader($imageUrl)
-    ->withBody('¡Nueva colección disponible!')
-    ->withButton('Ver Colección', 'https://tienda.example.com/nueva-coleccion')
-    ->send();
+        ->to('57', '31371235638')
+        ->withHeader($imageUrl)
+        ->withBody('¡Nueva colección disponible!')
+        ->withButton('Ver Colección', 'https://tienda.example.com/nueva-coleccion')
+        ->send();
 
     // Ejemplo como respuesta a otro mensaje
     $contextMessage = \ScriptDevelop\WhatsappManager\Models\Message::first();
     $contextId = $contextMessage->wa_id;
 
     Whatsapp::sendCtaUrlMessage($phone->phone_number_id)
-    ->to('57', '31371235638')
-    ->withBody('Aquí tienes el enlace que solicitaste:')
-    ->withButton('Descargar Documento', 'https://example.com/documento.pdf')
-    ->inReplyTo($contextId)
-    ->send();
+        ->to('57', '31371235638')
+        ->withBody('Aquí tienes el enlace que solicitaste:')
+        ->withButton('Descargar Documento', 'https://example.com/documento.pdf')
+        ->inReplyTo($contextId)
+        ->send();
     ```
+
+- **Mensajes de botones Interactivo de solicitud de ubicacion**
+    Enviar Mensajes con boton de solicitud de ubicacion:
+
+    ```php
+    Whatsapp::sendLocationRequestMessage($phone->phone_number_id)
+        ->to('57', '31371235638')
+        ->withBody('Por favor comparte tu ubicación para ayudarte mejor')
+        ->send();
+    ```
+
 
 
 ## 5. Enviar Mensajes de Producto.

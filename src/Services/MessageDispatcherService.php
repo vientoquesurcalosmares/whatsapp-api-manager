@@ -3304,6 +3304,81 @@ class MessageDispatcherService
     }
 
     /**
+     * Envía un mensaje de solicitud de ubicación
+     *
+     * @param string $phoneNumberId
+     * @param string $countryCode
+     * @param string $phoneNumber
+     * @param string $body
+     * @param string|null $contextMessageId
+     * @return Model
+     */
+    public function sendLocationRequestMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $body,
+        ?string $contextMessageId = null
+    ): Model {
+        Log::channel('whatsapp')->info('Iniciando envío de solicitud de ubicación.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'body' => $body,
+            'contextMessageId' => $contextMessageId,
+        ]);
+
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+
+
+        // Manejar contexto de respuesta
+        $contextMessage = null;
+        if ($contextMessageId) {
+            $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
+            if (!$contextMessage) {
+                throw new \InvalidArgumentException('El mensaje de contexto no existe.');
+            }
+        }
+
+        // Crear mensaje en BD
+        $message = WhatsappModelResolver::message()->create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'interactive',
+            'json' => json_encode([
+                'sub_type' => 'location_request',
+                'body' => $body,
+            ]),
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+            'message_context_id' => $contextMessage ? $contextMessage->message_id : null,
+        ]);
+
+        try {
+            $parameters = [
+                'interactive_type' => 'location_request',
+                'body' => $body,
+            ];
+
+            $response = $this->sendViaApi(
+                $phoneNumberModel,
+                $fullPhoneNumber,
+                'interactive',
+                $parameters,
+                $contextMessageId
+            );
+
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            return $this->handleError($message, $e);
+        }
+    }
+
+    /**
      * Envía un mensaje con un producto del catálogo
      *
      * @param string $phoneNumberId ID del número telefónico registrado
@@ -3921,6 +3996,15 @@ class MessageDispatcherService
                     if (!empty($parameters['footer'])) {
                         $interactiveData['footer'] = ['text' => $parameters['footer']];
                     }
+                }
+                elseif ($interactiveType === 'location_request') {
+                    $interactiveData = [
+                        'type' => 'location_request_message',
+                        'body' => ['text' => $parameters['body']],
+                        'action' => [
+                            'name' => 'send_location'
+                        ]
+                    ];
                 }
                 elseif ($interactiveType === 'product_list') {
                     $interactiveData = [

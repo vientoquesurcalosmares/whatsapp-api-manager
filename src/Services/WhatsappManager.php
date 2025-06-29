@@ -54,6 +54,11 @@ class WhatsappManager
         return new InteractiveCtaUrlBuilder($this->dispatcher, $phoneNumberId);
     }
 
+    public function sendLocationRequestMessage(string $phoneNumberId): InteractiveLocationRequestBuilder
+    {
+        return new InteractiveLocationRequestBuilder($this->dispatcher, $phoneNumberId);
+    }
+
     /**
      * Obtiene el servicio relacionado con las cuentas empresariales de WhatsApp.
      *
