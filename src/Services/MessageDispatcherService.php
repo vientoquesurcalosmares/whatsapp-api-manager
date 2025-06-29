@@ -3732,7 +3732,8 @@ class MessageDispatcherService
 
             // Agregar acción específica
             if ($actionParams) {
-                // Para typing indicators
+                // Para typing indicators: incluir status:read + typing_indicator
+                $payload['status'] = 'read'; // Este campo es REQUERIDO
                 $payload['typing_indicator'] = [
                     'type' => $actionParams['type'] ?? 'text'
                 ];
