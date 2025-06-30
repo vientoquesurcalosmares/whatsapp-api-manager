@@ -78,4 +78,9 @@ class WhatsappManager
     {
         return $this->phone()->deletePhoneNumber($phoneNumberId);
     }
+
+    public function block(): BlockService
+    {
+        return app('whatsapp.block');
+    }
 }

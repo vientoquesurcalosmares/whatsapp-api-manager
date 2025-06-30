@@ -5,7 +5,7 @@ namespace ScriptDevelop\WhatsappManager\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use ScriptDevelop\WhatsappManager\Services\BlockService;
 use ScriptDevelop\WhatsappManager\Traits\GeneratesUlid;
 
 class Contact extends Model
@@ -77,5 +77,40 @@ class Contact extends Model
     public function hasOptedOutOfMarketing(): bool
     {
         return !$this->accepts_marketing && $this->marketing_opt_out_at !== null;
+    }
+
+    public function blockedStatuses()
+    {
+        return $this->hasMany(BlockedUser::class, 'contact_id');
+    }
+
+    public function isBlockedOn(string $phoneNumberId): bool
+    {
+        return $this->blockedStatuses()
+            ->where('phone_number_id', $phoneNumberId)
+            ->whereNull('unblocked_at')
+            ->exists();
+    }
+
+    public function blockOn(string $phoneNumberId): bool
+    {
+        if ($this->isBlockedOn($phoneNumberId)) {
+            return false;
+        }
+        
+        $service = app(BlockService::class);
+        $response = $service->blockUsers($phoneNumberId, [$this->wa_id]);
+        return $response['success'] ?? false;
+    }
+
+    public function unblockOn(string $phoneNumberId): bool
+    {
+        if (!$this->isBlockedOn($phoneNumberId)) {
+            return false;
+        }
+        
+        $service = app(BlockService::class);
+        $response = $service->unblockUsers($phoneNumberId, [$this->wa_id]);
+        return $response['success'] ?? false;
     }
 }

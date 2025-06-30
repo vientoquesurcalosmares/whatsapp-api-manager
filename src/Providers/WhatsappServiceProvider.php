@@ -9,6 +9,7 @@ use ScriptDevelop\WhatsappManager\Services\AccountRegistrationService;
 use ScriptDevelop\WhatsappManager\Services\WhatsappService;
 use ScriptDevelop\WhatsappManager\Repositories\WhatsappBusinessAccountRepository;
 use ScriptDevelop\WhatsappManager\Console\Commands\CheckUserModel;
+use ScriptDevelop\WhatsappManager\Services\BlockService;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
 use ScriptDevelop\WhatsappManager\Services\TemplateService;
 use ScriptDevelop\WhatsappManager\Services\FlowService;
@@ -71,6 +72,12 @@ class WhatsappServiceProvider extends ServiceProvider
             return new TemplateService(
                 $app->make(ApiClient::class),
                 $app->make(FlowService::class)
+            );
+        });
+
+        $this->app->singleton('whatsapp.block', function ($app) {
+            return new BlockService(
+                $app->make(ApiClient::class)
             );
         });
 

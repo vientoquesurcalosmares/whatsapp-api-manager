@@ -68,4 +68,9 @@ class WhatsappPhoneNumber extends Model
                     })
                     ->distinct();
     }
+
+    public function blockedUsers()
+    {
+        return $this->hasMany(BlockedUser::class, 'phone_number_id');
+    }
 }
