@@ -27,6 +27,8 @@ return new class extends Migration
             $table->string('name_status', 50)->nullable();
             $table->json('throughput')->nullable();
             $table->json('webhook_configuration')->nullable();
+            $table->boolean('is_official')->default(false);
+            $table->boolean('is_pin_enabled')->default(false);
             
             $table->timestamps();
             $table->softDeletes();

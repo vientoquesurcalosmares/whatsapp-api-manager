@@ -32,9 +32,10 @@ class WhatsappPhoneNumber extends Model
         'name_status',
         'platform_type',
         'throughput',
-        'webhook_configuration'
+        'webhook_configuration',
+        'is_official',
+        'is_pin_enabled'
     ];
-
     protected $casts = [
         'throughput' => 'array',
         'webhook_configuration' => 'array',

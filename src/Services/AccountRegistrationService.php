@@ -162,9 +162,9 @@ class AccountRegistrationService
     private function registerPhoneNumbers(Model $account): void
     {
         try {
-            $whatsappService = app(WhatsappService::class)->forAccount($account->whatsapp_business_id);
+            $this->whatsappService->forAccount($account->whatsapp_business_id);
     
-            $response = $whatsappService->getPhoneNumbers($account->whatsapp_business_id);
+            $response = $this->whatsappService->getPhoneNumbers($account->whatsapp_business_id);
 
             foreach ($response as $phoneData) {
                 $this->updateOrCreatePhoneNumber($account, $phoneData);
@@ -187,6 +187,9 @@ class AccountRegistrationService
     {
         try {
             $phoneDetails = $this->whatsappService->getPhoneNumberDetails($phoneData['id']);
+
+            $nameStatusData = $this->whatsappService->getPhoneNumberNameStatus($phoneData['id']);
+            $nameStatus = $nameStatusData['name_status'] ?? null;
 
             // Obtener todos los códigos de país ordenados por longitud (de mayor a menor)
             $countryCodes = CountryCodes::codes();
@@ -215,6 +218,7 @@ class AccountRegistrationService
                     'display_phone_number' => $phoneDetails['display_phone_number'],
                     'country_code' => $countryCode,
                     'phone_number' => $phoneNumber,
+                    'name_status' => $nameStatus,
                     'verified_name' => $phoneDetails['verified_name'],
                     'code_verification_status' => $phoneDetails['code_verification_status'],
                     'quality_rating' => $phoneDetails['quality_rating'],
