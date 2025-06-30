@@ -1,27 +1,31 @@
+
 ---
 
 <div align="center">
 <table>
   <tr>
     <td align="left">
-      <a href="../../README.md" title="Previous section: Home">◄◄ Home</a>
+      <a href="../../README.md" title="Sección anterior: Home">◄◄ Inicio</a>
     </td>
     <td align="center">
-      <a href="00-tabla-de-contenido.md" title="Table of contents">▲ Table of contents</a>
+      <a href="00-content.md" title="Tabla of contents">▲ Tabla of contents</a>
     </td>
     <td align="right">
-      <a href="02-config-api.md" title="Next section">Configure API ►►</a>
+      <a href="02-config-api.md" title="Sección siguiente">Configurar API ►►</a>
     </td>
   </tr>
 </table>
 </div>
 
 <div align="center">
-<sub>WhatsApp Manager Webhook Documentation | 
-<a href="https://github.com/djdang3r/whatsapp-api-manager">View on GitHub</a></sub>
+<sub>Documentación del Webhook de WhatsApp Manager | 
+<a href="https://github.com/djdang3r/whatsapp-api-manager">Ver en GitHub</a></sub>
 </div>
 
+
 ---
+
+
 ## 🚀 Complete Installation
 
 ### 📋 Prerequisites
@@ -202,22 +206,23 @@ Before installing the package, you'll need a WhatsApp API Cloud account:
 <table>
   <tr>
     <td align="left">
-      <a href="../../README.md" title="Previous section: Home">◄◄ Home</a>
+      <a href="../../README.md" title="Sección anterior: Home">◄◄ Inicio</a>
     </td>
     <td align="center">
-      <a href="00-tabla-de-contenido.md" title="Table of contents">▲ Table of contents</a>
+      <a href="00-content.md" title="Tabla of contents">▲ Tabla of contents</a>
     </td>
     <td align="right">
-      <a href="02-config-api.md" title="Next section">Configure API ►►</a>
+      <a href="02-config-api.md" title="Sección siguiente">Configurar API ►►</a>
     </td>
   </tr>
 </table>
 </div>
 
 <div align="center">
-<sub>WhatsApp Manager Webhook Documentation | 
-<a href="https://github.com/djdang3r/whatsapp-api-manager">View on GitHub</a></sub>
+<sub>Documentation of Webhook de WhatsApp Manager | 
+<a href="https://github.com/djdang3r/whatsapp-api-manager">Ver en GitHub</a></sub>
 </div>
+
 
 ---
 
