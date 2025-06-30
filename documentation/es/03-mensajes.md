@@ -448,7 +448,7 @@ Características principales:
         ->withFooter('Por favor selecciona una opción')
         ->send();
     ```
-
+![](../../assets/whatsapp-send-interactive-list-message.png "Image")
 - **Listas Desplegables Interactivas**
     Enviar mensajes con Listas desplegables interactivas:
 
@@ -540,6 +540,8 @@ Características principales:
         ->endSection()
         ->send();
     ```
+![](../../assets/whatsapp-send-interactive-cta-message.png "Image")
+
 - **Mensajes de botones URL de llamada a la acción interactivos**
     Enviar Mensajes de botones URL de llamada a la acción interactivos:
 
@@ -585,6 +587,7 @@ Características principales:
         ->inReplyTo($contextId)
         ->send();
     ```
+![](../../assets/whatsapp-send-interactive-location-req-message.png "Image")
 
 - **Mensajes de botones Interactivo de solicitud de ubicacion**
     Enviar Mensajes con boton de solicitud de ubicacion:
