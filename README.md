@@ -18,7 +18,7 @@ LARAVEL WHatsapp Manager
 
 ### 🌐 Language / Idioma
 
-<a href="#english"><img src="https://flagcdn.com/us.svg" width="20"></a> [🇺🇸 English](#-english) | <a href="documentation/es/01-instalacion.md" title="Sección siguiente">🇪🇸 Español<img src="https://flagcdn.com/es.svg" width="20"></a>
+<a href="documentation/en/01-install.md"><img src="https://flagcdn.com/us.svg" width="20"> 🇺🇸 English</a> | <a href="documentation/es/01-instalacion.md" title="Sección siguiente">🇪🇸 Español<img src="https://flagcdn.com/es.svg" width="20"></a>
 
 #### 🇪🇸 Español
 
@@ -236,3 +236,234 @@ Me puedes apoyar como desarrollador open source en GitHub Sponsors:
 - O tambien por Mercadopago Colombia.
 [![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
 Gracias por tu apoyo 💙
+
+
+
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/djdang3r/whatsapp-api-manager)
+
+![Marketing Template Example](assets/whatsapp-api-cloud.png "Marketing Template")
+
+# WhatsApp Business API Manager for Laravel
+
+LARAVEL WhatsApp Manager
+
+<p align="center">
+<a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/v/scriptdevelop/whatsapp-manager.svg?style=flat-square" alt="Latest Version"></a>
+<a href="https://php.net/"><img src="https://img.shields.io/badge/PHP-8.2%2B-8892BF.svg?style=flat-square" alt="PHP Version"></a>
+<a href="https://laravel.com/"><img src="https://img.shields.io/badge/Laravel-12%2B-FF2D20.svg?style=flat-square" alt="Laravel Version"></a>
+<a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/dt/scriptdevelop/whatsapp-manager" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/l/scriptdevelop/whatsapp-manager" alt="License"></a>
+</p>
+
+---
+
+## Introduction
+
+`@djdang3r/whatsapp-api-manager` is a package designed to simplify the integration and management of the WhatsApp API in your projects. Its goal is to streamline communication, message sending and receiving, as well as session and contact management through an intuitive and easy-to-use interface.
+
+## Description
+
+With this package you can:
+
+- Easily connect to the WhatsApp API
+- Send and receive text, media, and file messages
+- Manage multiple WhatsApp sessions simultaneously
+- Manage contacts, templates, and messages
+- Integrate your application or service with automated messaging flows
+- Receive real-time events to react to messages, status changes, and notifications
+
+`@djdang3r/whatsapp-api-manager` is designed for developers looking for a robust and flexible solution to interact with WhatsApp efficiently, securely, and scalably.
+
+> ## 📢 WhatsApp Policies
+>
+> 🚫 **Important:** 🚫
+> - Always ensure compliance with [WhatsApp's Policies](https://www.whatsapp.com/legal/business-policy/) and terms of use when using this package.
+> - Misuse may result in account suspension or legal action by WhatsApp.
+> - Regularly review policy updates to avoid issues.
+
+> ## ⚠️ **Warning:** ⚠️
+> - This package is currently in **alpha** version. This means it's under active development, may contain bugs, and its API is subject to significant changes.
+> - The **beta** version will be released soon. It's not recommended for production environments at this time.
+
+---
+
+## Documentation
+
+## 📚 Table of Contents
+<a href="documentation/en/01-installation.md" title="English Documentation">
+1. 🚀 Installation
+</a>
+
+   - Prerequisites
+   - Initial setup
+   - Migrations
+
+<a href="documentation/en/02-config-api.md" title="English Documentation">
+2. 🧩 API Configuration
+</a>
+
+   - Meta credentials
+   - Webhook setup
+   - Phone number management
+
+<a href="documentation/en/03-messages.md" title="English Documentation">
+3. 💬 Message Management
+</a>
+
+   - Sending messages (text, media, location)
+   - Interactive messages (buttons, lists)
+   - Message templates
+   - Receiving messages
+
+<a href="documentation/en/04-templates.md" title="English Documentation">
+4. 📋 Template Management
+</a>
+
+   - Template creation
+   - Sending templates
+   - Version management
+
+<a href="documentation/en/05-events.md" title="English Documentation">
+5. 📡 Real-time Events
+</a>
+
+   - Laravel Echo setup
+   - Integrated webhooks
+   - Supported event types
+
+<a href="documentation/en/06-webhook.md" title="English Documentation">
+6. 🧪 Webhook
+</a>
+
+   - Webhook configuration
+   - Event structure
+   - Supported message types
+
+---
+
+>## 🚀 Key Features
+>
+>- **Send messages** - text, media, interactive, and templates
+>- **Template Management** - Create, List, Delete, and Test templates
+>- **Integrated webhooks** for receiving messages and updates
+>- **Conversation management** with billing metrics
+>- **Automatic synchronization** of phone numbers and profiles
+>- 100% compatible with **Laravel Echo and Reverb** for real-time notifications
+> 
+
+---
+
+## ❤️ Support
+
+If you find this project useful, consider supporting its development:
+
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
+[![Mercado Pago](https://img.shields.io/badge/Donate%20via-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+
+---
+>
+># 🤝 Contribute to the Project!
+>
+>Would you like to improve this package? Your collaboration is essential to keep growing!
+>
+---
+
+## 🚀 How to contribute?
+
+1. **Fork the Repository**
+    - Click the `Fork` button in the top right of this repository to create your own copy.
+
+2. **Create a Feature Branch**
+    ```bash
+    git checkout -b feature/my-new-feature
+    ```
+
+3. **Make Changes and Commit**
+    ```bash
+    git commit -m "Add my new feature"
+    ```
+
+4. **Push to Your Branch**
+    ```bash
+    git push origin feature/my-new-feature
+    ```
+
+5. **Open a Pull Request**
+    - Go to the `Pull Requests` tab and click `New Pull Request`
+    - Briefly describe your contribution and why it's useful
+
+---
+>
+>## 💡 Contribution Guidelines
+>
+>- Follow [Laravel's coding style guide](https://laravel.com/docs/contributions#coding-style)
+>- Write clear and helpful comments
+>- Include tests where possible
+>- If you find a bug, open an [Issue](https://github.com/djdang3r/whatsapp-api-manager/issues) before submitting a PR
+>
+---
+
+## 🙌 Thank you for your support!
+
+Every contribution, no matter how small, helps improve the project and the community.  
+Don't hesitate to participate, propose ideas, or report issues!
+
+---
+
+## Disclaimer
+
+This package is an independent project and **is not affiliated with, endorsed, or sponsored by Meta Platforms, Inc.**  
+All trademarks, service marks, and logos used in this documentation, including "WhatsApp" and "Facebook", are property of Meta Platforms, Inc.
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+---
+
+# 👨‍💻 Support and Contact
+
+Do you have questions, problems, or suggestions?  
+We're here to help!
+
+- 📧 **Email:**  
+    [wilfredoperilla@gmail.com](mailto:wilfredoperilla@gmail.com)  
+    [support@scriptdevelop.com](mailto:support@scriptdevelop.com)
+
+- 🐞 **Report an Issue:**  
+    [Open a GitHub Issue](https://github.com/djdang3r/whatsapp-api-manager/issues)
+
+- 💬 **Ideas or Improvements?**  
+    Your feedback and suggestions are welcome to keep improving this project!
+
+---
+
+<div align="center">
+
+# 🚀 Developed with ❤️ by [ScriptDevelop](https://scriptdevelop.com)
+
+## ✨ Powering your connection with WhatsApp Business API
+
+---
+
+### 🔥 With support from:
+
+**[@vientoquesurcalosmares](https://github.com/vientoquesurcalosmares)**
+
+</div>
+
+---
+
+## ❤️ Support us with a GitHub Sponsors donation
+
+You can support me as an open source developer on GitHub Sponsors:
+- If this project has been useful to you, you can support it with a donation through
+[![Sponsor](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
+
+- Or via Mercadopago Colombia:
+[![Donate via Mercado Pago](https://img.shields.io/badge/Donate%20via-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+
+Thank you for your support 💙

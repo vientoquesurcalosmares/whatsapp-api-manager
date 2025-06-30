@@ -42,16 +42,16 @@ Para integrar tu aplicación con WhatsApp Business API, necesitas configurar las
 3. Phone Number ID: Identificador de tu número de WhatsApp empresarial:
     - Ubicación: Herramientas de WhatsApp > API y webhooks > Configuración
 
->⚠️ Importante:
->Asegurece de configurar las variables en el .env
+  >⚠️ Importante:
+  >Asegurece de configurar las variables en el .env
 
-```sh
-# Configuración básica
-WHATSAPP_API_URL=https://graph.facebook.com
-WHATSAPP_API_VERSION=v21.0
-WHATSAPP_ACCESS_TOKEN=your-access-token-here
-```
-
+  ```sh
+  # Configuración básica
+  WHATSAPP_API_URL=https://graph.facebook.com
+  WHATSAPP_API_VERSION=v21.0
+  WHATSAPP_ACCESS_TOKEN=your-access-token-here
+  ```
+---
 ## 1. Registro de Cuentas de Negocios.
 
 - **Registra una cuenta de negocios en WhatsApp Business API.**
