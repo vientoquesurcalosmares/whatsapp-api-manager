@@ -340,6 +340,53 @@ Características principales:
         'https://example.com/document.pdf' // URL o Enlace de documento
     );
     ```
+![](../../assets/whatsapp-send-video-message.png "Image")
+
+## Enviar Mensajes de video.
+- **Enviar Mensajes de video**
+    ```php
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+
+    // Obtener cuenta y teléfono
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    // 1. Video desde archivo local con caption
+    $video = new \SplFileInfo(storage_path('app/public/videos/presentacion.mp4'));
+
+    Whatsapp::message()->sendVideoMessage(
+        $phone->phone_number_id,
+        '57',
+        '3237121901',
+        $video,
+        'Mira este video' // Caption
+    );
+    ```
+
+![](../../assets/whatsapp-send-contact-message.png "Image")
+
+## Enviar Mensajes de Contacto.
+- **Enviar Mensajes de contacto**
+    ```php
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+
+    // Obtener cuenta y teléfono
+    $account = WhatsappBusinessAccount::first();
+    $phone = $account->phoneNumbers->first();
+
+    $contactId = 456; // ID del contacto en tu DB
+
+    Whatsapp::message()->sendContactMessage(
+        $phone->phone_number_id,
+        '57',
+        '3237121901',
+        $contactId
+    );
+    ```
 
 ![](../../assets/whatsapp-send-location-message.png "Image")
 
@@ -746,6 +793,7 @@ Características principales:
         $contextMessageId // Respuesta a mensaje
     );
     ```
+![](../../assets/whatsapp-send-mark-read.png "Image")
 
 ## 6. Getion de mensajes.
 ### Marcar mensaje como leido
