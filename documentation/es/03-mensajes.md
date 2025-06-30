@@ -65,6 +65,7 @@ Características principales:
 6. Gestión de Mensajes
     - Marcar como leído
 
+![](../../assets/whatsapp-send-text-message.png "Image")
 
 ## 1. Enviar Mensajes.
 - **Envía mensajes de texto simples.**
@@ -128,6 +129,7 @@ Características principales:
     ```
 
 
+![](../../assets/whatsapp-send-reaction.png "Image")
 
 - **Enviar Reacciones a Mensajes**
     Envía una reacción a un mensaje existente.
@@ -164,6 +166,8 @@ Características principales:
     "\u{274C}" // ❌
     ```
 
+
+![](../../assets/whatsapp-send-image-message.png "Image")
 
 ## 2. Enviar Mensajes Multimedia.
 - **Enviar Mensajes Multimedia**
@@ -213,6 +217,8 @@ Características principales:
     );
     ```
 
+![](../../assets/whatsapp-send-sticker-message.png "Image")
+
 - **Enviar Sticker**
     Enviar mensajes con sticker.
 
@@ -239,6 +245,8 @@ Características principales:
         $file                       // Archivo de stiker
     );
     ```
+
+![](../../assets/whatsapp-send-audio-message.png "Image")
 
 - **Enviar Audio**
     Enviar mensajes con archivo de audio.
@@ -285,6 +293,7 @@ Características principales:
         'https://example.com/audio.ogg' // URL o Enlace
     );
     ```
+![](../../assets/whatsapp-send-document-message.png "Image")
 
 - **Enviar Documentos**
     Enviar mensaje con Documento
@@ -331,6 +340,9 @@ Características principales:
         'https://example.com/document.pdf' // URL o Enlace de documento
     );
     ```
+
+![](../../assets/whatsapp-send-location-message.png "Image")
+
 ## 3. Enviar Mensajes de Ubicación.
 - **Enviar Mensajes de Ubicación**
     Envía un mensaje con coordenadas de ubicación.
@@ -365,6 +377,9 @@ Características principales:
         address: 'Plaza de la Constitución' // Dirección
     );
     ```
+
+![](../../assets/whatsapp-send-interactive-buttons-message.png "Image")
+
 ## 4. Enviar Mensajes Interactivos.
 - **Mensajes con Botones Interactivos**
     Enviar mensajes con botones interactivos:
