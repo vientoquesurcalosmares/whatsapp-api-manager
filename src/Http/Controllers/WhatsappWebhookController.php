@@ -63,6 +63,11 @@ class WhatsappWebhookController extends Controller
             return response()->json(['success' => true]);
         }
 
+        if ($field === 'user_preferences') {
+            $this->handleUserPreferences($value);
+            return response()->json(['success' => true]);
+        }
+
         if (!$value) {
             Log::channel('whatsapp')->warning('No value found in webhook payload.', $payload);
             return response()->json(['error' => 'Invalid payload.'], 422);
@@ -1264,6 +1269,16 @@ class WhatsappWebhookController extends Controller
             return $this->processUserChangedNumber($message, $contact, $whatsappPhone, $body, $newWaId);
         }
 
+        if ($systemType === 'user_preference_changed') {
+            $marketingPreference = $message['system']['marketing'] ?? null;
+            if ($marketingPreference) {
+                $this->updateContactMarketingPreference(
+                    $contact->contact_id, 
+                    $marketingPreference === 'resume'
+                );
+            }
+        }
+
         // Otros tipos de mensajes de sistema
         $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
             ['wa_id' => $message['id']],
@@ -1351,4 +1366,30 @@ class WhatsappWebhookController extends Controller
             ]);
         }
     }
+
+    protected function handleUserPreferences(array $data): void
+    {
+        $userPreferences = $data['user_preferences'] ?? [];
+        
+        foreach ($userPreferences as $preference) {
+            if ($preference['category'] === 'marketing_messages') {
+                $waId = $preference['wa_id'];
+                $value = $preference['value']; // 'stop' o 'resume'
+                
+                $this->updateContactMarketingPreferenceByWaId($waId, $value);
+            }
+        }
+    }
+
+    protected function updateContactMarketingPreferenceByWaId(string $waId, string $preference): void
+    {
+        $contact = WhatsappModelResolver::contact()->where('wa_id', $waId)->first();
+        
+        if ($contact) {
+            $acceptsMarketing = ($preference === 'resume');
+            $this->updateContactMarketingPreference($contact->contact_id, $acceptsMarketing);
+        }
+    }
+
+
 }
