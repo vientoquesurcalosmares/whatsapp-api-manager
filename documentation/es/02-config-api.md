@@ -134,6 +134,86 @@ Whatsapp::phone()->deletePhoneNumber('PHONE_NUMBER_ID');
 - Mantén tus endpoints de webhook actualizados para recibir notificaciones de los números activos.
 
 
+
+## Bloquear, desbloquear y listar usuarios de whatsapp
+Con estas funciones puede bloquear, desbloquear y listar los numeros de los clientes o usuarios que desida.
+
+**Características Principales**
+- Bloqueo de usuarios: Impide que números específicos envíen mensajes a tu WhatsApp Business
+- Desbloqueo de usuarios: Restaura la capacidad de comunicación de números previamente bloqueados
+- Listado de bloqueados: Obtén información paginada de todos los números bloqueados
+- Sincronización automática: Mantiene tu base de datos sincronizada con el estado real en WhatsApp
+- Gestión de contactos: Vincula automáticamente los bloqueos con tus contactos existentes
+
+  ```php
+  // Bloquear usuarios (con formato automático)
+  $response = Whatsapp::block()->blockUsers(
+      $phone->phone_number_id,
+      ['3135694227', '57 3012345678']
+  );
+
+  // Desbloquear usuarios (con reintento automático)
+  $response = Whatsapp::block()->unblockUsers(
+      $phone->phone_number_id,
+      ['573137181908']
+  );
+
+  // Listar bloqueados con paginación
+  $blocked = Whatsapp::block()->listBlockedUsers(
+      $phone->phone_number_id,
+      50,
+      $cursor // Usar cursor real de respuesta previa
+  );
+  ```
+**Observaciones Importantes**
+**1. Formato de Números**
+  Los números se normalizan automáticamente a formato internacional
+
+  Ejemplos de conversión:
+  3135694227 → 573135694227 (para Colombia)
+  57 3012345678 → 573012345678
+  +1 (555) 123-4567 → 15551234567
+
+**2. Manejo de Errores**
+  - Validación previa: No se realizan operaciones redundantes
+  - Reintento automático: Para operaciones de desbloqueo que requieren método alternativo
+  - Persistencia condicional: Solo se actualiza la base de datos si la API responde con éxito
+
+**3. Paginación**
+  Use los cursores de la respuesta para navegar entre páginas:
+  ```php
+  // Primera página
+  $page1 = Whatsapp::block()->listBlockedUsers($phoneId, 50);
+
+  // Segunda página
+  $page2 = Whatsapp::block()->listBlockedUsers(
+      $phoneId,
+      50,
+      $page1['paging']['cursors']['after']
+  );
+  ```
+
+4. Vinculación con Contactos
+  - Se crean automáticamente registros de contacto si no existen
+  - Los bloqueos se asocian con el modelo Contact
+  - Estado de marketing actualizado al bloquear:
+    - accepts_marketing = false
+    - marketing_opt_out_at = now()
+
+**Métodos Adicionales**
+  Verificar estado de bloqueo
+  ```php
+  $contact = Contact::find('contact_123');
+  $isBlocked = $contact->isBlockedOn($phone->phone_number_id);
+  ```
+  Bloquear/Desbloquear desde el modelo Contact
+  ```php
+  $contact->blockOn($phone->phone_number_id);
+  $contact->unblockOn($phone->phone_number_id);
+  ```
+
+
+
 ---
 
 <div align="center">
