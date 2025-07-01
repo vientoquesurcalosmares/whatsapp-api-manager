@@ -2712,7 +2712,7 @@ class MessageDispatcherService
         string $body,
         array $buttons,
         ?string $footer = null,
-        $header = null, 
+        $header = null,
         ?string $contextMessageId = null
     ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje con botones interactivos.', [
@@ -2811,7 +2811,7 @@ class MessageDispatcherService
                 $file->getFilename(),
                 $mediaType . 's'
             );
-            
+
             $mediaFile = WhatsappModelResolver::media_file()->create([
                 'message_id' => $message->message_id,
                 'media_type' => $mediaType,
@@ -2911,7 +2911,7 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
         $headerData = null;
-        
+
 
         $processedHeader = null;
         $mediaType = null;
@@ -2923,7 +2923,7 @@ class MessageDispatcherService
                 $mediaType = $this->determineMediaTypeFromFile($header);
                 $fileId = $this->uploadFile($phoneNumberModel, $header, $mediaType);
                 $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
-                $fileName = $header->getFilename(); 
+                $fileName = $header->getFilename();
                 $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $header->getFilename(), $mediaType.'s');
 
                 $processedHeader = [
@@ -4133,7 +4133,7 @@ class MessageDispatcherService
     private function getMediaPayload(array $header): array
     {
         $payload = [];
-        
+
         if (isset($header['id'])) {
             $payload['id'] = $header['id'];
         } elseif (isset($header['link'])) {
@@ -4141,12 +4141,12 @@ class MessageDispatcherService
         } else {
             throw new \InvalidArgumentException('Header multimedia requiere "id" o "link"');
         }
-        
+
         // Campos opcionales específicos para documentos
         if ($header['type'] === 'document' && isset($header['filename'])) {
             $payload['filename'] = $header['filename'];
         }
-        
+
         return $payload;
     }
 
@@ -4393,7 +4393,14 @@ class MessageDispatcherService
 
                 // Log::channel('whatsapp')->info('Archivo descargado exitosamente.', ['localFilePath' => $localFilePath, 'response' => $response]);
 
-                $publicPath = Storage::url("public/whatsapp/".$mediaType."/".$fileName);
+                // Obtener la ruta de almacenamiento configurada
+                $storagePath = config("whatsapp.media.storage_path.$mediaType");
+
+                // Convertir el path absoluto a relativo para Storage::url
+                $relativePath = str_replace(storage_path('app/public/'), '', $storagePath . '/' . $fileName);
+
+                // Obtener la URL pública
+                $publicPath = Storage::url($relativePath);
 
                 //return $localFilePath;
                 return $publicPath;
