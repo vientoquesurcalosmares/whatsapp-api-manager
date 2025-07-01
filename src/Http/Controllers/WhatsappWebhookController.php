@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Str;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -392,7 +393,10 @@ class WhatsappWebhookController extends Controller
         }
 
         $fileName = "{$mediaId}.{$extension}";
-        $filePath = "{$directory}{$fileName}";
+        if( Str::endsWith($directory, '/')) {
+            $directory = rtrim($directory, '/');
+        }
+        $filePath = "{$directory}/{$fileName}";
         file_put_contents($filePath, $mediaContent);
 
         // Convertir el path absoluto a relativo para Storage::url
