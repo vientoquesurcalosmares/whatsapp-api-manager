@@ -25,7 +25,7 @@ return new class extends Migration
                   ->references('phone_number_id')
                   ->on('whatsapp_phone_numbers')
                   ->onDelete('cascade');
-                  
+
             $table->foreign('contact_id')
                   ->references('contact_id')
                   ->on('whatsapp_contacts')
@@ -33,6 +33,8 @@ return new class extends Migration
 
             $table->index(['phone_number_id', 'user_wa_id']);
             $table->boolean('synced_with_api')->default(true);
+
+            $table->index(['contact_id', 'phone_number_id'], 'idx_whatsapp_blocked_users_contact_phone_number');
         });
     }
 
