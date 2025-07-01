@@ -365,10 +365,7 @@ class WhatsappWebhookController extends Controller
         }
 
         // Obtener el tipo de media pluralizado según la configuración
-        $mediaType = $message['type'];
-        if (in_array($mediaType, ['image', 'video', 'document', 'sticker'])) {
-            $mediaType .= 's';
-        }
+        $mediaType = $message['type']. 's'; // Por defecto pluralizar el tipo de media
 
         // Obtener la ruta de almacenamiento configurada desde la config
         $directory = config("whatsapp.media.storage_path.$mediaType");

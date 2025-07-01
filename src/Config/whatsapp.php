@@ -226,7 +226,7 @@ return [
         // Directorios de almacenamiento para cada tipo de archivo
         'storage_path' => [
             'images' => storage_path('app/public/whatsapp/images'),
-            'audio' => storage_path('app/public/whatsapp/audio'),
+            'audios' => storage_path('app/public/whatsapp/audios'),
             'documents' => storage_path('app/public/whatsapp/documents'),
             'videos' => storage_path('app/public/whatsapp/videos'),
             'stickers' => storage_path('app/public/whatsapp/stickers'),
