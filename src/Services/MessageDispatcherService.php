@@ -320,7 +320,12 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
         // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $file, 'image');
+        try {
+            $fileId = $this->uploadFile($phoneNumberModel, $file, 'image');
+        } catch (\Exception $e) {
+            Log::error('Error subiendo archivo para cabecera');
+            throw $e;
+        }
 
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
@@ -436,7 +441,12 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
         // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $file, 'image');
+        try {
+            $fileId = $this->uploadFile($phoneNumberModel, $file, 'image');
+        } catch (\Exception $e) {
+            Log::error('Error subiendo archivo para cabecera');
+            throw $e;
+        }
 
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
@@ -722,7 +732,12 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
         // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $file, 'audio');
+        try {
+            $fileId = $this->uploadFile($phoneNumberModel, $file, 'audio');
+        } catch (\Exception $e) {
+            Log::error('Error subiendo archivo para cabecera');
+            throw $e;
+        }
 
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
@@ -830,7 +845,12 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
         // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $file, 'audio');
+        try {
+            $fileId = $this->uploadFile($phoneNumberModel, $file, 'audio');
+        } catch (\Exception $e) {
+            Log::error('Error subiendo archivo para cabecera');
+            throw $e;
+        }
 
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
@@ -1106,7 +1126,12 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
         // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $file, 'document');
+        try {
+            $fileId = $this->uploadFile($phoneNumberModel, $file, 'document');
+        } catch (\Exception $e) {
+            Log::error('Error subiendo archivo para cabecera');
+            throw $e;
+        }
 
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
@@ -1220,7 +1245,12 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
         // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $file, 'document');
+        try {
+            $fileId = $this->uploadFile($phoneNumberModel, $file, 'document');
+        } catch (\Exception $e) {
+            Log::error('Error subiendo archivo para cabecera');
+            throw $e;
+        }
 
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
@@ -1513,7 +1543,12 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
         // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $file, 'sticker');
+        try {
+            $fileId = $this->uploadFile($phoneNumberModel, $file, 'sticker');
+        } catch (\Exception $e) {
+            Log::error('Error subiendo archivo para cabecera');
+            throw $e;
+        }
 
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
@@ -1631,7 +1666,12 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
         // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $file, 'sticker');
+        try {
+            $fileId = $this->uploadFile($phoneNumberModel, $file, 'sticker');
+        } catch (\Exception $e) {
+            Log::error('Error subiendo archivo para cabecera');
+            throw $e;
+        }
 
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
@@ -1825,7 +1865,12 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
         // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $file, 'video');
+        try {
+            $fileId = $this->uploadFile($phoneNumberModel, $file, 'video');
+        } catch (\Exception $e) {
+            Log::error('Error subiendo archivo para cabecera');
+            throw $e;
+        }
 
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
@@ -1938,7 +1983,12 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
 
         // Subir el archivo y obtener el ID del archivo subido
-        $fileId = $this->uploadFile($phoneNumberModel, $file, 'video');
+        try {
+            $fileId = $this->uploadFile($phoneNumberModel, $file, 'video');
+        } catch (\Exception $e) {
+            Log::error('Error subiendo archivo para cabecera');
+            throw $e;
+        }
 
         // Obtener la URL del archivo subido desde la API de WhatsApp
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
@@ -2662,6 +2712,7 @@ class MessageDispatcherService
         string $body,
         array $buttons,
         ?string $footer = null,
+        $header = null, 
         ?string $contextMessageId = null
     ): Model {
         Log::channel('whatsapp')->info('Iniciando envío de mensaje con botones interactivos.', [
@@ -2692,6 +2743,38 @@ class MessageDispatcherService
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
         $contact = $this->resolveContact($countryCode, $phoneNumber);
 
+        // Procesar el header si está presente
+        $processedHeader = null;
+        $mediaType = null;
+        $file = null;
+        $mediaInfo = null;
+
+        if ($header) {
+            if ($header instanceof \SplFileInfo) {
+                $mediaType = $this->determineMediaTypeFromFile($header);
+                $fileId = $this->uploadFile($phoneNumberModel, $header, $mediaType);
+                $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
+                $processedHeader = [
+                    'type' => $mediaType,
+                    $mediaType => ['id' => $fileId]
+                ];
+                $file = $header;
+            } elseif (filter_var($header, FILTER_VALIDATE_URL)) {
+                $mediaType = $this->determineMediaTypeFromUrl($header);
+                $processedHeader = [
+                    'type' => $mediaType,
+                    $mediaType => ['link' => $header]
+                ];
+            } elseif (is_string($header)) {
+                $processedHeader = [
+                    'type' => 'text',
+                    'text' => $header
+                ];
+            } elseif (is_array($header)) {
+                $processedHeader = $header;
+            }
+        }
+
         // Manejar contexto de respuesta
         $contextMessage = null;
         if ($contextMessageId) {
@@ -2712,12 +2795,34 @@ class MessageDispatcherService
                 'sub_type' => 'button',
                 'body' => $body,
                 'footer' => $footer,
-                'buttons' => $buttons
+                'buttons' => $buttons,
+                'header' => $processedHeader
             ]),
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage ? $contextMessage->message_id : null,
         ]);
+
+        // Crear registro de archivo si es un SplFileInfo
+        if ($file) {
+            $localFilePath = $this->downloadMedia(
+                $phoneNumberModel,
+                $mediaInfo['url'],
+                $file->getFilename(),
+                $mediaType . 's'
+            );
+            
+            $mediaFile = WhatsappModelResolver::media_file()->create([
+                'message_id' => $message->message_id,
+                'media_type' => $mediaType,
+                'file_name' => $file->getFilename(),
+                'mime_type' => $mediaInfo['mime_type'],
+                'sha256' => $mediaInfo['sha256'],
+                'url' => $localFilePath,
+                'media_id' => $mediaInfo['id'],
+                'file_size' => $mediaInfo['file_size'],
+            ]);
+        }
 
         try {
             $parameters = [
@@ -2725,6 +2830,7 @@ class MessageDispatcherService
                 'body' => $body,
                 'buttons' => $buttons,
                 'footer' => $footer,
+                'header' => $processedHeader
             ];
 
             $response = $this->sendViaApi(
@@ -2763,7 +2869,7 @@ class MessageDispatcherService
         string $buttonText,
         array $sections,
         string $body,
-        ?string $header = null,
+        $header = null,
         ?string $footer = null,
         ?string $contextMessageId = null
     ): Model {
@@ -2784,10 +2890,7 @@ class MessageDispatcherService
             throw new \InvalidArgumentException('El texto del botón no puede exceder 20 caracteres.');
         }
 
-        if ($header && strlen($header) > 60) {
-            throw new \InvalidArgumentException('El encabezado no puede exceder 60 caracteres.');
-        }
-
+        // Validar secciones y filas
         foreach ($sections as $section) {
             if (empty($section['rows'])) {
                 throw new \InvalidArgumentException('Cada sección debe contener filas.');
@@ -2804,6 +2907,45 @@ class MessageDispatcherService
                 }
             }
         }
+
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+
+        $headerData = null;
+        
+
+        $processedHeader = null;
+        $mediaType = null;
+        $fileName = null;
+        $mediaInfo = null;
+
+        if ($header) {
+            if ($header instanceof \SplFileInfo) {
+                $mediaType = $this->determineMediaTypeFromFile($header);
+                $fileId = $this->uploadFile($phoneNumberModel, $header, $mediaType);
+                $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
+                $fileName = $header->getFilename(); 
+                $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $header->getFilename(), $mediaType.'s');
+
+                $processedHeader = [
+                    'type' => $mediaType,
+                    $mediaType => ['id' => $fileId]
+                ];
+            } elseif (filter_var($header, FILTER_VALIDATE_URL)) {
+                $mediaType = $this->determineMediaTypeFromUrl($header);
+                $processedHeader = [
+                    'type' => $mediaType,
+                    $mediaType => ['link' => $header]
+                ];
+            } elseif (is_string($header)) {
+                $processedHeader = [
+                    'type' => 'text',
+                    'text' => $header
+                ];
+            } elseif (is_array($header)) {
+                $processedHeader = $header;
+            }
+        }
+
 
         $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
         $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
@@ -2830,13 +2972,28 @@ class MessageDispatcherService
                 'button_text' => $buttonText,
                 'sections' => $sections,
                 'body' => $body,
-                'header' => $header,
-                'footer' => $footer
+                'header' => $processedHeader,
+                'footer' => $footer,
+                'context_message_id' => $contextMessageId
             ]),
             'message_method' => 'OUTPUT',
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage ? $contextMessage->message_id : null,
         ]);
+
+        if ($header instanceof \SplFileInfo) {
+            // Crear un registro del archivo en el modelo MediaFile
+            $mediaFile = WhatsappModelResolver::media_file()->create([
+                'message_id' => $message->message_id,
+                'media_type' => 'video',
+                'file_name' => $fileName, // Header file
+                'mime_type' => $mediaInfo['mime_type'],
+                'sha256' => $mediaInfo['sha256'],
+                'url' => $localFilePath,
+                'media_id' => $mediaInfo['id'],
+                'file_size' => $mediaInfo['file_size'],
+            ]);
+        }
 
         try {
             $parameters = [
@@ -2844,7 +3001,7 @@ class MessageDispatcherService
                 'button' => $buttonText,
                 'sections' => $sections,
                 'body' => $body,
-                'header' => $header,
+                'header' => $processedHeader,
                 'footer' => $footer,
             ];
 
@@ -2853,13 +3010,46 @@ class MessageDispatcherService
                 $fullPhoneNumber,
                 'interactive',
                 $parameters,
-                $contextMessage ? $contextMessage->wa_id : null
+                $contextMessageId
             );
 
             return $this->handleSuccess($message, $response);
         } catch (WhatsappApiException $e) {
             return $this->handleError($message, $e);
         }
+    }
+
+    private function determineMediaTypeFromFile(\SplFileInfo $file): string
+    {
+        $mime = mime_content_type($file->getRealPath());
+        return $this->mapMimeToMediaType($mime);
+    }
+
+    private function determineMediaTypeFromUrl(string $url): string
+    {
+        $extension = pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION);
+        return $this->mapExtensionToMediaType($extension);
+    }
+
+    private function mapMimeToMediaType(string $mime): string
+    {
+        return match(explode('/', $mime)[0]) {
+            'image' => 'image',
+            'audio' => 'audio',
+            'video' => 'video',
+            default => 'document'
+        };
+    }
+
+    private function mapExtensionToMediaType(string $extension): string
+    {
+        return match(strtolower($extension)) {
+            'jpg', 'jpeg', 'png', 'gif', 'webp' => 'image',
+            'mp3', 'ogg', 'm4a', 'wav' => 'audio',
+            'mp4', 'mov', 'avi', 'mkv' => 'video',
+            'pdf', 'doc', 'docx', 'xls', 'xlsx' => 'document',
+            default => 'document'
+        };
     }
 
     /**
@@ -2969,6 +3159,217 @@ class MessageDispatcherService
                 'interactive',
                 $parameters,
                 $contextMessageId // Usar el WA ID del mensaje original como contexto
+            );
+
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            return $this->handleError($message, $e);
+        }
+    }
+
+    /**
+     * Envía un mensaje interactivo CTA URL
+     *
+     * @param string $phoneNumberId
+     * @param string $countryCode
+     * @param string $phoneNumber
+     * @param string $body
+     * @param string $buttonText
+     * @param string $url
+     * @param mixed $header
+     * @param string|null $footer
+     * @param string|null $contextMessageId
+     * @return Model
+     */
+    public function sendCtaUrlMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $body,
+        string $buttonText,
+        string $url,
+        $header = null,
+        ?string $footer = null,
+        ?string $contextMessageId = null
+    ): Model {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje CTA URL.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'body' => $body,
+            'buttonText' => $buttonText,
+            'url' => $url,
+            'footer' => $footer,
+            'contextMessageId' => $contextMessageId,
+        ]);
+
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+
+        // Procesar el header
+        $processedHeader = null;
+        $mediaType = null;
+        $fileName = null;
+        $mediaInfo = null;
+
+        if ($header) {
+            if ($header instanceof \SplFileInfo) {
+                if ($header instanceof \SplFileInfo) {
+                    throw new \InvalidArgumentException(
+                        'Para mensajes CTA URL, el encabezado debe ser una URL pública o texto. '.
+                        'No se admiten archivos locales.'
+                    );
+                } elseif (filter_var($header, FILTER_VALIDATE_URL)) {
+                    $mediaType = $this->determineMediaTypeFromUrl($header);
+                    $processedHeader = [
+                        'type' => $mediaType,
+                        $mediaType => ['link' => $header]
+                    ];
+                } elseif (is_string($header)) {
+                    $processedHeader = [
+                        'type' => 'text',
+                        'text' => $header
+                    ];
+                } elseif (is_array($header)) {
+                    $processedHeader = $header;
+                }
+            } elseif (filter_var($header, FILTER_VALIDATE_URL)) {
+                $mediaType = $this->determineMediaTypeFromUrl($header);
+                $processedHeader = [
+                    'type' => $mediaType,
+                    $mediaType => ['link' => $header]
+                ];
+            } elseif (is_string($header)) {
+                $processedHeader = [
+                    'type' => 'text',
+                    'text' => $header
+                ];
+            } elseif (is_array($header)) {
+                $processedHeader = $header;
+            }
+        }
+
+        // Manejar contexto de respuesta
+        $contextMessage = null;
+        if ($contextMessageId) {
+            $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
+            if (!$contextMessage) {
+                throw new \InvalidArgumentException('El mensaje de contexto no existe.');
+            }
+        }
+
+        // Crear mensaje en BD
+        $message = WhatsappModelResolver::message()->create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'interactive',
+            'json' => json_encode([
+                'sub_type' => 'cta_url',
+                'body' => $body,
+                'button_text' => $buttonText,
+                'url' => $url,
+                'header' => $processedHeader,
+                'footer' => $footer,
+            ]),
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+            'message_context_id' => $contextMessage ? $contextMessage->message_id : null,
+        ]);
+
+        try {
+            $parameters = [
+                'interactive_type' => 'cta_url',
+                'body' => $body,
+                'button_text' => $buttonText,
+                'url' => $url,
+                'header' => $processedHeader,
+                'footer' => $footer,
+            ];
+
+            $response = $this->sendViaApi(
+                $phoneNumberModel,
+                $fullPhoneNumber,
+                'interactive',
+                $parameters,
+                $contextMessageId
+            );
+
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            return $this->handleError($message, $e);
+        }
+    }
+
+    /**
+     * Envía un mensaje de solicitud de ubicación
+     *
+     * @param string $phoneNumberId
+     * @param string $countryCode
+     * @param string $phoneNumber
+     * @param string $body
+     * @param string|null $contextMessageId
+     * @return Model
+     */
+    public function sendLocationRequestMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        string $body,
+        ?string $contextMessageId = null
+    ): Model {
+        Log::channel('whatsapp')->info('Iniciando envío de solicitud de ubicación.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'body' => $body,
+            'contextMessageId' => $contextMessageId,
+        ]);
+
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+
+
+        // Manejar contexto de respuesta
+        $contextMessage = null;
+        if ($contextMessageId) {
+            $contextMessage = WhatsappModelResolver::message()->where('wa_id', $contextMessageId)->first();
+            if (!$contextMessage) {
+                throw new \InvalidArgumentException('El mensaje de contexto no existe.');
+            }
+        }
+
+        // Crear mensaje en BD
+        $message = WhatsappModelResolver::message()->create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'interactive',
+            'json' => json_encode([
+                'sub_type' => 'location_request',
+                'body' => $body,
+            ]),
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING,
+            'message_context_id' => $contextMessage ? $contextMessage->message_id : null,
+        ]);
+
+        try {
+            $parameters = [
+                'interactive_type' => 'location_request',
+                'body' => $body,
+            ];
+
+            $response = $this->sendViaApi(
+                $phoneNumberModel,
+                $fullPhoneNumber,
+                'interactive',
+                $parameters,
+                $contextMessageId
             );
 
             return $this->handleSuccess($message, $response);
@@ -3264,6 +3665,7 @@ class MessageDispatcherService
 
     /**
      * Marca un mensaje como leído en WhatsApp
+     * (Mantiene compatibilidad con versiones anteriores)
      *
      * @param string $messageId ID interno del mensaje en tu base de datos
      * @return bool True si se marcó correctamente, false en caso contrario
@@ -3271,24 +3673,74 @@ class MessageDispatcherService
      */
     public function markMessageAsRead(string $messageId): bool
     {
-        Log::channel('whatsapp')->info('Marcando mensaje como leído.', ['message_id' => $messageId]);
+        return $this->handleMessageAction($messageId);
+    }
+
+    /**
+     * Envía un indicador de escritura para un mensaje
+     *
+     * @param string $messageId ID interno del mensaje en tu base de datos
+     * @param string $type Tipo de indicador ('text' o 'audio')
+     * @return bool True si se envió correctamente
+     * @throws WhatsappApiException Si falla la operación en la API
+     */
+    public function sendTypingIndicator(string $messageId, string $type = 'text'): bool
+    {
+        return $this->handleMessageAction($messageId, ['type' => $type]);
+    }
+
+    /**
+     * Detiene el indicador de escritura para un mensaje
+     *
+     * @param string $messageId ID interno del mensaje en tu base de datos
+     * @return bool True si se detuvo correctamente
+     * @throws WhatsappApiException Si falla la operación en la API
+     */
+    public function stopTypingIndicator(string $messageId): bool
+    {
+        return $this->handleMessageAction($messageId, ['type' => 'cancel']);
+    }
+
+    /**
+     * Maneja acciones de mensajes: marcar como leído o enviar indicadores de escritura
+     *
+     * @param string $messageId ID interno del mensaje en tu base de datos
+     * @param array|null $actionParams Parámetros de acción adicionales
+     * @return bool True si se ejecutó correctamente
+     * @throws WhatsappApiException Si falla la operación en la API
+     */
+    private function handleMessageAction(string $messageId, ?array $actionParams = null): bool
+    {
+        $action = $actionParams ? 'typing indicator' : 'mark as read';
+        Log::channel('whatsapp')->info("Ejecutando acción: $action", ['message_id' => $messageId]);
 
         try {
             // Obtener el mensaje de la base de datos
             $message = WhatsappModelResolver::message()->findOrFail($messageId);
-
-            // Verificar que el mensaje fue recibido (INPUT)
-            if ($message->message_method !== 'INPUT') {
-                throw new \InvalidArgumentException('Solo se pueden marcar como leídos mensajes recibidos');
-            }
-
-            // Obtener el número telefónico asociado
             $phoneNumber = $message->phoneNumber;
 
             // Construir el endpoint
             $endpoint = Endpoints::build(Endpoints::MARK_MESSAGE_AS_READ, [
                 'phone_number_id' => $phoneNumber->api_phone_number_id
             ]);
+
+            // Construir payload base
+            $payload = [
+                'messaging_product' => 'whatsapp',
+                'message_id' => $message->wa_id
+            ];
+
+            // Agregar acción específica
+            if ($actionParams) {
+                // Para typing indicators: incluir status:read + typing_indicator
+                $payload['status'] = 'read'; // Este campo es REQUERIDO
+                $payload['typing_indicator'] = [
+                    'type' => $actionParams['type'] ?? 'text'
+                ];
+            } else {
+                // Para marcar como leído
+                $payload['status'] = 'read';
+            }
 
             // Enviar solicitud a la API
             $response = $this->apiClient->request(
@@ -3298,32 +3750,31 @@ class MessageDispatcherService
                     'Authorization' => 'Bearer ' . $phoneNumber->businessAccount->api_token,
                     'Content-Type' => 'application/json'
                 ],
-                data: [
-                    'messaging_product' => 'whatsapp',
-                    'status' => 'read',
-                    'message_id' => $message->wa_id
-                ]
+                data: $payload
             );
 
-            // Actualizar estado en base de datos
-            $message->update(['status' => MessageStatus::READ]);
+            // Actualizar estado solo para marcar como leído
+            if (!$actionParams) {
+                $message->update(['status' => MessageStatus::READ]);
+            }
 
-            Log::channel('whatsapp')->info('Mensaje marcado como leído exitosamente.', [
+            Log::channel('whatsapp')->info("Acción completada: $action", [
                 'message_id' => $messageId,
-                'wa_id' => $message->wa_id
+                'wa_id' => $message->wa_id,
+                'response' => $response
             ]);
 
             return true;
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::channel('whatsapp')->error('Mensaje no encontrado para marcar como leído.', [
+            Log::channel('whatsapp')->error('Mensaje no encontrado', [
                 'message_id' => $messageId,
                 'error' => $e->getMessage()
             ]);
             throw new \InvalidArgumentException('El mensaje no existe en la base de datos');
 
         } catch (WhatsappApiException $e) {
-            Log::channel('whatsapp')->error('Error al marcar mensaje como leído.', [
+            Log::channel('whatsapp')->error("Error en $action", [
                 'message_id' => $messageId,
                 'error' => $e->getMessage(),
                 'details' => $e->getDetails()
@@ -3331,7 +3782,7 @@ class MessageDispatcherService
             throw $e;
 
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error inesperado al marcar mensaje como leído.', [
+            Log::channel('whatsapp')->error("Error inesperado en $action", [
                 'message_id' => $messageId,
                 'error' => $e->getMessage()
             ]);
@@ -3529,6 +3980,12 @@ class MessageDispatcherService
                         ]
                     ];
 
+                    // Añadir header si existe
+                    if (!empty($parameters['header'])) {
+                        $header = $parameters['header'];
+                        $interactiveData['header'] = $header;
+                    }
+
                     if (!empty($parameters['footer'])) {
                         $interactiveData['footer'] = ['text' => $parameters['footer']];
                     }
@@ -3543,16 +4000,61 @@ class MessageDispatcherService
                         ]
                     ];
 
+                    // Manejar diferentes tipos de header
                     if (!empty($parameters['header'])) {
-                        $interactiveData['header'] = [
-                            'type' => 'text',
-                            'text' => $parameters['header']
-                        ];
+                        $interactiveData['header'] = $parameters['header'];
                     }
 
                     if (!empty($parameters['footer'])) {
                         $interactiveData['footer'] = ['text' => $parameters['footer']];
                     }
+                }
+                elseif ($interactiveType === 'cta_url') {
+                    $interactiveData = [
+                        'type' => 'cta_url',
+                        'body' => ['text' => $parameters['body']],
+                        'action' => [
+                            'name' => 'cta_url',  // Nombre fijo requerido
+                            'parameters' => [
+                                'display_text' => $parameters['button_text'],
+                                'url' => $parameters['url']
+                            ]
+                        ]
+                    ];
+
+                    // Añadir header si existe
+                    if (!empty($parameters['header'])) {
+                        $header = $parameters['header'];
+                        if (isset($header['type']) && in_array($header['type'], ['image', 'video', 'document'])) {
+                            $mediaType = $header['type'];
+                            if (isset($header[$mediaType]['id'])) {
+                                // Convertir ID a URL
+                                $phoneNumberModel = $this->validatePhoneNumber($phone->phone_number_id);
+                                $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $header[$mediaType]['id']);
+                                $interactiveData['header'] = [
+                                    'type' => $mediaType,
+                                    $mediaType => ['link' => $mediaInfo['url']]
+                                ];
+                            } else {
+                                $interactiveData['header'] = $header;
+                            }
+                        } else {
+                            $interactiveData['header'] = $header;
+                        }
+                    }
+
+                    if (!empty($parameters['footer'])) {
+                        $interactiveData['footer'] = ['text' => $parameters['footer']];
+                    }
+                }
+                elseif ($interactiveType === 'location_request') {
+                    $interactiveData = [
+                        'type' => 'location_request_message',
+                        'body' => ['text' => $parameters['body']],
+                        'action' => [
+                            'name' => 'send_location'
+                        ]
+                    ];
                 }
                 elseif ($interactiveType === 'product_list') {
                     $interactiveData = [
@@ -3626,6 +4128,26 @@ class MessageDispatcherService
                 'Content-Type' => 'application/json'
             ]
         );
+    }
+
+    private function getMediaPayload(array $header): array
+    {
+        $payload = [];
+        
+        if (isset($header['id'])) {
+            $payload['id'] = $header['id'];
+        } elseif (isset($header['link'])) {
+            $payload['link'] = $header['link'];
+        } else {
+            throw new \InvalidArgumentException('Header multimedia requiere "id" o "link"');
+        }
+        
+        // Campos opcionales específicos para documentos
+        if ($header['type'] === 'document' && isset($header['filename'])) {
+            $payload['filename'] = $header['filename'];
+        }
+        
+        return $payload;
     }
 
     /**

@@ -29,11 +29,13 @@ class WhatsappPhoneNumber extends Model
 
         'code_verification_status',
         'quality_rating',
+        'name_status',
         'platform_type',
         'throughput',
-        'webhook_configuration'
+        'webhook_configuration',
+        'is_official',
+        'is_pin_enabled'
     ];
-
     protected $casts = [
         'throughput' => 'array',
         'webhook_configuration' => 'array',
@@ -65,5 +67,10 @@ class WhatsappPhoneNumber extends Model
                         $query->where('whatsapp_phone_id', $this->phone_number_id);
                     })
                     ->distinct();
+    }
+
+    public function blockedUsers()
+    {
+        return $this->hasMany(BlockedUser::class, 'phone_number_id');
     }
 }

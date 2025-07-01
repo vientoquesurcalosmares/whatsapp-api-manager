@@ -14,7 +14,7 @@ class InteractiveListBuilder
     private string $phoneNumber;
     private string $body;
     private string $buttonText;
-    private ?string $header = null;
+    private $header = null;
     private ?string $footer = null;
     private array $sections = [];
     private ?string $currentSection = null;
@@ -45,8 +45,15 @@ class InteractiveListBuilder
         return $this;
     }
 
-    public function withHeader(?string $header): self
+    public function withHeader($header): self
     {
+        // if (is_string($header) || is_array($header) || $header instanceof \SplFileInfo) {
+        //     $this->header = $header;
+        // } else {
+        //     throw new \InvalidArgumentException('Header inválido. Debe ser texto, array o SplFileInfo');
+        // }
+        // return $this;
+
         $this->header = $header;
         return $this;
     }

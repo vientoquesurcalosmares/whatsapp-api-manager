@@ -3,6 +3,7 @@
 namespace ScriptDevelop\WhatsappManager\Facades;
 
 use Illuminate\Support\Facades\Facade;
+use ScriptDevelop\WhatsappManager\Services\WhatsappService;
 //use ScriptDevelop\WhatsappManager\Models\Flow;
 
 /**
@@ -68,5 +69,10 @@ class Whatsapp extends Facade
     public static function flow()
     {
         return app('whatsapp.flow');
+    }
+
+    public static function subscribeApp(string $wabaId): array
+    {
+        return app(WhatsappService::class)->subscribeApp($wabaId);
     }
 }

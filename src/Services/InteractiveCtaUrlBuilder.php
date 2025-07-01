@@ -6,7 +6,7 @@ use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
 use ScriptDevelop\WhatsappManager\Exceptions\WhatsappApiException;
 use Illuminate\Database\Eloquent\Model;
 
-class InteractiveButtonBuilder
+class InteractiveCtaUrlBuilder
 {
     private MessageDispatcherService $dispatcher;
     private string $phoneNumberId;
@@ -14,14 +14,15 @@ class InteractiveButtonBuilder
     private string $phoneNumber;
     private $header = null;
     private string $body;
-    private array $buttons = [];
+    private string $buttonText;
+    private string $url;
     private ?string $footer = null;
     private ?string $contextMessageId = null;
 
     public function __construct(MessageDispatcherService $dispatcher, string $phoneNumberId)
     {
         $this->dispatcher = $dispatcher;
-        $this->phoneNumberId = $phoneNumberId; // Añadir esta línea
+        $this->phoneNumberId = $phoneNumberId;
     }
 
     public function to(string $countryCode, string $phoneNumber): self
@@ -43,13 +44,10 @@ class InteractiveButtonBuilder
         return $this;
     }
 
-    public function addButton(string $id, string $title): self
+    public function withButton(string $buttonText, string $url): self
     {
-        if (count($this->buttons) >= 3) {
-            throw new \InvalidArgumentException('Máximo 3 botones permitidos');
-        }
-        
-        $this->buttons[] = ['id' => $id, 'title' => $title];
+        $this->buttonText = $buttonText;
+        $this->url = $url;
         return $this;
     }
 
@@ -66,21 +64,19 @@ class InteractiveButtonBuilder
     }
 
     /**
-     * Envía el mensaje construido
-     * 
-     * @return Model
-     * @throws WhatsappApiException
+     * Envía el mensaje CTA URL
      */
     public function send(): Model
     {
-        return $this->dispatcher->sendInteractiveButtonsMessage(
+        return $this->dispatcher->sendCtaUrlMessage(
             $this->phoneNumberId,
             $this->countryCode,
             $this->phoneNumber,
             $this->body,
-            $this->buttons,
-            $this->footer,
+            $this->buttonText,
+            $this->url,
             $this->header,
+            $this->footer,
             $this->contextMessageId
         );
     }

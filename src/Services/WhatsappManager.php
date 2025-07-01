@@ -49,6 +49,16 @@ class WhatsappManager
         return new InteractiveListBuilder($this->dispatcher, $phoneNumberId);
     }
 
+    public function sendCtaUrlMessage(string $phoneNumberId): InteractiveCtaUrlBuilder
+    {
+        return new InteractiveCtaUrlBuilder($this->dispatcher, $phoneNumberId);
+    }
+
+    public function sendLocationRequestMessage(string $phoneNumberId): InteractiveLocationRequestBuilder
+    {
+        return new InteractiveLocationRequestBuilder($this->dispatcher, $phoneNumberId);
+    }
+
     /**
      * Obtiene el servicio relacionado con las cuentas empresariales de WhatsApp.
      *
@@ -67,5 +77,10 @@ class WhatsappManager
     public function deletePhoneNumber(string $phoneNumberId): bool
     {
         return $this->phone()->deletePhoneNumber($phoneNumberId);
+    }
+
+    public function block(): BlockService
+    {
+        return app('whatsapp.block');
     }
 }

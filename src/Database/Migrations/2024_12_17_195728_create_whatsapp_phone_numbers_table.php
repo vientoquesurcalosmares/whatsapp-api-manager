@@ -24,8 +24,11 @@ return new class extends Migration
             $table->string('code_verification_status', 45)->nullable();
             $table->string('quality_rating', 45)->nullable();
             $table->string('platform_type', 45)->nullable();
+            $table->string('name_status', 50)->nullable();
             $table->json('throughput')->nullable();
             $table->json('webhook_configuration')->nullable();
+            $table->boolean('is_official')->default(false);
+            $table->boolean('is_pin_enabled')->default(false);
             
             $table->timestamps();
             $table->softDeletes();
