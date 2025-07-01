@@ -181,6 +181,8 @@ return [
         'base_url' => env('WHATSAPP_API_URL', 'https://graph.facebook.com'),
 
         // Versión de la API de WhatsApp
+        //Advertencia: Cuidado al cambiar la versión, puede afectar a las funcionalidades y generar errores si versiones futuras cambian la estructura de los endpoints
+        // Asegúrate de que la versión sea compatible con tu implementación actual.
         'version' => env('WHATSAPP_API_VERSION', 'v22.0'),
 
         // Tiempo de espera para las solicitudes (en segundos)
@@ -235,6 +237,7 @@ return [
         ],
 
         // Tipos MIME permitidos para cada tipo de archivo
+        // Advertencia: Asegúrate de que los tipos MIME coincidan con los que WhatsApp acepta.
         'allowed_types' => [
             'image' => ['image/jpeg', 'image/png'], // Imágenes
             'audio' => ['audio/aac', 'audio/mp4', 'audio/mpeg', 'audio/amr', 'audio/ogg'], // Audios
