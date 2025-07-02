@@ -8,7 +8,7 @@
       <a href="01-install.md" title="Sección anterior">◄◄ Install</a>
     </td>
     <td align="center">
-      <a href="00-content.md" title="Tabla of contents">▲ Tabla of contents</a>
+      <a href="00-content.md" title="Tabla of contents">▲ Table of contents</a>
     </td>
     <td align="right">
       <a href="03-messages.md" title="Sección siguiente">Messages ►►</a>
@@ -230,7 +230,7 @@ With these functions you can block, unblock, and list the numbers of customers o
       <a href="01-install.md" title="Sección anterior">◄◄ Install</a>
     </td>
     <td align="center">
-      <a href="00-content.md" title="Tabla of contents">▲ Tabla of contents</a>
+      <a href="00-content.md" title="Tabla of contents">▲ Table of contents</a>
     </td>
     <td align="right">
       <a href="03-messages.md" title="Sección siguiente">Messages ►►</a>

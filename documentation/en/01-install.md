@@ -5,10 +5,10 @@
 <table>
   <tr>
     <td align="left">
-      <a href="../../README.md" title="Sección anterior: Home">◄◄ Inicio</a>
+      <a href="../../README.md" title="Sección anterior: Home">◄◄ Home</a>
     </td>
     <td align="center">
-      <a href="00-content.md" title="Tabla of contents">▲ Tabla of contents</a>
+      <a href="00-content.md" title="Tabla of contents">▲ Table of contents</a>
     </td>
     <td align="right">
       <a href="02-config-api.md" title="Sección siguiente">Configurar API ►►</a>
@@ -206,10 +206,10 @@ Before installing the package, you'll need a WhatsApp API Cloud account:
 <table>
   <tr>
     <td align="left">
-      <a href="../../README.md" title="Sección anterior: Home">◄◄ Inicio</a>
+      <a href="../../README.md" title="Sección anterior: Home">◄◄ Home</a>
     </td>
     <td align="center">
-      <a href="00-content.md" title="Tabla of contents">▲ Tabla of contents</a>
+      <a href="00-content.md" title="Tabla of contents">▲ Table of contents</a>
     </td>
     <td align="right">
       <a href="02-config-api.md" title="Sección siguiente">Configurar API ►►</a>
