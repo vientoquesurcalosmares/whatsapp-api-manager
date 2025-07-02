@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Str;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -363,9 +364,18 @@ class WhatsappWebhookController extends Controller
             throw new \RuntimeException('Failed to download media content.');
         }
 
-        $directory = storage_path("app/public/whatsapp/{$message['type']}s/");
+        // Obtener el tipo de media pluralizado según la configuración
+        $mediaType = $message['type']. 's'; // Por defecto pluralizar el tipo de media
+
+        // Obtener la ruta de almacenamiento configurada desde la config
+        $directory = config("whatsapp.media.storage_path.$mediaType");
+
+        if (!$directory) {
+            throw new \RuntimeException("No se ha configurado una ruta de almacenamiento para el tipo de media: $mediaType");
+        }
+
         if (!file_exists($directory)) {
-            mkdir($directory, 0777, true);
+            mkdir($directory, 0755, true);
         }
 
         $extension = $this->getFileExtension($mimeType);
@@ -380,10 +390,17 @@ class WhatsappWebhookController extends Controller
         }
 
         $fileName = "{$mediaId}.{$extension}";
-        $filePath = "{$directory}{$fileName}";
+        if( Str::endsWith($directory, '/')) {
+            $directory = rtrim($directory, '/');
+        }
+        $filePath = "{$directory}/{$fileName}";
         file_put_contents($filePath, $mediaContent);
 
-        $publicPath = Storage::url("public/whatsapp/{$message['type']}s/{$fileName}");
+        // Convertir el path absoluto a relativo para Storage::url
+        $relativePath = str_replace(storage_path('app/public/'), '', $directory . '/' . $fileName);
+
+        // Obtener la URL pública
+        $publicPath = Storage::url($relativePath);
 
         // Crear el registro del mensaje en la base de datos
         $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
@@ -647,7 +664,7 @@ class WhatsappWebhookController extends Controller
             case 'read': $this->fireMessageRead($messageUpdated);
                 break;
 
-            case 'failed': 
+            case 'failed':
                 // Manejar caso específico de opt-out de marketing
                 if (isset($status['errors'][0]['code']) && $status['errors'][0]['code'] == 131050) {
                     $this->fireMarketingOptOut($messageUpdated);
@@ -1273,7 +1290,7 @@ class WhatsappWebhookController extends Controller
             $marketingPreference = $message['system']['marketing'] ?? null;
             if ($marketingPreference) {
                 $this->updateContactMarketingPreference(
-                    $contact->contact_id, 
+                    $contact->contact_id,
                     $marketingPreference === 'resume'
                 );
             }
@@ -1306,8 +1323,8 @@ class WhatsappWebhookController extends Controller
     }
 
     protected function processUserChangedNumber(
-        array $message, 
-        Model $contact, 
+        array $message,
+        Model $contact,
         Model $whatsappPhone,
         string $body,
         ?string $newWaId
@@ -1316,7 +1333,7 @@ class WhatsappWebhookController extends Controller
         // Actualizar el contacto con el nuevo wa_id
         if ($newWaId) {
             $contact->update(['wa_id' => $newWaId]);
-            
+
             Log::channel('whatsapp')->info('Contact phone number updated', [
                 'contact_id' => $contact->contact_id,
                 'old_wa_id' => $contact->getOriginal('wa_id'),
@@ -1346,10 +1363,10 @@ class WhatsappWebhookController extends Controller
     protected function updateContactMarketingPreference($contactId, $acceptsMarketing): void
     {
         $contact = WhatsappModelResolver::contact()->find($contactId);
-    
+
         if ($contact) {
             $updateData = ['accepts_marketing' => $acceptsMarketing];
-            
+
             // Cuando se establece en false (opt-out), registrar la marca de tiempo
             if ($acceptsMarketing === false) {
                 $updateData['marketing_opt_out_at'] = now();
@@ -1357,9 +1374,9 @@ class WhatsappWebhookController extends Controller
                 // Si se establece en true, limpiar la marca de tiempo
                 $updateData['marketing_opt_out_at'] = null;
             }
-            
+
             $contact->update($updateData);
-            
+
             Log::channel('whatsapp')->info('Contact marketing preference updated', [
                 'contact_id' => $contactId,
                 'accepts_marketing' => $acceptsMarketing
@@ -1370,12 +1387,12 @@ class WhatsappWebhookController extends Controller
     protected function handleUserPreferences(array $data): void
     {
         $userPreferences = $data['user_preferences'] ?? [];
-        
+
         foreach ($userPreferences as $preference) {
             if ($preference['category'] === 'marketing_messages') {
                 $waId = $preference['wa_id'];
                 $value = $preference['value']; // 'stop' o 'resume'
-                
+
                 $this->updateContactMarketingPreferenceByWaId($waId, $value);
             }
         }
@@ -1384,7 +1401,7 @@ class WhatsappWebhookController extends Controller
     protected function updateContactMarketingPreferenceByWaId(string $waId, string $preference): void
     {
         $contact = WhatsappModelResolver::contact()->where('wa_id', $waId)->first();
-        
+
         if ($contact) {
             $acceptsMarketing = ($preference === 'resume');
             $this->updateContactMarketingPreference($contact->contact_id, $acceptsMarketing);

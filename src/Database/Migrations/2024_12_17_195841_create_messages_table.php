@@ -59,7 +59,7 @@ return new class extends Migration
                   ->references('phone_number_id')
                   ->on('whatsapp_phone_numbers')
                   ->onDelete('cascade');
-            
+
             $table->foreign('template_version_id')
                   ->references('version_id')
                   ->on('whatsapp_template_versions')
@@ -76,6 +76,9 @@ return new class extends Migration
             $table->index('message_type');
             $table->index('delivered_at');
             $table->index(['message_from', 'message_to']);
+
+            $table->index(['contact_id', 'whatsapp_phone_id'], 'idx_contact_whatsapp_phone');
+            $table->index(['contact_id', 'message_method'], 'idx_contact_message_method');
         });
     }
 

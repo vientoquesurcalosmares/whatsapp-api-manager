@@ -31,6 +31,7 @@ return new class extends Migration
 
             $table->index('is_active');
             $table->index('status');
+            $table->index(['template_id', 'status'], 'idx_whatsapp_template_versions_template_id_status');
         });
     }
 
