@@ -81,13 +81,13 @@ class TemplateBuilder
     {
         $validFormats = ['POSITIONAL', 'NAMED'];
         $format = strtoupper($format);
-        
+
         if (!in_array($format, $validFormats)) {
             throw new InvalidArgumentException(
                 "Formato de parámetro inválido. Use: " . implode(', ', $validFormats)
             );
         }
-        
+
         $this->parameterFormat = $format;
         return $this;
     }
@@ -198,11 +198,11 @@ class TemplateBuilder
             }
         } elseif (in_array($format, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
             $filePath = $content;
-            
+
             if (!file_exists($filePath)) {
                 throw new InvalidArgumentException("El archivo no existe: $filePath");
             }
-            
+
             $fileSize = filesize($filePath);
             $mimeType = mime_content_type($filePath);
 
@@ -249,17 +249,17 @@ class TemplateBuilder
         if (is_array($example) && !array_is_list($example)) {
             return array_values($example)[0];
         }
-        
+
         // Si es un array simple, tomar el primer elemento
         if (is_array($example) && !empty($example)) {
             return $example[0];
         }
-        
+
         // Si es un string, devolverlo directamente
         if (is_string($example)) {
             return $example;
         }
-        
+
         throw new InvalidArgumentException('Formato de ejemplo inválido para el HEADER');
     }
 
@@ -284,11 +284,11 @@ class TemplateBuilder
         $this->validateParameters($text, $example, 'BODY');
 
         $formattedExample = null;
-        
+
         if ($example !== null) {
             preg_match_all('/{{(.*?)}}/', $text, $matches);
             $placeholders = $matches[1] ?? [];
-            
+
             // Estructura diferente para parámetros NAMED vs POSITIONAL
             if ($this->parameterFormat === 'NAMED') {
                 $namedParams = [];
@@ -306,7 +306,7 @@ class TemplateBuilder
                 // POSITIONAL: Procesamiento especial
                 $orderedExample = [];
                 preg_match_all('/{{(.*?)}}/', $text, $matches);
-                
+
                 foreach ($matches[1] as $paramName) {
                     if (isset($example[$paramName])) {
                         $orderedExample[] = $example[$paramName];
@@ -608,18 +608,18 @@ class TemplateBuilder
         if (!empty($intPlaceholders)) {
             $min = min($intPlaceholders);
             $max = max($intPlaceholders);
-            
+
             if ($min !== 1) {
                 throw new InvalidArgumentException(
                     'El primer parámetro POSITIONAL debe ser {{1}}'
                 );
             }
-            
+
             $expectedRange = range(1, $max);
             $actualValues = array_unique($intPlaceholders);
-            
-            if (count($actualValues) !== count($expectedRange) || 
-                array_diff($expectedRange, $actualValues)) 
+
+            if (count($actualValues) !== count($expectedRange) ||
+                array_diff($expectedRange, $actualValues))
             {
                 throw new InvalidArgumentException(
                     'Secuencia POSITIONAL inválida. Debe usar números consecutivos desde {{1}} hasta {{'.$max.'}}'
@@ -638,17 +638,17 @@ class TemplateBuilder
     protected function validateNamedParameters(array $placeholders, ?array $example, string $type): void
     {
         foreach ($placeholders as $placeholder) {
-            if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $placeholder)) {
+            if (!preg_match('/^[a-zA-Z_\$][a-zA-Z0-9_\$]*$/', $placeholder)) {
                 throw new InvalidArgumentException(
                     "Nombre de parámetro inválido: '$placeholder'. Solo caracteres alfanuméricos y guiones bajos"
                 );
             }
         }
-        
+
         if ($example) {
             $exampleKeys = array_keys($example);
             $missingParams = array_diff($placeholders, $exampleKeys);
-            
+
             if (!empty($missingParams)) {
                 throw new InvalidArgumentException(
                     'Faltan ejemplos para parámetros: ' . implode(', ', $missingParams)
@@ -770,14 +770,14 @@ class TemplateBuilder
             $responseBody = json_decode($response->getBody(), true);
             $errorCode = $responseBody['error']['code'] ?? null;
             $errorSubcode = $responseBody['error']['error_subcode'] ?? null;
-            
+
             if ($errorCode === 100 && $errorSubcode === 2388023) {
                 throw new \Exception(
                     'No puedes crear una plantilla con el mismo nombre e idioma inmediatamente después de eliminar otra. ' .
                     'Espera 4 semanas o usa un nombre diferente.'
                 );
             }
-            
+
             Log::channel('whatsapp')->error('Error de API al guardar la plantilla.', [
                 'error' => $responseBody,
                 'status' => $response->getStatusCode()
