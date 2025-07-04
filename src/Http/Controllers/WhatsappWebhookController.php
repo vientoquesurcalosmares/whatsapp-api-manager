@@ -921,6 +921,7 @@ class WhatsappWebhookController extends Controller
             case 'UPDATE':
                 $this->handleTemplateUpdate($templateData);
                 break;
+            case 'PENDING_DELETION':
             case 'DELETE':
                 $this->handleTemplateDeletion($templateData);
                 break;
@@ -965,7 +966,7 @@ class WhatsappWebhookController extends Controller
         // Crear nueva versión si hay cambios
         if (!empty($components)) {
             // Hay cambios en la estructura -> nueva versión
-            $this->createTemplateVersion($template, $status);
+            $this->createTemplateVersion($template, $templateData);
         } else {
             // No hay cambios -> actualizar última versión existente
             $lastVersion = $template->versions()->latest()->first();
