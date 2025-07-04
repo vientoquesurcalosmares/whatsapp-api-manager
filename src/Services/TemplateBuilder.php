@@ -451,13 +451,19 @@ class TemplateBuilder
                     if (empty($example) || count($example) !== 1) {
                         throw new InvalidArgumentException('El campo "example" es obligatorio y debe contener exactamente un valor cuando la URL incluye un parámetro.');
                     }
-                    $button['example'] = $example;
+                    
+                    // CORRECCIÓN CRÍTICA: Convertir a array simple siempre
+                    $button['example'] = array_values($example);
                 }
                 break;
 
             case 'QUICK_REPLY':
                 // No se requiere validación adicional
                 break;
+
+            case 'FLOW':
+                // Este caso se maneja en otro método (addFlowButton)
+                throw new InvalidArgumentException('Usa el método addFlowButton para botones de tipo FLOW.');
 
             default:
                 throw new InvalidArgumentException('Tipo de botón no válido. Debe ser uno de: PHONE_NUMBER, URL, QUICK_REPLY.');
