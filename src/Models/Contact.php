@@ -56,7 +56,7 @@ class Contact extends Model
     {
         return $this->hasMany(config('whatsapp.models.message'), 'contact_id');
     }
-::
+
     public function latestMessage($phoneNumberId)
     {
         return $this->messages()
