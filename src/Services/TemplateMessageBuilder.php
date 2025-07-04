@@ -37,6 +37,8 @@ class TemplateMessageBuilder
     protected array $buttonTextIndexMap = [];
     protected ?Model $templateVersion = null;
 
+    protected string $parameterFormat = 'POSITIONAL';
+
     /**
      * Constructor de la clase TemplateMessageBuilder.
      *
@@ -149,21 +151,44 @@ class TemplateMessageBuilder
         $this->validateComponent('HEADER', $type);
 
         $formattedParams = [];
+        $type = strtoupper($type);
 
-        if ($type === 'IMAGE') {
-            $formattedParams[] = [
-                'type' => 'image',
-                'image' => ['link' => $content]
-            ];
-        } else {
-            if (!is_array($content)) $content = [$content];
+        if ($type === 'TEXT') {
+            $placeholders = $this->templateStructure['placeholders']['HEADER'] ?? [];
             
-            foreach ($content as $item) {
-                $formattedParams[] = [
-                    'type' => 'text',
-                    'text' => $item
-                ];
+            // Procesar parámetros usando el método unificado
+            $formattedParams = $this->processParameters($placeholders, $content);
+        } 
+        elseif (in_array($type, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
+            // Validar que el contenido sea una URL válida
+            if (!filter_var($content, FILTER_VALIDATE_URL)) {
+                throw new InvalidArgumentException(
+                    "El contenido para $type debe ser una URL válida"
+                );
             }
+            
+            $formattedParams[] = [
+                'type' => strtolower($type),
+                strtolower($type) => ['link' => $content]
+            ];
+        } 
+        elseif ($type === 'LOCATION') {
+            // Location no lleva parámetros, pero validamos que no se pase contenido
+            if (!empty($content)) {
+                throw new InvalidArgumentException(
+                    "El header de tipo LOCATION no debe tener contenido"
+                );
+            }
+            
+            // Location se representa con un array vacío
+            $formattedParams[] = [
+                'type' => 'location'
+            ];
+        } 
+        else {
+            throw new InvalidArgumentException(
+                "Tipo de header no válido: $type. Válidos: TEXT, IMAGE, VIDEO, DOCUMENT, LOCATION"
+            );
         }
 
         $this->components['HEADER'] = [
@@ -185,14 +210,8 @@ class TemplateMessageBuilder
         $this->ensureTemplateStructureLoaded();
         $this->validateComponent('BODY');
 
-        // Formatear cada parámetro como objeto
-        $formattedParams = [];
-        foreach ($parameters as $param) {
-            $formattedParams[] = [
-                'type' => 'text', // Asumiendo que todos son texto
-                'text' => $param
-            ];
-        }
+        $placeholders = $this->templateStructure['placeholders']['BODY'] ?? [];
+        $formattedParams = $this->processParameters($placeholders, $parameters);
 
         $this->components['BODY'] = [
             'type' => 'BODY',
@@ -221,20 +240,18 @@ class TemplateMessageBuilder
 
 
 
-    public function addButton(string $buttonText, array $parameters): self
+    public function addButton(string $buttonText, array $parameter): self
     {
         $this->ensureTemplateStructureLoaded();
 
         // Crear mapa texto->índice si no existe
         if (empty($this->buttonTextIndexMap)) {
-            // Buscar componente de botones - intentar con diferentes casos
             $buttonsComponent = $this->templateStructure['by_type']['BUTTONS'] ?? 
                                 $this->templateStructure['by_type']['buttons'] ?? 
                                 null;
             
             if ($buttonsComponent && isset($buttonsComponent['buttons'])) {
                 foreach ($buttonsComponent['buttons'] as $index => $button) {
-                    // Usar texto normalizado (trim + minúsculas) para evitar problemas de formato
                     $normalizedText = strtolower(trim($button['text']));
                     $this->buttonTextIndexMap[$normalizedText] = $index;
                 }
@@ -255,7 +272,49 @@ class TemplateMessageBuilder
             );
         }
 
-        $this->buttonParameters[$this->buttonTextIndexMap[$normalizedButtonText]] = $parameters;
+        $buttonIndex = $this->buttonTextIndexMap[$normalizedButtonText];
+        $button = $this->templateStructure['by_type']['BUTTONS']['buttons'][$buttonIndex] ?? null;
+
+        if (!$button) {
+            throw new InvalidArgumentException("Botón '$buttonText' no encontrado en la estructura.");
+        }
+
+        // Validar que sea botón URL
+        if (strtoupper($button['type'] ?? '') !== 'URL') {
+            throw new InvalidArgumentException("Solo botones URL pueden tener parámetros.");
+        }
+
+        // Extraer placeholders de la URL
+        preg_match_all('/{{(.*?)}}/', $button['url'] ?? '', $matches);
+        $placeholders = $matches[1] ?? [];
+
+        // Validar que sea parámetro posicional
+        foreach ($placeholders as $placeholder) {
+            if (!is_numeric($placeholder)) {
+                throw new InvalidArgumentException(
+                    "Botones URL solo admiten parámetros posicionales ({{1}}). Se encontró: {{$placeholder}}"
+                );
+            }
+        }
+
+        // Validar máximo 1 parámetro
+        if (count($placeholders) > 1) {
+            throw new InvalidArgumentException("Los botones URL solo pueden tener un parámetro.");
+        }
+
+        // Asegurar que el parámetro sea un array con un solo elemento
+        if (count($parameter) !== 1) {
+            throw new InvalidArgumentException("Debe proporcionar exactamente un valor para el botón.");
+        }
+
+        // Crear parámetro en formato POSITIONAL (siempre)
+        $this->buttonParameters[$buttonIndex] = [
+            [
+                'type' => 'text',
+                'text' => $parameter[0]
+            ]
+        ];
+
         return $this;
     }
 
@@ -263,35 +322,26 @@ class TemplateMessageBuilder
     {
         $buttonComponents = [];
         
-        // Buscar componente de botones
-        $buttonsComponent = $this->templateStructure['by_type']['BUTTONS'] ?? null;
-        
-        if (!$buttonsComponent || empty($buttonsComponent['buttons'])) {
+        if (empty($this->templateStructure['by_type']['BUTTONS']['buttons'])) {
             return [];
         }
 
-        $buttons = $buttonsComponent['buttons'];
+        $buttons = $this->templateStructure['by_type']['BUTTONS']['buttons'];
 
         foreach ($buttons as $index => $button) {
+            if (!isset($this->buttonParameters[$index])) continue;
+            
             $buttonType = strtoupper($button['type'] ?? '');
             $subType = strtolower($buttonType);
 
-            // Solo botones de URL con placeholders necesitan parámetros
-            if ($buttonType === 'URL' && 
-                isset($button['url']) && 
-                preg_match('/\{\{\d+\}\}/', $button['url']) &&
-                isset($this->buttonParameters[$index])
-            ) {
-                $parameters = [];
-                foreach ($this->buttonParameters[$index] as $param) {
-                    $parameters[] = ['type' => 'text', 'text' => $param];
-                }
-
+            // Solo botones URL con parámetros
+            if ($buttonType === 'URL') {
+                // CORRECCIÓN: Usar directamente los parámetros ya formateados
                 $buttonComponents[] = [
                     'type' => 'button',
                     'sub_type' => $subType,
                     'index' => (string)$index,
-                    'parameters' => $parameters
+                    'parameters' => $this->buttonParameters[$index]
                 ];
             }
         }
@@ -417,22 +467,70 @@ class TemplateMessageBuilder
 
         $rawStructure = $this->templateVersion->template_structure;
         
-        // Reorganizar estructura para fácil acceso
+        // Recuperar formato de parámetros almacenado
+        $this->parameterFormat = $this->templateVersion->parameter_format ?? 'POSITIONAL';
+        
         $this->templateStructure = [
             'language' => $this->template->language,
             'components' => $rawStructure,
-            'by_type' => []
+            'by_type' => [],
+            'placeholders' => [
+                'HEADER' => [],
+                'BODY' => []
+            ]
         ];
 
-        // Crear índice por tipo de componente
+        // Procesar placeholders
         foreach ($rawStructure as $component) {
             $type = strtoupper($component['type'] ?? '');
             $this->templateStructure['by_type'][$type] = $component;
+            
+            // Extraer placeholders
+            if ($type === 'HEADER' && isset($component['text'])) {
+                preg_match_all('/{{(.*?)}}/', $component['text'], $matches);
+                $this->templateStructure['placeholders']['HEADER'] = $matches[1] ?? [];
+            }
+            
+            if ($type === 'BODY' && isset($component['text'])) {
+                preg_match_all('/{{(.*?)}}/', $component['text'], $matches);
+                $this->templateStructure['placeholders']['BODY'] = $matches[1] ?? [];
+            }
         }
+    }
 
-        Log::channel('whatsapp')->info('Estructura de plantilla procesada', [
-            'by_type' => array_keys($this->templateStructure['by_type'])
-        ]);
+    protected function processParameters(array $placeholders, array $values): array
+    {
+        $parameters = [];
+        
+        if ($this->parameterFormat === 'NAMED') {
+            foreach ($placeholders as $placeholder) {
+                if (!isset($values[$placeholder])) {
+                    throw new InvalidArgumentException(
+                        "Falta parámetro nombrado: '$placeholder'"
+                    );
+                }
+                $parameters[] = [
+                    'type' => 'text',
+                    'text' => $values[$placeholder]
+                ];
+            }
+        } else {
+            if (count($values) !== count($placeholders)) {
+                throw new InvalidArgumentException(
+                    "Número de parámetros no coincide. Esperados: " . 
+                    count($placeholders) . ", Recibidos: " . count($values)
+                );
+            }
+            
+            foreach ($values as $value) {
+                $parameters[] = [
+                    'type' => 'text',
+                    'text' => $value
+                ];
+            }
+        }
+        
+        return $parameters;
     }
 
     protected function processComponent(array $component, array &$structure): void
