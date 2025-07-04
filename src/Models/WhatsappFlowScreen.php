@@ -38,11 +38,11 @@ class WhatsappFlowScreen extends Model
 
     public function flow()
     {
-        return $this->belongsTo(WhatsappFlow::class, 'flow_id', 'flow_id');
+        return $this->belongsTo(config('whatsapp.models.flow'), 'flow_id', 'flow_id');
     }
 
     public function elements()
     {
-        return $this->hasMany(WhatsappScreenElement::class, 'screen_id', 'screen_id');
+        return $this->hasMany(config('whatsapp.models.screen_element'), 'screen_id', 'screen_id');
     }
 }

@@ -27,11 +27,11 @@ class BlockedUser extends Model
 
     public function phoneNumber()
     {
-        return $this->belongsTo(WhatsappPhoneNumber::class, 'phone_number_id');
+        return $this->belongsTo(config('whatsapp.models.phone_number'), 'phone_number_id');
     }
 
     public function contact()
     {
-        return $this->belongsTo(Contact::class, 'contact_id');
+        return $this->belongsTo(config('whatsapp.models.contact'), 'contact_id');
     }
 }

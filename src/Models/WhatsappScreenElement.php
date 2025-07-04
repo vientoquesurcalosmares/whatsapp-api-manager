@@ -40,6 +40,6 @@ class WhatsappScreenElement extends Model
 
     public function screen()
     {
-        return $this->belongsTo(WhatsappFlowScreen::class, 'screen_id', 'screen_id');
+        return $this->belongsTo(config('whatsapp.models.flow_screen'), 'screen_id', 'screen_id');
     }
 }

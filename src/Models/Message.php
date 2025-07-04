@@ -195,40 +195,40 @@ class Message extends Model
 
     public function contact()
     {
-        return $this->belongsTo(Contact::class, 'contact_id');
+        return $this->belongsTo(config('whatsapp.models.contact'), 'contact_id');
     }
 
     public function conversation()
     {
-        return $this->belongsTo(Conversation::class, 'conversation_id');
+        return $this->belongsTo(config('whatsapp.models.conversation'), 'conversation_id');
     }
 
     public function phoneNumber()
     {
-        return $this->belongsTo(WhatsappPhoneNumber::class, 'whatsapp_phone_id');
+        return $this->belongsTo(config('whatsapp.models.phone_number'), 'whatsapp_phone_id');
     }
 
     public function mediaFiles()
     {
-        return $this->hasMany(MediaFile::class, 'message_id');
+        return $this->hasMany(config('whatsapp.models.media_file'), 'message_id');
     }
 
     public function parentMessage()
     {
         // Relación uno a uno: este mensaje pertenece a un mensaje de contexto
-        return $this->belongsTo(Message::class, 'message_context_id', 'message_id');
+        return $this->belongsTo(config('whatsapp.models.message'), 'message_context_id', 'message_id');
     }
 
     public function replies()
     {
         // Relación uno a muchos: este mensaje tiene múltiples réplicas
-        return $this->hasMany(Message::class, 'message_id', 'message_context_id');
+        return $this->hasMany(config('whatsapp.models.message'), 'message_id', 'message_context_id');
     }
 
     // Relación con la versión de plantilla
     public function templateVersion()
     {
-        return $this->belongsTo(TemplateVersion::class, 'template_version_id');
+        return $this->belongsTo(config('whatsapp.models.template_version'), 'template_version_id');
     }
 
     public function getDisplayContentAttribute()

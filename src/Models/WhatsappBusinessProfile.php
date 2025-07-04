@@ -31,13 +31,13 @@ class WhatsappBusinessProfile extends Model
 
     public function websites()
     {
-        return $this->hasMany(Website::class, 'whatsapp_business_profile_id');
+        return $this->hasMany(config('whatsapp.models.website'), 'whatsapp_business_profile_id');
     }
 
     public function phoneNumber()
     {
         return $this->hasOne(
-            WhatsappPhoneNumber::class,
+            config('whatsapp.models.phone_number'),
             'whatsapp_business_profile_id', // Clave foránea en phone_numbers
             'whatsapp_business_profile_id'  // Clave primaria en este modelo
         );

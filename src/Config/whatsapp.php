@@ -64,6 +64,8 @@ return [
 
         'template_flow' => \ScriptDevelop\WhatsappManager\Models\WhatsappTemplateFlow::class,
 
+        'blocked_user' => \ScriptDevelop\WhatsappManager\Models\BlockedUser::class,
+
         // Modelo de usuario (puede ser personalizado)
         'user_model' => env('AUTH_MODEL', App\Models\User::class),
 

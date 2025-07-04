@@ -25,6 +25,6 @@ class TemplateLanguage extends Model
 
     public function templates()
     {
-        return $this->hasMany(Template::class, 'language', 'id');
+        return $this->hasMany(config('whatsapp.models.template'), 'language', 'id');
     }
 }

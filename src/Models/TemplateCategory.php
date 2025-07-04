@@ -27,6 +27,6 @@ class TemplateCategory extends Model
      */
     public function templates()
     {
-        return $this->hasMany(Template::class, 'category_id', 'category_id');
+        return $this->hasMany(config('whatsapp.models.template'), 'category_id', 'category_id');
     }
 }

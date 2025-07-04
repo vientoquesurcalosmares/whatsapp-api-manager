@@ -34,6 +34,6 @@ class TemplateComponent extends Model
      */
     public function template()
     {
-        return $this->belongsTo(Template::class, 'template_id', 'template_id');
+        return $this->belongsTo(config('whatsapp.models.template'), 'template_id', 'template_id');
     }
 }
