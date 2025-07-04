@@ -423,8 +423,31 @@ class TemplateBuilder
                 }
                 $button['url'] = $urlOrPhone;
 
-                // Validar y agregar el campo `example` si la URL contiene un parámetro
-                if (strpos($urlOrPhone, '{{1}}') !== false) {
+                // Validar parámetros en URL
+                preg_match_all('/\{\{(.*?)\}\}/', $urlOrPhone, $matches);
+                $placeholders = $matches[1] ?? [];
+
+                // WhatsApp solo permite parámetros posicionales ({{1}}) en URLs de botones
+                foreach ($placeholders as $placeholder) {
+                    if (!is_numeric($placeholder)) {
+                        throw new InvalidArgumentException(
+                            "Parámetro no válido: '$placeholder'. Los botones URL solo admiten parámetros posicionales ({{1}})."
+                        );
+                    }
+                }
+
+                // Validar máximo un parámetro por botón
+                if (count($placeholders) > 1) {
+                    throw new InvalidArgumentException('Los botones URL solo pueden tener un único parámetro.');
+                }
+
+                // Validar que el parámetro sea {{1}}
+                if (!empty($placeholders) && $placeholders[0] !== '1') {
+                    throw new InvalidArgumentException('El parámetro del botón URL debe ser {{1}}.');
+                }
+
+                // Validar el ejemplo si hay parámetro
+                if (!empty($placeholders)) {
                     if (empty($example) || count($example) !== 1) {
                         throw new InvalidArgumentException('El campo "example" es obligatorio y debe contener exactamente un valor cuando la URL incluye un parámetro.');
                     }
