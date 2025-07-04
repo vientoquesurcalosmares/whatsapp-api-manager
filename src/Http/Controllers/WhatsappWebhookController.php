@@ -59,7 +59,7 @@ class WhatsappWebhookController extends Controller
         $value = $change['value'] ?? null;
         $field = $change['field'] ?? null;
 
-        if ($field === 'message_template') {
+        if ($field === 'message_template' or $field=== 'message_template_status_update') {
             $this->handleTemplateEvent($value);
             return response()->json(['success' => true]);
         }
@@ -900,6 +900,9 @@ class WhatsappWebhookController extends Controller
     {
         $event = $templateData['event'] ?? null;
         $templateId = $templateData['id'] ?? null;
+        if( empty($templateId) ) {
+            $templateId = $templateData['message_template_id'] ?? null;
+        }
 
         if (!$event || !$templateId) {
             Log::channel('whatsapp')->warning('Invalid template event payload.', $templateData);
@@ -929,15 +932,18 @@ class WhatsappWebhookController extends Controller
         }
     }
 
-    protected function handleTemplateStatusUpdate(array $status): void
+    protected function handleTemplateStatusUpdate(array $templateData): void
     {
-        $templateId = $status['id'] ?? null;
-        $newStatus = $status['event'] ?? null; // APPROVED, REJECTED, PENDING
-        $reason = $status['reason'] ?? null;
-        $components = $status['components'] ?? [];
+        $templateId = $templateData['id'] ?? null;
+        if( empty($templateId) ) {
+            $templateId = $templateData['message_template_id'] ?? null;
+        }
+        $newStatus = $templateData['event'] ?? null; // APPROVED, REJECTED, PENDING
+        $reason = $templateData['reason'] ?? null;
+        $components = $templateData['components'] ?? [];
 
         if (!$templateId || !$newStatus) {
-            Log::channel('whatsapp')->warning('Invalid template status update payload.', $status);
+            Log::channel('whatsapp')->warning('Invalid template status update payload.', $templateData);
             return;
         }
 
@@ -953,7 +959,7 @@ class WhatsappWebhookController extends Controller
         // Actualizar plantilla principal
         $template->update([
             'status' => $newStatus,
-            'rejection_reason' => $reason
+            //'rejection_reason' => $reason //No existe el cmapo rejection_reason en este modelo, solo en las versiones
         ]);
 
         // Crear nueva versión si hay cambios
@@ -970,7 +976,7 @@ class WhatsappWebhookController extends Controller
                 ]);
             } else {
                 // Caso excepcional: no hay versiones pero debemos crear una
-                $this->createTemplateVersion($template, array_merge($status, [
+                $this->createTemplateVersion($template, array_merge($templateData, [
                     'components' => $template->components->toArray() ?? []
                 ]));
             }
@@ -1023,6 +1029,9 @@ class WhatsappWebhookController extends Controller
     protected function handleTemplateCreation(array $templateData): void
     {
         $templateId = $templateData['id'] ?? null;
+        if( empty($templateId) ) {
+            $templateId = $templateData['message_template_id'] ?? null;
+        }
         $businessAccountId = $templateData['business_account_id'] ?? null;
         $name = $templateData['name'] ?? null;
         $language = $templateData['language'] ?? null;
@@ -1067,6 +1076,9 @@ class WhatsappWebhookController extends Controller
     protected function handleTemplateUpdate(array $templateData): void
     {
         $templateId = $templateData['id'] ?? null;
+        if( empty($templateId) ) {
+            $templateId = $templateData['message_template_id'] ?? null;
+        }
         $components = $templateData['components'] ?? [];
 
         if (!$templateId) {
@@ -1102,6 +1114,9 @@ class WhatsappWebhookController extends Controller
     protected function handleTemplateDeletion(array $templateData): void
     {
         $templateId = $templateData['id'] ?? null;
+        if( empty($templateId) ) {
+            $templateId = $templateData['message_template_id'] ?? null;
+        }
 
         if (!$templateId) {
             Log::channel('whatsapp')->warning('Missing template ID for deletion', $templateData);
@@ -1129,6 +1144,9 @@ class WhatsappWebhookController extends Controller
     protected function handleTemplateDisable(array $templateData): void
     {
         $templateId = $templateData['id'] ?? null;
+        if( empty($templateId) ) {
+            $templateId = $templateData['message_template_id'] ?? null;
+        }
 
         if (!$templateId) {
             Log::channel('whatsapp')->warning('Missing template ID for disable', $templateData);
