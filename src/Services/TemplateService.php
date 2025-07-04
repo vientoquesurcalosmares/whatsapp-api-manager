@@ -720,6 +720,13 @@ class TemplateService
         if (!in_array($templateData['category'], $validCategories)) {
             throw new InvalidArgumentException('Categoría inválida');
         }
+
+        if (isset($templateData['parameter_format'])) {
+            $validFormats = ['POSITIONAL', 'NAMED'];
+            if (!in_array($templateData['parameter_format'], $validFormats)) {
+                throw new InvalidArgumentException('Formato de parámetro inválido');
+            }
+        }
     }
 
     /**
@@ -914,7 +921,7 @@ class TemplateService
      * @return void
      * @throws InvalidArgumentException Si el archivo no es válido.
      */
-    protected function validateMediaFile(string $filePath, string $mimeType): void
+    public function validateMediaFile(string $filePath, string $mimeType): void
     {
         $fileSize = filesize($filePath);
         $mediaType = $this->getMediaTypeFromMimeType($mimeType);

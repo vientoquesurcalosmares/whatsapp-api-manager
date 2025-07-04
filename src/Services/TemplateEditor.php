@@ -2,7 +2,6 @@
 
 namespace ScriptDevelop\WhatsappManager\Services;
 
-//use ScriptDevelop\WhatsappManager\Models\Template;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use ScriptDevelop\WhatsappManager\Exceptions\TemplateComponentException;
@@ -52,6 +51,9 @@ class TemplateEditor extends TemplateBuilder
         $this->templateData['name'] = $this->template->name;
         $this->templateData['language'] = $this->template->language;
         $this->templateData['category'] = $this->template->category->name;
+        
+        // Cargar formato de parámetros existente
+        $this->parameterFormat = $this->templateData['parameter_format'] ?? 'POSITIONAL';
 
         // Inicializar contador de botones
         $this->buttonCount = $this->countExistingButtons();
@@ -95,10 +97,27 @@ class TemplateEditor extends TemplateBuilder
             $this->resetBuilder();
 
             return $this->template->fresh();
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            $response = $e->getResponse();
+            $responseBody = json_decode($response->getBody(), true);
+            $errorCode = $responseBody['error']['code'] ?? null;
+            $errorSubcode = $responseBody['error']['error_subcode'] ?? null;
+            
+            if ($errorCode === 100 && $errorSubcode === 2388023) {
+                throw new TemplateUpdateException(
+                    'No puedes actualizar una plantilla con el mismo nombre e idioma inmediatamente después de eliminar otra. ' .
+                    'Espera 4 semanas o usa un nombre diferente.'
+                );
+            }
+            
+            Log::channel('whatsapp')->error('Error de API al actualizar plantilla', [
+                'error' => $responseBody,
+                'status' => $response->getStatusCode()
+            ]);
+            throw $e;
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error actualizando plantilla: ' . $e->getMessage(), [
-                'template_id' => $this->template->id,
-                'exception' => $e
+            Log::channel('whatsapp')->error('Error general al actualizar plantilla', [
+                'error_message' => $e->getMessage(),
             ]);
             throw new TemplateUpdateException('Error actualizando plantilla: ' . $e->getMessage(), 0, $e);
         }
