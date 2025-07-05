@@ -37,7 +37,7 @@ class Template extends Model
 
     public function businessAccount()
     {
-        return $this->belongsTo(WhatsappBusinessAccount::class, 'whatsapp_business_id');
+        return $this->belongsTo(config('whatsapp.models.business_account'), 'whatsapp_business_id');
     }
 
     /**
@@ -45,23 +45,23 @@ class Template extends Model
      */
     public function category()
     {
-        return $this->belongsTo(TemplateCategory::class, 'category_id', 'category_id'); // Usar 'category_id'
+        return $this->belongsTo(config('whatsapp.models.template_category'), 'category_id', 'category_id'); // Usar 'category_id'
     }
 
     public function languageData()
     {
-        return $this->belongsTo(TemplateLanguage::class, 'language', 'id');
+        return $this->belongsTo(config('whatsapp.models.template_language'), 'language', 'id');
     }
 
     public function components()
     {
-        return $this->hasMany(TemplateComponent::class, 'template_id', 'template_id');
+        return $this->hasMany(config('whatsapp.models.template_component'), 'template_id', 'template_id');
     }
 
     public function flows()
     {
         return $this->belongsToMany(
-            WhatsappFlow::class, 'whatsapp_template_flows', 'template_id', 'flow_id'
+            config('whatsapp.models.flow'), 'whatsapp_template_flows', 'template_id', 'flow_id'
         );
     }
 
@@ -96,13 +96,13 @@ class Template extends Model
     // Relación con versiones
     public function versions()
     {
-        return $this->hasMany(TemplateVersion::class, 'template_id');
+        return $this->hasMany(config('whatsapp.models.template_version'), 'template_id');
     }
 
     // Relación con la última versión aprobada
     public function activeVersion()
     {
-        return $this->hasOne(TemplateVersion::class, 'template_id')
+        return $this->hasOne(config('whatsapp.models.template_version'), 'template_id')
             ->where('is_active', true);
     }
 

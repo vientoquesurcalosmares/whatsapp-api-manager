@@ -29,6 +29,6 @@ class Conversation extends Model
 
     public function messages()
     {
-        return $this->hasMany(Message::class, 'conversation_id');
+        return $this->hasMany(config('whatsapp.models.message'), 'conversation_id');
     }
 }

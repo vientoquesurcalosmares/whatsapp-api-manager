@@ -33,6 +33,6 @@ class WhatsappFlowEvent extends Model
 
     public function session()
     {
-        return $this->belongsTo(WhatsappFlowSession::class, 'session_id', 'flow_session_id');
+        return $this->belongsTo(config('whatsapp.models.flow_session'), 'session_id', 'flow_session_id');
     }
 }

@@ -973,7 +973,8 @@ class WhatsappWebhookController extends Controller
             if ($lastVersion) {
                 $lastVersion->update([
                     'status' => $newStatus,
-                    'rejection_reason' => $reason
+                    'rejection_reason' => $reason,
+                    'is_active' => ($templateData['event'] === 'APPROVED'),
                 ]);
             } else {
                 // Caso excepcional: no hay versiones pero debemos crear una

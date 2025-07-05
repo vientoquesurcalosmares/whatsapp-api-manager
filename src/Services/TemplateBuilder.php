@@ -292,13 +292,13 @@ class TemplateBuilder
             // Estructura diferente para parámetros NAMED vs POSITIONAL
             if ($this->parameterFormat === 'NAMED') {
                 $namedParams = [];
-                foreach ($placeholders as $paramName) {
-                    if (!isset($example[$paramName])) {
+                foreach ($placeholders as $key => $paramName) {
+                    if (!isset($example[$key])) {
                         throw new InvalidArgumentException("Falta valor para parámetro: $paramName");
                     }
                     $namedParams[] = [
                         'param_name' => $paramName,
-                        'example' => $example[$paramName],
+                        'example' => $example[$key],
                     ];
                 }
                 $formattedExample = ['body_text_named_params' => $namedParams];
@@ -644,7 +644,7 @@ class TemplateBuilder
     protected function validateNamedParameters(array $placeholders, ?array $example, string $type): void
     {
         foreach ($placeholders as $placeholder) {
-            if (!preg_match('/^[a-zA-Z_\$][a-zA-Z0-9_\$]*$/', $placeholder)) {
+            if (!preg_match('/^[a-z_][a-z0-9_]*$/', $placeholder)) {
                 throw new InvalidArgumentException(
                     "Nombre de parámetro inválido: '$placeholder'. Solo caracteres alfanuméricos y guiones bajos"
                 );
@@ -653,7 +653,8 @@ class TemplateBuilder
 
         if ($example) {
             $exampleKeys = array_keys($example);
-            $missingParams = array_diff($placeholders, $exampleKeys);
+            $placeholderKeys = array_keys($placeholders);
+            $missingParams = array_diff($placeholderKeys, $exampleKeys);
 
             if (!empty($missingParams)) {
                 throw new InvalidArgumentException(

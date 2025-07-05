@@ -26,6 +26,6 @@ class Website extends Model
 
     public function businessProfile()
     {
-        return $this->belongsTo(WhatsappBusinessProfile::class, 'whatsapp_business_profile_id');
+        return $this->belongsTo(config('whatsapp.models.business_profile'), 'whatsapp_business_profile_id');
     }
 }

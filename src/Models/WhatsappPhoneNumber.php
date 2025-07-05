@@ -43,18 +43,18 @@ class WhatsappPhoneNumber extends Model
 
     public function messages()
     {
-        return $this->hasMany(Message::class, 'whatsapp_phone_id');
+        return $this->hasMany(config('whatsapp.models.message'), 'whatsapp_phone_id');
     }
 
     public function businessAccount()
     {
-        return $this->belongsTo(WhatsappBusinessAccount::class, 'whatsapp_business_account_id');
+        return $this->belongsTo(config('whatsapp.models.business_account'), 'whatsapp_business_account_id');
     }
 
     public function businessProfile()
     {
         return $this->belongsTo(
-            WhatsappBusinessProfile::class,
+            config('whatsapp.models.business_profile'),
             'whatsapp_business_profile_id',
             'whatsapp_business_profile_id'
         );
@@ -62,7 +62,7 @@ class WhatsappPhoneNumber extends Model
 
     public function contacts()
     {
-        return $this->hasMany(Contact::class)
+        return $this->hasMany(config('whatsapp.models.contact'))
                     ->whereHas('whatsapp_messages', function ($query) {
                         $query->where('whatsapp_phone_id', $this->phone_number_id);
                     })
@@ -71,6 +71,6 @@ class WhatsappPhoneNumber extends Model
 
     public function blockedUsers()
     {
-        return $this->hasMany(BlockedUser::class, 'phone_number_id');
+        return $this->hasMany(config('whatsapp.models.blocked_user'), 'phone_number_id');
     }
 }

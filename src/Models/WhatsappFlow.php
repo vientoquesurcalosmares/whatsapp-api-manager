@@ -51,13 +51,13 @@ class WhatsappFlow extends Model
 
     public function screens()
     {
-        return $this->hasMany(WhatsappFlowScreen::class, 'flow_id', 'flow_id');
+        return $this->hasMany(config('whatsapp.models.flow_screen'), 'flow_id', 'flow_id');
     }
 
     public function templates()
     {
         return $this->belongsToMany(
-            Template::class,
+            config('whatsapp.models.template'),
             'whatsapp_template_flows',
             'flow_id',
             'template_id'
@@ -66,13 +66,13 @@ class WhatsappFlow extends Model
 
     public function sessions()
     {
-        return $this->hasMany(WhatsappFlowSession::class, 'flow_id', 'flow_id');
+        return $this->hasMany(config('whatsapp.models.flow_session'), 'flow_id', 'flow_id');
     }
 
     public function whatsappBusinessAccount()
     {
         return $this->belongsTo(
-            WhatsappBusinessAccount::class,
+            config('whatsapp.models.business_account'),
             'whatsapp_business_account_id',
             'whatsapp_business_id'
         );

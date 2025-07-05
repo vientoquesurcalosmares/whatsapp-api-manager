@@ -38,11 +38,11 @@ class WhatsappBusinessAccount extends Model
 
     public function phoneNumbers()
     {
-        return $this->hasMany(WhatsappPhoneNumber::class, 'whatsapp_business_account_id', 'whatsapp_business_id');
+        return $this->hasMany(config('whatsapp.models.phone_number'), 'whatsapp_business_account_id', 'whatsapp_business_id');
     }
 
     public function templates()
     {
-        return $this->hasMany(Template::class, 'whatsapp_business_id');
+        return $this->hasMany(config('whatsapp.models.template'), 'whatsapp_business_id');
     }
 }

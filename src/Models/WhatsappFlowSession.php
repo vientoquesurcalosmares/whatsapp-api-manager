@@ -35,16 +35,16 @@ class WhatsappFlowSession extends Model
 
     public function flow()
     {
-        return $this->belongsTo(WhatsappFlow::class, 'flow_id', 'flow_id');
+        return $this->belongsTo(config('whatsapp.models.flow'), 'flow_id', 'flow_id');
     }
 
     public function responses()
     {
-        return $this->hasMany(WhatsappFlowResponse::class, 'session_id', 'flow_session_id');
+        return $this->hasMany(config('whatsapp.models.flow_response'), 'session_id', 'flow_session_id');
     }
 
     public function events()
     {
-        return $this->hasMany(WhatsappFlowEvent::class, 'session_id', 'flow_session_id');
+        return $this->hasMany(config('whatsapp.models.flow_event'), 'session_id', 'flow_session_id');
     }
 }

@@ -30,11 +30,11 @@ class WhatsappFlowResponse extends Model
 
     public function session()
     {
-        return $this->belongsTo(WhatsappFlowSession::class, 'session_id', 'flow_session_id');
+        return $this->belongsTo(config('whatsapp.models.flow_session'), 'session_id', 'flow_session_id');
     }
 
     public function screen()
     {
-        return $this->belongsTo(WhatsappFlowScreen::class, 'screen_id', 'screen_id');
+        return $this->belongsTo(config('whatsapp.models.flow_screen'), 'screen_id', 'screen_id');
     }
 }

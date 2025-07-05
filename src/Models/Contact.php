@@ -54,7 +54,7 @@ class Contact extends Model
 
     public function messages()
     {
-        return $this->hasMany(Message::class, 'contact_id');
+        return $this->hasMany(config('whatsapp.models.message'), 'contact_id');
     }
 
     public function latestMessage($phoneNumberId)
@@ -81,7 +81,7 @@ class Contact extends Model
 
     public function blockedStatuses()
     {
-        return $this->hasMany(BlockedUser::class, 'contact_id');
+        return $this->hasMany(config('whatsapp.models.blocked_user'), 'contact_id');
     }
 
     public function isBlockedOn(string $phoneNumberId): bool
@@ -97,7 +97,7 @@ class Contact extends Model
         if ($this->isBlockedOn($phoneNumberId)) {
             return false;
         }
-        
+
         $service = app(BlockService::class);
         $response = $service->blockUsers($phoneNumberId, [$this->wa_id]);
         return $response['success'] ?? false;
@@ -108,7 +108,7 @@ class Contact extends Model
         if (!$this->isBlockedOn($phoneNumberId)) {
             return false;
         }
-        
+
         $service = app(BlockService::class);
         $response = $service->unblockUsers($phoneNumberId, [$this->wa_id]);
         return $response['success'] ?? false;
