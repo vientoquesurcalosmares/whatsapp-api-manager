@@ -743,7 +743,7 @@ class MessageDispatcherService
         $mediaInfo = $this->retrieveMediaInfo($phoneNumberModel, $fileId);
 
         // Descargar el archivo desde la URL proporcionada por la API
-        $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $file->getFilename(), 'audio');
+        $localFilePath = $this->downloadMedia($phoneNumberModel, $mediaInfo['url'], $file->getFilename(), 'audios');
 
         // Resolver el contacto
         $contact = $this->resolveContact($countryCode, $phoneNumber);
