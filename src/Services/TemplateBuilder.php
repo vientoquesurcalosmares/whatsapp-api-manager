@@ -308,9 +308,10 @@ class TemplateBuilder
                 preg_match_all('/{{(.*?)}}/', $text, $matches);
 
                 foreach ($matches[1] as $paramName) {
-                    if (isset($example[$paramName])) {
+                    //Nota Cuau: Se intentaba acceder al índice 1 y no al 0, el bloque despues de estas líneas comentadas si hace bien eso de acceder al índice 0 restando 1, revisar si es necesario!
+                    /*if (isset($example[$paramName])) {
                         $orderedExample[] = $example[$paramName];
-                    } else {
+                    } else*/ {
                         // Para compatibilidad con arrays indexados
                         $index = (int)$paramName - 1;
                         if (isset($example[$index])) {
@@ -451,7 +452,7 @@ class TemplateBuilder
                     if (empty($example) || count($example) !== 1) {
                         throw new InvalidArgumentException('El campo "example" es obligatorio y debe contener exactamente un valor cuando la URL incluye un parámetro.');
                     }
-                    
+
                     // CORRECCIÓN CRÍTICA: Convertir a array simple siempre
                     $button['example'] = array_values($example);
                 }
