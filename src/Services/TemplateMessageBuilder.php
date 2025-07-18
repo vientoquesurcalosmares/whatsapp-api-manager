@@ -240,11 +240,10 @@ class TemplateMessageBuilder
 
 
 
-    public function addButton(string $buttonText, array $parameter): self
+    public function addButton(string $buttonText, array $parameter = []): self
     {
         $this->ensureTemplateStructureLoaded();
 
-        // Crear mapa texto->índice si no existe
         if (empty($this->buttonTextIndexMap)) {
             $buttonsComponent = $this->templateStructure['by_type']['BUTTONS'] ?? 
                                 $this->templateStructure['by_type']['buttons'] ?? 
@@ -262,9 +261,7 @@ class TemplateMessageBuilder
             throw new InvalidArgumentException("La plantilla no contiene botones.");
         }
 
-        // Normalizar el texto del botón buscado
         $normalizedButtonText = strtolower(trim($buttonText));
-        
         if (!isset($this->buttonTextIndexMap[$normalizedButtonText])) {
             $availableButtons = implode("', '", array_keys($this->buttonTextIndexMap));
             throw new InvalidArgumentException(
@@ -279,41 +276,31 @@ class TemplateMessageBuilder
             throw new InvalidArgumentException("Botón '$buttonText' no encontrado en la estructura.");
         }
 
-        // Validar que sea botón URL
         if (strtoupper($button['type'] ?? '') !== 'URL') {
             throw new InvalidArgumentException("Solo botones URL pueden tener parámetros.");
         }
 
-        // Extraer placeholders de la URL
         preg_match_all('/{{(.*?)}}/', $button['url'] ?? '', $matches);
         $placeholders = $matches[1] ?? [];
 
-        // Validar que sea parámetro posicional
-        foreach ($placeholders as $placeholder) {
-            if (!is_numeric($placeholder)) {
-                throw new InvalidArgumentException(
-                    "Botones URL solo admiten parámetros posicionales ({{1}}). Se encontró: {{$placeholder}}"
-                );
+        if (!empty($placeholders)) {
+            // Botón dinámico: requiere parámetro
+            if (count($parameter) !== 1 || empty($parameter[0])) {
+                throw new InvalidArgumentException("El botón '$buttonText' requiere un parámetro dinámico para la URL (ejemplo: ->addButton('Visit website', ['valor'])).");
             }
+            $this->buttonParameters[$buttonIndex] = [
+                [
+                    'type' => 'text',
+                    'text' => $parameter[0]
+                ]
+            ];
+        } else {
+            // Botón estático: NO debe recibir parámetros
+            if (!empty($parameter)) {
+                throw new InvalidArgumentException("El botón '$buttonText' tiene una URL estática y no debe recibir parámetros.");
+            }
+            $this->buttonParameters[$buttonIndex] = [];
         }
-
-        // Validar máximo 1 parámetro
-        if (count($placeholders) > 1) {
-            throw new InvalidArgumentException("Los botones URL solo pueden tener un parámetro.");
-        }
-
-        // Asegurar que el parámetro sea un array con un solo elemento
-        if (count($parameter) !== 1) {
-            throw new InvalidArgumentException("Debe proporcionar exactamente un valor para el botón.");
-        }
-
-        // Crear parámetro en formato POSITIONAL (siempre)
-        $this->buttonParameters[$buttonIndex] = [
-            [
-                'type' => 'text',
-                'text' => $parameter[0]
-            ]
-        ];
 
         return $this;
     }
@@ -321,25 +308,23 @@ class TemplateMessageBuilder
     protected function buildButtonComponents(): array
     {
         $buttonComponents = [];
-        
+
         if (empty($this->templateStructure['by_type']['BUTTONS']['buttons'])) {
             return [];
         }
 
-        $buttons = $this->templateStructure['by_type']['BUTTONS']['buttons'];
+        foreach ($this->templateStructure['by_type']['BUTTONS']['buttons'] as $index => $button) {
+            $type = strtoupper($button['type'] ?? '');
+            if ($type !== 'URL') {
+                continue;
+            }
 
-        foreach ($buttons as $index => $button) {
-            if (!isset($this->buttonParameters[$index])) continue;
-            
-            $buttonType = strtoupper($button['type'] ?? '');
-            $subType = strtolower($buttonType);
+            $needsParams = preg_match('/\{\{\d+\}\}/', $button['url'] ?? '');
 
-            // Solo botones URL con parámetros
-            if ($buttonType === 'URL') {
-                // CORRECCIÓN: Usar directamente los parámetros ya formateados
+            if ($needsParams && isset($this->buttonParameters[$index])) {
                 $buttonComponents[] = [
                     'type' => 'button',
-                    'sub_type' => $subType,
+                    'sub_type' => 'url',
                     'index' => (string)$index,
                     'parameters' => $this->buttonParameters[$index]
                 ];
@@ -413,8 +398,18 @@ class TemplateMessageBuilder
             throw new InvalidArgumentException('El identificador de la plantilla es obligatorio.');
         }
 
-        if (empty($this->components)) {
-            throw new InvalidArgumentException('Debe incluir al menos un componente en el mensaje.');
+        // ✅ Permitir envíos sin componentes si la plantilla no tiene placeholders
+        $hasHeaderPlaceholders = !empty($this->templateStructure['placeholders']['HEADER']);
+        $hasBodyPlaceholders = !empty($this->templateStructure['placeholders']['BODY']);
+        $hasFooterText = !empty($this->components['FOOTER']['text']);
+        $hasButtons = !empty($this->templateStructure['by_type']['BUTTONS']['buttons']);
+
+        $hasDynamicComponents = $hasHeaderPlaceholders || $hasBodyPlaceholders || $hasFooterText;
+        $hasUserComponents = !empty($this->components) || !empty($this->buttonParameters);
+
+        // ❌ Solo exigir componentes si la plantilla tiene placeholders dinámicos
+        if ($hasDynamicComponents && !$hasUserComponents) {
+            throw new InvalidArgumentException('Debes incluir al menos un componente dinámico en el mensaje.');
         }
     }
 
@@ -605,32 +600,46 @@ class TemplateMessageBuilder
     {
         $components = [];
 
-        // Procesar HEADER, BODY, FOOTER
-        foreach ($this->templateStructure['components'] ?? [] as $componentDef) {
-            $componentType = strtoupper($componentDef['type'] ?? '');
-            
-            if (isset($this->components[$componentType])) {
+        // Solo agrega HEADER, BODY, FOOTER si el usuario los personalizó
+        foreach (['HEADER', 'BODY', 'FOOTER'] as $componentType) {
+            if (isset($this->components[$componentType]) && !empty($this->components[$componentType]['parameters'])) {
                 $components[] = [
                     'type' => strtolower($componentType),
-                    'parameters' => $this->components[$componentType]['parameters'] ?? []
+                    'parameters' => $this->components[$componentType]['parameters']
                 ];
             }
         }
 
-        // Procesar botones dinámicos
+        // ✅ Solo agrega botones si la plantilla tiene placeholders o el usuario los define
         $buttonComponents = $this->buildButtonComponents();
-        $components = array_merge($components, $buttonComponents);
+        if (!empty($buttonComponents)) {
+            $components = array_merge($components, $buttonComponents);
+        }
 
-        $payload = [
-            'messaging_product' => 'whatsapp',
-            'to' => $this->phoneNumber,
-            'type' => 'template',
-            'template' => [
-                'name' => $this->templateIdentifier,
-                'language' => ['code' => $this->language],
-                'components' => $components
-            ]
-        ];
+        // ✅ Si no hay componentes ni placeholders, envía sin "components"
+        if (empty($components)) {
+            $payload = [
+                'messaging_product' => 'whatsapp',
+                'to' => $this->phoneNumber,
+                'type' => 'template',
+                'template' => [
+                    'name' => $this->templateIdentifier,
+                    'language' => ['code' => $this->language],
+                    // ❌ Sin "components"
+                ]
+            ];
+        } else {
+            $payload = [
+                'messaging_product' => 'whatsapp',
+                'to' => $this->phoneNumber,
+                'type' => 'template',
+                'template' => [
+                    'name' => $this->templateIdentifier,
+                    'language' => ['code' => $this->language],
+                    'components' => $components
+                ]
+            ];
+        }
 
         Log::channel('whatsapp')->info('Payload construido para el mensaje de plantilla.', ['payload' => $payload]);
 
