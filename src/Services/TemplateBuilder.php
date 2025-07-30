@@ -782,7 +782,7 @@ class TemplateBuilder
                     $headers
                 );
 
-                // Crear el registro de la plantilla en la base de datos
+                // Actualizar el registro con los datos completos que incluyen URLs
                 $template->update([
                     'status' => $fullTemplateResponse['status'] ?? 'PENDING',
                     'json' => json_encode($fullTemplateResponse, JSON_UNESCAPED_UNICODE),
