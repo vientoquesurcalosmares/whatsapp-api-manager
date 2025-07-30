@@ -767,6 +767,38 @@ class TemplateBuilder
             // Crear versión inicial
             $this->createInitialVersion($template, $response);
 
+            try {
+                $endpoint = Endpoints::build(Endpoints::GET_TEMPLATE, [
+                    'template_id' => $response['id'],
+                ]);
+
+                $headers = [
+                    'Authorization' => 'Bearer ' . $this->account->api_token,
+                ];
+
+                $fullTemplateResponse = $this->apiClient->request(
+                    'GET',
+                    $endpoint,
+                    [],
+                    null,
+                    [],
+                    $headers
+                );
+
+                // Actualizar el registro con los datos completos que incluyen URLs
+                $template->update([
+                    'json' => json_encode($fullTemplateResponse, JSON_UNESCAPED_UNICODE)
+                ]);
+                
+            } catch (\Exception $e) {
+                Log::channel('whatsapp')->error('Error al obtener detalles completos de la plantilla', [
+                    'template_id' => $response['id'] ?? 'unknown',
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+
+
             // Reiniciar el estado del builder
             $this->templateData = ['components' => []];
             $this->buttonCount = 0;
