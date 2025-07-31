@@ -997,7 +997,7 @@ class WhatsappWebhookController extends Controller
         $reason = $templateData['reason'] ?? null;
 
         // Calcular hash del contenido
-        $contentHash = sha1(json_encode($components));
+        $contentHash = md5(json_encode($components));
 
         // Verificar si ya existe una versión con este hash
         $existingVersion = $template->versions()

@@ -764,9 +764,6 @@ class TemplateBuilder
                 'json' => json_encode($this->templateData, JSON_UNESCAPED_UNICODE),
             ]);
 
-            // Crear versión inicial
-            $this->createInitialVersion($template, $response);
-
             try {
                 $endpoint = Endpoints::build(Endpoints::GET_TEMPLATE, [
                     'template_id' => $response['id'],
@@ -787,16 +784,19 @@ class TemplateBuilder
 
                 // Actualizar el registro con los datos completos que incluyen URLs
                 $template->update([
-                    'json' => json_encode($fullTemplateResponse, JSON_UNESCAPED_UNICODE)
+                    'status' => $fullTemplateResponse['status'] ?? 'PENDING',
+                    'json' => json_encode($fullTemplateResponse, JSON_UNESCAPED_UNICODE),
                 ]);
-                
+
+                // Crear versión inicial
+                $this->createInitialVersion($template, $fullTemplateResponse);
+
             } catch (\Exception $e) {
                 Log::channel('whatsapp')->error('Error al obtener detalles completos de la plantilla', [
                     'template_id' => $response['id'] ?? 'unknown',
                     'error' => $e->getMessage()
                 ]);
             }
-
 
 
             // Reiniciar el estado del builder
@@ -838,8 +838,8 @@ class TemplateBuilder
     {
         return WhatsappModelResolver::template_version()->create([
             'template_id' => $template->template_id,
-            'version_hash' => md5(json_encode($this->templateData['components'])),
-            'template_structure' => $this->templateData['components'],
+            'version_hash' => md5(json_encode($apiResponse['components'])),
+            'template_structure' => $apiResponse['components'],
             'status' => $apiResponse['status'] ?? 'PENDING',
             'is_active' => ($apiResponse['status'] === 'APPROVED'),
         ]);
