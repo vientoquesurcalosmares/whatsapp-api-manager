@@ -3,6 +3,7 @@
 namespace ScriptDevelop\WhatsappManager\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Contracts\Console\Kernel;
 use ScriptDevelop\WhatsappManager\Services\WhatsappManager;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\Services\AccountRegistrationService;
@@ -142,6 +143,27 @@ class WhatsappServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole() && $this->isPublishing()) {
             $this->createStorageDirectories();
             $this->createStorageLink();
+        }
+
+        if ($this->app->runningInConsole()) {
+            // Comprobamos si el archivo de configuración principal NO existe.
+            // Si no existe, es muy probable que el paquete se acabe de instalar.
+            if (!file_exists(config_path('whatsapp.php'))) {
+                // Usamos el evento 'booted' para asegurarnos de que la consola está lista.
+                $this->app->booted(function () {
+                    // Obtenemos el output de la consola para poder escribir en ella.
+                    $output = new \Symfony\Component\Console\Output\ConsoleOutput();
+
+                    $output->writeln(''); // Línea en blanco para espaciar
+                    $output->writeln('<info>******************************************************************</info>');
+                    $output->writeln('<comment>*  🎉 ¡Gracias por instalar WhatsApp API Manager! 🎉             *</comment>');
+                    $output->writeln('<comment>*  Para continuar, publica los archivos del paquete con:        *</comment>');
+                    $output->writeln('<comment>*  <fg=cyan>php artisan vendor:publish --tag=whatsapp-config</>                 *</comment>');
+                    $output->writeln('<comment>*  Si te es útil, considera darle una estrella en GitHub:       *</comment>');
+                    $output->writeln('<fg=blue>*  🌟 https://github.com/djdang3r/whatsapp-api-manager 🌟       *</>');
+                    $output->writeln('<info>******************************************************************</info>');
+                });
+            }
         }
     }
 
