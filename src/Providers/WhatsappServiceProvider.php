@@ -146,22 +146,44 @@ class WhatsappServiceProvider extends ServiceProvider
         }
 
         if ($this->app->runningInConsole()) {
-            // Comprobamos si el archivo de configuración principal NO existe.
-            // Si no existe, es muy probable que el paquete se acabe de instalar.
             if (!file_exists(config_path('whatsapp.php'))) {
-                // Usamos el evento 'booted' para asegurarnos de que la consola está lista.
                 $this->app->booted(function () {
-                    // Obtenemos el output de la consola para poder escribir en ella.
                     $output = new \Symfony\Component\Console\Output\ConsoleOutput();
 
-                    $output->writeln(''); // Línea en blanco para espaciar
-                    $output->writeln('<info>******************************************************************</info>');
-                    $output->writeln('<comment>*  🎉 ¡Gracias por instalar WhatsApp API Manager! 🎉             *</comment>');
-                    $output->writeln('<comment>*  Para continuar, publica los archivos del paquete con:        *</comment>');
-                    $output->writeln('<comment>*  <fg=cyan>php artisan vendor:publish --tag=whatsapp-config</>                 *</comment>');
-                    $output->writeln('<comment>*  Si te es útil, considera darle una estrella en GitHub:       *</comment>');
-                    $output->writeln('<fg=blue>*  🌟 https://github.com/djdang3r/whatsapp-api-manager 🌟       *</>');
-                    $output->writeln('<info>******************************************************************</info>');
+                    // --- MENSAJE CON FORMATO MEJORADO ---
+
+                    // Espacio en blanco superior para separar del output de Composer
+                    $output->writeln('');
+
+                    // Borde superior verde
+                    $output->writeln('  <bg=green;fg=white> SUCCESS </> <fg=green>WhatsApp API Manager instalado correctamente.</>');
+                    
+                    // Espacio
+                    $output->writeln('');
+
+                    // Cuerpo del mensaje en amarillo (comentario)
+                    $output->writeln('  <fg=yellow>🎉 ¡Gracias por elegir nuestro paquete! 🎉</>');
+                    
+                    // Espacio
+                    $output->writeln('');
+
+                    // Instrucciones con el comando resaltado en cian
+                    $output->writeln('  <options=bold>Siguientes Pasos:</>');
+                    $output->writeln('  <fg=yellow>1. Publica los archivos de configuración y migraciones ejecutando:</>');
+                    $output->writeln('     <fg=cyan>php artisan vendor:publish --provider="ScriptDevelop\WhatsappManager\Providers\WhatsappServiceProvider"</>');
+                    
+                    // Espacio
+                    $output->writeln('');
+
+                    // Mensaje de apoyo con el enlace formateado
+                    $output->writeln('  <fg=yellow>2. Si este paquete te es útil, considera darle una estrella en GitHub.</>');
+                    $output->writeln('     <fg=yellow>Tu apoyo nos ayuda a crecer y mejorar.</>');
+                    
+                    // Enlace formateado para que parezca un link clickeable
+                    $output->writeln('     <fg=blue;options=underscore>https://github.com/djdang3r/whatsapp-api-manager</>');
+                    
+                    // Espacio en blanco inferior
+                    $output->writeln('');
                 });
             }
         }
