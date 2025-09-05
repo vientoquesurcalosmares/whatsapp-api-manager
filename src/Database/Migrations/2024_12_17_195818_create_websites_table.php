@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('whatsapp_websites', function (Blueprint $table) {
             $table->ulid('website_id')->primary();
-            $table->foreignUuid('whatsapp_business_profile_id')
+            $table->foreignUlid('whatsapp_business_profile_id')
                 ->constrained(
-                    table: 'whatsapp_business_profiles', 
-                    column: 'whatsapp_business_profile_id'
+                    'whatsapp_business_profiles',
+                    'whatsapp_business_profile_id'
                 )
                 ->onDelete('cascade')
-                ->index(); 
+                ->index();
             $table->string('website', 512);
             $table->timestamps();
             $table->softDeletes();
