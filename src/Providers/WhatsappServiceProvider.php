@@ -148,42 +148,7 @@ class WhatsappServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             if (!file_exists(config_path('whatsapp.php'))) {
                 $this->app->booted(function () {
-                    $output = new \Symfony\Component\Console\Output\ConsoleOutput();
-
-                    // --- MENSAJE CON FORMATO MEJORADO ---
-
-                    // Espacio en blanco superior para separar del output de Composer
-                    $output->writeln('');
-
-                    // Borde superior verde
-                    $output->writeln('  <bg=green;fg=white> SUCCESS </> <fg=green>WhatsApp API Manager instalado correctamente.</>');
                     
-                    // Espacio
-                    $output->writeln('');
-
-                    // Cuerpo del mensaje en amarillo (comentario)
-                    $output->writeln('  <fg=yellow>🎉 ¡Gracias por elegir nuestro paquete! 🎉</>');
-                    
-                    // Espacio
-                    $output->writeln('');
-
-                    // Instrucciones con el comando resaltado en cian
-                    $output->writeln('  <options=bold>Siguientes Pasos:</>');
-                    $output->writeln('  <fg=yellow>1. Publica los archivos de configuración y migraciones ejecutando:</>');
-                    $output->writeln('     <fg=cyan>php artisan vendor:publish --provider="ScriptDevelop\WhatsappManager\Providers\WhatsappServiceProvider"</>');
-                    
-                    // Espacio
-                    $output->writeln('');
-
-                    // Mensaje de apoyo con el enlace formateado
-                    $output->writeln('  <fg=yellow>2. Si este paquete te es útil, considera darle una estrella en GitHub.</>');
-                    $output->writeln('     <fg=yellow>Tu apoyo nos ayuda a crecer y mejorar.</>');
-                    
-                    // Enlace formateado para que parezca un link clickeable
-                    $output->writeln('     <fg=blue;options=underscore>https://github.com/djdang3r/whatsapp-api-manager</>');
-                    
-                    // Espacio en blanco inferior
-                    $output->writeln('');
                 });
             }
         }

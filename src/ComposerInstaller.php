@@ -8,39 +8,39 @@ class ComposerInstaller
 {
     public static function postInstall(Event $event)
     {
-        self::showMessage($event, 'install');
+        self::showMessage($event);
     }
 
     public static function postUpdate(Event $event)
     {
-        self::showMessage($event, 'update');
+        self::showMessage($event);
     }
 
-    private static function showMessage(Event $event, $type)
+    private static function showMessage(Event $event)
     {
-        // Verifica si el paquete actual es el que se está instalando/actualizando
-        $composer = $event->getComposer();
-        $package = $composer->getPackage();
-        if ($package->getName() === 'tu-vendor/whatsapp-manager') {
-            $output = $event->getIO();
-
-            $output->write("\n");
-            $output->write("  <bg=green;fg=white> SUCCESS </> <fg=green>WhatsApp API Manager instalado correctamente.</>");
-            $output->write("\n\n");
-            $output->write("  <fg=yellow>🎉 ¡Gracias por elegir nuestro paquete! 🎉</>");
-            $output->write("\n\n");
-            $output->write("  <options=bold>Siguientes Pasos:</>");
-            $output->write("\n");
-            $output->write("  <fg=yellow>1. Publica los archivos de configuración y migraciones ejecutando:</>");
-            $output->write("\n");
-            $output->write("     <fg=cyan>php artisan vendor:publish --provider=\"ScriptDevelop\\WhatsappManager\\Providers\\WhatsappServiceProvider\"</>");
-            $output->write("\n\n");
-            $output->write("  <fg=yellow>2. Si este paquete te es útil, considera darle una estrella en GitHub.</>");
-            $output->write("\n");
-            $output->write("     <fg=yellow>Tu apoyo nos ayuda a crecer y mejorar.</>");
-            $output->write("\n");
-            $output->write("     <fg=blue;options=underscore>https://github.com/djdang3r/whatsapp-api-manager</>");
-            $output->write("\n\n");
-        }
+        $io = $event->getIO();
+        
+        // Espacio en blanco superior
+        $io->write('');
+        
+        // Mensaje de éxito
+        $io->write('  <bg=green;fg=white> SUCCESS </> <fg=green>WhatsApp API Manager instalado correctamente.</>');
+        $io->write('');
+        
+        // Mensaje de agradecimiento
+        $io->write('  <fg=yellow>🎉 ¡Gracias por elegir nuestro paquete! 🎉</>');
+        $io->write('');
+        
+        // Instrucciones
+        $io->write('  <options=bold>Siguientes Pasos:</>');
+        $io->write('  <fg=yellow>1. Publica los archivos de configuración y migraciones ejecutando:</>');
+        $io->write('     <fg=cyan>php artisan vendor:publish --provider="ScriptDevelop\\WhatsappManager\\Providers\\WhatsappServiceProvider"</>');
+        $io->write('');
+        
+        // Mensaje de apoyo
+        $io->write('  <fg=yellow>2. Si este paquete te es útil, considera darle una estrella en GitHub.</>');
+        $io->write('     <fg=yellow>Tu apoyo nos ayuda a crecer y mejorar.</>');
+        $io->write('     <fg=blue;options=underscore>https://github.com/djdang3r/whatsapp-api-manager</>');
+        $io->write('');
     }
 }
