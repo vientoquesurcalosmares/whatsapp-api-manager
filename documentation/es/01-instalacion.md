@@ -98,6 +98,11 @@ Antes de instalar el paquete, necesitarás una cuenta de WhatsApp API Cloud:
     WHATSAPP_VERIFY_TOKEN=your-verify-token
     WHATSAPP_USER_MODEL=App\Models\User
     WHATSAPP_BROADCAST_CHANNEL_TYPE=private
+
+    META_CLIENT_ID=123456789012345
+    META_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    META_REDIRECT_URI=https://tudominio.com/meta/callback
+    META_SCOPES=whatsapp_business_management,whatsapp_business_messaging
     ```
 ---
 
@@ -184,6 +189,8 @@ Antes de instalar el paquete, necesitarás una cuenta de WhatsApp API Cloud:
 3. Expón tu servidor local:
     ```sh
     ngrok http http://localhost:8000
+    
+    ngrok http --host-header=rewrite 8000
     ```
 4. Usa la URL generada por ngrok como tu webhook en Meta:
     ```sh

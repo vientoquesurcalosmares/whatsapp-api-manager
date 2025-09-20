@@ -312,4 +312,19 @@ return [
         // bot_anable: Habilita o deshabilita el bot
         'bot_enable' => false,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Configuración de Meta OAuth
+    |--------------------------------------------------------------------------
+    |
+    | Credenciales y parámetros para la autenticación con Meta/Facebook.
+    |
+    */
+    'meta_auth' => [
+        'client_id'     => env('META_CLIENT_ID'),
+        'client_secret' => env('META_CLIENT_SECRET'),
+        'redirect_uri'  => env('META_REDIRECT_URI', route('meta.callback')),
+        'scopes'        => env('META_SCOPES', 'whatsapp_business_management,whatsapp_business_messaging'),
+    ],
 ];
