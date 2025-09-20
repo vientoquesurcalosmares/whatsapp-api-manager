@@ -324,7 +324,7 @@ return [
     'meta_auth' => [
         'client_id'     => env('META_CLIENT_ID'),
         'client_secret' => env('META_CLIENT_SECRET'),
-        'redirect_uri'  => env('META_REDIRECT_URI', route('meta.callback')),
+        'redirect_uri'  => env('META_REDIRECT_URI'),
         'scopes'        => env('META_SCOPES', 'whatsapp_business_management,whatsapp_business_messaging'),
     ],
 ];
