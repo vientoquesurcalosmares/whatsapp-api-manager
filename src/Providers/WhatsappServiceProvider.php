@@ -87,6 +87,24 @@ class WhatsappServiceProvider extends ServiceProvider
                 $app->make(ApiClient::class)
             );
         });
+
+        // Registrar el procesador de webhook con valor por defecto
+        $this->app->bind(
+            \ScriptDevelop\WhatsappManager\Contracts\WebhookProcessorInterface::class,
+            function () {
+                $processorClass = config('whatsapp.webhook.processor', 
+                    \ScriptDevelop\WhatsappManager\Services\WebhookProcessors\BaseWebhookProcessor::class
+                );
+                
+                // Verificar si la clase existe y es instanciable
+                if (class_exists($processorClass)) {
+                    return new $processorClass();
+                }
+                
+                // Fallback a la implementación por defecto
+                return new \ScriptDevelop\WhatsappManager\Services\WebhookProcessors\BaseWebhookProcessor();
+            }
+        );
     }
 
     public function boot()
@@ -124,6 +142,13 @@ class WhatsappServiceProvider extends ServiceProvider
 
         // Cargar rutas automáticamente
         $this->loadRoutesFrom(__DIR__ . '/../routes/whatsapp_webhook.php');
+
+         if ($this->app->runningInConsole()) {
+            $this->commands([
+                CheckUserModel::class,
+                \ScriptDevelop\WhatsappManager\Console\Commands\PublishWebhookProcessor::class, // Agrega esta línea
+            ]);
+        }
 
         // Registrar comandos de consola
         if ($this->app->runningInConsole()) {

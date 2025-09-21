@@ -213,6 +213,9 @@ return [
     'webhook' => [
         // Token de verificación para el webhook
         'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
+
+        // Procesador personalizado para webhooks (valor por defecto)
+        'processor' => \ScriptDevelop\WhatsappManager\Services\WebhookProcessors\BaseWebhookProcessor::class,
     ],
 
     /*
