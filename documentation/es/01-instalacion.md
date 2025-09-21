@@ -212,6 +212,301 @@ Antes de instalar el paquete, necesitarás una cuenta de WhatsApp API Cloud:
 
 
 
+
+## Personalización de Modelos y Webhook
+
+**Tabla de Contenidos**
+1. Personalización de Modelos
+2. Personalización del Webhook
+3. Ejemplos Avanzados
+4. Solución de Problemas
+
+
+**Personalización de Modelos**
+**📊 Introducción**
+El paquete WhatsApp API Manager permite personalizar completamente los modelos de base de datos para adaptarse a la estructura de tu aplicación. Puedes extender, modificar o reemplazar cualquier modelo del paquete.
+
+**🔧 Configuración Básica**
+Para personalizar un modelo, modifica el archivo config/whatsapp.php:
+
+```php
+'models' => [
+    'contact' => \App\Models\CustomContact::class,
+    'message' => \App\Models\CustomMessage::class,
+    // ... otros modelos
+],
+```
+
+**🛠 Crear un Modelo Personalizado**
+1. Extender el modelo base (recomendado):
+
+```php
+namespace App\Models;
+
+use ScriptDevelop\WhatsappManager\Models\Contact as BaseContact;
+
+class CustomContact extends BaseContact
+{
+    protected $table = 'custom_contacts';
+    
+    // Agregar relaciones personalizadas
+    public function customOrders()
+    {
+        return $this->hasMany(Order::class, 'contact_id');
+    }
+    
+    // Sobrescribir métodos existentes
+    public function someMethod()
+    {
+        // Lógica personalizada
+    }
+}
+```
+
+2. Crear un modelo completamente nuevo (avanzado):
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use ScriptDevelop\WhatsappManager\Contracts\WhatsappContactInterface;
+
+class CustomContact extends Model implements WhatsappContactInterface
+{
+    // Implementar todos los métodos requeridos por la interfaz
+}
+```
+
+
+## 📋 Migraciones Personalizadas
+Si cambias la estructura de la tabla, crea una migración personalizada:
+
+```bash
+php artisan make:migration modify_contacts_table
+```
+
+```php
+public function up()
+{
+    Schema::table('contacts', function (Blueprint $table) {
+        $table->string('custom_field')->nullable();
+        $table->index('custom_field');
+    });
+}
+```
+
+## 🔄 Actualizar Configuración
+Después de crear tus modelos personalizados, actualiza la configuración:
+
+```php
+// config/whatsapp.php
+'models' => [
+    'contact' => \App\Models\CustomContact::class,
+    'message' => \App\Models\CustomMessage::class,
+    // ... otros modelos personalizados
+],
+```
+
+# Personalización del Webhook
+
+## 🌐 Introducción
+El procesamiento del webhook puede ser completamente personalizado para adaptarse a lógicas de negocio específicas, integraciones con otros sistemas, o manejo especial de ciertos tipos de mensajes.
+
+
+## 🚀 Publicar el Procesador Base
+Ejecuta el comando para publicar el procesador base:
+
+```bash
+php artisan whatsapp:publish-webhook-processor
+```
+Esto creará el archivo app/Services/WhatsappWebhookProcessor.php.
+
+
+## 🔧 Configuración del Procesador
+Actualiza tu configuración para usar el procesador personalizado:
+
+```php
+// config/whatsapp.php
+'webhook' => [
+    'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
+    'processor' => \App\Services\WhatsappWebhookProcessor::class,
+],
+```
+
+## 💻 Personalización Básica
+
+```php
+namespace App\Services;
+
+use ScriptDevelop\WhatsappManager\Services\WebhookProcessors\BaseWebhookProcessor;
+
+class WhatsappWebhookProcessor extends BaseWebhookProcessor
+{
+    public function handle($request)
+    {
+        // Lógica personalizada antes del procesamiento
+        \Log::info('Webhook recibido', $request->all());
+        
+        // Procesamiento estándar
+        return parent::handle($request);
+        
+        // O procesamiento completamente personalizado
+    }
+}
+```
+
+## 🎯 Ejemplos de Personalización
+1. Procesamiento específico para ciertos mensajes:
+
+
+```php
+protected function processTextMessage(array $message, $contact, $whatsappPhone)
+{
+    // Lógica personalizada antes del procesamiento estándar
+    if (str_contains($message['text']['body'], 'palabra_clave')) {
+        $this->handleSpecialCommand($message, $contact);
+        return null; // No guardar en base de datos
+    }
+    
+    // Procesamiento estándar
+    return parent::processTextMessage($message, $contact, $whatsappPhone);
+}
+```
+
+
+2. Integración con otros sistemas:
+
+```php
+protected function handleIncomingMessage(array $message, ?array $contact, ?array $metadata)
+{
+    // Enviar a sistema externo antes de procesar
+    $this->sendToExternalSystem($message, $contact);
+    
+    // Procesamiento estándar
+    parent::handleIncomingMessage($message, $contact, $metadata);
+    
+    // Acciones después de procesar
+    $this->triggerPostProcessing($message);
+}
+
+private function sendToExternalSystem($message, $contact)
+{
+    // Integración con CRM, ERP, etc.
+    Http::post('https://api.tu-sistema.com/webhook', [
+        'message' => $message,
+        'contact' => $contact
+    ]);
+}
+```
+
+3. Integración con otros sistemas:
+
+```php
+protected function processMediaMessage(array $message, $contact, $whatsappPhone)
+{
+    // Procesamiento especial para imágenes
+    if ($message['type'] === 'image') {
+        return $this->processImageWithAI($message, $contact, $whatsappPhone);
+    }
+    
+    // Procesamiento estándar para otros tipos de media
+    return parent::processMediaMessage($message, $contact, $whatsappPhone);
+}
+```
+
+
+## 🔌 Eventos Personalizados
+Puedes disparar eventos personalizados en tu procesador:
+
+```php
+protected function fireTextMessageReceived($contactRecord, $messageRecord)
+{
+    // Evento estándar
+    parent::fireTextMessageReceived($contactRecord, $messageRecord);
+    
+    // Evento personalizado
+    event(new \App\Events\CustomTextMessageReceived($contactRecord, $messageRecord));
+}
+```
+
+
+## Ejemplos Avanzados
+**🤖 Integración con Sistema de Tickets**
+
+```php
+protected function processTextMessage(array $message, $contact, $whatsappPhone)
+{
+    $text = $message['text']['body'];
+    
+    // Crear ticket automáticamente para ciertas palabras
+    if (preg_match('/soporte|ayuda|problema/i', $text)) {
+        $ticket = Ticket::create([
+            'contact_id' => $contact->id,
+            'description' => $text,
+            'source' => 'whatsapp'
+        ]);
+        
+        // Notificar al equipo
+        Notification::send($ticket->assignedTeam, new NewTicketNotification($ticket));
+    }
+    
+    return parent::processTextMessage($message, $contact, $whatsappPhone);
+}
+```
+
+## 🛒 Procesamiento de Órdenes
+
+```php
+protected function processInteractiveMessage(array $message, $contact, $whatsappPhone)
+{
+    $interactiveType = $message['interactive']['type'];
+    
+    if ($interactiveType === 'button_reply') {
+        $buttonId = $message['interactive']['button_reply']['id'];
+        
+        // Manejar selección de productos
+        if (str_starts_with($buttonId, 'product_')) {
+            $productId = str_replace('product_', '', $buttonId);
+            $this->addToCart($contact, $productId);
+        }
+    }
+    
+    return parent::processInteractiveMessage($message, $contact, $whatsappPhone);
+}
+```
+
+
+# Solución de Problemas
+## ❌ Error: "Class not found"
+**Si encuentras errores de clase no encontrada:**
+
+1. Verifica que los namespaces en tu configuración sean correctos
+2. Ejecuta composer dump-autoload
+3. Verifica que las clases existan en la ubicación especificada
+
+## 🔄 Restablecer Configuración por Defecto
+Para volver a los modelos por defecto:
+
+```php
+// config/whatsapp.php
+'models' => [
+    'contact' => \ScriptDevelop\WhatsappManager\Models\Contact::class,
+    // ... otros modelos por defecto
+],
+```
+
+
+# 📞 Soporte
+**Si necesitas ayuda con la personalización:**
+
+1. Revisa los ejemplos en la documentación
+2. Consulta los issues en GitHub
+3. Crea un nuevo issue con detalles de tu implementación
+
+Nota: Siempre prueba tus personalizaciones en un entorno de desarrollo antes de implementarlas en producción. Las personalizaciones avanzadas pueden afectar el funcionamiento del paquete.
+
+
+
 <br>
 
 ---
