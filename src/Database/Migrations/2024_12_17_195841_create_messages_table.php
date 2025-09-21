@@ -25,7 +25,7 @@ return new class extends Migration
             $table->text('message_content')->nullable();
             $table->string('media_url', 512)->nullable();
             $table->text('message_context')->nullable();
-            $table->string('message_context_id', 45)->nullable();
+            $table->ulid('message_context_id')->nullable();
             $table->string('message_context_from', 45)->nullable();
             $table->string('caption', 45)->nullable();
             $table->ulid('template_version_id')->nullable();
