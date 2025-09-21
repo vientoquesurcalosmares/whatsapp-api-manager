@@ -310,7 +310,8 @@ Después de crear tus modelos personalizados, actualiza la configuración:
 # Personalización del Webhook
 
 ## 🌐 Introducción
-El procesamiento del webhook puede ser completamente personalizado para adaptarse a lógicas de negocio específicas, integraciones con otros sistemas, o manejo especial de ciertos tipos de mensajes.
+
+  El procesamiento del webhook puede ser completamente personalizado para adaptarse a lógicas de negocio específicas, integraciones con otros sistemas, o manejo especial de ciertos tipos de mensajes.
 
 
 ## 🚀 Publicar el Procesador Base
