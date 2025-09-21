@@ -67,7 +67,7 @@ return [
         'blocked_user' => \ScriptDevelop\WhatsappManager\Models\BlockedUser::class,
 
         // Modelo de usuario (puede ser personalizado)
-        'user_model' => env('AUTH_MODEL', App\Models\User::class),
+        'user_model' => env('AUTH_MODEL', 'App\Models\User::class'),
 
         // Tabla de usuarios (puede ser personalizada)
         //'user_table' => env('AUTH_TABLE', 'users'),
