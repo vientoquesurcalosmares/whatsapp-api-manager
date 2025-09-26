@@ -143,13 +143,6 @@ class WhatsappServiceProvider extends ServiceProvider
         // Cargar rutas automáticamente
         $this->loadRoutesFrom(__DIR__ . '/../routes/whatsapp_webhook.php');
 
-         if ($this->app->runningInConsole()) {
-            $this->commands([
-                CheckUserModel::class,
-                \ScriptDevelop\WhatsappManager\Console\Commands\PublishWebhookProcessor::class, // Agrega esta línea
-            ]);
-        }
-
         // Registrar comandos de consola
         if ($this->app->runningInConsole()) {
             // Crear directorios necesarios al publicar configuraciones
@@ -161,6 +154,7 @@ class WhatsappServiceProvider extends ServiceProvider
 
             $this->commands([
                 CheckUserModel::class,
+                \ScriptDevelop\WhatsappManager\Console\Commands\PublishWebhookProcessor::class,
             ]);
         }
 
