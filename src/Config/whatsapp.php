@@ -330,4 +330,18 @@ return [
         'redirect_uri'  => env('META_REDIRECT_URI'),
         'scopes'        => env('META_SCOPES', 'whatsapp_business_management,whatsapp_business_messaging'),
     ],
+
+    /*
+    |---------------------------------------------------------------------------
+    | Códigos de país personalizados
+    |--------------------------------------------------------------------------
+    |
+    | Agrega aquí los códigos de país personalizados si es necesario.
+    | Sobreescribirá los códigos predeterminados.
+    |
+    */
+    'custom_country_codes' => [
+        // Agrega aquí los códigos de país personalizados si es necesario
+        // Ejemplo: '57' => 'CO',
+    ],
 ];
