@@ -59,9 +59,9 @@ class AccountRegistrationService
             $account = $this->upsertBusinessAccount($data['api_token'], $accountData, $suscriptions);
 
             // 2. Suscribir aplicación a webhooks (usando campos proporcionados o de configuración)
-            $this->whatsappService
-                ->forAccount($account->whatsapp_business_id)
-                ->subscribeApp($data['business_id'], $subscribedFields);
+            // $this->whatsappService
+            //     ->forAccount($account->whatsapp_business_id)
+            //     ->subscribeApp($data['business_id'], $subscribedFields);
 
             // 3. Registrar números telefónicos
             $this->registerPhoneNumbers($account);
