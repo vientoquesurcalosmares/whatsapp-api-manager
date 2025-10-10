@@ -441,7 +441,7 @@ Gracias por tu apoyo 💙
     $account = WhatsappBusinessAccount::first();
     $phone = WhatsappPhoneNumber::first();
 
-    // Enviar plantilla 1
+    // Enviar plantilla 1: plantilla sin botones o sin necesidad de proporcionar parámetros para botones
     $message = Whatsapp::template()
         ->sendTemplateMessage($phone)
         ->to('57', '3137555908')
@@ -449,29 +449,25 @@ Gracias por tu apoyo 💙
         ->addBody(['12345'])
         ->send();
 
-    // Enviar plantilla 2
-
+    // Enviar plantilla 2: plantilla con botón URL que no requiere parámetros (URL estática)
     $message = Whatsapp::template()
         ->sendTemplateMessage($phone)
         ->to('57', '3135666627')
         ->usingTemplate('link_de_pago')
         ->addHeader('TEXT', '123456')
         ->addBody(['20000'])
-        ->addButton('URL', 'Pagar', '1QFwRV', ['[https://mpago.li/1QFwRV]'])
+        ->addButton('Pagar', []) // Si el botón en la plantilla es estático, no necesita parámetros
         ->send();
 
+
+    // Enviar plantilla 3: plantilla con botón URL que requiere parámetros (URL dinámica)
     $message = Whatsapp::template()
         ->sendTemplateMessage($phone)
         ->to('57', '3135666627')
-        ->usingTemplate('link_de_pago')
+        ->usingTemplate('link_de_pago_dinamico')
         ->addHeader('TEXT', '123456')
         ->addBody(['20000'])
-        ->addButton(
-            'URL', // Tipo de boton
-            'Pagar', // Texto del boton
-            '1QFwRV', // Variable del boton 'Solo Tipo URL'
-            ['[https://mpago.li/1QFwRV]'] // URL de ejemplo 'No se envia solo se toma de ejemplo'
-        )
+        ->addButton('Pagar', ['1QFwRV']) // Si el botón en la plantilla tiene un placeholder, se pasa el valor para ese placeholder
         ->send();
     ```
 
