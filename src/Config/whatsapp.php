@@ -216,6 +216,41 @@ return [
 
         // Procesador personalizado para webhooks (valor por defecto)
         'processor' => \ScriptDevelop\WhatsappManager\Services\WebhookProcessors\BaseWebhookProcessor::class,
+
+        // Campos suscritos por defecto para los webhooks (ordenados alfabéticamente)
+        'subscribed_fields' => [
+            // 'account_alerts',                                        // Alertas de cuenta
+            // 'account_review_update',                                 // Actualización de revisión de cuenta
+            // 'account_settings_update',                               // Actualización de configuración de cuenta
+            // 'account_update',                                        // Actualización de cuenta
+            // 'automatic_events',                                      // Eventos automáticos
+            // 'business_capability_update',                            // Actualización de capacidades de negocio
+            // 'business_status_update',                                // Actualización de estado de negocio
+            // 'calls',                                                 // Llamadas
+            // 'flows',                                                 // Flujos de WhatsApp
+            // 'history',                                               // Historial
+            // 'message_template_components_update',                    // Actualización de componentes de plantilla de mensaje
+            'message_template_quality_update',                          // Actualización de calidad de plantilla de mensaje
+            'message_template_status_update',                           // Actualización de estado de plantilla de mensaje
+            'messages',                                                 // Mensajes
+            // 'partner_solutions',                                     // Soluciones de socios
+            // 'payment_configuration_update',                          // Actualización de configuración de pagos
+            // 'phone_number_name_update',                              // Actualización de nombre de número de teléfono
+            'phone_number_quality_update',                              // Actualización de calidad de número de teléfono
+            // 'security',                                              // Seguridad
+            // 'smb_app_state_sync',                                    // Sincronización de estado de la app SMB
+            // 'smb_message_echoes',                                    // Eco de mensajes SMB
+            // 'template_category_update',                              // Actualización de categoría de plantilla
+            // 'template_correct_category_detection',                   // Detección correcta de categoría de plantilla
+            // 'tracking_events',                                       // Eventos de seguimiento
+            // 'user_preferences',                                      // Preferencias de usuario
+            // 'message_echoes',                                        // Eco de mensajes
+            // 'messaging_handovers',                                   // Transferencias de mensajería
+            // 'group_lifecycle_update',                                // Actualización del ciclo de vida de grupo        // v24.0
+            // 'group_participants_update',                             // Actualización de participantes de grupo      // v24.0
+            // 'group_settings_update',                                 // Actualización de configuración de grupo          // v24.0
+            // 'group_status_update',                                   // Actualización de estado de grupo                   // v24.0
+        ],
     ],
 
     /*

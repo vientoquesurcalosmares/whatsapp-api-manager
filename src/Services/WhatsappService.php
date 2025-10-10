@@ -240,24 +240,81 @@ class WhatsappService
      * Suscribe una aplicación a la cuenta empresarial
      * 
      * @param string $whatsappBusinessId
+     * @param array $subscribedFields Campos a suscribir (opcional). Si no se proporciona, se usan los de configuración.
      * @return array
      */
-    public function subscribeApp(string $whatsappBusinessId): array
+    public function subscribeApp(string $whatsappBusinessId, array $subscribedFields = null): array
     {
         $this->ensureAccountIsSet();
+        
+        // Si no se proporcionan campos, usar los de configuración
+        if ($subscribedFields === null) {
+            $subscribedFields = config('whatsapp-manager.webhook.subscribed_fields', []);
+        }
         
         $endpointUrl = Endpoints::build(
             Endpoints::GET_BUSINESS_ACCOUNT_SUSCRIPTIONS,
             ['whatsapp_business_id' => $whatsappBusinessId]
         );
         
+        // Preparar el cuerpo de la solicitud con los campos suscritos
+        $requestBody = [];
+        if (!empty($subscribedFields)) {
+            $requestBody['subscribed_fields'] = $subscribedFields;
+        }
+        
+        Log::channel('whatsapp')->debug('Suscribiendo aplicación', [
+            'business_id' => $whatsappBusinessId,
+            'subscribed_fields' => $subscribedFields
+        ]);
+        
         return $this->apiClient->request(
             'POST',
             $endpointUrl,
             [], // Sin parámetros de query
-            [], // Cuerpo vacío como requiere la API
+            $requestBody, // Cuerpo con campos suscritos
             ['headers' => $this->getAuthHeaders()]
         );
+    }
+
+    /**
+     * Obtiene los campos suscritos actualmente para una cuenta empresarial
+     * 
+     * @param string $whatsappBusinessId
+     * @return array
+     */
+    public function getSubscribedFields(string $whatsappBusinessId): array
+    {
+        $this->ensureAccountIsSet();
+        
+        $response = $this->apiClient->request(
+            'GET',
+            Endpoints::GET_BUSINESS_ACCOUNT_SUSCRIPTIONS,
+            ['whatsapp_business_id' => $whatsappBusinessId],
+            headers: $this->getAuthHeaders()
+        );
+
+        Log::channel('whatsapp')->debug('Campos suscritos actuales:', $response);
+        
+        // Extraer campos suscritos de la respuesta
+        $subscribedFields = [];
+        if (isset($response['data'][0]['subscribed_fields'])) {
+            $subscribedFields = $response['data'][0]['subscribed_fields'];
+        }
+        
+        return $subscribedFields;
+    }
+
+    /**
+     * Actualiza los campos suscritos para una cuenta empresarial
+     * 
+     * @param string $whatsappBusinessId
+     * @param array $subscribedFields
+     * @return array
+     */
+    public function updateSubscribedFields(string $whatsappBusinessId, array $subscribedFields): array
+    {
+        return $this->subscribeApp($whatsappBusinessId, $subscribedFields);
     }
 
     /**
