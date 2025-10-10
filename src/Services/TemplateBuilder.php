@@ -159,6 +159,11 @@ class TemplateBuilder
                 throw new InvalidArgumentException('El HEADER solo puede tener un único parámetro o ninguno.');
             }
 
+            // VALIDACIÓN: Verificar que las variables no estén al principio ni al final
+            if (!empty($placeholders)) {
+                $this->validateVariablePosition($content, 'HEADER');
+            }
+
             // Validar el ejemplo si hay un parámetro
             if (!empty($placeholders)) {
                 if ($example === null) {
@@ -282,6 +287,13 @@ class TemplateBuilder
         }
 
         $this->validateParameters($text, $example, 'BODY');
+
+        // VALIDACIÓN: Verificar que las variables no estén al principio ni al final
+        preg_match_all('/{{(.*?)}}/', $text, $matches);
+        $placeholders = $matches[1] ?? [];
+        if (!empty($placeholders)) {
+            $this->validateVariablePosition($text, 'BODY');
+        }
 
         $formattedExample = null;
 
@@ -596,6 +608,14 @@ class TemplateBuilder
         } else { // NAMED
             $this->validateNamedParameters($placeholders, $example, $type);
         }
+
+        // VALIDACIÓN: Verificar que las variables no estén consecutivas
+        if (preg_match('/\{\{\d+\}\}\s*\{\{\d+\}\}/', $text)) {
+            throw new InvalidArgumentException(
+                "En el $type: Las variables no pueden estar consecutivas. " .
+                "Debe haber texto entre los parámetros."
+            );
+        }
     }
 
     protected function validatePositionalParameters(array $placeholders, ?array $example, string $type): void
@@ -900,5 +920,58 @@ class TemplateBuilder
         );
 
         return $category->category_id;
+    }
+
+    /**
+     * NUEVO MÉTODO: Valida que las variables no estén al principio ni al final del texto
+     *
+     * @param string $text Texto a validar
+     * @param string $componentName Nombre del componente para mensajes de error
+     * @return void
+     * @throws InvalidArgumentException Si las variables están al principio o al final
+     */
+    protected function validateVariablePosition(string $text, string $componentName): void
+    {
+        $trimmedText = trim($text);
+        
+        // Verificar si el texto comienza con una variable
+        if (preg_match('/^\s*\{\{\d+\}\}/', $trimmedText)) {
+            throw new InvalidArgumentException(
+                "En el $componentName: Las variables no pueden estar al principio del texto. " .
+                "WhatsApp Business API no permite parámetros al inicio del contenido."
+            );
+        }
+        
+        // Verificar si el texto termina con una variable
+        if (preg_match('/\{\{\d+\}\}\s*$/', $trimmedText)) {
+            throw new InvalidArgumentException(
+                "En el $componentName: Las variables no pueden estar al final del texto. " .
+                "WhatsApp Business API no permite parámetros al final del contenido."
+            );
+        }
+        
+        // Validación adicional: verificar que haya texto antes y después de cada variable
+        $pattern = '/\{\{\d+\}\}/';
+        $parts = preg_split($pattern, $trimmedText);
+        
+        foreach ($parts as $index => $part) {
+            $part = trim($part);
+            
+            // Si es el primer segmento y está vacío, significa que la variable está al principio
+            if ($index === 0 && empty($part)) {
+                throw new InvalidArgumentException(
+                    "En el $componentName: Las variables no pueden estar al principio del texto. " .
+                    "Agrega texto antes del primer parámetro."
+                );
+            }
+            
+            // Si es el último segmento y está vacío, significa que la variable está al final
+            if ($index === count($parts) - 1 && empty($part)) {
+                throw new InvalidArgumentException(
+                    "En el $componentName: Las variables no pueden estar al final del texto. " .
+                    "Agrega texto después del último parámetro."
+                );
+            }
+        }
     }
 }
