@@ -469,6 +469,26 @@ Gracias por tu apoyo 💙
         ->addBody(['20000'])
         ->addButton('Pagar', ['1QFwRV']) // Si el botón en la plantilla tiene un placeholder, se pasa el valor para ese placeholder
         ->send();
+
+    // EJEMPLO 4: Plantilla con múltiples botones
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('menu_opciones')
+        ->addBody(['Juan Pérez'])
+        ->addButton('Ver Catálogo', [])       // Quick Reply estático
+        ->addButton('Contactar', [])          // Quick Reply estático  
+        ->addButton('Comprar', ['PROD123'])   // URL dinámico con parámetro
+        ->send();
+
+    // EJEMPLO 5: Plantilla con botón de teléfono
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('soporte_telefonico')
+        ->addBody(['Ticket #456'])
+        ->addButton('Llamar Soporte', []) // Botón PHONE_NUMBER
+        ->send();
     ```
 
 
