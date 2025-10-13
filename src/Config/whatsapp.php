@@ -39,6 +39,15 @@ return [
         //Versiones de plantillas
         'template_version' => \ScriptDevelop\WhatsappManager\Models\TemplateVersion::class,
 
+        //Template analytics
+        'general_template_analytics' => \ScriptDevelop\WhatsappManager\Models\GeneralTemplateAnalytics::class,
+
+        //Template analytics clicked
+        'general_template_analytics_clicked' => \ScriptDevelop\WhatsappManager\Models\GeneralTemplateAnalyticsClicked::class,
+
+        //Template analytics cost
+        'general_template_analytics_cost' => \ScriptDevelop\WhatsappManager\Models\GeneralTemplateAnalyticsCost::class,
+
         'website' => \ScriptDevelop\WhatsappManager\Models\Website::class,
 
         // Modelo para la cuenta empresarial de WhatsApp
@@ -343,5 +352,13 @@ return [
     'custom_country_codes' => [
         // Agrega aquí los códigos de país personalizados si es necesario
         // Ejemplo: '57' => 'CO',
+    ],
+
+    'crontimes' => [
+        //Patron de tiempo para tarea CRON que obtiene las estadísticas de plantillas
+        'get_general_template_analytics' => [
+            'enabled'=> env('WHATSAPP_CRON_GET_GENERAL_TEMPLATE_ANALYTICS', false),
+            'schedule' => env('WHATSAPP_CRONTIME_GET_TEMPLATE_ANALYTICS', '0 0 * * *'), //Diario a la medianoche
+        ]
     ],
 ];
