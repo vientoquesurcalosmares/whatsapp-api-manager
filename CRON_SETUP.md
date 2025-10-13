@@ -21,9 +21,9 @@ use Illuminate\Support\Facades\Schedule;
 if (config('whatsapp.crontimes.get_general_template_analytics.enabled', false)) {
     Schedule::command('whatsapp:get-general-template-analytics')
         ->cron(config('whatsapp.crontimes.get_general_template_analytics.schedule', '0 0 * * *'))
-        ->onOneServer()
-        ->runInBackground()
-        ->withoutOverlapping(60) // Evitar solapamientos por 60 minutos
+        //->onOneServer()
+        //->runInBackground()
+        //->withoutOverlapping(60) // Evitar solapamientos por 60 minutos
         ->onSuccess(function () {
             Log::info('WhatsApp Template Analytics: Tarea completada exitosamente');
         })

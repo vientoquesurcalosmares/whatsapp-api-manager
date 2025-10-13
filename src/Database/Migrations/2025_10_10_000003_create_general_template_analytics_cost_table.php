@@ -13,7 +13,10 @@ return new class extends Migration
     {
         Schema::create('whatsapp_general_template_analytics_cost', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('general_template_analytics_id')->constrained('whatsapp_general_template_analytics')->onDelete('cascade');
+            $table->foreignId('general_template_analytics_id')
+                  ->constrained('whatsapp_general_template_analytics')
+                  ->onDelete('cascade')
+                  ->name('fk_wgtaco_gta_id'); // Nombre corto para la constraint
             $table->string('type', 100)->comment('amount_spent, cost_per_delivered, cost_per_url_button_click, etc.');
             $table->decimal('value', 10, 4)->nullable()->comment('Valor del costo, puede ser null si no hay datos');
             $table->string('currency', 10)->default('USD')->comment('Moneda del costo');

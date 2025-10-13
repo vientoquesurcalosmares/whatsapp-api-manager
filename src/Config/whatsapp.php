@@ -367,10 +367,16 @@ return [
     |
     | if (config('whatsapp.crontimes.get_general_template_analytics.enabled', false)) {
     |     Schedule::command('whatsapp:get-general-template-analytics')
+    |         //->onOneServer()
+    |         //->runInBackground()
+    |         ->withoutOverlapping(60)
     |         ->cron(config('whatsapp.crontimes.get_general_template_analytics.schedule', '0 0 * * *'))
-    |         ->onOneServer()
-    |         ->runInBackground()
-    |         ->withoutOverlapping(60);
+    |         ->onSuccess(function () {
+    |             Log::info('WhatsApp Template Analytics: Tarea completada exitosamente');
+    |         })
+    |         ->onFailure(function () {
+    |             Log::error('WhatsApp Template Analytics: Tarea falló');
+    |         });
     | }
     |
     | Y asegúrate de tener configurado el CRON en tu servidor:

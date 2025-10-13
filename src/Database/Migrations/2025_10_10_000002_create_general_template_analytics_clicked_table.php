@@ -13,7 +13,10 @@ return new class extends Migration
     {
         Schema::create('whatsapp_general_template_analytics_clicked', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('general_template_analytics_id')->constrained('whatsapp_general_template_analytics')->onDelete('cascade');
+            $table->foreignId('general_template_analytics_id')
+                  ->constrained('whatsapp_general_template_analytics')
+                  ->onDelete('cascade')
+                  ->name('fk_wgtac_gta_id'); // Nombre corto para la constraint
             $table->string('type', 100)->comment('url_button, unique_url_button, quick_reply, etc.');
             $table->string('button_content', 200)->nullable()->comment('Contenido del botón clickeado');
             $table->integer('count')->default(0)->comment('Número de clicks');
