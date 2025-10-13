@@ -52,6 +52,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
         $this->info('🚀 Iniciando obtención de analytics de templates de WhatsApp Business...');
 
         try {
+            dd('paror aquí, pruebas');
             // 1. Obtener cuentas a procesar
             $accounts = $this->getAccountsToProcess();
 
