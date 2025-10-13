@@ -3,7 +3,7 @@
 namespace ScriptDevelop\WhatsappManager\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\Log;
 use ScriptDevelop\WhatsappManager\Services\WhatsappManager;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\Services\AccountRegistrationService;
@@ -14,6 +14,7 @@ use ScriptDevelop\WhatsappManager\Services\BlockService;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
 use ScriptDevelop\WhatsappManager\Services\TemplateService;
 use ScriptDevelop\WhatsappManager\Services\FlowService;
+use ScriptDevelop\WhatsappManager\Console\Commands\WhatsappBusinessGetTemplateAnalyticsCommand;
 
 class WhatsappServiceProvider extends ServiceProvider
 {
@@ -92,15 +93,15 @@ class WhatsappServiceProvider extends ServiceProvider
         $this->app->bind(
             \ScriptDevelop\WhatsappManager\Contracts\WebhookProcessorInterface::class,
             function () {
-                $processorClass = config('whatsapp.webhook.processor', 
+                $processorClass = config('whatsapp.webhook.processor',
                     \ScriptDevelop\WhatsappManager\Services\WebhookProcessors\BaseWebhookProcessor::class
                 );
-                
+
                 // Verificar si la clase existe y es instanciable
                 if (class_exists($processorClass)) {
                     return new $processorClass();
                 }
-                
+
                 // Fallback a la implementación por defecto
                 return new \ScriptDevelop\WhatsappManager\Services\WebhookProcessors\BaseWebhookProcessor();
             }
@@ -155,7 +156,11 @@ class WhatsappServiceProvider extends ServiceProvider
             $this->commands([
                 CheckUserModel::class,
                 \ScriptDevelop\WhatsappManager\Console\Commands\PublishWebhookProcessor::class,
+                \ScriptDevelop\WhatsappManager\Console\Commands\WhatsappBusinessGetGeneralTemplateAnalyticsCommand::class,
             ]);
+
+            // Registrar el schedule automáticamente
+            $this->registerSchedule();
         }
 
         // Crear el enlace simbólico y directorios solo al publicar configuraciones
@@ -167,7 +172,7 @@ class WhatsappServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             if (!file_exists(config_path('whatsapp.php'))) {
                 $this->app->booted(function () {
-                    
+
                 });
             }
         }
@@ -229,5 +234,31 @@ class WhatsappServiceProvider extends ServiceProvider
             in_array('--tag=whatsapp-migrations', $argv) ||
             in_array('--tag=whatsapp-routes', $argv) ||
             in_array('--tag=whatsapp-storage', $argv);
+    }
+
+    /**
+     * Registrar el schedule automáticamente (placeholder para documentación)
+     *
+     * INSTRUCCIONES PARA EL USUARIO:
+     *
+     * Agrega lo siguiente a tu archivo routes/console.php:
+     *
+     * use Illuminate\Support\Facades\Schedule;
+     *
+     * if (config('whatsapp.crontimes.get_general_template_analytics.enabled', false)) {
+     *     Schedule::command('whatsapp:get-general-template-analytics')
+     *         ->cron(config('whatsapp.crontimes.get_general_template_analytics.schedule', '0 0 * * *'))
+     *         ->onOneServer()
+     *         ->runInBackground()
+     *         ->withoutOverlapping(60);
+     * }
+     *
+     * Y asegúrate de tener configurado el CRON en tu servidor:
+     * * * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
+     */
+    protected function registerSchedule(): void
+    {
+        // El schedule debe agregarse manualmente en routes/console.php del proyecto
+        // Ver las instrucciones en el comentario de arriba
     }
 }

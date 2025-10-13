@@ -343,7 +343,7 @@ return [
     /*
     |---------------------------------------------------------------------------
     | Códigos de país personalizados
-    |--------------------------------------------------------------------------
+    |---------------------------------------------------------------------------
     |
     | Agrega aquí los códigos de país personalizados si es necesario.
     | Sobreescribirá los códigos predeterminados.
@@ -354,11 +354,34 @@ return [
         // Ejemplo: '57' => 'CO',
     ],
 
+    /*
+    |---------------------------------------------------------------------------
+    | Tareas CRON
+    |---------------------------------------------------------------------------
+    |
+    | Configuración de las tareas programadas (CRON) para la recolección de datos
+    | y otras tareas automatizadas.
+    | Para usar recuerda agrega lo siguiente a tu archivo routes/console.php:
+    |
+    | use Illuminate\Support\Facades\Schedule;
+    |
+    | if (config('whatsapp.crontimes.get_general_template_analytics.enabled', false)) {
+    |     Schedule::command('whatsapp:get-general-template-analytics')
+    |         ->cron(config('whatsapp.crontimes.get_general_template_analytics.schedule', '0 0 * * *'))
+    |         ->onOneServer()
+    |         ->runInBackground()
+    |         ->withoutOverlapping(60);
+    | }
+    |
+    | Y asegúrate de tener configurado el CRON en tu servidor:
+    | * * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
+    |
+    */
     'crontimes' => [
-        //Patron de tiempo para tarea CRON que obtiene las estadísticas de plantillas
+        //Patrón de tiempo para tarea CRON que obtiene las estadísticas GENERALES de plantillas
         'get_general_template_analytics' => [
-            'enabled'=> env('WHATSAPP_CRON_GET_GENERAL_TEMPLATE_ANALYTICS', false),
-            'schedule' => env('WHATSAPP_CRONTIME_GET_TEMPLATE_ANALYTICS', '0 0 * * *'), //Diario a la medianoche
-        ]
+            'enabled'=> env('WHATSAPP_CRON_GET_GENERAL_TEMPLATE_ANALYTICS', false), //Activar o desactivar la tarea CRON
+            'schedule' => env('WHATSAPP_CRONTIME_GET_GENERAL_TEMPLATE_ANALYTICS', '0 0 * * *'), //Diario a la medianoche por default
+        ],
     ],
 ];

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands;
+namespace ScriptDevelop\WhatsappManager\Console\Commands;
 
 use Illuminate\Console\Command;
 use Carbon\Carbon;
