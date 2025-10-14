@@ -112,7 +112,11 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             $this->logInfo("   📊 Registros procesados: <fg=blue>{$totalProcessed}</>");
             $this->logInfo("   💾 Registros guardados: <fg=blue>{$totalSaved}</>");
             $this->logInfo("   ⏭️ Registros omitidos (porque sus valores son 0): <fg=blue>{$totalSkipped}</>");
-            $this->logInfo("   ❌ Errores totales: <fg=blue>{$totalErrors}</>");
+            $color = 'blue';
+            if( $totalErrors > 0 ) {
+                $color = 'red';
+            }
+            $this->logInfo("   ❌ Errores totales: <fg={$color}>{$totalErrors}</>");
 
             return Command::SUCCESS;
 
