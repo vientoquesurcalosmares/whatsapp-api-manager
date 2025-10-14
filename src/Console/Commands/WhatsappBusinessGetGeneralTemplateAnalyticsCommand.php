@@ -332,8 +332,6 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             $endDate   = Carbon::now('UTC');
             $startDate = $endDate->copy()->subDays($days-1);
 
-            //dd($startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s'), $days, $endDate->diffInDays($startDate));
-
             // Llamar a la API
             $analyticsData = $this->fetchAnalyticsFromApi($templateIds->toArray(), $startDate, $endDate);
 
@@ -428,10 +426,10 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             $startTimestamp = $dataPoint['start'];
             $endTimestamp   = $dataPoint['end'];
 
-            // Fechas legibles en timezone de la app
-            $timezone  = config('app.timezone', 'UTC');
-            $startDate = Carbon::createFromTimestamp($startTimestamp, 'UTC')->setTimezone($timezone);
-            $endDate   = Carbon::createFromTimestamp($endTimestamp, 'UTC')->setTimezone($timezone);
+            // Crear fechas desde timestamps manteniendo UTC (sin conversión de zona horaria)
+            // Esto evita que las fechas cambien al día anterior cuando se convierten a timezone local
+            $startDate = Carbon::createFromTimestamp($startTimestamp, 'UTC');
+            $endDate   = Carbon::createFromTimestamp($endTimestamp, 'UTC');
 
             // Guardar registro principal
             $analytics = WhatsappModelResolver::general_template_analytics()->updateOrCreate([
@@ -441,8 +439,8 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             ], [
                 'granularity'     => $dataGroup['granularity'],
                 'product_type'    => $dataGroup['product_type'],
-                'start_date'      => $startDate->format('Y-m-d H:i:s'), // local
-                'end_date'        => $endDate->format('Y-m-d H:i:s'),   // local
+                'start_date'      => $startDate->format('Y-m-d'),
+                'end_date'        => $endDate->format('Y-m-d'),
                 'sent'            => $dataPoint['sent'] ?? 0,
                 'delivered'       => $dataPoint['delivered'] ?? 0,
                 'read'            => $dataPoint['read'] ?? 0,
