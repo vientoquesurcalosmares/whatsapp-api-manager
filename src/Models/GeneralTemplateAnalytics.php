@@ -14,6 +14,7 @@ class GeneralTemplateAnalytics extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = 'whatsapp_general_template_analytics';
+    protected $primaryKey = 'id';
 
     protected $fillable = [
         'wa_template_id',

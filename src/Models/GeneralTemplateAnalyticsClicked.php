@@ -11,16 +11,17 @@ class GeneralTemplateAnalyticsClicked extends Model
     use HasFactory;
 
     protected $table = 'whatsapp_general_template_analytics_clicked';
+    protected $primaryKey = 'id';
 
     protected $fillable = [
-        'template_analytics_id',
+        'general_template_analytics_id',
         'type',
         'button_content',
         'count',
     ];
 
     protected $casts = [
-        'template_analytics_id' => 'integer',
+        'general_template_analytics_id' => 'integer',
         'count' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

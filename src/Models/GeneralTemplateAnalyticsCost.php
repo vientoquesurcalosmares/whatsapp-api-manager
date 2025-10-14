@@ -11,16 +11,17 @@ class GeneralTemplateAnalyticsCost extends Model
     use HasFactory;
 
     protected $table = 'whatsapp_general_template_analytics_cost';
+    protected $primaryKey = 'id';
 
     protected $fillable = [
-        'template_analytics_id',
+        'general_template_analytics_id',
         'type',
         'value',
         'currency',
     ];
 
     protected $casts = [
-        'template_analytics_id' => 'integer',
+        'general_template_analytics_id' => 'integer',
         'value' => 'decimal:4',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
