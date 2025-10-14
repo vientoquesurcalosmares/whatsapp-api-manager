@@ -20,19 +20,19 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
      */
     protected $signature = 'whatsapp:get-general-template-analytics
                             {--force : Forzar obtención de 90 días incluso si hay datos}
-                            {--template= : Obtener analytics solo para un template específico}
+                            {--template=* : Obtener analytics para templates específicos (puede usarse múltiples veces)}
                             {--days= : Número específico de días a obtener (máximo 90)}
-                            {--account= : Procesar solo una cuenta específica (whatsapp_business_id)}
+                            {--account=* : Procesar cuentas específicas (puede usarse múltiples veces)}
                             {--show-errors : Mostrar logs de error durante la ejecución}
                             {--show-info : Mostrar logs de información durante la ejecución}
-                            {--show-warnings : Mostrar logs de advertencia durante la ejecución}';
+                            {--show-warning : Mostrar logs de advertencia durante la ejecución}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Obtiene analytics de templates de WhatsApp Business desde la API de Meta para una o todas las cuentas';
+    protected $description = 'Obtiene analytics de templates de WhatsApp Business desde la API de Meta para una, varias o todas las cuentas según las opciones proporcionadas';
 
     /**
      * Account de WhatsApp Business actual
@@ -125,19 +125,23 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
      */
     protected function getAccountsToProcess()
     {
-        // Si se especifica una cuenta específica
-        if ($this->option('account')) {
-            $account = WhatsappModelResolver::business_account()
-                ->where('whatsapp_business_id', $this->option('account'))
-                ->first();
+        // Si se especifican cuentas específicas
+        $specificAccounts = $this->option('account');
+        if (!empty($specificAccounts)) {
+            $accounts = WhatsappModelResolver::business_account()
+                ->whereIn('whatsapp_business_id', $specificAccounts)
+                ->whereNotNull('api_token')
+                ->where('api_token', '!=', '')
+                ->get();
 
-            if (!$account) {
-                $this->logError("❌ Cuenta no encontrada: " . $this->option('account'));
+            if ($accounts->isEmpty()) {
+                $this->logError("❌ No se encontraron cuentas válidas con los IDs: " . implode(', ', $specificAccounts));
                 return collect();
             }
 
-            $this->logInfo("🎯 Procesando cuenta específica: {$account->whatsapp_business_id}");
-            return collect([$account]);
+            $this->logInfo("🎯 Procesando " . count($specificAccounts) . " cuenta(s) específica(s): " . implode(', ', $specificAccounts));
+            $this->logInfo("🔍 Encontradas " . $accounts->count() . " cuenta(s) válida(s) con token configurado");
+            return $accounts;
         }
 
         // Obtener todas las cuentas activas con token configurado
@@ -253,9 +257,11 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             ->where('status', '=', 'APPROVED')
             ->where('whatsapp_business_id', $account->whatsapp_business_id);
 
-        // Si se especifica un template específico
-        if ($this->option('template')) {
-            $query->where('wa_template_id', $this->option('template'));
+        // Si se especifican templates específicos
+        $specificTemplates = $this->option('template');
+        if (!empty($specificTemplates)) {
+            $query->whereIn('wa_template_id', $specificTemplates);
+            $this->logInfo("   🎯 Filtrando por " . count($specificTemplates) . " template(s) específico(s): " . implode(', ', $specificTemplates));
         }
 
         return $query->pluck('wa_template_id')->chunk(10);
@@ -268,8 +274,9 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
     {
         // Si se especifica días manualmente
         if ($this->option('days')) {
-            $days = min((int)$this->option('days'), 90);
-            $this->logInfo("🎯 Días especificados manualmente: {$days}");
+            $inputDays = (int)$this->option('days');
+            $days = $inputDays > 90 ? 90 : $inputDays;
+            $this->logInfo("🎯 Días especificados manualmente: {$days} (máximo permitido: 90)");
             return $days;
         }
 
@@ -298,9 +305,10 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
     {
         $query = WhatsappModelResolver::template()->select('wa_template_id', 'name');
 
-        // Si se especifica un template específico
-        if ($this->option('template')) {
-            $query->where('wa_template_id', $this->option('template'));
+        // Si se especifican templates específicos
+        $specificTemplates = $this->option('template');
+        if (!empty($specificTemplates)) {
+            $query->whereIn('wa_template_id', $specificTemplates);
         }
 
         // Si hay una cuenta configurada, filtrar por ella
@@ -508,7 +516,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
      */
     protected function logWarn(string $message): void
     {
-        if ($this->option('show-warnings')) {
+        if ($this->option('show-warning')) {
             $this->warn($message);
         }
     }

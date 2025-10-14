@@ -58,9 +58,9 @@ No olvides configurar el CRON en tu servidor:
 El comando acepta las siguientes opciones:
 
 - `--force`: Forzar obtención de 90 días incluso si hay datos
-- `--template=TEMPLATE_ID`: Obtener analytics solo para un template específico
+- `--template=TEMPLATE_ID`: Obtener analytics para templates específicos (puede usarse múltiples veces)
 - `--days=DAYS`: Número específico de días a obtener (máximo 90)
-- `--account=BUSINESS_ID`: Procesar solo una cuenta específica
+- `--account=BUSINESS_ID`: Procesar cuentas específicas (puede usarse múltiples veces)
 - `--show-errors`: Muestra en consola mensajes de error
 - `--show-info`: Muestra en consola mensajes informativos
 - `--show-warning`: Muestra en consola mensajes de advertencia
@@ -74,11 +74,20 @@ php artisan whatsapp:get-general-template-analytics --days=30
 # Obtener datos de un template específico
 php artisan whatsapp:get-general-template-analytics --template=123456789
 
+# Obtener datos de múltiples templates específicos
+php artisan whatsapp:get-general-template-analytics --template=123456789 --template=987654321
+
 # Forzar obtención completa de 90 días
 php artisan whatsapp:get-general-template-analytics --force
 
 # Procesar solo una cuenta específica
 php artisan whatsapp:get-general-template-analytics --account=1234567890
+
+# Procesar múltiples cuentas específicas
+php artisan whatsapp:get-general-template-analytics --account=1234567890 --account=0987654321
+
+# Combinar múltiples templates y cuentas
+php artisan whatsapp:get-general-template-analytics --template=123456789 --template=987654321 --account=1234567890 --account=0987654321
 
 # Mostrar logs de errores
 php artisan whatsapp:get-general-template-analytics --show-errors --show-info --show-warning
