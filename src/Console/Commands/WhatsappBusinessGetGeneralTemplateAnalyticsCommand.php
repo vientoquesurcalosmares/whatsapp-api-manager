@@ -72,7 +72,9 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
 
             // 2. Determinar período de análisis
             $days = $this->determineDaysToFetch();
-            $this->logInfo("📅 Obteniendo analytics de los últimos {$days} días");
+            $endDate = Carbon::now('UTC');
+            $startDate = $endDate->copy()->subDays($days - 1);
+            $this->logInfo("📅 Obteniendo analytics de los últimos {$days} días (desde {$startDate->format('Y-m-d')} hasta {$endDate->format('Y-m-d')})");
 
             // 3. Procesar por cada cuenta
             $totalProcessed    = 0;
@@ -82,9 +84,9 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             $accountsProcessed = 0;
 
             foreach ($accounts as $account) {
-                $this->logInfo("🏢 Procesando cuenta: {$account->whatsapp_business_id}");
+                $this->logInfo("🏢 Procesando cuenta: {$account->whatsapp_business_id} | {$account->name}");
 
-                $result = $this->processAccount($account, $days);
+                $result = $this->processAccount($account, $startDate, $endDate);
 
                 if ($result['success']) {
                     $totalProcessed += $result['processed'];
@@ -163,7 +165,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
     /**
      * Procesar una cuenta específica
      */
-    protected function processAccount($account, int $days): array
+    protected function processAccount($account, Carbon $startDate, Carbon $endDate): array
     {
         try {
             // Configurar la cuenta actual
@@ -206,7 +208,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             foreach ($templates as $chunkIndex => $templateChunk) {
                 $this->logInfo("   🔄 Chunk " . ($chunkIndex + 1) . "/" . $templates->count());
 
-                $result = $this->processTemplateChunk($templateChunk, $days);
+                $result = $this->processTemplateChunk($templateChunk, $startDate, $endDate);
                 $processed += $result['processed'];
                 $saved += $result['saved'];
                 $skipped += $result['skipped'];
@@ -340,7 +342,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
     /**
      * Procesar un chunk de templates
      */
-    protected function processTemplateChunk($templateIds, int $days): array
+    protected function processTemplateChunk($templateIds, Carbon $startDate, Carbon $endDate): array
     {
         $processed = 0;
         $saved = 0;
@@ -348,10 +350,6 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
         $errors = 0;
 
         try {
-            // Calcular fechas
-            $endDate   = Carbon::now('UTC');
-            $startDate = $endDate->copy()->subDays($days-1);
-
             // Llamar a la API
             $analyticsData = $this->fetchAnalyticsFromApi($templateIds->toArray(), $startDate, $endDate);
 
