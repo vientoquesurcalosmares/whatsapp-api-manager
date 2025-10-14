@@ -33,8 +33,6 @@ return new class extends Migration
                 ->on('whatsapp_general_template_analytics')
                 ->onDelete('cascade')
                 ->name('fk_wgtaco_gta_id');*/
-
-             // Agrega la foreign key con nombre corto
         });
 
         // Agregar la clave foránea con nombre corto, se hizo de esta manera porque el método ->name() para la llave foránea no funciona bien en algunas versiones de Laravel, y no usar el método "->name" hace que el nombre sea muy largo y da error
