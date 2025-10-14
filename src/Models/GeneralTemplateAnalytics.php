@@ -154,4 +154,28 @@ class GeneralTemplateAnalytics extends Model
 
         return round(($this->delivered / $this->sent) * 100, 2);
     }
+
+    /**
+     * Calcular el read rate
+     */
+    public function getReadRateAttribute(): float
+    {
+        if ($this->sent == 0) {
+            return 0.0;
+        }
+
+        return round(($this->read / $this->sent) * 100, 2);
+    }
+
+    /**
+     * Calcular el delivery+read rate
+     */
+    public function getDeliveryAndReadRateAttribute(): float
+    {
+        if ($this->sent == 0) {
+            return 0.0;
+        }
+
+        return round((($this->delivered + $this->read) / $this->sent) * 100, 2);
+    }
 }
