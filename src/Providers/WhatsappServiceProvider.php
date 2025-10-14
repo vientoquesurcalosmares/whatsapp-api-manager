@@ -117,17 +117,17 @@ class WhatsappServiceProvider extends ServiceProvider
 
         // Publicar migraciones
         $this->publishes([
-            __DIR__ . '/../Database/migrations' => database_path('migrations'),
+            __DIR__ . '/../Database/Migrations' => database_path('migrations'),
         ], 'whatsapp-migrations');
 
         // Cargar automáticamente las migraciones si está habilitado
         if (config('whatsapp.load_migrations', true)) {
-            $this->loadMigrationsFrom(__DIR__ . '/../Database/migrations');
+            $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
         }
 
         // Publicar seeders
         $this->publishes([
-            __DIR__ . '/../Database/seeders/WhatsappTemplateLanguageSeeder.php' => database_path('seeders/WhatsappTemplateLanguageSeeder.php'),
+            __DIR__ . '/../Database/Seeders/WhatsappTemplateLanguageSeeder.php' => database_path('seeders/WhatsappTemplateLanguageSeeder.php'),
         ], 'whatsapp-seeders');
 
         // Publicar rutas
@@ -150,7 +150,7 @@ class WhatsappServiceProvider extends ServiceProvider
             $this->publishes([], 'whatsapp-storage');
 
             $this->publishes([
-                __DIR__ . '/../Database/seeders/WhatsappTemplateLanguageSeeder.php' => database_path('seeders/WhatsappTemplateLanguageSeeder.php'),
+                __DIR__ . '/../Database/Seeders/WhatsappTemplateLanguageSeeder.php' => database_path('seeders/WhatsappTemplateLanguageSeeder.php'),
             ], 'whatsapp-seeders');
 
             $this->commands([
