@@ -25,7 +25,7 @@ return new class extends Migration
             $table->index('type', 'idx_w_g_tac_type');
 
             // Índice único para evitar duplicados del CRON
-            $table->unique(['general_template_analytics_id', 'type'], 'unique_w_g_tac_analytics_type');
+            $table->unique(['general_template_analytics_id', 'type', 'button_content'], 'unique_w_g_tac_analytics_type');
 
             // Clave foránea explícita
             /*$table->foreign('general_template_analytics_id')
