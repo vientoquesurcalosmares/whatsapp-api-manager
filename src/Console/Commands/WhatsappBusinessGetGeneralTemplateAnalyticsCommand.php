@@ -249,6 +249,8 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
     {
         $query = WhatsappModelResolver::template()
             ->select('wa_template_id', 'name')
+            //Asegurar que solo se obtienen templates aprobados
+            ->where('status', '=', 'APPROVED')
             ->where('whatsapp_business_id', $account->whatsapp_business_id);
 
         // Si se especifica un template específico
