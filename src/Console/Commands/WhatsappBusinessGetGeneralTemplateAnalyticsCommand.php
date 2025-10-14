@@ -76,6 +76,8 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
 
             // 3. Procesar por cada cuenta
             $totalProcessed    = 0;
+            $totalSaved        = 0;
+            $totalSkipped      = 0;
             $totalErrors       = 0;
             $accountsProcessed = 0;
 
@@ -86,9 +88,11 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
 
                 if ($result['success']) {
                     $totalProcessed += $result['processed'];
+                    $totalSaved += $result['saved'];
+                    $totalSkipped += $result['skipped'];
                     $totalErrors += $result['errors'];
                     $accountsProcessed++;
-                    $this->logInfo("   ✅ Cuenta procesada: {$result['processed']} templates, {$result['errors']} errores");
+                    $this->logInfo("   ✅ Cuenta procesada: {$result['processed']} procesados, {$result['saved']} guardados, {$result['skipped']} omitidos (porque sus valores son 0), {$result['errors']} errores");
                 } else {
                     $this->logError("   ❌ Error procesando cuenta: {$result['error']}");
                 }
@@ -103,7 +107,9 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             // 4. Resumen final
             $this->logInfo("✅ Proceso completado:");
             $this->logInfo("   🏢 Cuentas procesadas: {$accountsProcessed}/{$accounts->count()}");
-            $this->logInfo("   📊 Templates procesados: {$totalProcessed}");
+            $this->logInfo("   📊 Registros procesados: {$totalProcessed}");
+            $this->logInfo("   💾 Registros guardados: {$totalSaved}");
+            $this->logInfo("   ⏭️ Registros omitidos (porque sus valores son 0): {$totalSkipped}");
             $this->logInfo("   ❌ Errores totales: {$totalErrors}");
 
             return Command::SUCCESS;
@@ -169,6 +175,8 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                     'success' => false,
                     'error' => 'No se pudo configurar el cliente API',
                     'processed' => 0,
+                    'saved' => 0,
+                    'skipped' => 0,
                     'errors' => 0
                 ];
             }
@@ -181,6 +189,8 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 return [
                     'success' => true,
                     'processed' => 0,
+                    'saved' => 0,
+                    'skipped' => 0,
                     'errors' => 0
                 ];
             }
@@ -189,6 +199,8 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
 
             // Procesar cada chunk de templates
             $processed = 0;
+            $saved = 0;
+            $skipped = 0;
             $errors = 0;
 
             foreach ($templates as $chunkIndex => $templateChunk) {
@@ -196,6 +208,8 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
 
                 $result = $this->processTemplateChunk($templateChunk, $days);
                 $processed += $result['processed'];
+                $saved += $result['saved'];
+                $skipped += $result['skipped'];
                 $errors += $result['errors'];
 
                 // Pausa entre chunks para evitar rate limiting
@@ -207,6 +221,8 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             return [
                 'success' => true,
                 'processed' => $processed,
+                'saved' => $saved,
+                'skipped' => $skipped,
                 'errors' => $errors
             ];
 
@@ -223,6 +239,8 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 'success' => false,
                 'error' => $e->getMessage(),
                 'processed' => 0,
+                'saved' => 0,
+                'skipped' => 0,
                 'errors' => 0
             ];
         }
@@ -325,7 +343,9 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
     protected function processTemplateChunk($templateIds, int $days): array
     {
         $processed = 0;
-        $errors    = 0;
+        $saved = 0;
+        $skipped = 0;
+        $errors = 0;
 
         try {
             // Calcular fechas
@@ -339,6 +359,8 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 $this->logWarn("⚠️ No se pudieron obtener datos para este chunk");
                 return [
                     'processed' => 0,
+                    'saved' => 0,
+                    'skipped' => 0,
                     'errors'    => count($templateIds)
                 ];
             }
@@ -347,8 +369,21 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             foreach ($analyticsData['data'] as $dataGroup) {
                 foreach ($dataGroup['data_points'] as $dataPoint) {
                     try {
-                        $this->saveAnalyticsData($dataPoint, $dataGroup);
                         $processed++;
+
+                        // Verificar si se guardará realmente el registro
+                        $sent = $dataPoint['sent'] ?? 0;
+                        $delivered = $dataPoint['delivered'] ?? 0;
+                        $read = $dataPoint['read'] ?? 0;
+                        $totalMetrics = $sent + $delivered + $read;
+
+                        if ($totalMetrics <= 0) {
+                            $skipped++;
+                            continue;
+                        }
+
+                        $this->saveAnalyticsData($dataPoint, $dataGroup);
+                        $saved++;
                     } catch (\Exception $e) {
                         $errors++;
                         $this->logWarn("❌ Error guardando template {$dataPoint['template_id']}: " . $e->getMessage());
@@ -363,6 +398,8 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
 
         return [
             'processed' => $processed,
+            'saved' => $saved,
+            'skipped' => $skipped,
             'errors'    => $errors
         ];
     }
