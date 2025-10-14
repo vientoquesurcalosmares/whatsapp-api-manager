@@ -421,7 +421,19 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
      */
     protected function saveAnalyticsData(array $dataPoint, array $dataGroup): void
     {
-        DB::transaction(function () use ($dataPoint, $dataGroup) {
+        // Verificar que la suma de métricas principales sea mayor a cero
+        $sent = $dataPoint['sent'] ?? 0;
+        $delivered = $dataPoint['delivered'] ?? 0;
+        $read = $dataPoint['read'] ?? 0;
+
+        $totalMetrics = $sent + $delivered + $read;
+
+        if ($totalMetrics <= 0) {
+            // No hay datos relevantes, omitir el guardado
+            return;
+        }
+
+        DB::transaction(function () use ($dataPoint, $dataGroup, $sent, $delivered, $read) {
             // Timestamps en UTC (de la API)
             $startTimestamp = $dataPoint['start'];
             $endTimestamp   = $dataPoint['end'];
@@ -441,9 +453,9 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 'product_type'    => $dataGroup['product_type'],
                 'start_date'      => $startDate->format('Y-m-d'),
                 'end_date'        => $endDate->format('Y-m-d'),
-                'sent'            => $dataPoint['sent'] ?? 0,
-                'delivered'       => $dataPoint['delivered'] ?? 0,
-                'read'            => $dataPoint['read'] ?? 0,
+                'sent'            => $sent,
+                'delivered'       => $delivered,
+                'read'            => $read,
                 'json_data'       => $dataPoint,
             ]);
 
