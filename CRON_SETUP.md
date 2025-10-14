@@ -61,6 +61,9 @@ El comando acepta las siguientes opciones:
 - `--template=TEMPLATE_ID`: Obtener analytics solo para un template específico
 - `--days=DAYS`: Número específico de días a obtener (máximo 90)
 - `--account=BUSINESS_ID`: Procesar solo una cuenta específica
+- `--show-errors`: Muestra en consola mensajes de error
+- `--show-info`: Muestra en consola mensajes informativos
+- `--show-warning`: Muestra en consola mensajes de advertencia
 
 ### Ejemplos:
 
@@ -76,4 +79,7 @@ php artisan whatsapp:get-general-template-analytics --force
 
 # Procesar solo una cuenta específica
 php artisan whatsapp:get-general-template-analytics --account=1234567890
+
+# Mostrar logs de errores
+php artisan whatsapp:get-general-template-analytics --show-errors --show-info --show-warning
 ```
