@@ -68,13 +68,13 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 return Command::FAILURE;
             }
 
-            $this->logInfo("🏢 Procesando " . $accounts->count() . " cuenta(s) de WhatsApp Business");
+            $this->logInfo("🏢 Procesando <fg=blue>" . $accounts->count() . "</> cuenta(s) de WhatsApp Business");
 
             // 2. Determinar período de análisis
             $days = $this->determineDaysToFetch();
             $endDate = Carbon::now('UTC');
             $startDate = $endDate->copy()->subDays($days - 1);
-            $this->logInfo("📅 Obteniendo analytics de los últimos {$days} días (desde {$startDate->format('Y-m-d')} hasta {$endDate->format('Y-m-d')})");
+            $this->logInfo("📅 Obteniendo analytics de los últimos <fg=blue>{$days}</> días (desde <fg=blue>{$startDate->format('Y-m-d')}</> hasta <fg=blue>{$endDate->format('Y-m-d')}</>)");
 
             // 3. Procesar por cada cuenta
             $totalProcessed    = 0;
@@ -84,7 +84,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             $accountsProcessed = 0;
 
             foreach ($accounts as $account) {
-                $this->logInfo("🏢 Procesando cuenta: {$account->whatsapp_business_id} | {$account->name}");
+                $this->info("🏢 Procesando cuenta: <fg=blue>{$account->whatsapp_business_id} | {$account->name}</>");
 
                 $result = $this->processAccount($account, $startDate, $endDate);
 
@@ -94,25 +94,25 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                     $totalSkipped += $result['skipped'];
                     $totalErrors += $result['errors'];
                     $accountsProcessed++;
-                    $this->logInfo("   ✅ Cuenta procesada: {$result['processed']} procesados, {$result['saved']} guardados, {$result['skipped']} omitidos (porque sus valores son 0), {$result['errors']} errores");
+                    $this->logInfo("   ✅ Cuenta procesada: <fg=blue>{$result['processed']}</> procesados, <fg=blue>{$result['saved']}</> guardados, <fg=blue>{$result['skipped']}</> omitidos (porque sus valores son 0), <fg=blue>{$result['errors']}</> errores");
                 } else {
-                    $this->logError("   ❌ Error procesando cuenta: {$result['error']}");
+                    $this->logError("   ❌ Error procesando cuenta: <fg=blue>{$result['error']}</>");
                 }
 
                 // Pausa entre cuentas para evitar rate limiting
                 if ($account !== $accounts->last()) {
-                    $this->logInfo("⏱️ Pausa de 3 segundos entre cuentas...");
+                    $this->logInfo("⏱️ Pausa de <fg=blue>3</> segundos entre cuentas...");
                     sleep(3);
                 }
             }
 
             // 4. Resumen final
             $this->logInfo("✅ Proceso completado:");
-            $this->logInfo("   🏢 Cuentas procesadas: {$accountsProcessed}/{$accounts->count()}");
-            $this->logInfo("   📊 Registros procesados: {$totalProcessed}");
-            $this->logInfo("   💾 Registros guardados: {$totalSaved}");
-            $this->logInfo("   ⏭️ Registros omitidos (porque sus valores son 0): {$totalSkipped}");
-            $this->logInfo("   ❌ Errores totales: {$totalErrors}");
+            $this->logInfo("   🏢 Cuentas procesadas: <fg=blue>{$accountsProcessed}/{$accounts->count()}</>");
+            $this->logInfo("   📊 Registros procesados: <fg=blue>{$totalProcessed}</>");
+            $this->logInfo("   💾 Registros guardados: <fg=blue>{$totalSaved}</>");
+            $this->logInfo("   ⏭️ Registros omitidos (porque sus valores son 0): <fg=blue>{$totalSkipped}</>");
+            $this->logInfo("   ❌ Errores totales: <fg=blue>{$totalErrors}</>");
 
             return Command::SUCCESS;
 
@@ -143,12 +143,12 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 ->get();
 
             if ($accounts->isEmpty()) {
-                $this->logError("❌ No se encontraron cuentas válidas con los IDs: " . implode(', ', $specificAccounts));
+                $this->logError("❌ No se encontraron cuentas válidas con los IDs: <fg=blue>" . implode(', ', $specificAccounts) . "</>");
                 return collect();
             }
 
-            $this->logInfo("🎯 Procesando " . count($specificAccounts) . " cuenta(s) específica(s): " . implode(', ', $specificAccounts));
-            $this->logInfo("🔍 Encontradas " . $accounts->count() . " cuenta(s) válida(s) con token configurado");
+            $this->logInfo("🎯 <fg=blue>" . count($specificAccounts) . "</> cuenta(s) específica(s): " . implode(', ', $specificAccounts));
+            $this->logInfo("🔍 Encontradas <fg=blue>" . $accounts->count() . "</> cuenta(s) válida(s) con token configurado");
             return $accounts;
         }
 
@@ -158,7 +158,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             ->where('api_token', '!=', '')
             ->get();
 
-        $this->logInfo("🔍 Encontradas " . $accounts->count() . " cuentas con token configurado");
+        $this->logInfo("🔍 Encontradas <fg=blue>" . $accounts->count() . "</> cuentas con token configurado");
         return $accounts;
     }
 
@@ -197,7 +197,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 ];
             }
 
-            $this->logInfo("   📋 Procesando " . $templates->flatten()->count() . " templates en chunks de 10");
+            $this->logInfo("   📋 Procesando <fg=blue>" . $templates->flatten()->count() . "</> templates en chunks de <fg=blue>10</>");
 
             // Procesar cada chunk de templates
             $processed = 0;
@@ -206,7 +206,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             $errors = 0;
 
             foreach ($templates as $chunkIndex => $templateChunk) {
-                $this->logInfo("   🔄 Chunk " . ($chunkIndex + 1) . "/" . $templates->count());
+                $this->logInfo("   🔄 Chunk <fg=blue>" . ($chunkIndex + 1) . "</>/<fg=blue>" . $templates->count() . "</>");
 
                 $result = $this->processTemplateChunk($templateChunk, $startDate, $endDate);
                 $processed += $result['processed'];
@@ -281,7 +281,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
         $specificTemplates = $this->option('template');
         if (!empty($specificTemplates)) {
             $query->whereIn('wa_template_id', $specificTemplates);
-            $this->logInfo("   🎯 Filtrando por " . count($specificTemplates) . " template(s) específico(s): " . implode(', ', $specificTemplates));
+            $this->logInfo("   🎯 Filtrando por <fg=blue>" . count($specificTemplates) . "</> template(s) específico(s): <fg=blue>" . implode(', ', $specificTemplates) . "</>");
         }
 
         return $query->pluck('wa_template_id')->chunk(10);
@@ -296,13 +296,17 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
         if ($this->option('days')) {
             $inputDays = (int)$this->option('days');
             $days = $inputDays > 90 ? 90 : $inputDays;
-            $this->logInfo("🎯 Días especificados manualmente: {$days} (máximo permitido: 90)");
+            $color = 'blue';
+            if ($inputDays > 90) {
+                $color = 'red';
+            }
+            $this->logInfo("🎯 Días especificados manualmente: <fg={$color}>{$inputDays}</> (máximo permitido: <fg=blue>90</>)");
             return $days;
         }
 
         // Si se fuerza obtención completa
         if ($this->option('force')) {
-            $this->logInfo("🔒 Modo forzado: obteniendo 90 días");
+            $this->logInfo("🔒 Modo forzado: obteniendo <fg=blue>90</> días");
             return 90;
         }
 
@@ -310,10 +314,10 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
         $hasData = WhatsappModelResolver::general_template_analytics()->exists();
 
         if (!$hasData) {
-            $this->logInfo("📝 Tabla vacía: obteniendo 90 días iniciales");
+            $this->logInfo("📝 <fg=yellow>Tabla vacía:</> obteniendo <fg=blue>90</> días iniciales");
             return 90;
         } else {
-            $this->logInfo("🔄 Tabla con datos: obteniendo 7 días para actualización");
+            $this->logInfo("🔄 Tabla con datos: obteniendo <fg=blue>7</> días para actualización");
             return 7;
         }
     }
@@ -384,7 +388,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                         $saved++;
                     } catch (\Exception $e) {
                         $errors++;
-                        $this->logWarn("❌ Error guardando template {$dataPoint['template_id']}: " . $e->getMessage());
+                        $this->logWarn("❌ Error guardando template <fg=blue>{$dataPoint['template_id']}</>: " . $e->getMessage());
                     }
                 }
             }
@@ -436,7 +440,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 return json_decode($response->getBody()->getContents(), true);
             }
 
-            $this->logWarn("⚠️ API respondió con código: {$statusCode}");
+            $this->logWarn("⚠️ API respondió con código: <fg=blue>{$statusCode}</>");
             return null;
 
         } catch (RequestException $e) {
