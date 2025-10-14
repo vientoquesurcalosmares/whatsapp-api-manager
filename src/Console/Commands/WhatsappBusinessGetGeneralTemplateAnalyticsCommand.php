@@ -12,6 +12,7 @@ use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
 
 class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
 {
+
     /**
      * The name and signature of the console command.
      *
@@ -44,6 +45,8 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
      */
     protected $client;
 
+    protected $currency;
+
     /**
      * Execute the console command.
      */
@@ -52,7 +55,8 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
         $this->info('🚀 Iniciando obtención de analytics de templates de WhatsApp Business...');
 
         try {
-            dd('paror aquí, pruebas');
+            $this->currency = config('whatsapp.api.currency', 'USD'); // Valor por defecto
+
             // 1. Obtener cuentas a procesar
             $accounts = $this->getAccountsToProcess();
 
@@ -67,9 +71,9 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             $days = $this->determineDaysToFetch();
             $this->info("📅 Obteniendo analytics de los últimos {$days} días");
 
-            // 3. Procesar cada cuenta
-            $totalProcessed = 0;
-            $totalErrors = 0;
+            // 3. Procesar por cada cuenta
+            $totalProcessed    = 0;
+            $totalErrors       = 0;
             $accountsProcessed = 0;
 
             foreach ($accounts as $account) {
@@ -249,39 +253,6 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
     }
 
     /**
-     * Configurar conexión con la API (método legacy - ahora usa setupApiClientForAccount)
-     */
-    protected function setupApiConnection(): bool
-    {
-        $accountId = config('whatsapp.api.default_account_number_id');
-
-        if (!$accountId) {
-            $this->error('❌ WHATSAPP_ACCOUNT_NUMBER_ID no configurado');
-            return false;
-        }
-
-        $this->account = WhatsappModelResolver::business_account()->find($accountId);
-
-        if (!$this->account) {
-            $this->error("❌ Cuenta de WhatsApp Business no encontrada: {$accountId}");
-            return false;
-        }
-
-        if (!$this->account->api_token) {
-            $this->error('❌ Token de API no configurado en la cuenta');
-            return false;
-        }
-
-        $this->client = new GuzzleClient([
-            'timeout' => config('whatsapp.api.timeout', 30),
-            'verify' => false // ⚠️ Solo para desarrollo
-        ]);
-
-        $this->info("✅ Conexión configurada para cuenta: {$this->account->whatsapp_business_id}");
-        return true;
-    }
-
-    /**
      * Determinar cuántos días obtener
      */
     protected function determineDaysToFetch(): int
@@ -300,7 +271,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
         }
 
         // Verificar si la tabla está vacía
-        $hasData = WhatsappModelResolver::template_analytics()->exists();
+        $hasData = WhatsappModelResolver::general_template_analytics()->exists();
 
         if (!$hasData) {
             $this->info("📝 Tabla vacía: obteniendo 90 días iniciales");
@@ -337,19 +308,24 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
     protected function processTemplateChunk($templateIds, int $days): array
     {
         $processed = 0;
-        $errors = 0;
+        $errors    = 0;
 
         try {
             // Calcular fechas
-            $endDate = Carbon::now('UTC');
-            $startDate = $endDate->copy()->subDays($days);
+            $endDate   = Carbon::now('UTC');
+            $startDate = $endDate->copy()->subDays($days-1);
+
+            //dd($startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s'), $days, $endDate->diffInDays($startDate));
 
             // Llamar a la API
             $analyticsData = $this->fetchAnalyticsFromApi($templateIds->toArray(), $startDate, $endDate);
 
             if (!$analyticsData) {
                 $this->warn("⚠️ No se pudieron obtener datos para este chunk");
-                return ['processed' => 0, 'errors' => count($templateIds)];
+                return [
+                    'processed' => 0,
+                    'errors'    => count($templateIds)
+                ];
             }
 
             // Procesar respuesta de la API
@@ -370,7 +346,10 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             $errors = count($templateIds);
         }
 
-        return ['processed' => $processed, 'errors' => $errors];
+        return [
+            'processed' => $processed,
+            'errors'    => $errors
+        ];
     }
 
     /**
@@ -397,7 +376,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                         'READ',
                     ],
                     'template_ids' => $templateIds,
-                    'limit' => 1000, // Máximo para obtener todos los días
+                    'limit' => 2000, // Máximo para obtener todos los días
                 ],
             ]);
 
@@ -428,53 +407,63 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
     protected function saveAnalyticsData(array $dataPoint, array $dataGroup): void
     {
         DB::transaction(function () use ($dataPoint, $dataGroup) {
-            // Convertir timestamps a fechas
+            // Timestamps en UTC (de la API)
             $startTimestamp = $dataPoint['start'];
-            $endTimestamp = $dataPoint['end'];
-            $startDate = Carbon::createFromTimestamp($startTimestamp)->format('Y-m-d');
-            $endDate = Carbon::createFromTimestamp($endTimestamp)->format('Y-m-d');
+            $endTimestamp   = $dataPoint['end'];
 
-            // Crear o actualizar registro principal
-            $analytics = WhatsappModelResolver::template_analytics()->updateOrCreate([
-                'wa_template_id' => $dataPoint['template_id'],
-                'start_timestamp' => $startTimestamp,
-                'end_timestamp' => $endTimestamp,
+            // Fechas legibles en timezone de la app
+            $timezone  = config('app.timezone', 'UTC');
+            $startDate = Carbon::createFromTimestamp($startTimestamp, 'UTC')->setTimezone($timezone);
+            $endDate   = Carbon::createFromTimestamp($endTimestamp, 'UTC')->setTimezone($timezone);
+
+            // Guardar registro principal
+            $analytics = WhatsappModelResolver::general_template_analytics()->updateOrCreate([
+                'wa_template_id'  => $dataPoint['template_id'],
+                'start_timestamp' => $startTimestamp, // UTC
+                'end_timestamp'   => $endTimestamp,   // UTC
             ], [
-                'granularity' => $dataGroup['granularity'],
-                'product_type' => $dataGroup['product_type'],
-                'start_date' => $startDate,
-                'end_date' => $endDate,
-                'sent' => $dataPoint['sent'] ?? 0,
-                'delivered' => $dataPoint['delivered'] ?? 0,
-                'read' => $dataPoint['read'] ?? 0,
-                'json_data' => $dataPoint,
+                'granularity'     => $dataGroup['granularity'],
+                'product_type'    => $dataGroup['product_type'],
+                'start_date'      => $startDate->format('Y-m-d H:i:s'), // local
+                'end_date'        => $endDate->format('Y-m-d H:i:s'),   // local
+                'sent'            => $dataPoint['sent'] ?? 0,
+                'delivered'       => $dataPoint['delivered'] ?? 0,
+                'read'            => $dataPoint['read'] ?? 0,
+                'json_data'       => $dataPoint,
             ]);
-
-            // Limpiar datos anteriores de clicks y costos para este registro
-            $analytics->clickedData()->delete();
-            $analytics->costData()->delete();
 
             // Guardar datos de clicks
             if (isset($dataPoint['clicked']) && is_array($dataPoint['clicked'])) {
                 foreach ($dataPoint['clicked'] as $clickData) {
-                    WhatsappModelResolver::make('template_analytics_clicked', [
-                        'template_analytics_id' => $analytics->id,
-                        'type' => $clickData['type'],
-                        'button_content' => $clickData['button_content'] ?? null,
-                        'count' => $clickData['count'] ?? 0,
-                    ])->save();
+                    if (isset($clickData['type']) && isset($clickData['count'])) {
+                        WhatsappModelResolver::general_template_analytics_clicked()->updateOrCreate(
+                            [
+                                'template_analytics_id' => $analytics->id,
+                                'type' => $clickData['type'],
+                            ],
+                            [
+                                'button_content' => $clickData['button_content'] ?? null,
+                                'count' => $clickData['count'],
+                            ]
+                        );
+                    }
                 }
             }
 
             // Guardar datos de costos
             if (isset($dataPoint['cost']) && is_array($dataPoint['cost'])) {
                 foreach ($dataPoint['cost'] as $costData) {
-                    WhatsappModelResolver::make('template_analytics_cost', [
-                        'template_analytics_id' => $analytics->id,
-                        'type' => $costData['type'],
-                        'value' => $costData['value'] ?? null,
-                        'currency' => 'USD', // Valor por defecto
-                    ])->save();
+                    if (isset($costData['type']) && isset($costData['value'])) {
+                        $costModel = WhatsappModelResolver::general_template_analytics_cost()->firstOrNew([
+                            'template_analytics_id' => $analytics->id,
+                            'type' => $costData['type'],
+                        ]);
+                        $costModel->value = $costData['value'];
+                        if (!$costModel->exists) {
+                            $costModel->currency = $this->currency;
+                        }
+                        $costModel->save();
+                    }
                 }
             }
         });
