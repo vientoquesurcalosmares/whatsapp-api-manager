@@ -29,7 +29,6 @@ return new class extends Migration
 
             // Índices para optimización de consultas
             $table->index('wa_template_id', 'idx_w_g_ta_template_id');
-            $table->index(['wa_template_id', 'start_date', 'end_date'], 'idx_w_g_ta_template_date_range');
             $table->index(['start_date', 'end_date'], 'idx_w_g_ta_date_range');
             $table->index('granularity', 'idx_w_g_ta_granularity');
             $table->unique(['wa_template_id', 'start_timestamp', 'end_timestamp'], 'unique_w_g_ta_template_period');
