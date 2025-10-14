@@ -459,9 +459,9 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                             [
                                 'general_template_analytics_id' => $analytics->id,
                                 'type' => $clickData['type'],
+                                'button_content' => $clickData['button_content'],
                             ],
                             [
-                                'button_content' => $clickData['button_content'] ?? null,
                                 'count' => $clickData['count'],
                             ]
                         );
