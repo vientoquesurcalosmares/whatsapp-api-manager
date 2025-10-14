@@ -438,7 +438,8 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             // Guardar datos de clicks
             if (isset($dataPoint['clicked']) && is_array($dataPoint['clicked'])) {
                 foreach ($dataPoint['clicked'] as $clickData) {
-                    if (isset($clickData['type']) && isset($clickData['count'])) {
+                    //Conversando con Wilfredo vemos que no es necesario guardar si count es 0
+                    if (isset($clickData['type']) && isset($clickData['count']) && $clickData['count'] > 0) {
                         WhatsappModelResolver::general_template_analytics_clicked()->updateOrCreate(
                             [
                                 'general_template_analytics_id' => $analytics->id,
@@ -456,7 +457,8 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             // Guardar datos de costos
             if (isset($dataPoint['cost']) && is_array($dataPoint['cost'])) {
                 foreach ($dataPoint['cost'] as $costData) {
-                    if (isset($costData['type']) && isset($costData['value'])) {
+                    //Conversando con Wilfredo vemos que no es necesario guardar si value es 0
+                    if (isset($costData['type']) && isset($costData['value']) && $costData['value'] > 0) {
                         $costModel = WhatsappModelResolver::general_template_analytics_cost()->firstOrNew([
                             'general_template_analytics_id' => $analytics->id,
                             'type' => $costData['type'],
