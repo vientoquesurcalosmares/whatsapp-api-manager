@@ -432,13 +432,16 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 'json_data'       => $dataPoint,
             ]);
 
+            // Asegurar que tenemos el ID del registro
+            $analytics->refresh();
+
             // Guardar datos de clicks
             if (isset($dataPoint['clicked']) && is_array($dataPoint['clicked'])) {
                 foreach ($dataPoint['clicked'] as $clickData) {
                     if (isset($clickData['type']) && isset($clickData['count'])) {
                         WhatsappModelResolver::general_template_analytics_clicked()->updateOrCreate(
                             [
-                                'template_analytics_id' => $analytics->id,
+                                'general_template_analytics_id' => $analytics->id,
                                 'type' => $clickData['type'],
                             ],
                             [
@@ -455,7 +458,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 foreach ($dataPoint['cost'] as $costData) {
                     if (isset($costData['type']) && isset($costData['value'])) {
                         $costModel = WhatsappModelResolver::general_template_analytics_cost()->firstOrNew([
-                            'template_analytics_id' => $analytics->id,
+                            'general_template_analytics_id' => $analytics->id,
                             'type' => $costData['type'],
                         ]);
                         $costModel->value = $costData['value'];
