@@ -39,6 +39,15 @@ return [
         //Versiones de plantillas
         'template_version' => \ScriptDevelop\WhatsappManager\Models\TemplateVersion::class,
 
+        //Template analytics
+        'general_template_analytics' => \ScriptDevelop\WhatsappManager\Models\GeneralTemplateAnalytics::class,
+
+        //Template analytics clicked
+        'general_template_analytics_clicked' => \ScriptDevelop\WhatsappManager\Models\GeneralTemplateAnalyticsClicked::class,
+
+        //Template analytics cost
+        'general_template_analytics_cost' => \ScriptDevelop\WhatsappManager\Models\GeneralTemplateAnalyticsCost::class,
+
         'website' => \ScriptDevelop\WhatsappManager\Models\Website::class,
 
         // Modelo para la cuenta empresarial de WhatsApp
@@ -369,7 +378,7 @@ return [
     /*
     |---------------------------------------------------------------------------
     | Códigos de país personalizados
-    |--------------------------------------------------------------------------
+    |---------------------------------------------------------------------------
     |
     | Agrega aquí los códigos de país personalizados si es necesario.
     | Sobreescribirá los códigos predeterminados.
@@ -378,5 +387,42 @@ return [
     'custom_country_codes' => [
         // Agrega aquí los códigos de país personalizados si es necesario
         // Ejemplo: '57' => 'CO',
+    ],
+
+    /*
+    |---------------------------------------------------------------------------
+    | Tareas CRON
+    |---------------------------------------------------------------------------
+    |
+    | Configuración de las tareas programadas (CRON) para la recolección de datos
+    | y otras tareas automatizadas.
+    | Para usar recuerda agrega lo siguiente a tu archivo routes/console.php:
+    |
+    | use Illuminate\Support\Facades\Schedule;
+    |
+    | if (config('whatsapp.crontimes.get_general_template_analytics.enabled', false)) {
+    |     Schedule::command('whatsapp:get-general-template-analytics')
+    |         //->onOneServer()
+    |         //->runInBackground()
+    |         ->withoutOverlapping(60)
+    |         ->cron(config('whatsapp.crontimes.get_general_template_analytics.schedule', '0 0 * * *'))
+    |         ->onSuccess(function () {
+    |             Log::info('WhatsApp Template Analytics: Tarea completada exitosamente');
+    |         })
+    |         ->onFailure(function () {
+    |             Log::error('WhatsApp Template Analytics: Tarea falló');
+    |         });
+    | }
+    |
+    | Y asegúrate de tener configurado el CRON en tu servidor:
+    | * * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
+    |
+    */
+    'crontimes' => [
+        //Patrón de tiempo para tarea CRON que obtiene las estadísticas GENERALES de plantillas
+        'get_general_template_analytics' => [
+            'enabled'=> env('WHATSAPP_CRON_GET_GENERAL_TEMPLATE_ANALYTICS', false), //Activar o desactivar la tarea CRON
+            'schedule' => env('WHATSAPP_CRONTIME_GET_GENERAL_TEMPLATE_ANALYTICS', '0 0 * * *'), //Diario a la medianoche por default
+        ],
     ],
 ];
