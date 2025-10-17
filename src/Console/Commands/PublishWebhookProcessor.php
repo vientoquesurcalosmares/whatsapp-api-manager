@@ -13,7 +13,7 @@ class PublishWebhookProcessor extends Command
     public function handle()
     {
         $source = __DIR__ . '/../../Services/WebhookProcessors/BaseWebhookProcessor.php';
-        $destination = app_path('Services/WhatsappWebhookProcessor.php');
+        $destination = app_path('Services/Whatsapp/WhatsappWebhookProcessor.php');
 
         // Check if directory exists
         $dir = dirname($destination);
@@ -27,38 +27,66 @@ class PublishWebhookProcessor extends Command
             return;
         }
 
-        // Copy the file
-        File::copy($source, $destination);
-
-        // Update the namespace
-        $content = File::get($destination);
+        // Read and modify the source content
+        $content = File::get($source);
+        
+        // Update namespace and class name
         $content = str_replace(
-            'namespace ScriptDevelop\WhatsappManager\Services\WebhookProcessors;',
-            'namespace App\Services;',
+            [
+                'namespace ScriptDevelop\WhatsappManager\Services\WebhookProcessors;',
+                'class BaseWebhookProcessor',
+                'extends BaseWebhookProcessor'
+            ],
+            [
+                'namespace App\Services\Whatsapp;',
+                'class WhatsappWebhookProcessor',
+                'extends \\ScriptDevelop\\WhatsappManager\\Services\\WebhookProcessors\\BaseWebhookProcessor'
+            ],
             $content
         );
+
+        // Add use statement for the base class
+        $useStatement = "use ScriptDevelop\\WhatsappManager\\Services\\WebhookProcessors\\BaseWebhookProcessor;\n\n";
+        $content = preg_replace('/^namespace App\\\\Services\\\\Whatsapp;/m', "namespace App\\Services\\Whatsapp;\n\n" . $useStatement, $content);
+
         File::put($destination, $content);
 
         $this->info('Webhook processor published successfully: ' . $destination);
 
-        // Check if config needs updating
+        // Update configuration
+        $this->updateConfiguration();
+    }
+
+    protected function updateConfiguration(): void
+    {
         $configPath = config_path('whatsapp.php');
-        if (File::exists($configPath)) {
-            $configContent = File::get($configPath);
-            if (strpos($configContent, "'processor'") === false) {
-                $newConfigContent = str_replace(
-                    "'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),",
-                    "'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),\n\n    // Procesador personalizado para webhooks\n    'processor' => \App\Services\WhatsappWebhookProcessor::class,",
-                    $configContent
-                );
-                File::put($configPath, $newConfigContent);
-                $this->info('Configuration updated to use custom processor.');
-            } else {
-                $this->info('Note: You may need to update your whatsapp config to use the custom processor.');
-            }
-        } else {
-            $this->info('Note: You need to update your whatsapp config to use the custom processor:');
-            $this->info("'processor' => \App\Services\WhatsappWebhookProcessor::class");
+        
+        if (!File::exists($configPath)) {
+            $this->warn('Configuration file not found. Please update your whatsapp config manually:');
+            $this->info("'processor' => \\App\\Services\\Whatsapp\\WhatsappWebhookProcessor::class");
+            return;
         }
+
+        $configContent = File::get($configPath);
+        
+        // Check if processor configuration already exists
+        if (strpos($configContent, "'processor'") !== false) {
+            // Update existing processor configuration
+            $newConfigContent = preg_replace(
+                "/'processor' => [^,]+,/",
+                "'processor' => \\App\\Services\\Whatsapp\\WhatsappWebhookProcessor::class,",
+                $configContent
+            );
+        } else {
+            // Add processor configuration
+            $newConfigContent = str_replace(
+                "'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),",
+                "'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),\n\n    // Procesador personalizado para webhooks\n    'processor' => \\App\\Services\\Whatsapp\\WhatsappWebhookProcessor::class,",
+                $configContent
+            );
+        }
+
+        File::put($configPath, $newConfigContent);
+        $this->info('Configuration updated to use custom processor.');
     }
 }
