@@ -16,7 +16,9 @@ class Endpoints
 {
     // Business Account Endpoints
     const GET_BUSINESS_ACCOUNT = '{whatsapp_business_id}';
-    const GET_BUSINESS_ACCOUNT_SUSCRIPTIONS = '{whatsapp_business_id}/subscribed_apps';
+    const GET_BUSINESS_ACCOUNT_SUBSCRIPTIONS = '{whatsapp_business_id}/subscribed_apps';
+    const SUBSCRIBE_APP = '{whatsapp_business_id}/subscribed_apps';
+    const UNSUBSCRIBE_APP = '{whatsapp_business_id}/subscribed_apps';
     const GET_PHONE_NUMBERS = '{whatsapp_business_id}/phone_numbers';
     const GET_PHONE_DETAILS = '{phone_number_id}';
     const GET_BUSINESS_PROFILE = '{phone_number_id}/whatsapp_business_profile';
@@ -99,5 +101,17 @@ class Endpoints
     public static function uploadId(string $uploadId): array
     {
         return ['upload_id' => $uploadId];
+    }
+
+    // Helper methods for common parameters
+    /**
+     * Genera un array con el ID de la cuenta empresarial de WhatsApp.
+     *
+     * @param string $whatsappBusinessId El ID de la cuenta empresarial.
+     * @return array El array con el ID de la cuenta empresarial.
+     */
+    public static function businessAccount(string $whatsappBusinessId): array
+    {
+        return ['whatsapp_business_id' => $whatsappBusinessId];
     }
 }

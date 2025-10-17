@@ -371,8 +371,27 @@ En tu archivo config/whatsapp-manager.php, puedes agregar códigos de país pers
 
 ---
 
+```php
+// Primero estableces la cuenta con forAccount()
+Whatsapp::account()->forAccount('1243432234423');
 
+// Luego usas los métodos sin parámetros (usan la cuenta establecida)
+$response = Whatsapp::account()->subscribeApp();
 
+// O con campos específicos
+$response = Whatsapp::account()->subscribeApp(['messages', 'message_template_status_update']);
+
+// Obtener aplicaciones suscritas
+$response = Whatsapp::account()->subscribedApps();
+
+// Cancelar suscripción
+$response = Whatsapp::account()->unsubscribeApp();
+
+// Registrar teléfono (este sí necesita phone_number_id)
+$response = Whatsapp::account()->registerPhone('phone_number_id_here', [
+    'fields' => 'primary_funding_id,verified_name'
+]);
+```
 
 ---
 

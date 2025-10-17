@@ -83,4 +83,47 @@ class WhatsappManager
     {
         return app('whatsapp.block');
     }
+
+    /**
+     * Suscribe una aplicación a la cuenta empresarial de WhatsApp actual
+     *
+     * @param array $subscribedFields
+     * @return array
+     */
+    public function subscribeApp(array $subscribedFields = null): array
+    {
+        return $this->account()->subscribeApp($subscribedFields);
+    }
+
+    /**
+     * Obtiene las aplicaciones suscritas a la cuenta empresarial actual
+     *
+     * @return array
+     */
+    public function subscribedApps(): array
+    {
+        return $this->account()->subscribedApps();
+    }
+
+    /**
+     * Cancela la suscripción de una aplicación de la cuenta empresarial actual
+     *
+     * @return array
+     */
+    public function unsubscribeApp(): array
+    {
+        return $this->account()->unsubscribeApp();
+    }
+
+    /**
+     * Registra un número telefónico en la API de WhatsApp
+     *
+     * @param string $phoneNumberId
+     * @param array $data
+     * @return array
+     */
+    public function registerPhone(string $phoneNumberId, array $data = []): array
+    {
+        return $this->account()->registerPhone($phoneNumberId, $data);
+    }
 }

@@ -101,12 +101,12 @@ class WhatsappService
     {
         $response = $this->apiClient->request(
             'GET',
-            Endpoints::GET_BUSINESS_ACCOUNT_SUSCRIPTIONS,
+            Endpoints::GET_BUSINESS_ACCOUNT_SUBSCRIPTIONS, // Cambiado a SUBSCRIPTIONS
             ['whatsapp_business_id' => $whatsappBusinessId],
             headers: $this->getAuthHeaders()
         );
 
-        Log::channel('whatsapp')->debug('Respuesta de getBusinessAccountaPP:', $response);
+        Log::channel('whatsapp')->debug('Respuesta de getBusinessAccountApp:', $response);
         return $response;
     }
 
@@ -237,13 +237,12 @@ class WhatsappService
     }
 
     /**
-     * Suscribe una aplicación a la cuenta empresarial
-     * 
-     * @param string $whatsappBusinessId
-     * @param array $subscribedFields Campos a suscribir (opcional). Si no se proporciona, se usan los de configuración.
+     * Suscribe una aplicación a la cuenta empresarial de WhatsApp actual
+     *
+     * @param array $subscribedFields Campos a suscribir (opcional)
      * @return array
      */
-    public function subscribeApp(string $whatsappBusinessId, array $subscribedFields = null): array
+    public function subscribeApp(array $subscribedFields = null): array
     {
         $this->ensureAccountIsSet();
         
@@ -252,29 +251,26 @@ class WhatsappService
             $subscribedFields = config('whatsapp-manager.webhook.subscribed_fields', []);
         }
         
-        $endpointUrl = Endpoints::build(
-            Endpoints::GET_BUSINESS_ACCOUNT_SUSCRIPTIONS,
-            ['whatsapp_business_id' => $whatsappBusinessId]
-        );
-        
-        // Preparar el cuerpo de la solicitud con los campos suscritos
         $requestBody = [];
         if (!empty($subscribedFields)) {
             $requestBody['subscribed_fields'] = $subscribedFields;
         }
         
         Log::channel('whatsapp')->debug('Suscribiendo aplicación', [
-            'business_id' => $whatsappBusinessId,
+            'business_id' => $this->businessAccount->whatsapp_business_id,
             'subscribed_fields' => $subscribedFields
         ]);
         
-        return $this->apiClient->request(
+        $response = $this->apiClient->request(
             'POST',
-            $endpointUrl,
-            [], // Sin parámetros de query
-            $requestBody, // Cuerpo con campos suscritos
-            ['headers' => $this->getAuthHeaders()]
+            Endpoints::SUBSCRIBE_APP,
+            ['whatsapp_business_id' => $this->businessAccount->whatsapp_business_id],
+            $requestBody,
+            headers: $this->getAuthHeaders()
         );
+
+        Log::channel('whatsapp')->debug('Respuesta de subscribeApp:', $response);
+        return $response;
     }
 
     /**
@@ -289,7 +285,7 @@ class WhatsappService
         
         $response = $this->apiClient->request(
             'GET',
-            Endpoints::GET_BUSINESS_ACCOUNT_SUSCRIPTIONS,
+            Endpoints::GET_BUSINESS_ACCOUNT_SUBSCRIPTIONS,
             ['whatsapp_business_id' => $whatsappBusinessId],
             headers: $this->getAuthHeaders()
         );
@@ -314,7 +310,10 @@ class WhatsappService
      */
     public function updateSubscribedFields(string $whatsappBusinessId, array $subscribedFields): array
     {
-        return $this->subscribeApp($whatsappBusinessId, $subscribedFields);
+        // Primero establecemos la cuenta
+        $this->forAccount($whatsappBusinessId);
+        // Luego llamamos a subscribeApp con los campos
+        return $this->subscribeApp($subscribedFields);
     }
 
     /**
@@ -395,6 +394,85 @@ class WhatsappService
             ]
         ]);
         
+        return $response;
+    }
+
+    /**
+     * Obtiene las aplicaciones suscritas a la cuenta empresarial actual
+     *
+     * @return array
+     */
+    public function subscribedApps(): array
+    {
+        $this->ensureAccountIsSet();
+        
+        $response = $this->apiClient->request(
+            'GET',
+            Endpoints::GET_BUSINESS_ACCOUNT_SUBSCRIPTIONS,
+            ['whatsapp_business_id' => $this->businessAccount->whatsapp_business_id],
+            headers: $this->getAuthHeaders()
+        );
+
+        Log::channel('whatsapp')->debug('Respuesta de subscribedApps:', $response);
+        return $response;
+    }
+
+    /**
+     * Cancela la suscripción de una aplicación a la cuenta empresarial actual
+     *
+     * @return array
+     */
+    public function unsubscribeApp(): array
+    {
+        $this->ensureAccountIsSet();
+        
+        Log::channel('whatsapp')->debug('Cancelando suscripción de aplicación', [
+            'business_id' => $this->businessAccount->whatsapp_business_id
+        ]);
+        
+        $response = $this->apiClient->request(
+            'DELETE',
+            Endpoints::UNSUBSCRIBE_APP,
+            ['whatsapp_business_id' => $this->businessAccount->whatsapp_business_id],
+            headers: $this->getAuthHeaders()
+        );
+
+        Log::channel('whatsapp')->debug('Respuesta de unsubscribeApp:', $response);
+        return $response;
+    }
+
+    /**
+     * Registra un número telefónico en la API de WhatsApp
+     * Nota: Limitado a 10 solicitudes por número de negocio en 72 horas
+     *
+     * @param string $phoneNumberId
+     * @param array $data Datos de registro
+     * @return array
+     */
+    public function registerPhone(string $phoneNumberId, array $data = []): array
+    {
+        $this->ensureAccountIsSet();
+        
+        // Campos por defecto para el registro
+        $fields = $data['fields'] ?? 'primary_funding_id';
+        
+        $url = Endpoints::build(
+            Endpoints::GET_BUSINESS_ACCOUNT,
+            ['whatsapp_business_id' => $phoneNumberId]
+        ) . '?' . http_build_query(['fields' => $fields]);
+
+        Log::channel('whatsapp')->debug('Registrando número telefónico', [
+            'phone_number_id' => $phoneNumberId,
+            'fields' => $fields
+        ]);
+        
+        $response = $this->apiClient->request(
+            'GET',
+            $url,
+            headers: $this->getAuthHeaders()
+        );
+
+        Log::channel('whatsapp')->debug('Respuesta de registerPhone:', $response);
         return $response;
     }
 }
