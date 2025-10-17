@@ -375,20 +375,28 @@ En tu archivo config/whatsapp-manager.php, puedes agregar códigos de país pers
 // Primero estableces la cuenta con forAccount()
 Whatsapp::account()->forAccount('1243432234423');
 
-// Luego usas los métodos sin parámetros (usan la cuenta establecida)
-$response = Whatsapp::account()->subscribeApp();
 
+$account = Whatsapp::account()->register([
+    'api_token' => 'EAAKt6D2DgZCMBPhMmgtjmnhvUa8O7rZA5zNnao1nama4grw7IA3R9bk6nXfRZAcycZAGvZBZCEtjVUZC8bfbNvkLgdsyBXyfHZCWro3a50URdyPIlKQUDbhwf7o9krD0vpn2hj8CXBKZBe91n01cvtnNLeAtCNi5veCGZAdPh93RmpIp6P0KxkTn6dbxWxU8UXso07zgugZAJwScJOd3KwHAOZAcnSdSi8wjZCPvVd33vk0ikI8kZBbxvjBN4nP7j5BF1dJiqHCQH9ER1kRFZClpiAOcGasebw8S08yDvwCarUSZCr6YJxojUgZDZD',
+    'business_id' => '747336834840188'
+]);
+
+// Primero establece la cuenta
+Whatsapp::service()->forAccount('747336834840188');
+
+// Luego usa los métodos de suscripción
+$response = Whatsapp::service()->subscribeApp();
 // O con campos específicos
-$response = Whatsapp::account()->subscribeApp(['messages', 'message_template_status_update']);
+$response = Whatsapp::service()->subscribeApp(['messages', 'message_template_status_update']);
 
 // Obtener aplicaciones suscritas
-$response = Whatsapp::account()->subscribedApps();
+$response = Whatsapp::service()->subscribedApps();
 
 // Cancelar suscripción
-$response = Whatsapp::account()->unsubscribeApp();
+$response = Whatsapp::service()->unsubscribeApp();
 
-// Registrar teléfono (este sí necesita phone_number_id)
-$response = Whatsapp::account()->registerPhone('phone_number_id_here', [
+// Registrar teléfono
+$response = Whatsapp::service()->registerPhone('phone_number_id_here', [
     'fields' => 'primary_funding_id,verified_name'
 ]);
 ```

@@ -71,8 +71,8 @@ class Whatsapp extends Facade
         return app('whatsapp.flow');
     }
 
-    public static function subscribeApp(string $wabaId): array
+    public static function service()
     {
-        return app(WhatsappService::class)->subscribeApp($wabaId);
+        return app('whatsapp.service');
     }
 }

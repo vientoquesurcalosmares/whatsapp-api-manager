@@ -242,7 +242,7 @@ class WhatsappService
      * @param array $subscribedFields Campos a suscribir (opcional)
      * @return array
      */
-    public function subscribeApp(array $subscribedFields = null): array
+    public function subscribeApp(?array $subscribedFields = null): array
     {
         $this->ensureAccountIsSet();
         

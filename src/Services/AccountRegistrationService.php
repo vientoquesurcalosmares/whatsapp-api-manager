@@ -45,7 +45,7 @@ class AccountRegistrationService
      * @throws ApiException Si ocurre un error al interactuar con la API de WhatsApp.
      * @throws InvalidApiResponseException Si la respuesta de la API es inválida.
      */
-    public function register(array $data, array $subscribedFields = null): Model
+    public function register(array $data, ?array $subscribedFields = null): Model
     {
         Log::channel('whatsapp')->info('Iniciando registro de cuenta', ['business_id' => $data['business_id']]);
 
@@ -352,5 +352,48 @@ class AccountRegistrationService
         $phone = $this->updateOrCreatePhoneNumber($account, $phoneData);
         $this->processPhoneNumberProfile($phone);
         return $phone;
+    }
+
+    /**
+     * Suscribe una aplicación a la cuenta empresarial de WhatsApp actual
+     *
+     * @param array $subscribedFields Campos a suscribir (opcional)
+     * @return array
+     */
+    public function subscribeApp(?array $subscribedFields = null): array
+    {
+        return $this->whatsappService->subscribeApp($subscribedFields);
+    }
+
+    /**
+     * Obtiene las aplicaciones suscritas a la cuenta empresarial actual
+     *
+     * @return array
+     */
+    public function subscribedApps(): array
+    {
+        return $this->whatsappService->subscribedApps();
+    }
+
+    /**
+     * Cancela la suscripción de una aplicación a la cuenta empresarial actual
+     *
+     * @return array
+     */
+    public function unsubscribeApp(): array
+    {
+        return $this->whatsappService->unsubscribeApp();
+    }
+
+    /**
+     * Registra un número telefónico en la API de WhatsApp
+     *
+     * @param string $phoneNumberId
+     * @param array $data Datos de registro
+     * @return array
+     */
+    public function registerPhone(string $phoneNumberId, array $data = []): array
+    {
+        return $this->whatsappService->registerPhone($phoneNumberId, $data);
     }
 }
