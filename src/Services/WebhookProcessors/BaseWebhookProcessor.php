@@ -57,6 +57,26 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         $value = $change['value'] ?? null;
         $field = $change['field'] ?? null;
 
+        Log::channel('whatsapp')->info('Processing webhook field:', ['field' => $field]);
+
+        switch ($field) {
+            case 'history':
+                $this->handleHistorySync($value);
+                return response()->json(['success' => true]);
+                
+            case 'smb_app_state_sync':
+                $this->handleSmbAppStateSync($value);
+                return response()->json(['success' => true]);
+                
+            case 'smb_message_echoes':
+                $this->handleSmbMessageEchoes($value);
+                return response()->json(['success' => true]);
+                
+            case 'account_update':
+                $this->handleAccountUpdate($value);
+                return response()->json(['success' => true]);
+        }
+
         if ($field === 'message_template' or $field=== 'message_template_status_update') {
             $this->handleTemplateEvent($value);
             return response()->json(['success' => true]);
@@ -1424,5 +1444,554 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             $acceptsMarketing = ($preference === 'resume');
             $this->updateContactMarketingPreference($contact->contact_id, $acceptsMarketing);
         }
+    }
+
+
+    /**
+     * Maneja la sincronización del historial de mensajes de coexistencia
+     */
+    protected function handleHistorySync(array $data): void
+    {
+        Log::channel('whatsapp')->info('Processing history sync webhook', $data);
+
+        $messagingProduct = $data['messaging_product'] ?? 'whatsapp';
+        $metadata = $data['metadata'] ?? [];
+        $historyData = $data['history'] ?? [];
+
+        $phoneNumberId = $metadata['phone_number_id'] ?? null;
+        $displayPhoneNumber = $metadata['display_phone_number'] ?? null;
+
+        if (!$phoneNumberId) {
+            Log::channel('whatsapp')->warning('No phone_number_id found in history sync', $data);
+            return;
+        }
+
+        $whatsappPhone = WhatsappModelResolver::phone_number()
+            ->where('api_phone_number_id', $phoneNumberId)
+            ->first();
+
+        if (!$whatsappPhone) {
+            Log::channel('whatsapp')->warning('No matching phone number found for history sync', [
+                'phone_number_id' => $phoneNumberId
+            ]);
+            return;
+        }
+
+        // Verificar si hay errores (cuando el negocio no comparte historial)
+        if (isset($historyData['errors'])) {
+            $this->handleHistorySyncError($historyData['errors'], $whatsappPhone);
+            return;
+        }
+
+        // Procesar threads de historial
+        foreach ($historyData as $historyItem) {
+            $this->processHistoryThreads($historyItem, $whatsappPhone);
+        }
+
+        Log::channel('whatsapp')->info('History sync processed successfully', [
+            'phone_number_id' => $phoneNumberId,
+            'threads_count' => count($historyData)
+        ]);
+    }
+
+    /**
+     * Procesa los threads de historial de mensajes
+     */
+    protected function processHistoryThreads(array $historyItem, Model $whatsappPhone): void
+    {
+        $metadata = $historyItem['metadata'] ?? [];
+        $threads = $historyItem['threads'] ?? [];
+
+        $phase = $metadata['phase'] ?? 0;
+        $chunkOrder = $metadata['chunk_order'] ?? 1;
+        $progress = $metadata['progress'] ?? 0;
+
+        Log::channel('whatsapp')->info('Processing history chunk', [
+            'phase' => $phase,
+            'chunk_order' => $chunkOrder,
+            'progress' => $progress,
+            'threads_count' => count($threads)
+        ]);
+
+        foreach ($threads as $thread) {
+            $this->processHistoryThread($thread, $whatsappPhone, $phase);
+        }
+    }
+
+    /**
+     * Procesa un thread individual del historial
+     */
+    protected function processHistoryThread(array $thread, Model $whatsappPhone, int $phase): void
+    {
+        $threadId = $thread['id'] ?? null; // WhatsApp user phone number
+        $messages = $thread['messages'] ?? [];
+
+        if (!$threadId || empty($messages)) {
+            return;
+        }
+
+        // Obtener o crear el contacto
+        $fullPhone = preg_replace('/\D/', '', $threadId);
+        [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
+
+        if (empty($countryCode) || empty($phoneNumber)) {
+            Log::channel('whatsapp')->warning('Unable to split phone number in history thread', [
+                'thread_id' => $threadId
+            ]);
+            return;
+        }
+
+        $contactRecord = WhatsappModelResolver::contact()->firstOrCreate(
+            [
+                'country_code' => $countryCode,
+                'phone_number' => $phoneNumber,
+            ],
+            [
+                'wa_id' => $threadId,
+                'contact_name' => null, // No hay nombre en el historial
+            ]
+        );
+
+        // Procesar mensajes del thread
+        foreach ($messages as $message) {
+            $this->processHistoryMessage($message, $contactRecord, $whatsappPhone, $phase);
+        }
+    }
+
+    /**
+     * Procesa un mensaje individual del historial
+     */
+    protected function processHistoryMessage(array $message, Model $contact, Model $whatsappPhone, int $phase): void
+    {
+        $messageType = $message['type'] ?? '';
+        $from = $message['from'] ?? '';
+        $timestamp = $message['timestamp'] ?? null;
+        $historyContext = $message['history_context'] ?? [];
+
+        // Determinar si el mensaje fue enviado por el negocio o el usuario
+        $isFromBusiness = ($from === $whatsappPhone->display_phone_number);
+
+        // Preparar datos base del mensaje
+        $messageData = [
+            'wa_id' => $message['id'],
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'conversation_id' => null,
+            'messaging_product' => 'whatsapp',
+            'message_from' => preg_replace('/[\D+]/', '', $from),
+            'message_to' => $isFromBusiness ? 
+                preg_replace('/[\D+]/', '', $contact->country_code . $contact->phone_number) :
+                preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+            'message_type' => strtoupper($messageType),
+            'json_content' => json_encode($message),
+            'status' => $historyContext['status'] ?? 'delivered', // Asumir entregado para historial
+            'message_context_id' => $this->getContextMessageId($message),
+            'is_historical' => true, // Marcar como mensaje histórico
+            'historical_phase' => $phase,
+        ];
+
+        // Procesar según el tipo de mensaje
+        switch ($messageType) {
+            case 'text':
+                $messageData['message_content'] = $message['text']['body'] ?? '';
+                break;
+                
+            case 'image':
+            case 'audio':
+            case 'video':
+            case 'document':
+            case 'sticker':
+                $messageData['message_content'] = $message[$messageType]['caption'] ?? strtoupper($messageType);
+                // Nota: Para mensajes de media históricos, los archivos multimedia no están disponibles
+                break;
+                
+            case 'interactive':
+                $messageData['message_content'] = $message['interactive']['button_reply']['title'] 
+                    ?? $message['interactive']['list_reply']['title'] 
+                    ?? 'Interactive message';
+                break;
+                
+            case 'location':
+                $messageData['message_content'] = "Location: " . ($message['location']['name'] ?? '');
+                break;
+                
+            default:
+                $messageData['message_content'] = $this->getMessageContentForType($messageType, $message) 
+                    ?? 'Historical message';
+        }
+
+        // Crear registro del mensaje histórico
+        $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
+            ['wa_id' => $messageData['wa_id']],
+            $messageData
+        );
+
+        Log::channel('whatsapp')->debug('Historical message processed', [
+            'message_id' => $messageRecord->message_id,
+            'type' => $messageType,
+            'phase' => $phase
+        ]);
+    }
+
+    /**
+     * Maneja errores en la sincronización del historial
+     */
+    protected function handleHistorySyncError(array $errors, Model $whatsappPhone): void
+    {
+        foreach ($errors as $error) {
+            $errorCode = $error['code'] ?? null;
+            $errorMessage = $error['message'] ?? 'Unknown error';
+
+            if ($errorCode === 2593109) {
+                Log::channel('whatsapp')->warning('Business chose not to share messaging history', [
+                    'phone_number_id' => $whatsappPhone->api_phone_number_id,
+                    'error' => $errorMessage
+                ]);
+            } else {
+                Log::channel('whatsapp')->error('History sync error', [
+                    'phone_number_id' => $whatsappPhone->api_phone_number_id,
+                    'error_code' => $errorCode,
+                    'error_message' => $errorMessage
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Maneja la sincronización del estado de la app SMB (contactos)
+     */
+    protected function handleSmbAppStateSync(array $data): void
+    {
+        Log::channel('whatsapp')->info('Processing SMB app state sync', $data);
+
+        $messagingProduct = $data['messaging_product'] ?? 'whatsapp';
+        $metadata = $data['metadata'] ?? [];
+        $stateSync = $data['state_sync'] ?? [];
+
+        $phoneNumberId = $metadata['phone_number_id'] ?? null;
+
+        if (!$phoneNumberId) {
+            Log::channel('whatsapp')->warning('No phone_number_id found in SMB app state sync', $data);
+            return;
+        }
+
+        $whatsappPhone = WhatsappModelResolver::phone_number()
+            ->where('api_phone_number_id', $phoneNumberId)
+            ->first();
+
+        if (!$whatsappPhone) {
+            Log::channel('whatsapp')->warning('No matching phone number found for SMB app state sync', [
+                'phone_number_id' => $phoneNumberId
+            ]);
+            return;
+        }
+
+        foreach ($stateSync as $syncItem) {
+            $this->processContactSync($syncItem, $whatsappPhone);
+        }
+
+        Log::channel('whatsapp')->info('SMB app state sync processed', [
+            'phone_number_id' => $phoneNumberId,
+            'contacts_count' => count($stateSync)
+        ]);
+    }
+
+    /**
+     * Procesa la sincronización de un contacto individual
+     */
+    protected function processContactSync(array $syncItem, Model $whatsappPhone): void
+    {
+        $type = $syncItem['type'] ?? '';
+        $action = $syncItem['action'] ?? '';
+        $contactData = $syncItem['contact'] ?? [];
+        $metadata = $syncItem['metadata'] ?? [];
+
+        if ($type !== 'contact' || empty($contactData)) {
+            return;
+        }
+
+        $fullName = $contactData['full_name'] ?? '';
+        $firstName = $contactData['first_name'] ?? '';
+        $phoneNumberRaw = $contactData['phone_number'] ?? '';
+
+        if (!$phoneNumberRaw) {
+            Log::channel('whatsapp')->warning('No phone number in contact sync', $syncItem);
+            return;
+        }
+
+        // Normalizar número de teléfono
+        $fullPhone = preg_replace('/\D/', '', $phoneNumberRaw);
+        [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
+
+        if (empty($countryCode) || empty($phoneNumber)) {
+            Log::channel('whatsapp')->warning('Unable to split phone number in contact sync', [
+                'phone_number_raw' => $phoneNumberRaw
+            ]);
+            return;
+        }
+
+        $waId = $fullPhone; // Usar el número normalizado como WA ID
+
+        if ($action === 'remove') {
+            // Marcar contacto como eliminado (soft delete)
+            $contact = WhatsappModelResolver::contact()
+                ->where('country_code', $countryCode)
+                ->where('phone_number', $phoneNumber)
+                ->first();
+
+            if ($contact) {
+                $contact->delete();
+                Log::channel('whatsapp')->info('Contact removed via SMB sync', [
+                    'contact_id' => $contact->contact_id
+                ]);
+            }
+        } else {
+            // Agregar o actualizar contacto
+            $contact = WhatsappModelResolver::contact()->updateOrCreate(
+                [
+                    'country_code' => $countryCode,
+                    'phone_number' => $phoneNumber,
+                ],
+                [
+                    'wa_id' => $waId,
+                    'contact_name' => $fullName ?: $firstName,
+                    'first_name' => $firstName,
+                    'full_name' => $fullName,
+                ]
+            );
+
+            Log::channel('whatsapp')->debug('Contact synced via SMB app', [
+                'contact_id' => $contact->contact_id,
+                'action' => $action
+            ]);
+        }
+    }
+
+    /**
+     * Maneja los ecos de mensajes SMB (mensajes enviados desde WhatsApp Business App)
+     */
+    protected function handleSmbMessageEchoes(array $data): void
+    {
+        Log::channel('whatsapp')->info('Processing SMB message echoes', $data);
+
+        $messagingProduct = $data['messaging_product'] ?? 'whatsapp';
+        $metadata = $data['metadata'] ?? [];
+        $messageEchoes = $data['message_echoes'] ?? [];
+
+        $phoneNumberId = $metadata['phone_number_id'] ?? null;
+        $displayPhoneNumber = $metadata['display_phone_number'] ?? null;
+
+        if (!$phoneNumberId) {
+            Log::channel('whatsapp')->warning('No phone_number_id found in SMB message echoes', $data);
+            return;
+        }
+
+        $whatsappPhone = WhatsappModelResolver::phone_number()
+            ->where('api_phone_number_id', $phoneNumberId)
+            ->first();
+
+        if (!$whatsappPhone) {
+            Log::channel('whatsapp')->warning('No matching phone number found for SMB message echoes', [
+                'phone_number_id' => $phoneNumberId
+            ]);
+            return;
+        }
+
+        foreach ($messageEchoes as $echo) {
+            $this->processSmbMessageEcho($echo, $whatsappPhone);
+        }
+
+        Log::channel('whatsapp')->info('SMB message echoes processed', [
+            'phone_number_id' => $phoneNumberId,
+            'echoes_count' => count($messageEchoes)
+        ]);
+    }
+
+    /**
+     * Procesa un eco de mensaje SMB individual
+     */
+    protected function processSmbMessageEcho(array $echo, Model $whatsappPhone): void
+    {
+        $from = $echo['from'] ?? ''; // Business phone number
+        $to = $echo['to'] ?? ''; // WhatsApp user phone number
+        $messageType = $echo['type'] ?? '';
+        $timestamp = $echo['timestamp'] ?? null;
+
+        // Verificar que el mensaje viene del negocio correcto
+        if ($from !== $whatsappPhone->display_phone_number) {
+            Log::channel('whatsapp')->warning('SMB message echo from unexpected number', [
+                'expected' => $whatsappPhone->display_phone_number,
+                'actual' => $from
+            ]);
+            return;
+        }
+
+        // Obtener o crear el contacto destino
+        $fullPhone = preg_replace('/\D/', '', $to);
+        [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
+
+        if (empty($countryCode) || empty($phoneNumber)) {
+            Log::channel('whatsapp')->warning('Unable to split phone number in SMB message echo', [
+                'to' => $to
+            ]);
+            return;
+        }
+
+        $contactRecord = WhatsappModelResolver::contact()->firstOrCreate(
+            [
+                'country_code' => $countryCode,
+                'phone_number' => $phoneNumber,
+            ],
+            [
+                'wa_id' => $to,
+                'contact_name' => null,
+            ]
+        );
+
+        // Procesar el mensaje eco similar a un mensaje entrante normal
+        // pero marcado como eco de SMB
+        $messageData = [
+            'wa_id' => $echo['id'],
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+            'contact_id' => $contactRecord->contact_id,
+            'conversation_id' => null,
+            'messaging_product' => 'whatsapp',
+            'message_from' => preg_replace('/[\D+]/', '', $from),
+            'message_to' => preg_replace('/[\D+]/', '', $to),
+            'message_type' => strtoupper($messageType),
+            'json_content' => json_encode($echo),
+            'status' => 'sent', // Asumir enviado para ecos
+            'message_context_id' => $this->getContextMessageId($echo),
+            'is_smb_echo' => true, // Marcar como eco de SMB
+        ];
+
+        // Procesar contenido según el tipo
+        switch ($messageType) {
+            case 'text':
+                $messageData['message_content'] = $echo['text']['body'] ?? '';
+                break;
+                
+            case 'image':
+            case 'audio':
+            case 'video':
+            case 'document':
+            case 'sticker':
+                $messageData['message_content'] = $echo[$messageType]['caption'] ?? strtoupper($messageType);
+                break;
+                
+            case 'interactive':
+                $messageData['message_content'] = $echo['interactive']['button_reply']['title'] 
+                    ?? $echo['interactive']['list_reply']['title'] 
+                    ?? 'Interactive message';
+                break;
+                
+            default:
+                $messageData['message_content'] = $this->getMessageContentForType($messageType, $echo) 
+                    ?? 'SMB echo message';
+        }
+
+        $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
+            ['wa_id' => $messageData['wa_id']],
+            $messageData
+        );
+
+        Log::channel('whatsapp')->debug('SMB message echo processed', [
+            'message_id' => $messageRecord->message_id,
+            'type' => $messageType
+        ]);
+
+        // Disparar evento para el eco de mensaje SMB
+        $this->fireSmbMessageEcho($contactRecord, $messageRecord);
+    }
+
+    /**
+     * Maneja actualizaciones de cuenta (útil para detectar desconexiones)
+     */
+    protected function handleAccountUpdate(array $data): void
+    {
+        Log::channel('whatsapp')->info('Processing account update', $data);
+
+        $phoneNumber = $data['phone_number'] ?? '';
+        $event = $data['event'] ?? '';
+
+        if ($event === 'PARTNER_REMOVED') {
+            $this->handlePartnerRemoved($phoneNumber);
+        }
+
+        // Puedes agregar más eventos según sea necesario
+        Log::channel('whatsapp')->info('Account update processed', [
+            'phone_number' => $phoneNumber,
+            'event' => $event
+        ]);
+    }
+
+    /**
+     * Maneja cuando un negocio desconecta la cuenta
+     */
+    protected function handlePartnerRemoved(string $phoneNumber): void
+    {
+        // Buscar el número de teléfono y marcarlo como desconectado
+        $whatsappPhone = WhatsappModelResolver::phone_number()
+            ->where('display_phone_number', 'like', "%{$phoneNumber}%")
+            ->first();
+
+        if ($whatsappPhone) {
+            // Aquí puedes implementar la lógica para manejar la desconexión
+            // Por ejemplo, actualizar el estado, notificar al sistema, etc.
+            Log::channel('whatsapp')->warning('Business disconnected from partner', [
+                'phone_number_id' => $whatsappPhone->phone_number_id,
+                'display_phone_number' => $whatsappPhone->display_phone_number
+            ]);
+        }
+    }
+
+    /**
+     * Dispara evento para mensajes eco de SMB
+     */
+    protected function fireSmbMessageEcho($contactRecord, $messageRecord): void
+    {
+        // Puedes crear un evento específico para ecos SMB si lo necesitas
+        // Por ahora, usamos el evento de mensaje recibido normal
+        $this->fireMessageReceived($contactRecord, $messageRecord);
+        
+        Log::channel('whatsapp')->info('SMB message echo event fired', [
+            'message_id' => $messageRecord->message_id
+        ]);
+    }
+
+    /**
+     * Dispara evento para sincronización de historial
+     */
+    protected function fireCoexistenceHistorySynced(array $data): void
+    {
+        $event = config('whatsapp.events.coexistence.history_synced');
+        event(new $event($data));
+    }
+
+    /**
+     * Dispara evento para sincronización de contactos
+     */
+    protected function fireCoexistenceContactSynced(array $data): void
+    {
+        $event = config('whatsapp.events.coexistence.contact_synced');
+        event(new $event($data));
+    }
+
+    /**
+     * Dispara evento para ecos de mensajes SMB
+     */
+    protected function fireCoexistenceSmbMessageEcho(array $data): void
+    {
+        $event = config('whatsapp.events.coexistence.smb_message_echo');
+        event(new $event($data));
+    }
+
+    /**
+     * Dispara evento para actualizaciones de cuenta
+     */
+    protected function fireCoexistenceAccountUpdated(array $data): void
+    {
+        $event = config('whatsapp.events.coexistence.account_updated');
+        event(new $event($data));
     }
 }

@@ -489,6 +489,17 @@ Gracias por tu apoyo 💙
         ->addBody(['Ticket #456'])
         ->addButton('Llamar Soporte', []) // Botón PHONE_NUMBER
         ->send();
+
+
+
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('esta_es_una_prueba_variables_nueva')
+        ->addHeader('TEXT', 'Prueba_uno')
+        ->addBody(['Prueba_uno'])
+        ->send();
+
     ```
 
 

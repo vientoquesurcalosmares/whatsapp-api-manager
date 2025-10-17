@@ -913,6 +913,162 @@ class TemplateService
         return $handle;
     }
 
+
+    // public function uploadMedia(Model $account, string $sessionId, string $filePath, string $mimeType): string
+    // {
+    //     // Validar que el archivo exista
+    //     if (!file_exists($filePath)) {
+    //         throw new InvalidArgumentException("El archivo no existe: $filePath");
+    //     }
+
+    //     // Construir la URL completa
+    //     $baseUrl = config('whatsapp.api.base_url', 'https://graph.facebook.com');
+    //     $version = config('whatsapp.api.version', 'v22.0');
+    //     $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . "/$sessionId";
+
+    //     Log::channel('whatsapp')->info('=== INICIO UPLOAD MEDIA ===', [
+    //         'url' => $url,
+    //         'session_id' => $sessionId,
+    //         'file_path' => $filePath,
+    //         'file_size' => filesize($filePath),
+    //         'mime_type' => $mimeType
+    //     ]);
+
+    //     // Leer el contenido del archivo
+    //     $fileContents = file_get_contents($filePath);
+    //     $fileSize = filesize($filePath);
+
+    //     // Configurar cURL
+    //     $curl = curl_init();
+
+    //     $headers = [
+    //         'Authorization: Bearer ' . $account->api_token,
+    //         'file_offset: 0',
+    //         'Content-Type: ' . $mimeType,
+    //         'Content-Length: ' . $fileSize,
+    //     ];
+
+    //     curl_setopt_array($curl, [
+    //         CURLOPT_URL => $url,
+    //         CURLOPT_RETURNTRANSFER => true,
+    //         CURLOPT_ENCODING => '',
+    //         CURLOPT_MAXREDIRS => 1,
+    //         CURLOPT_TIMEOUT => 60,
+    //         CURLOPT_FOLLOWLOCATION => false,
+    //         CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+    //         CURLOPT_CUSTOMREQUEST => 'POST',
+    //         CURLOPT_POSTFIELDS => $fileContents,
+    //         CURLOPT_HTTPHEADER => $headers,
+    //         CURLOPT_SSL_VERIFYPEER => true,
+    //         CURLOPT_SSL_VERIFYHOST => 2,
+    //     ]);
+
+    //     // Ejecutar la solicitud
+    //     $response = curl_exec($curl);
+    //     $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    //     $curlError = curl_error($curl);
+    //     $curlErrno = curl_errno($curl);
+
+    //     curl_close($curl);
+
+    //     // LOG DETALLADO
+    //     Log::channel('whatsapp')->info('=== RESPONSE DEBUG ===', [
+    //         'http_code' => $httpCode,
+    //         'curl_error' => $curlError,
+    //         'curl_errno' => $curlErrno,
+    //         'response_size' => strlen($response),
+    //     ]);
+
+    //     // Validar respuesta
+    //     if ($httpCode !== 200) {
+    //         throw new \RuntimeException("HTTP Error: $httpCode. Curl: $curlError. Response: $response");
+    //     }
+
+    //     if ($curlErrno) {
+    //         throw new \RuntimeException("cURL Error ($curlErrno): $curlError");
+    //     }
+
+    //     // ANALIZAR LA RESPUESTA
+    //     $this->analyzeUploadResponse($response, $sessionId, $filePath);
+
+    //     // Decodificar JSON
+    //     $responseData = json_decode($response, true);
+
+    //     if (json_last_error() !== JSON_ERROR_NONE) {
+    //         Log::channel('whatsapp')->error('JSON decode error:', [
+    //             'error' => json_last_error_msg(),
+    //             'raw_body' => $response
+    //         ]);
+    //         throw new \RuntimeException('Invalid JSON response: ' . json_last_error_msg());
+    //     }
+
+    //     $handle = $responseData['h'] ?? null;
+
+    //     if (!$handle) {
+    //         throw new \Exception('No handle in response. Response: ' . $response);
+    //     }
+
+    //     // Validar que sea un único handle
+    //     if (is_string($handle) && substr_count($handle, "\n") > 0) {
+    //         $handle = $this->handleMultipleHandles($handle, $sessionId, $filePath);
+    //     }
+
+    //     Log::channel('whatsapp')->info('=== UPLOAD COMPLETED ===', [
+    //         'handle' => $handle,
+    //         'handle_length' => strlen($handle)
+    //     ]);
+
+    //     return $handle;
+    // }
+
+    // /**
+    //  * Analiza la respuesta del upload en detalle
+    //  */
+    // protected function analyzeUploadResponse(string $body, string $sessionId, string $filePath): void
+    // {
+    //     $lineCount = substr_count($body, "\n") + 1;
+    //     $isJson = json_decode($body, true) !== null;
+
+    //     Log::channel('whatsapp')->info('=== RESPONSE ANALYSIS ===', [
+    //         'line_count' => $lineCount,
+    //         'is_valid_json' => $isJson,
+    //         'first_200_chars' => substr($body, 0, 200),
+    //     ]);
+
+    //     if ($lineCount > 1) {
+    //         Log::channel('whatsapp')->warning('Multiple lines detected in response', [
+    //             'lines' => explode("\n", $body),
+    //         ]);
+    //     }
+    // }
+
+    // /**
+    //  * Maneja el caso de múltiples handles
+    //  */
+    // protected function handleMultipleHandles(string $handle, string $sessionId, string $filePath): string
+    // {
+    //     $handles = explode("\n", $handle);
+    //     $validHandles = array_filter(array_map('trim', $handles), function($h) {
+    //         return !empty($h) && preg_match('/^\d+:/', $h);
+    //     });
+
+    //     Log::channel('whatsapp')->error('MULTIPLE HANDLES DETECTED - USING FIRST AS WORKAROUND', [
+    //         'total_handles' => count($handles),
+    //         'valid_handles' => count($validHandles),
+    //         'all_handles' => $handles
+    //     ]);
+
+    //     if (!empty($validHandles)) {
+    //         $firstHandle = $validHandles[0];
+    //         Log::channel('whatsapp')->warning('WORKAROUND: Using first valid handle', [
+    //             'selected_handle' => $firstHandle
+    //         ]);
+    //         return $firstHandle;
+    //     }
+
+    //     throw new \RuntimeException("No valid handles found in multiple handles response");
+    // }
+
     /**
      * Valida un archivo multimedia antes de subirlo.
      *

@@ -179,6 +179,12 @@ return [
             'sent' => \Scriptdevelop\WhatsappManager\Events\TemplateMessageSent::class, //Aun no se implementa
             'rejected' => \Scriptdevelop\WhatsappManager\Events\TemplateRejected::class, //Aun no se implementa
         ],
+        'coexistence' => [
+            'history_synced' => \ScriptDevelop\WhatsappManager\Events\CoexistenceHistorySynced::class,
+            'contact_synced' => \ScriptDevelop\WhatsappManager\Events\CoexistenceContactSynced::class,
+            'smb_message_echo' => \ScriptDevelop\WhatsappManager\Events\CoexistenceSmbMessageEcho::class,
+            'account_updated' => \ScriptDevelop\WhatsappManager\Events\CoexistenceAccountUpdated::class,
+        ],
     ],
 
     /*
@@ -424,5 +430,19 @@ return [
             'enabled'=> env('WHATSAPP_CRON_GET_GENERAL_TEMPLATE_ANALYTICS', false), //Activar o desactivar la tarea CRON
             'schedule' => env('WHATSAPP_CRONTIME_GET_GENERAL_TEMPLATE_ANALYTICS', '0 0 * * *'), //Diario a la medianoche por default
         ],
+    ],
+    
+    /**
+     * Configuración para el proceso de registro embebido de WhatsApp Business.
+     *
+     * - 'flow_type': Define el tipo de flujo para el registro embebido. Puede ser 'standard' o 'coexistence'.
+     *   El valor predeterminado es 'standard'. Se puede configurar mediante la variable de entorno WHATSAPP_EMBEDDED_SIGNUP_FLOW.
+     *
+     * - 'config_id': Identificador de configuración de Meta necesario para el registro embebido.
+     *   Se debe establecer mediante la variable de entorno WHATSAPP_EMBEDDED_CONFIG_ID.
+     */
+    'embedded_signup' => [
+        'flow_type' => env('WHATSAPP_EMBEDDED_SIGNUP_FLOW', 'standard'), // 'standard' o 'coexistence'
+        'config_id' => env('WHATSAPP_EMBEDDED_CONFIG_ID'), // Tu Configuration ID de Meta
     ],
 ];
