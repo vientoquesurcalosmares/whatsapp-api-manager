@@ -322,15 +322,14 @@ php artisan whatsapp:publish-webhook-processor
 ```
 Esto creará el archivo app/Services/WhatsappWebhookProcessor.php.
 
+El comando actualiza automáticamente tu configuración:
 
-## 🔧 Configuración del Procesador
-Actualiza tu configuración para usar el procesador personalizado:
 
 ```php
 // config/whatsapp.php
 'webhook' => [
     'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
-    'processor' => \App\Services\WhatsappWebhookProcessor::class,
+    'processor' => \App\Services\Whatsapp\WhatsappWebhookProcessor::class,
 ],
 ```
 
