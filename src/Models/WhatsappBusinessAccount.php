@@ -26,13 +26,29 @@ class WhatsappBusinessAccount extends Model
         'currency',
         'webhook_token',
         'timezone_id',
-        'message_template_namespace'
+        'message_template_namespace',
+        'status', // Nuevo campo
+        'partner_app_id', // agregar a fillable
+        'disconnected_at', // Nuevo campo
+        'fully_removed_at', // Nuevo campo
+        'disconnection_reason', // Nuevo campo
+    ];
+
+    protected $casts = [
+        'disconnected_at' => 'datetime',
+        'fully_removed_at' => 'datetime',
     ];
 
     public function setApiTokenAttribute($value) {
-        $this->attributes['api_token'] = encrypt($value);
+        if ($value !== null) {
+            $this->attributes['api_token'] = encrypt($value);
+        }
     }
+    
     public function getApiTokenAttribute($value) {
+        if ($value === null) {
+            return null;
+        }
         return decrypt($value);
     }
 
@@ -44,5 +60,36 @@ class WhatsappBusinessAccount extends Model
     public function templates()
     {
         return $this->hasMany(config('whatsapp.models.template'), 'whatsapp_business_id');
+    }
+
+    // Scopes para filtrar por estado
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopeDisconnected($query)
+    {
+        return $query->where('status', 'disconnected');
+    }
+
+    public function scopeRemoved($query)
+    {
+        return $query->where('status', 'removed');
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
+    }
+
+    public function isDisconnected(): bool
+    {
+        return $this->status === 'disconnected';
+    }
+
+    public function isRemoved(): bool
+    {
+        return $this->status === 'removed';
     }
 }

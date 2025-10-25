@@ -2024,40 +2024,147 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
      */
     protected function handleAccountUpdate(array $data): void
     {
-        Log::channel('whatsapp')->info('Processing account update', $data);
+        Log::channel('whatsapp')->info('🔄 [ACCOUNT] Processing account update', $data);
 
-        $phoneNumber = $data['phone_number'] ?? '';
         $event = $data['event'] ?? '';
+        $wabaInfo = $data['waba_info'] ?? [];
+        
+        Log::channel('whatsapp')->info('📋 [ACCOUNT] Account update details', [
+            'event' => $event,
+            'waba_info' => $wabaInfo
+        ]);
 
-        if ($event === 'PARTNER_REMOVED') {
-            $this->handlePartnerRemoved($phoneNumber);
+        switch ($event) {
+            case 'PARTNER_APP_UNINSTALLED':
+                $this->handlePartnerAppUninstalled($wabaInfo);
+                break;
+                
+            case 'PARTNER_REMOVED':
+                $this->handlePartnerRemoved($wabaInfo);
+                break;
+                
+            default:
+                Log::channel('whatsapp')->warning('⚠️ [ACCOUNT] Unhandled account update event', [
+                    'event' => $event,
+                    'waba_info' => $wabaInfo
+                ]);
         }
 
-        // Puedes agregar más eventos según sea necesario
-        Log::channel('whatsapp')->info('Account update processed', [
-            'phone_number' => $phoneNumber,
-            'event' => $event
-        ]);
+        // Disparar evento de actualización de cuenta
+        $this->fireAccountUpdate($data);
     }
+
+    /**
+     * Maneja la desinstalación de la aplicación partner
+     */
+    protected function handlePartnerAppUninstalled(array $wabaInfo): void
+    {
+        $wabaId = $wabaInfo['waba_id'] ?? null;
+        $ownerBusinessId = $wabaInfo['owner_business_id'] ?? null;
+        $partnerAppId = $wabaInfo['partner_app_id'] ?? null;
+
+        Log::channel('whatsapp')->warning('🚫 [ACCOUNT] Partner app uninstalled', [
+            'waba_id' => $wabaId,
+            'owner_business_id' => $ownerBusinessId,
+            'partner_app_id' => $partnerAppId
+        ]);
+
+        // Buscar la cuenta de WhatsApp Business afectada
+        $businessAccount = WhatsappModelResolver::business_account()
+            ->where('whatsapp_business_id', $wabaId)
+            ->first();
+
+        if (!$businessAccount) {
+            Log::channel('whatsapp')->error('❌ [ACCOUNT] Business account not found for uninstall', [
+                'waba_id' => $wabaId
+            ]);
+            return;
+        }
+
+        // Actualizar el estado de la cuenta de negocio
+        $businessAccount->update([
+            'status' => 'disconnected',
+            'partner_app_id' => null,
+            'disconnected_at' => now(),
+            'disconnection_reason' => 'PARTNER_APP_UNINSTALLED',
+        ]);
+
+        // Actualizar todos los números de teléfono asociados
+        $phoneNumbers = $businessAccount->phoneNumbers ?? collect();
+        $phoneNumbers->each(function($phone) {
+            $phone->update([
+                'status' => 'disconnected',
+                'disconnected_at' => now(),
+                'disconnection_reason' => 'PARTNER_APP_UNINSTALLED',
+            ]);
+        });
+
+        Log::channel('whatsapp')->info('✅ [ACCOUNT] Business account marked as disconnected', [
+            'business_account_id' => $businessAccount->whatsapp_business_id,
+            'waba_id' => $wabaId,
+            'phone_numbers_affected' => $phoneNumbers->count()
+        ]);
+
+        // Disparar eventos
+        $this->firePartnerAppUninstalled($businessAccount, $wabaInfo);
+        $this->fireAccountStatusUpdated($businessAccount, 'disconnected');
+    }
+
 
     /**
      * Maneja cuando un negocio desconecta la cuenta
      */
-    protected function handlePartnerRemoved(string $phoneNumber): void
+    protected function handlePartnerRemoved(array $wabaInfo): void
     {
-        // Buscar el número de teléfono y marcarlo como desconectado
-        $whatsappPhone = WhatsappModelResolver::phone_number()
-            ->where('display_phone_number', 'like', "%{$phoneNumber}%")
+        $wabaId = $wabaInfo['waba_id'] ?? null;
+        $ownerBusinessId = $wabaInfo['owner_business_id'] ?? null;
+
+        Log::channel('whatsapp')->warning('🗑️ [ACCOUNT] Partner completely removed', [
+            'waba_id' => $wabaId,
+            'owner_business_id' => $ownerBusinessId
+        ]);
+
+        // Buscar la cuenta de WhatsApp Business afectada
+        $businessAccount = WhatsappModelResolver::business_account()
+            ->where('whatsapp_business_id', $wabaId)
             ->first();
 
-        if ($whatsappPhone) {
-            // Aquí puedes implementar la lógica para manejar la desconexión
-            // Por ejemplo, actualizar el estado, notificar al sistema, etc.
-            Log::channel('whatsapp')->warning('Business disconnected from partner', [
-                'phone_number_id' => $whatsappPhone->phone_number_id,
-                'display_phone_number' => $whatsappPhone->display_phone_number
+        if (!$businessAccount) {
+            Log::channel('whatsapp')->error('❌ [ACCOUNT] Business account not found for removal', [
+                'waba_id' => $wabaId
             ]);
+            return;
         }
+
+        // Marcar la cuenta como completamente removida
+        $businessAccount->update([
+            'status' => 'removed',
+            'partner_app_id' => null,
+            'disconnected_at' => now(),
+            'fully_removed_at' => now(),
+            'disconnection_reason' => 'PARTNER_REMOVED',
+        ]);
+
+        // Actualizar todos los números de teléfono asociados
+        $phoneNumbers = $businessAccount->phoneNumbers ?? collect();
+        $phoneNumbers->each(function($phone) {
+            $phone->update([
+                'status' => 'removed',
+                'disconnected_at' => now(),
+                'fully_removed_at' => now(),
+                'disconnection_reason' => 'PARTNER_REMOVED',
+            ]);
+        });
+
+        Log::channel('whatsapp')->info('✅ [ACCOUNT] Business account marked as removed', [
+            'business_account_id' => $businessAccount->whatsapp_business_id,
+            'waba_id' => $wabaId,
+            'phone_numbers_affected' => $phoneNumbers->count()
+        ]);
+
+        // Disparar eventos
+        $this->firePartnerRemoved($businessAccount, $wabaInfo);
+        $this->fireAccountStatusUpdated($businessAccount, 'removed');
     }
 
     /**
@@ -2562,4 +2669,79 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         $event = config('whatsapp.events.coexistence.account_updated');
         event(new $event($data));
     }
+
+    /**
+     * Dispara evento para actualizaciones de cuenta genéricas
+     */
+    protected function fireAccountUpdate(array $data): void
+    {
+        $event = config('whatsapp.events.account.update');
+        if ($event) {
+            event(new $event($data));
+        }
+
+        Log::channel('whatsapp')->debug('🎉 [ACCOUNT] Account update event fired', [
+            'event' => $data['event'] ?? 'unknown'
+        ]);
+    }
+
+    /**
+     * Dispara evento para desinstalación de app partner
+     */
+    protected function firePartnerAppUninstalled(Model $businessAccount, array $wabaInfo): void
+    {
+        $eventData = [
+            'business_account' => $businessAccount,
+            'waba_info' => $wabaInfo,
+            'timestamp' => now(),
+            'event_type' => 'PARTNER_APP_UNINSTALLED'
+        ];
+
+        event(new \ScriptDevelop\WhatsappManager\Events\PartnerAppUninstalled($eventData));
+
+        Log::channel('whatsapp')->info('🎉 [ACCOUNT] Partner app uninstalled event fired', [
+            'business_account_id' => $businessAccount->whatsapp_business_id,
+            'waba_id' => $wabaInfo['waba_id'] ?? null
+        ]);
+    }
+
+    /**
+     * Dispara evento para remoción completa del partner
+     */
+    protected function firePartnerRemoved(Model $businessAccount, array $wabaInfo): void
+    {
+        $eventData = [
+            'business_account' => $businessAccount,
+            'waba_info' => $wabaInfo,
+            'timestamp' => now(),
+            'event_type' => 'PARTNER_REMOVED'
+        ];
+
+        event(new \ScriptDevelop\WhatsappManager\Events\PartnerRemoved($eventData));
+
+        Log::channel('whatsapp')->info('🎉 [ACCOUNT] Partner removed event fired', [
+            'business_account_id' => $businessAccount->whatsapp_business_id,
+            'waba_id' => $wabaInfo['waba_id'] ?? null
+        ]);
+    }
+
+    /**
+ * Dispara evento para actualización de estado de cuenta
+ */
+protected function fireAccountStatusUpdated(Model $businessAccount, string $status): void
+{
+    $eventData = [
+        'business_account' => $businessAccount,
+        'new_status' => $status,
+        'timestamp' => now(),
+        'event_type' => 'ACCOUNT_STATUS_UPDATED'
+    ];
+
+    event(new \ScriptDevelop\WhatsappManager\Events\AccountStatusUpdated($eventData));
+
+    Log::channel('whatsapp')->debug('🔔 [ACCOUNT] Account status updated event fired', [
+        'business_account_id' => $businessAccount->whatsapp_business_id,
+        'status' => $status
+    ]);
+}
 }

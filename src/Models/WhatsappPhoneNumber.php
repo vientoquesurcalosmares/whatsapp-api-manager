@@ -34,12 +34,53 @@ class WhatsappPhoneNumber extends Model
         'throughput',
         'webhook_configuration',
         'is_official',
-        'is_pin_enabled'
+        'is_pin_enabled',
+
+        // Nuevos campos
+        'status',
+        'disconnected_at',
+        'fully_removed_at',
+        'disconnection_reason',
     ];
+
     protected $casts = [
         'throughput' => 'array',
         'webhook_configuration' => 'array',
+        'disconnected_at' => 'datetime',
+        'fully_removed_at' => 'datetime',
     ];
+
+    // Scopes para filtrar por estado
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopeDisconnected($query)
+    {
+        return $query->where('status', 'disconnected');
+    }
+
+    public function scopeRemoved($query)
+    {
+        return $query->where('status', 'removed');
+    }
+
+    // Métodos de ayuda para el estado
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
+    }
+
+    public function isDisconnected(): bool
+    {
+        return $this->status === 'disconnected';
+    }
+
+    public function isRemoved(): bool
+    {
+        return $this->status === 'removed';
+    }
 
     public function messages()
     {
