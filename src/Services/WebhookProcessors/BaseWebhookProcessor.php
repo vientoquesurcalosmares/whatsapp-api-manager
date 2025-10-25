@@ -1447,12 +1447,28 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     }
 
 
+    // =========================================================================
+    // COEXISTENCE WEBHOOKS IMPLEMENTATION
+    // =========================================================================
+
+
+
+
+
     /**
      * Maneja la sincronización del historial de mensajes de coexistencia
      */
+    /**
+     * Webhook para sincronización de historial de mensajes
+     * Se dispara cuando un negocio completa el onboarding con coexistencia
+     * y comparte su historial de mensajes
+     */
     protected function handleHistorySync(array $data): void
     {
-        Log::channel('whatsapp')->info('Processing history sync webhook', $data);
+        Log::channel('whatsapp')->info('🔄 [COEXISTENCE] Iniciando sincronización de historial', [
+            'phone_number_id' => $data['metadata']['phone_number_id'] ?? null,
+            'display_phone_number' => $data['metadata']['display_phone_number'] ?? null
+        ]);
 
         $messagingProduct = $data['messaging_product'] ?? 'whatsapp';
         $metadata = $data['metadata'] ?? [];
@@ -1488,7 +1504,10 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             $this->processHistoryThreads($historyItem, $whatsappPhone);
         }
 
-        Log::channel('whatsapp')->info('History sync processed successfully', [
+        // Post-procesamiento personalizado
+        $this->afterHistorySync($data);
+
+        Log::channel('whatsapp')->info('✅ [COEXISTENCE] Historial sincronizado exitosamente', [
             'phone_number_id' => $phoneNumberId,
             'threads_count' => count($historyData)
         ]);
@@ -1563,13 +1582,20 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
      */
     protected function processHistoryMessage(array $message, Model $contact, Model $whatsappPhone, int $phase): void
     {
+        // Lógica personalizada pre-procesamiento
+        $this->beforeProcessHistoryMessage($message, $contact, $whatsappPhone, $phase);
+
         $messageType = $message['type'] ?? '';
         $from = $message['from'] ?? '';
         $timestamp = $message['timestamp'] ?? null;
         $historyContext = $message['history_context'] ?? [];
 
-        // Determinar si el mensaje fue enviado por el negocio o el usuario
-        $isFromBusiness = ($from === $whatsappPhone->display_phone_number);
+        // Normalizar números para comparación
+        $fromNormalized = preg_replace('/[\D+]/', '', $from);
+        $displayPhoneNormalized = preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number);
+
+        // Determinar si el mensaje fue enviado por el negocio (OUTPUT) o recibido (INPUT)
+        $isFromBusiness = ($fromNormalized === $displayPhoneNormalized);
 
         // Preparar datos base del mensaje
         $messageData = [
@@ -1578,10 +1604,11 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             'contact_id' => $contact->contact_id,
             'conversation_id' => null,
             'messaging_product' => 'whatsapp',
-            'message_from' => preg_replace('/[\D+]/', '', $from),
-            'message_to' => $isFromBusiness ? 
+            'message_method' => $isFromBusiness ? 'OUTPUT' : 'INPUT', // Determinar dirección del mensaje
+            'message_from' => $fromNormalized,
+            'message_to' => $isFromBusiness ?
                 preg_replace('/[\D+]/', '', $contact->country_code . $contact->phone_number) :
-                preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+                $displayPhoneNormalized,
             'message_type' => strtoupper($messageType),
             'json_content' => json_encode($message),
             'status' => $historyContext['status'] ?? 'delivered', // Asumir entregado para historial
@@ -1590,47 +1617,68 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             'historical_phase' => $phase,
         ];
 
-        // Procesar según el tipo de mensaje
+        // Procesar contenido según el tipo de mensaje
         switch ($messageType) {
             case 'text':
                 $messageData['message_content'] = $message['text']['body'] ?? '';
                 break;
-                
+
             case 'image':
             case 'audio':
             case 'video':
             case 'document':
             case 'sticker':
                 $messageData['message_content'] = $message[$messageType]['caption'] ?? strtoupper($messageType);
-                // Nota: Para mensajes de media históricos, los archivos multimedia no están disponibles
                 break;
-                
+
             case 'interactive':
-                $messageData['message_content'] = $message['interactive']['button_reply']['title'] 
-                    ?? $message['interactive']['list_reply']['title'] 
+                $messageData['message_content'] = $message['interactive']['button_reply']['title']
+                    ?? $message['interactive']['list_reply']['title']
                     ?? 'Interactive message';
                 break;
-                
+
             case 'location':
                 $messageData['message_content'] = "Location: " . ($message['location']['name'] ?? '');
                 break;
-                
+
             default:
-                $messageData['message_content'] = $this->getMessageContentForType($messageType, $message) 
+                $messageData['message_content'] = $this->getMessageContentForType($messageType, $message)
                     ?? 'Historical message';
         }
 
-        // Crear registro del mensaje histórico
-        $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
-            ['wa_id' => $messageData['wa_id']],
-            $messageData
-        );
-
-        Log::channel('whatsapp')->debug('Historical message processed', [
-            'message_id' => $messageRecord->message_id,
-            'type' => $messageType,
+        Log::channel('whatsapp')->info('💾 [COEXISTENCE] Guardando mensaje histórico', [
+            'wa_id' => $messageData['wa_id'],
+            'type' => $messageData['message_type'],
+            'method' => $messageData['message_method'],
+            'is_from_business' => $isFromBusiness,
             'phase' => $phase
         ]);
+
+        try {
+            // Crear registro del mensaje histórico
+            $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
+                ['wa_id' => $messageData['wa_id']],
+                $messageData
+            );
+
+            Log::channel('whatsapp')->debug('✅ [COEXISTENCE] Mensaje histórico guardado', [
+                'message_id' => $messageRecord->message_id,
+                'type' => $messageType,
+                'method' => $messageRecord->message_method,
+                'phase' => $phase
+            ]);
+
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('❌ [COEXISTENCE] Error al guardar mensaje histórico', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'message_data' => $messageData
+            ]);
+            throw $e;
+        }
+
+        // Lógica personalizada post-procesamiento
+        $this->afterProcessHistoryMessage($message, $contact, $whatsappPhone, $phase);
     }
 
     /**
@@ -1658,11 +1706,15 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     }
 
     /**
-     * Maneja la sincronización del estado de la app SMB (contactos)
+     * Webhook para sincronización de contactos desde WhatsApp Business App
+     * Se dispara cuando hay cambios en los contactos de la app móvil
      */
     protected function handleSmbAppStateSync(array $data): void
     {
-        Log::channel('whatsapp')->info('Processing SMB app state sync', $data);
+        Log::channel('whatsapp')->info('📇 [COEXISTENCE] Sincronizando contactos desde WhatsApp Business App', [
+            'phone_number_id' => $data['metadata']['phone_number_id'] ?? null,
+            'contacts_count' => count($data['state_sync'] ?? [])
+        ]);
 
         $messagingProduct = $data['messaging_product'] ?? 'whatsapp';
         $metadata = $data['metadata'] ?? [];
@@ -1690,7 +1742,10 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             $this->processContactSync($syncItem, $whatsappPhone);
         }
 
-        Log::channel('whatsapp')->info('SMB app state sync processed', [
+        // Post-procesamiento personalizado
+        $this->afterContactsSync($data);
+
+        Log::channel('whatsapp')->info('✅ [COEXISTENCE] Contactos sincronizados exitosamente', [
             'phone_number_id' => $phoneNumberId,
             'contacts_count' => count($stateSync)
         ]);
@@ -1701,6 +1756,12 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
      */
     protected function processContactSync(array $syncItem, Model $whatsappPhone): void
     {
+        // Validación personalizada antes de sincronizar
+        if (!$this->shouldSyncContact($syncItem)) {
+            Log::channel('whatsapp')->debug('[COEXISTENCE] Contacto omitido por validación personalizada', $syncItem);
+            return;
+        }
+
         $type = $syncItem['type'] ?? '';
         $action = $syncItem['action'] ?? '';
         $contactData = $syncItem['contact'] ?? [];
@@ -1765,14 +1826,23 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'action' => $action
             ]);
         }
+
+        // Post-procesamiento personalizado
+        $this->afterProcessContactSync($syncItem, $whatsappPhone);
     }
 
     /**
-     * Maneja los ecos de mensajes SMB (mensajes enviados desde WhatsApp Business App)
+     * Webhook para ecos de mensajes enviados desde WhatsApp Business App
+     * Se dispara en tiempo real cuando el negocio envía mensajes desde la app móvil
+     * Esto permite mantener tu aplicación sincronizada con los mensajes enviados desde el móvil
      */
     protected function handleSmbMessageEchoes(array $data): void
     {
-        Log::channel('whatsapp')->info('Processing SMB message echoes', $data);
+        Log::channel('whatsapp')->info('💬 [COEXISTENCE] Eco de mensaje desde WhatsApp Business App recibido', [
+            'phone_number_id' => $data['metadata']['phone_number_id'] ?? null,
+            'display_phone_number' => $data['metadata']['display_phone_number'] ?? null,
+            'messages_count' => count($data['message_echoes'] ?? [])
+        ]);
 
         $messagingProduct = $data['messaging_product'] ?? 'whatsapp';
         $metadata = $data['metadata'] ?? [];
@@ -1797,31 +1867,111 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             return;
         }
 
+        // Verificar que existan message_echoes
+        if (empty($messageEchoes)) {
+            Log::channel('whatsapp')->warning('⚠️ [COEXISTENCE] No hay message_echoes en el payload', [
+                'data_keys' => array_keys($data)
+            ]);
+            return;
+        }
+
+        // Log detallado de cada mensaje
+        foreach ($messageEchoes as $index => $echo) {
+            $messageType = $echo['type'] ?? 'unknown';
+            $hasErrors = !empty($echo['errors']);
+
+            Log::channel('whatsapp')->debug("📨 [COEXISTENCE] Mensaje echo {$index}", [
+                'type' => $messageType,
+                'has_errors' => $hasErrors,
+                'error_count' => $hasErrors ? count($echo['errors']) : 0,
+                'from' => $echo['from'] ?? null,
+                'to' => $echo['to'] ?? null
+            ]);
+
+            if ($hasErrors) {
+                Log::channel('whatsapp')->warning("⚠️ [COEXISTENCE] Mensaje echo con errores", [
+                    'type' => $messageType,
+                    'errors' => $echo['errors']
+                ]);
+            }
+        }
+
         foreach ($messageEchoes as $echo) {
             $this->processSmbMessageEcho($echo, $whatsappPhone);
         }
 
-        Log::channel('whatsapp')->info('SMB message echoes processed', [
+        // Post-procesamiento personalizado
+        $this->afterSmbMessageEchoes($data);
+
+        Log::channel('whatsapp')->info('✅ [COEXISTENCE] Ecos de mensajes procesados exitosamente', [
             'phone_number_id' => $phoneNumberId,
             'echoes_count' => count($messageEchoes)
         ]);
     }
+
+
 
     /**
      * Procesa un eco de mensaje SMB individual
      */
     protected function processSmbMessageEcho(array $echo, Model $whatsappPhone): void
     {
-        $from = $echo['from'] ?? ''; // Business phone number
-        $to = $echo['to'] ?? ''; // WhatsApp user phone number
-        $messageType = $echo['type'] ?? '';
-        $timestamp = $echo['timestamp'] ?? null;
+        // Validar que el echo tenga la estructura básica requerida
+        if (empty($echo['id']) || empty($echo['from']) || empty($echo['to'])) {
+            Log::channel('whatsapp')->warning('⚠️ [COEXISTENCE] Echo de mensaje con estructura incompleta', [
+                'echo_keys' => array_keys($echo),
+                'has_id' => !empty($echo['id']),
+                'has_from' => !empty($echo['from']),
+                'has_to' => !empty($echo['to'])
+            ]);
+            return;
+        }
 
-        // Verificar que el mensaje viene del negocio correcto
-        if ($from !== $whatsappPhone->display_phone_number) {
-            Log::channel('whatsapp')->warning('SMB message echo from unexpected number', [
+        $from = $echo['from'] ?? '';
+        $to = $echo['to'] ?? '';
+        $messageType = $echo['type'] ?? 'unknown';
+        $timestamp = $echo['timestamp'] ?? null;
+        $hasErrors = !empty($echo['errors']);
+
+        Log::channel('whatsapp')->info('🔄 [COEXISTENCE] Procesando eco de mensaje individual', [
+            'echo_id' => $echo['id'],
+            'from' => $from,
+            'to' => $to,
+            'type' => $messageType,
+            'has_errors' => $hasErrors,
+            'whatsapp_phone_display' => $whatsappPhone->display_phone_number ?? null,
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id ?? null
+        ]);
+
+        if ($hasErrors) {
+            Log::channel('whatsapp')->warning('⚠️ [COEXISTENCE] Echo de mensaje con errores', [
+                'echo_id' => $echo['id'],
+                'errors' => $echo['errors']
+            ]);
+        }
+
+        // Pre-procesamiento personalizado
+        $this->beforeProcessSmbMessageEcho($echo, $whatsappPhone);
+
+        // CORREGIR PROBLEMA: Normalizar números antes de comparar
+        $fromNormalized = preg_replace('/[\D+]/', '', $from);
+        $displayPhoneNormalized = preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number);
+
+        Log::channel('whatsapp')->info('📞 [COEXISTENCE] Comparando números normalizados', [
+            'from_original' => $from,
+            'from_normalized' => $fromNormalized,
+            'display_original' => $whatsappPhone->display_phone_number,
+            'display_normalized' => $displayPhoneNormalized,
+            'match' => $fromNormalized === $displayPhoneNormalized
+        ]);
+
+        // Verificar que el mensaje viene del negocio correcto (usando números normalizados)
+        if ($fromNormalized !== $displayPhoneNormalized) {
+            Log::channel('whatsapp')->warning('⚠️ [COEXISTENCE] SMB message echo from unexpected number', [
                 'expected' => $whatsappPhone->display_phone_number,
-                'actual' => $from
+                'expected_normalized' => $displayPhoneNormalized,
+                'actual' => $from,
+                'actual_normalized' => $fromNormalized
             ]);
             return;
         }
@@ -1831,11 +1981,17 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
 
         if (empty($countryCode) || empty($phoneNumber)) {
-            Log::channel('whatsapp')->warning('Unable to split phone number in SMB message echo', [
+            Log::channel('whatsapp')->warning('⚠️ [COEXISTENCE] Unable to split phone number in SMB message echo', [
                 'to' => $to
             ]);
             return;
         }
+
+        Log::channel('whatsapp')->info('👤 [COEXISTENCE] Creando/obteniendo contacto', [
+            'country_code' => $countryCode,
+            'phone_number' => $phoneNumber,
+            'full_phone' => $fullPhone
+        ]);
 
         $contactRecord = WhatsappModelResolver::contact()->firstOrCreate(
             [
@@ -1848,60 +2004,19 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             ]
         );
 
-        // Procesar el mensaje eco similar a un mensaje entrante normal
-        // pero marcado como eco de SMB
-        $messageData = [
-            'wa_id' => $echo['id'],
-            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
-            'contact_id' => $contactRecord->contact_id,
-            'conversation_id' => null,
-            'messaging_product' => 'whatsapp',
-            'message_from' => preg_replace('/[\D+]/', '', $from),
-            'message_to' => preg_replace('/[\D+]/', '', $to),
-            'message_type' => strtoupper($messageType),
-            'json_content' => json_encode($echo),
-            'status' => 'sent', // Asumir enviado para ecos
-            'message_context_id' => $this->getContextMessageId($echo),
-            'is_smb_echo' => true, // Marcar como eco de SMB
-        ];
+        // DETERMINAR SI ES MENSAJE MULTIMEDIA
+        $isMediaMessage = in_array($messageType, ['image', 'audio', 'video', 'document', 'sticker']);
 
-        // Procesar contenido según el tipo
-        switch ($messageType) {
-            case 'text':
-                $messageData['message_content'] = $echo['text']['body'] ?? '';
-                break;
-                
-            case 'image':
-            case 'audio':
-            case 'video':
-            case 'document':
-            case 'sticker':
-                $messageData['message_content'] = $echo[$messageType]['caption'] ?? strtoupper($messageType);
-                break;
-                
-            case 'interactive':
-                $messageData['message_content'] = $echo['interactive']['button_reply']['title'] 
-                    ?? $echo['interactive']['list_reply']['title'] 
-                    ?? 'Interactive message';
-                break;
-                
-            default:
-                $messageData['message_content'] = $this->getMessageContentForType($messageType, $echo) 
-                    ?? 'SMB echo message';
+        // Si es mensaje multimedia, usar el método especializado
+        if ($isMediaMessage) {
+            $this->processSmbMediaMessageEcho($echo, $contactRecord, $whatsappPhone, $messageType);
+        } else {
+            // Para mensajes no multimedia, usar el procesamiento normal
+            $this->processSmbNonMediaMessageEcho($echo, $contactRecord, $whatsappPhone, $messageType);
         }
 
-        $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
-            ['wa_id' => $messageData['wa_id']],
-            $messageData
-        );
-
-        Log::channel('whatsapp')->debug('SMB message echo processed', [
-            'message_id' => $messageRecord->message_id,
-            'type' => $messageType
-        ]);
-
-        // Disparar evento para el eco de mensaje SMB
-        $this->fireSmbMessageEcho($contactRecord, $messageRecord);
+        // Post-procesamiento personalizado
+        $this->afterProcessSmbMessageEcho($echo, $whatsappPhone);
     }
 
     /**
@@ -1946,16 +2061,436 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     }
 
     /**
+     * Procesar mensajes multimedia de ecos SMB (similar a processMediaMessage del padre)
+     */
+    protected function processSmbMediaMessageEcho(array $echo, Model $contactRecord, Model $whatsappPhone, string $messageType): void
+    {
+        try {
+            $mediaId = $echo[$messageType]['id'] ?? null;
+            $caption = $echo[$messageType]['caption'] ?? strtoupper($messageType);
+            $mimeType = $echo[$messageType]['mime_type'] ?? null;
+
+            Log::channel('whatsapp')->info('📎 [COEXISTENCE] Procesando archivo multimedia SMB echo', [
+                'media_id' => $mediaId,
+                'type' => $messageType,
+                'mime_type' => $mimeType
+            ]);
+
+            if (!$mediaId) {
+                Log::channel('whatsapp')->warning('⚠️ [COEXISTENCE] No media ID found in SMB echo', [
+                    'message_type' => $messageType
+                ]);
+                return;
+            }
+
+            // Obtener URL del archivo multimedia
+            $mediaUrl = $this->getMediaUrl($mediaId, $whatsappPhone);
+
+            if (!$mediaUrl) {
+                Log::channel('whatsapp')->error('❌ [COEXISTENCE] Failed to retrieve media URL', [
+                    'media_id' => $mediaId
+                ]);
+                return;
+            }
+
+            // Descargar contenido del archivo
+            $mediaContent = $this->downloadMedia($mediaUrl, $whatsappPhone);
+
+            if (!$mediaContent) {
+                Log::channel('whatsapp')->error('❌ [COEXISTENCE] Failed to download media content', [
+                    'media_url' => $mediaUrl
+                ]);
+                return;
+            }
+
+            // Obtener el tipo de media pluralizado según la configuración
+            $mediaType = $messageType . 's'; // Por defecto pluralizar el tipo de media
+
+            // Obtener la ruta de almacenamiento configurada desde la config
+            $directory = config("whatsapp.media.storage_path.$mediaType");
+
+            if (!$directory) {
+                throw new \RuntimeException("No se ha configurado una ruta de almacenamiento para el tipo de media: $mediaType");
+            }
+
+            if (!file_exists($directory)) {
+                mkdir($directory, 0755, true);
+            }
+
+            $extension = $this->getFileExtension($mimeType);
+
+            // Si es un archivo de audio y tiene extensión .bin, forzar a .ogg
+            if ($messageType === 'audio' && $extension === 'bin') {
+                $extension = 'ogg';
+            }
+
+            if ($messageType === 'sticker' && $extension === 'bin') {
+                $extension = 'webp';
+            }
+
+            $fileName = "{$mediaId}.{$extension}";
+            if (Str::endsWith($directory, '/')) {
+                $directory = rtrim($directory, '/');
+            }
+            $filePath = "{$directory}/{$fileName}";
+            file_put_contents($filePath, $mediaContent);
+
+            // Convertir el path absoluto a relativo para Storage::url
+            $relativePath = str_replace(storage_path('app/public/'), '', $directory . '/' . $fileName);
+
+            // Obtener la URL pública
+            $publicPath = Storage::url($relativePath);
+
+            Log::channel('whatsapp')->info('💾 [COEXISTENCE] Archivo multimedia guardado', [
+                'file_path' => $filePath,
+                'public_path' => $publicPath,
+                'file_size' => strlen($mediaContent)
+            ]);
+
+            // Preparar datos del mensaje
+            $messageData = [
+                'wa_id' => $echo['id'],
+                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+                'contact_id' => $contactRecord->contact_id,
+                'conversation_id' => null,
+                'messaging_product' => 'whatsapp',
+                'message_method' => 'OUTPUT', // Los ecos son mensajes SALIENTES desde el móvil
+                'message_from' => preg_replace('/[\D+]/', '', $echo['from']),
+                'message_to' => preg_replace('/[\D+]/', '', $echo['to']),
+                'message_type' => strtoupper($messageType),
+                'message_content' => $caption,
+                'json_content' => json_encode($echo),
+                'status' => 'sent', // Asumir enviado para ecos
+                'message_context_id' => $this->getContextMessageId($echo),
+                'is_smb_echo' => true, // Marcar como eco de SMB
+            ];
+
+            // Crear registro del mensaje
+            $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
+                ['wa_id' => $messageData['wa_id']],
+                $messageData
+            );
+
+            Log::channel('whatsapp')->info('✅ [COEXISTENCE] Mensaje multimedia SMB echo guardado', [
+                'message_id' => $messageRecord->message_id,
+                'type' => $messageType
+            ]);
+
+            // Crear o actualizar el registro del archivo multimedia en la base de datos
+            $mediaFileRecord = WhatsappModelResolver::media_file()->updateOrCreate(
+                [
+                    'message_id' => $messageRecord->message_id,
+                    'media_id' => $mediaId,
+                ],
+                [
+                    'media_type' => $messageType,
+                    'file_name' => $fileName,
+                    'url' => $publicPath,
+                    'mime_type' => $mimeType,
+                    'sha256' => $echo[$messageType]['sha256'] ?? null,
+                    'file_size' => strlen($mediaContent),
+                ]
+            );
+
+            Log::channel('whatsapp')->info('✅ [COEXISTENCE] Registro de archivo multimedia creado', [
+                'media_file_id' => $mediaFileRecord->media_file_id ?? $mediaFileRecord->id,
+                'message_id' => $messageRecord->message_id,
+                'url' => $publicPath
+            ]);
+
+            // Cargar relación para el evento
+            $messageRecord->loadMissing(['mediaFiles']);
+
+            // Disparar evento
+            $this->fireSmbMessageEcho($contactRecord, $messageRecord);
+
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('❌ [COEXISTENCE] Error al procesar archivo multimedia SMB echo', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'message_type' => $messageType
+            ]);
+            // No lanzar excepción para no romper el proceso completo
+        }
+    }
+
+    /**
+     * Procesar mensajes no multimedia de ecos SMB
+     */
+    protected function processSmbNonMediaMessageEcho(array $echo, Model $contactRecord, Model $whatsappPhone, string $messageType): void
+    {
+        try {
+            // Preparar datos del mensaje
+            $messageData = [
+                'wa_id' => $echo['id'],
+                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+                'contact_id' => $contactRecord->contact_id,
+                'conversation_id' => null,
+                'messaging_product' => 'whatsapp',
+                'message_method' => 'OUTPUT', // Los ecos son mensajes SALIENTES desde el móvil
+                'message_from' => preg_replace('/[\D+]/', '', $echo['from']),
+                'message_to' => preg_replace('/[\D+]/', '', $echo['to']),
+                'message_type' => strtoupper($messageType),
+                'json_content' => json_encode($echo),
+                'status' => 'sent', // Asumir enviado para ecos
+                'message_context_id' => $this->getContextMessageId($echo),
+                'is_smb_echo' => true, // Marcar como eco de SMB
+            ];
+
+            // Procesar contenido según el tipo
+            switch ($messageType) {
+                case 'text':
+                    $messageData['message_content'] = $echo['text']['body'] ?? '';
+                    break;
+
+                case 'interactive':
+                    $messageData['message_content'] = $echo['interactive']['button_reply']['title']
+                        ?? $echo['interactive']['list_reply']['title']
+                        ?? 'Interactive message';
+                    break;
+
+                case 'location':
+                    $messageData['message_content'] = "Location: " . ($echo['location']['name'] ?? '');
+                    break;
+
+                case 'contacts':
+                    $messageData['message_content'] = "Shared contacts: " . count($echo['contacts'] ?? []);
+                    break;
+
+                case 'reaction':
+                    $messageData['message_content'] = $echo['reaction']['emoji'] ?? null;
+                    break;
+
+                case 'unsupported':
+                    $messageData = $this->processUnsupportedSmbEcho($echo, $messageData);
+                    break;
+
+                default:
+                    $messageData['message_content'] = $this->getMessageContentForType($messageType, $echo)
+                        ?? 'SMB echo message';
+            }
+
+            Log::channel('whatsapp')->info('💾 [COEXISTENCE] Guardando mensaje SMB echo no multimedia', [
+                'wa_id' => $messageData['wa_id'],
+                'type' => $messageData['message_type'],
+                'content_preview' => substr($messageData['message_content'], 0, 50)
+            ]);
+
+            $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
+                ['wa_id' => $messageData['wa_id']],
+                $messageData
+            );
+
+            Log::channel('whatsapp')->info('✅ [COEXISTENCE] SMB message echo guardado exitosamente', [
+                'message_id' => $messageRecord->message_id,
+                'wa_id' => $messageRecord->wa_id,
+                'type' => $messageType,
+                'is_smb_echo' => $messageRecord->is_smb_echo
+            ]);
+
+            // Disparar evento
+            if ($messageType === 'unsupported') {
+                $this->fireUnsupportedSmbMessageEcho($contactRecord, $messageRecord, $echo);
+            } else {
+                $this->fireSmbMessageEcho($contactRecord, $messageRecord);
+            }
+
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('❌ [COEXISTENCE] Error al guardar mensaje SMB echo no multimedia', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'message_data' => $messageData ?? []
+            ]);
+        }
+    }
+
+    /**
+     * Procesar mensajes no soportados en ecos SMB
+     */
+    protected function processUnsupportedSmbEcho(array $echo, array $messageData): array
+    {
+        $errorCode = $echo['errors'][0]['code'] ?? null;
+        $errorTitle = $echo['errors'][0]['title'] ?? 'Unsupported content';
+        $errorMessage = $echo['errors'][0]['message'] ?? 'Unknown error';
+        $errorDetails = $echo['errors'][0]['error_data']['details'] ?? 'No additional details available';
+
+        $content = "Unsupported message. Error: $errorCode - $errorTitle: $errorDetails";
+
+        // Actualizar los datos del mensaje con información del error
+        $messageData['message_content'] = $content;
+        $messageData['code_error'] = $errorCode;
+        $messageData['title_error'] = $errorTitle;
+        $messageData['message_error'] = $errorMessage;
+        $messageData['details_error'] = $errorDetails;
+
+        Log::channel('whatsapp')->warning('⚠️ [COEXISTENCE] Mensaje no soportado en eco SMB', [
+            'wa_id' => $echo['id'],
+            'error_code' => $errorCode,
+            'error_title' => $errorTitle,
+            'error_details' => $errorDetails
+        ]);
+
+        return $messageData;
+    }
+
+    // =========================================================================
+    // CUSTOM HOOKS - Personaliza estos métodos según tus necesidades
+    // =========================================================================
+
+    /**
+     * Hook: Después de sincronizar el historial completo
+     */
+    protected function afterHistorySync(array $data): void
+    {
+        // Ejemplo: Notificar al administrador que el historial ha sido sincronizado
+        // Ejemplo: Actualizar estadísticas de mensajes históricos
+        // Ejemplo: Indexar mensajes históricos para búsqueda
+
+        $phoneNumberId = $data['metadata']['phone_number_id'] ?? null;
+
+        if ($phoneNumberId) {
+            // Puedes disparar un evento personalizado
+            // event(new HistorySyncCompletedEvent($phoneNumberId));
+
+            Log::channel('whatsapp')->info('📊 [COEXISTENCE] Post-procesamiento de historial completado', [
+                'phone_number_id' => $phoneNumberId
+            ]);
+        }
+    }
+
+    /**
+     * Hook: Después de sincronizar contactos
+     */
+    protected function afterContactsSync(array $data): void
+    {
+        // Ejemplo: Sincronizar con CRM externo
+        // Ejemplo: Actualizar segmentación de contactos
+        // Ejemplo: Enviar notificaciones de nuevos contactos
+
+        $contactsCount = count($data['state_sync'] ?? []);
+
+        Log::channel('whatsapp')->info('📊 [COEXISTENCE] Post-procesamiento de contactos completado', [
+            'contacts_synced' => $contactsCount
+        ]);
+    }
+
+    /**
+     * Hook: Después de procesar ecos de mensajes
+     */
+    protected function afterSmbMessageEchoes(array $data): void
+    {
+        // Ejemplo: Actualizar UI en tiempo real vía WebSockets
+        // Ejemplo: Enviar notificaciones push
+        // Ejemplo: Actualizar métricas de mensajes enviados
+
+        $messagesCount = count($data['message_echoes'] ?? []);
+
+        // Ejemplo de broadcast en tiempo real
+        foreach ($data['message_echoes'] ?? [] as $echo) {
+            // broadcast(new MessageSentFromMobileEvent($echo));
+        }
+
+        Log::channel('whatsapp')->info('📊 [COEXISTENCE] Post-procesamiento de ecos completado', [
+            'messages_echoed' => $messagesCount
+        ]);
+    }
+
+    /**
+     * Hook: Antes de procesar mensaje histórico individual
+     */
+    protected function beforeProcessHistoryMessage(array $message, Model $contact, Model $whatsappPhone, int $phase): void
+    {
+        // Lógica personalizada antes de guardar mensaje histórico
+        // Ejemplo: Validar duplicados, filtrar por tipo, etc.
+    }
+
+    /**
+     * Hook: Después de procesar mensaje histórico individual
+     */
+    protected function afterProcessHistoryMessage(array $message, Model $contact, Model $whatsappPhone, int $phase): void
+    {
+        // Lógica personalizada después de guardar mensaje histórico
+        // Ejemplo: Indexar mensaje, actualizar estadísticas, etc.
+    }
+
+    /**
+     * Hook: Validar si se debe sincronizar un contacto
+     */
+    protected function shouldSyncContact(array $syncItem): bool
+    {
+        // Lógica de validación personalizada
+        // Ejemplo: Ignorar contactos de prueba, números bloqueados, etc.
+
+        $phoneNumber = $syncItem['contact']['phone_number'] ?? '';
+
+        // Ejemplo: No sincronizar números de prueba
+        if (str_starts_with($phoneNumber, '1234567890')) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Hook: Después de sincronizar un contacto individual
+     */
+    protected function afterProcessContactSync(array $syncItem, Model $whatsappPhone): void
+    {
+        // Lógica personalizada después de sincronizar contacto
+        // Ejemplo: Actualizar tags, categorías, asignar agentes, etc.
+
+        $action = $syncItem['action'] ?? '';
+        $contactData = $syncItem['contact'] ?? [];
+
+        if ($action === 'create') {
+            // Nuevo contacto creado desde la app móvil
+            Log::channel('whatsapp')->debug('📱 Nuevo contacto desde móvil', $contactData);
+        }
+    }
+
+    /**
+     * Hook: Antes de procesar eco de mensaje
+     */
+    protected function beforeProcessSmbMessageEcho(array $echo, Model $whatsappPhone): void
+    {
+        // Lógica personalizada antes de guardar eco de mensaje
+        // Ejemplo: Validar que el mensaje no sea duplicado, filtrar spam, etc.
+    }
+
+    /**
+     * Hook: Después de procesar eco de mensaje
+     */
+    protected function afterProcessSmbMessageEcho(array $echo, Model $whatsappPhone): void
+    {
+        // Lógica personalizada después de guardar eco de mensaje
+        // Ejemplo: Actualizar interfaz en tiempo real, notificaciones, etc.
+
+        $messageType = $echo['type'] ?? '';
+        $to = $echo['to'] ?? '';
+
+        Log::channel('whatsapp')->debug('📤 Mensaje enviado desde móvil', [
+            'type' => $messageType,
+            'to' => $to
+        ]);
+
+        // Ejemplo: Broadcast en tiempo real para actualizar UI
+        // broadcast(new SmbMessageSentEvent([
+        //     'message' => $echo,
+        //     'phone_number_id' => $whatsappPhone->phone_number_id
+        // ]));
+    }
+
+    /**
      * Dispara evento para mensajes eco de SMB
      */
-    protected function fireSmbMessageEcho($contactRecord, $messageRecord): void
+    protected function fireSmbMessageEcho(Model $contactRecord, Model $messageRecord): void
     {
-        // Puedes crear un evento específico para ecos SMB si lo necesitas
-        // Por ahora, usamos el evento de mensaje recibido normal
+        // Disparar el evento de mensaje recibido estándar
         $this->fireMessageReceived($contactRecord, $messageRecord);
-        
-        Log::channel('whatsapp')->info('SMB message echo event fired', [
-            'message_id' => $messageRecord->message_id
+
+        Log::channel('whatsapp')->debug('🎉 [COEXISTENCE] Evento SMB message echo disparado', [
+            'message_id' => $messageRecord->message_id,
+            'contact_id' => $contactRecord->contact_id
         ]);
     }
 
@@ -1966,6 +2501,39 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     {
         $event = config('whatsapp.events.coexistence.history_synced');
         event(new $event($data));
+    }
+
+    /**
+     * Disparar evento para mensajes no soportados en ecos SMB
+     */
+    protected function fireUnsupportedSmbMessageEcho(Model $contactRecord, Model $messageRecord, array $echo): void
+    {
+        $errorCode = $echo['errors'][0]['code'] ?? null;
+        $errorTitle = $echo['errors'][0]['title'] ?? 'Unsupported content';
+        $errorMessage = $echo['errors'][0]['message'] ?? 'Unknown error';
+        $errorDetails = $echo['errors'][0]['error_data']['details'] ?? 'No additional details available';
+
+        // Primero disparar el evento estándar de SMB echo
+        $this->fireSmbMessageEcho($contactRecord, $messageRecord);
+
+        // Luego disparar evento específico para mensajes no soportados
+        $event = config('whatsapp.events.messages.unsupported.received');
+        if ($event) {
+            event(new $event([
+                'contact' => $contactRecord,
+                'message' => $messageRecord,
+                'title_error' => $errorTitle,
+                'message_error' => $errorMessage,
+                'details_error' => $errorDetails,
+                'is_smb_echo' => true, // Indicar que es un eco SMB
+            ]));
+        }
+
+        Log::channel('whatsapp')->debug('🎉 [COEXISTENCE] Evento unsupported SMB message echo disparado', [
+            'message_id' => $messageRecord->message_id,
+            'contact_id' => $contactRecord->contact_id,
+            'error_code' => $errorCode
+        ]);
     }
 
     /**
