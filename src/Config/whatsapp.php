@@ -449,9 +449,13 @@ return [
      *
      * - 'config_id': Identificador de configuración de Meta necesario para el registro embebido.
      *   Se debe establecer mediante la variable de entorno WHATSAPP_EMBEDDED_CONFIG_ID.
+     *
+     * - 'app_secret': Secreto de la aplicación de Meta necesario para el registro embebido.
+     *   Se debe establecer mediante la variable de entorno WHATSAPP_EMBEDDED_APP_SECRET.
      */
     'embedded_signup' => [
         'flow_type' => env('WHATSAPP_EMBEDDED_SIGNUP_FLOW', 'standard'), // 'standard' o 'coexistence'
-        'config_id' => env('WHATSAPP_EMBEDDED_CONFIG_ID'), // Tu Configuration ID de Meta
+        'config_id' => env('WHATSAPP_EMBEDDED_CONFIG_ID'), // Tu Configuration ID de Meta que es el identificador de la app de whatsapp
+        'app_secret' => env('WHATSAPP_EMBEDDED_APP_SECRET'), // Tu App Secret de Meta para el registro embebido
     ],
 ];
