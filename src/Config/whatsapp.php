@@ -93,6 +93,9 @@ return [
     */
     'events' => [
         //Este evento se dispara cuando se actualiza
+        'account' => [
+            'status_updated' => \Scriptdevelop\WhatsappManager\Events\AccountStatusUpdated::class,
+        ],
         'business' => [
             'settings' => [
                 'updated' => \Scriptdevelop\WhatsappManager\Events\BusinessSettingsUpdated::class, //Aun no se implementa
@@ -184,6 +187,12 @@ return [
             'contact_synced' => \ScriptDevelop\WhatsappManager\Events\CoexistenceContactSynced::class,
             'smb_message_echo' => \ScriptDevelop\WhatsappManager\Events\CoexistenceSmbMessageEcho::class,
             'account_updated' => \ScriptDevelop\WhatsappManager\Events\CoexistenceAccountUpdated::class,
+        ],
+        'partner' => [
+            'app_installed' => \ScriptDevelop\WhatsappManager\Events\PartnerAppInstalled::class,
+            'app_uninstalled' => \ScriptDevelop\WhatsappManager\Events\PartnerAppUninstalled::class,
+            'partner_added' => \ScriptDevelop\WhatsappManager\Events\PartnerAdded::class,
+            'partner_removed' => \ScriptDevelop\WhatsappManager\Events\PartnerRemoved::class,
         ],
     ],
 
@@ -431,7 +440,7 @@ return [
             'schedule' => env('WHATSAPP_CRONTIME_GET_GENERAL_TEMPLATE_ANALYTICS', '0 0 * * *'), //Diario a la medianoche por default
         ],
     ],
-    
+
     /**
      * Configuración para el proceso de registro embebido de WhatsApp Business.
      *

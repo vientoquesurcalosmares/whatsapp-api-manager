@@ -19,7 +19,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 {
     // Implementa todos los métodos del controlador actual aquí
     // Mueve la lógica de WhatsappWebhookController a esta clase
-    
+
     public function handle(Request $request): Response|JsonResponse
     {
         $verifyToken = config('whatsapp.webhook.verify_token', env('WHATSAPP_VERIFY_TOKEN'));
@@ -63,15 +63,15 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             case 'history':
                 $this->handleHistorySync($value);
                 return response()->json(['success' => true]);
-                
+
             case 'smb_app_state_sync':
                 $this->handleSmbAppStateSync($value);
                 return response()->json(['success' => true]);
-                
+
             case 'smb_message_echoes':
                 $this->handleSmbMessageEchoes($value);
                 return response()->json(['success' => true]);
-                
+
             case 'account_update':
                 $this->handleAccountUpdate($value);
                 return response()->json(['success' => true]);
@@ -2028,7 +2028,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         $event = $data['event'] ?? '';
         $wabaInfo = $data['waba_info'] ?? [];
-        
+
         Log::channel('whatsapp')->info('📋 [ACCOUNT] Account update details', [
             'event' => $event,
             'waba_info' => $wabaInfo
@@ -2038,19 +2038,19 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             case 'PARTNER_APP_INSTALLED':
                 $this->handlePartnerAppInstalled($wabaInfo);
                 break;
-                
+
             case 'PARTNER_ADDED':
                 $this->handlePartnerAdded($wabaInfo);
                 break;
-                
+
             case 'PARTNER_APP_UNINSTALLED':
                 $this->handlePartnerAppUninstalled($wabaInfo);
                 break;
-                
+
             case 'PARTNER_REMOVED':
                 $this->handlePartnerRemoved($wabaInfo);
                 break;
-                
+
             default:
                 Log::channel('whatsapp')->warning('⚠️ [ACCOUNT] Unhandled account update event', [
                     'event' => $event,
@@ -2799,11 +2799,11 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         $event = config('whatsapp.events.account.update');
         if ($event) {
             event(new $event($data));
-        }
 
-        Log::channel('whatsapp')->debug('🎉 [ACCOUNT] Account update event fired', [
-            'event' => $data['event'] ?? 'unknown'
-        ]);
+            Log::channel('whatsapp')->debug('🎉 [ACCOUNT] Account update event fired', [
+                'event' => $data['event'] ?? 'unknown'
+            ]);
+        }
     }
 
     /**
@@ -2811,19 +2811,22 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
      */
     protected function firePartnerAppUninstalled(Model $businessAccount, array $wabaInfo): void
     {
-        $eventData = [
-            'business_account' => $businessAccount,
-            'waba_info' => $wabaInfo,
-            'timestamp' => now(),
-            'event_type' => 'PARTNER_APP_UNINSTALLED'
-        ];
+        $event = config('whatsapp.events.partner.app_uninstalled');
+        if( $event ) {
+            $eventData = [
+                'business_account' => $businessAccount,
+                'waba_info' => $wabaInfo,
+                'timestamp' => now(),
+                'event_type' => 'PARTNER_APP_UNINSTALLED'
+            ];
 
-        event(new \ScriptDevelop\WhatsappManager\Events\PartnerAppUninstalled($eventData));
+            event(new $event($eventData));
 
-        Log::channel('whatsapp')->info('🎉 [ACCOUNT] Partner app uninstalled event fired', [
-            'business_account_id' => $businessAccount->whatsapp_business_id,
-            'waba_id' => $wabaInfo['waba_id'] ?? null
-        ]);
+            Log::channel('whatsapp')->info('🎉 [ACCOUNT] Partner app uninstalled event fired', [
+                'business_account_id' => $businessAccount->whatsapp_business_id,
+                'waba_id' => $wabaInfo['waba_id'] ?? null
+            ]);
+        }
     }
 
     /**
@@ -2831,19 +2834,22 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
      */
     protected function firePartnerRemoved(Model $businessAccount, array $wabaInfo): void
     {
-        $eventData = [
-            'business_account' => $businessAccount,
-            'waba_info' => $wabaInfo,
-            'timestamp' => now(),
-            'event_type' => 'PARTNER_REMOVED'
-        ];
+        $event = config('whatsapp.events.partner.partner_removed');
+        if( $event ) {
+            $eventData = [
+                'business_account' => $businessAccount,
+                'waba_info' => $wabaInfo,
+                'timestamp' => now(),
+                'event_type' => 'PARTNER_REMOVED'
+            ];
 
-        event(new \ScriptDevelop\WhatsappManager\Events\PartnerRemoved($eventData));
+            event(new $event($eventData));
 
-        Log::channel('whatsapp')->info('🎉 [ACCOUNT] Partner removed event fired', [
-            'business_account_id' => $businessAccount->whatsapp_business_id,
-            'waba_id' => $wabaInfo['waba_id'] ?? null
-        ]);
+            Log::channel('whatsapp')->info('🎉 [ACCOUNT] Partner removed event fired', [
+                'business_account_id' => $businessAccount->whatsapp_business_id,
+                'waba_id' => $wabaInfo['waba_id'] ?? null
+            ]);
+        }
     }
 
     /**
@@ -2851,19 +2857,22 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
      */
     protected function fireAccountStatusUpdated(Model $businessAccount, string $status): void
     {
-        $eventData = [
-            'business_account' => $businessAccount,
-            'new_status' => $status,
-            'timestamp' => now(),
-            'event_type' => 'ACCOUNT_STATUS_UPDATED'
-        ];
+        $event = config('whatsapp.events.account.status_updated');
+        if( $event ) {
+            $eventData = [
+                'business_account' => $businessAccount,
+                'new_status' => $status,
+                'timestamp' => now(),
+                'event_type' => 'ACCOUNT_STATUS_UPDATED'
+            ];
 
-        event(new \ScriptDevelop\WhatsappManager\Events\AccountStatusUpdated($eventData));
+            event(new $event($eventData));
 
-        Log::channel('whatsapp')->debug('🔔 [ACCOUNT] Account status updated event fired', [
-            'business_account_id' => $businessAccount->whatsapp_business_id,
-            'status' => $status
-        ]);
+            Log::channel('whatsapp')->debug('🔔 [ACCOUNT] Account status updated event fired', [
+                'business_account_id' => $businessAccount->whatsapp_business_id,
+                'status' => $status
+            ]);
+        }
     }
 
     /**
@@ -2871,19 +2880,22 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
      */
     protected function firePartnerAppInstalled(Model $businessAccount, array $wabaInfo): void
     {
-        $eventData = [
-            'business_account' => $businessAccount,
-            'waba_info' => $wabaInfo,
-            'timestamp' => now(),
-            'event_type' => 'PARTNER_APP_INSTALLED'
-        ];
+        $event = config('whatsapp.events.partner.app_installed');
+        if( $event ) {
+            $eventData = [
+                'business_account' => $businessAccount,
+                'waba_info' => $wabaInfo,
+                'timestamp' => now(),
+                'event_type' => 'PARTNER_APP_INSTALLED'
+            ];
 
-        event(new \ScriptDevelop\WhatsappManager\Events\PartnerAppInstalled($eventData));
+            event(new $event($eventData));
 
-        Log::channel('whatsapp')->info('🎉 [ACCOUNT] Partner app installed event fired', [
-            'business_account_id' => $businessAccount->whatsapp_business_id,
-            'waba_id' => $wabaInfo['waba_id'] ?? null
-        ]);
+            Log::channel('whatsapp')->info('🎉 [ACCOUNT] Partner app installed event fired', [
+                'business_account_id' => $businessAccount->whatsapp_business_id,
+                'waba_id' => $wabaInfo['waba_id'] ?? null
+            ]);
+        }
     }
 
     /**
@@ -2891,18 +2903,21 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
      */
     protected function firePartnerAdded(Model $businessAccount, array $wabaInfo): void
     {
-        $eventData = [
-            'business_account' => $businessAccount,
-            'waba_info' => $wabaInfo,
-            'timestamp' => now(),
-            'event_type' => 'PARTNER_ADDED'
-        ];
+        $event = config('whatsapp.events.partner.partner_added');
+        if( $event ) {
+            $eventData = [
+                'business_account' => $businessAccount,
+                'waba_info' => $wabaInfo,
+                'timestamp' => now(),
+                'event_type' => 'PARTNER_ADDED'
+            ];
 
-        event(new \ScriptDevelop\WhatsappManager\Events\PartnerAdded($eventData));
+            event(new $event($eventData));
 
-        Log::channel('whatsapp')->info('🎉 [ACCOUNT] Partner added event fired', [
-            'business_account_id' => $businessAccount->whatsapp_business_id,
-            'waba_id' => $wabaInfo['waba_id'] ?? null
-        ]);
+            Log::channel('whatsapp')->info('🎉 [ACCOUNT] Partner added event fired', [
+                'business_account_id' => $businessAccount->whatsapp_business_id,
+                'waba_id' => $wabaInfo['waba_id'] ?? null
+            ]);
+        }
     }
 }
