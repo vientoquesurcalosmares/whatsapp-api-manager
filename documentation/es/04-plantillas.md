@@ -500,8 +500,116 @@ Gracias por tu apoyo 💙
         ->addBody(['Prueba_uno'])
         ->send();
 
+    // EJEMPLO 6: Plantilla con IMAGEN en el header
+    // Suponiendo que tienes una plantilla llamada 'promo_con_imagen' que incluye:
+    // - Header tipo IMAGE
+    // - Body con variables: "Hola {{1}}, aprovecha nuestra oferta del {{2}}%"
+    
+    $imageUrl = 'https://example.com/images/promo.jpg'; // URL pública de la imagen
+    
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('promo_con_imagen')
+        ->addHeader('IMAGE', $imageUrl)
+        ->addBody(['Juan', '30'])
+        ->send();
+
+    // EJEMPLO 7: Plantilla con IMAGEN y BOTONES diversos
+    // Suponiendo que tienes una plantilla llamada 'producto_destacado' que incluye:
+    // - Header tipo IMAGE
+    // - Body con variables: "{{1}}, te presentamos {{2}}"
+    // - Footer: "Válido hasta fin de mes"
+    // - Botones: 
+    //   * Quick Reply: "Más información"
+    //   * URL dinámico: "Ver producto" -> https://mitienda.com/producto/{{1}}
+    //   * Teléfono: "Llamar ahora"
+    
+    $productImageUrl = 'https://example.com/images/producto-destacado.jpg';
+    
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('producto_destacado')
+        ->addHeader('IMAGE', $productImageUrl)
+        ->addBody(['María', 'nuestro nuevo producto premium'])
+        ->addButton('Más información', [])     // Quick Reply (sin parámetros)
+        ->addButton('Ver producto', ['PROD-789']) // URL dinámico (con parámetro)
+        ->addButton('Llamar ahora', [])        // Phone Number (sin parámetros)
+        ->send();
+
+    // EJEMPLO 8: Plantilla con VIDEO y BOTONES
+    // Suponiendo que tienes una plantilla llamada 'tutorial_video' que incluye:
+    // - Header tipo VIDEO
+    // - Body con variables: "Hola {{1}}, mira este tutorial sobre {{2}}"
+    // - Botones: 
+    //   * URL estático: "Suscríbete" -> https://youtube.com/channel/123
+    //   * Quick Reply: "Siguiente tutorial"
+    
+    $videoUrl = 'https://example.com/videos/tutorial.mp4';
+    
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('tutorial_video')
+        ->addHeader('VIDEO', $videoUrl)
+        ->addBody(['Carlos', 'ventas digitales'])
+        ->addButton('Suscríbete', [])
+        ->addButton('Siguiente tutorial', [])
+        ->send();
+
+    // EJEMPLO 9: Plantilla con DOCUMENTO e información
+    // Suponiendo que tienes una plantilla llamada 'envio_factura' que incluye:
+    // - Header tipo DOCUMENT
+    // - Body con variables: "{{1}}, adjuntamos tu factura N° {{2}}"
+    // - Botón URL: "Descargar PDF" -> https://facturas.com/{{1}}
+    
+    $documentUrl = 'https://example.com/docs/factura-2024.pdf';
+    
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('envio_factura')
+        ->addHeader('DOCUMENT', $documentUrl)
+        ->addBody(['Estimado cliente', '2024-001'])
+        ->addButton('Descargar PDF', ['2024-001'])
+        ->send();
+
+    // EJEMPLO 10: Plantilla de marketing completa con imagen y múltiples botones
+    // Suponiendo que tienes una plantilla llamada 'super_promo' que incluye:
+    // - Header tipo IMAGE
+    // - Body: "¡{{1}}! Descuento del {{2}}% en {{3}}"
+    // - Footer: "Usa el código {{1}} al finalizar tu compra"
+    // - Botones:
+    //   * URL dinámico: "Comprar ahora" -> https://tienda.com/promo/{{1}}
+    //   * Phone Number: "Contactar asesor"
+    //   * Quick Reply: "No, gracias"
+    
+    $promoImageUrl = 'https://example.com/images/super-promo-navidad.jpg';
+    
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('super_promo')
+        ->addHeader('IMAGE', $promoImageUrl)
+        ->addBody(['¡ÚLTIMA OPORTUNIDAD!', '50', 'toda la tienda'])
+        ->addButton('Comprar ahora', ['NAVIDAD50'])
+        ->addButton('Contactar asesor', [])
+        ->addButton('No, gracias', [])
+        ->send();
+
     ```
 
+### Notas Importantes sobre Plantillas con Multimedia
+
+- **URLs públicas:** Las imágenes, videos y documentos deben estar alojados en URLs públicas accesibles por la API de WhatsApp.
+- **Formatos soportados:**
+  - **IMAGE:** JPG, PNG (máx. 5MB)
+  - **VIDEO:** MP4, 3GP (máx. 16MB)
+  - **DOCUMENT:** PDF, DOC, DOCX, PPT, XLS, etc. (máx. 100MB)
+- **Nombres de botones:** Deben coincidir exactamente con el texto definido al crear la plantilla.
+- **Parámetros dinámicos:** Solo los botones de tipo URL con placeholders `{{1}}` requieren parámetros.
+- **Orden de componentes:** Siempre debes agregar los componentes en el mismo orden que fueron definidos en la plantilla: Header → Body → Botones.
 
 ---
 
