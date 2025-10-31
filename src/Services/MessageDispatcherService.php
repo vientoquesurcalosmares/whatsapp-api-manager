@@ -3910,13 +3910,13 @@ class MessageDispatcherService
                 break;
 
             case 'audio':
-                $data['audio'] = $parameters['id']
+                $data['audio'] = isset($parameters['id']) && $parameters['id']
                     ? ['id' => $parameters['id']]
                     : ['link' => $parameters['link'] ?? ''];
                 break;
 
             case 'document':
-                $data['document'] = $parameters['id']
+                $data['document'] = isset($parameters['id']) && $parameters['id']
                     ? [
                         'id' => $parameters['id'],
                         'caption' => $parameters['caption'] ?? '',
@@ -3929,13 +3929,13 @@ class MessageDispatcherService
                 break;
 
             case 'sticker':
-                $data['sticker'] = $parameters['id']
+                $data['sticker'] = isset($parameters['id']) && $parameters['id']
                     ? ['id' => $parameters['id']]
                     : ['link' => $parameters['link'] ?? ''];
                 break;
 
             case 'video':
-                $data['video'] = $parameters['id']
+                $data['video'] = isset($parameters['id']) && $parameters['id']
                     ? [
                         'id' => $parameters['id'],
                         'caption' => $parameters['caption'] ?? ''
