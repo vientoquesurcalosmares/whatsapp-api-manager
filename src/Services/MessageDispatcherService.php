@@ -3755,7 +3755,15 @@ class MessageDispatcherService
 
             // Actualizar estado solo para marcar como leído
             if (!$actionParams) {
-                $message->update(['status' => MessageStatus::READ]);
+                //$message->update(['status' => MessageStatus::READ]);
+                //Ahora se cambiarán el status del mensaje actual y de todos los mensajes anteriores cuyo message_method sea igual a 'INPUT', status sea igual a 'received', el contact_id sea igual al del mensaje actual y también el whatsapp_phone_id sea igual al del mensaje actual, y cuyo message_id sea menor o igual al del mensaje padre (ULID ordenable).
+                WhatsappModelResolver::message()
+                    ->where('contact_id', $message->contact_id)
+                    ->where('whatsapp_phone_id', $message->whatsapp_phone_id)
+                    ->where('message_method', 'INPUT')
+                    ->where('status', MessageStatus::RECEIVED)
+                    ->where('message_id', '<=', $message->message_id)
+                    ->update(['status' => MessageStatus::READ]);
             }
 
             Log::channel('whatsapp')->info("Acción completada: $action", [
