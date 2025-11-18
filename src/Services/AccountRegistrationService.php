@@ -146,8 +146,15 @@ class AccountRegistrationService
         $messagingLimitTier = $apiData['whatsapp_business_manager_messaging_limit'] ?? null;
         $messagingLimitValue = $this->convertTierToLimitValue($messagingLimitTier);
 
+        Log::channel('whatsapp')->debug('Valores de límite de mensajes extraídos:', [
+            'messaging_limit_tier' => $messagingLimitTier,
+            'messaging_limit_value' => $messagingLimitValue,
+            'api_data_key_exists' => isset($apiData['whatsapp_business_manager_messaging_limit']),
+            'api_data_value' => $apiData['whatsapp_business_manager_messaging_limit'] ?? 'NO EXISTE',
+        ]);
+
         // El token se encripta automáticamente al guardar (vía mutador)
-        return WhatsappModelResolver::business_account()->updateOrCreate(
+        $account = WhatsappModelResolver::business_account()->updateOrCreate(
             ['whatsapp_business_id' => $apiData['id']],
             [
                 'name' => $apiData['name'] ?? 'Sin nombre',
@@ -158,10 +165,23 @@ class AccountRegistrationService
                 'app_name' => $appData['name'] ?? null,      // Nombre de la primera app
                 'app_link' => $appData['link'] ?? null,      // Link de la primera app
                 'message_template_namespace' => $apiData['message_template_namespace'] ?? null,
-                'messaging_limit_tier' => $messagingLimitTier,
-                'messaging_limit_value' => $messagingLimitValue,
             ]
         );
+
+        // Actualizar explícitamente los campos de límite de mensajes
+        // Esto asegura que se guarden incluso si el registro ya existía
+        $account->messaging_limit_tier = $messagingLimitTier;
+        $account->messaging_limit_value = $messagingLimitValue;
+        $account->save();
+
+        Log::channel('whatsapp')->debug('Cuenta guardada/actualizada:', [
+            'whatsapp_business_id' => $account->whatsapp_business_id,
+            'messaging_limit_tier' => $account->messaging_limit_tier,
+            'messaging_limit_value' => $account->messaging_limit_value,
+            'wasRecentlyCreated' => $account->wasRecentlyCreated,
+        ]);
+
+        return $account;
     }
 
     /**
