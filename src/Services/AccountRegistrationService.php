@@ -5,6 +5,7 @@ namespace ScriptDevelop\WhatsappManager\Services;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
+use ScriptDevelop\WhatsappManager\Helpers\MessagingLimitHelper;
 //use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 //use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 //use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessProfile;
@@ -144,7 +145,7 @@ class AccountRegistrationService
 
         // Obtener el límite de mensajes
         $messagingLimitTier = $apiData['whatsapp_business_manager_messaging_limit'] ?? null;
-        $messagingLimitValue = $this->convertTierToLimitValue($messagingLimitTier);
+        $messagingLimitValue = MessagingLimitHelper::convertTierToLimitValue($messagingLimitTier);
 
         Log::channel('whatsapp')->debug('Valores de límite de mensajes extraídos:', [
             'messaging_limit_tier' => $messagingLimitTier,
@@ -184,33 +185,6 @@ class AccountRegistrationService
         return $account;
     }
 
-    /**
-     * Convierte el tier de límite de mensajes a su valor numérico.
-     * 
-     * Según la documentación de Meta:
-     * - TIER_250 = 250 mensajes
-     * - TIER_2K = 2000 mensajes
-     * - TIER_10K = 10000 mensajes
-     * - TIER_100K = 100000 mensajes
-     * - null o valores desconocidos = null (ilimitado o no especificado)
-     *
-     * @param string|null $tier El tier del límite de mensajes (ej: "TIER_2K").
-     * @return int|null El número de mensajes correspondiente o null si es ilimitado/desconocido.
-     */
-    private function convertTierToLimitValue(?string $tier): ?int
-    {
-        if ($tier === null) {
-            return null;
-        }
-
-        return match ($tier) {
-            'TIER_250' => 250,
-            'TIER_2K' => 2000,
-            'TIER_10K' => 10000,
-            'TIER_100K' => 100000,
-            default => null, // Para valores desconocidos o ilimitados
-        };
-    }
 
     /**
      * Registra los números telefónicos asociados a la cuenta empresarial.

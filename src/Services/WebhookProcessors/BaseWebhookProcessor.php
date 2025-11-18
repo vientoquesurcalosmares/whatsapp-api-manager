@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use ScriptDevelop\WhatsappManager\Helpers\CountryCodes;
+use ScriptDevelop\WhatsappManager\Helpers\MessagingLimitHelper;
 use ScriptDevelop\WhatsappManager\Contracts\WebhookProcessorInterface;
 use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
@@ -74,6 +75,10 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
             case 'account_update':
                 $this->handleAccountUpdate($value);
+                return response()->json(['success' => true]);
+
+            case 'business_capability_update':
+                $this->handleBusinessCapabilityUpdate($value, $payload);
                 return response()->json(['success' => true]);
         }
 
@@ -2920,4 +2925,67 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             ]);
         }
     }
+
+    /**
+     * Maneja las actualizaciones de capacidades de negocio (límites de mensajes, etc.)
+     * 
+     * @param array $value Datos del webhook business_capability_update
+     * @param array $payload Payload completo del webhook
+     */
+    protected function handleBusinessCapabilityUpdate(array $value, array $payload): void
+    {
+        Log::channel('whatsapp')->info('🔄 [BUSINESS_CAPABILITY] Processing business capability update', $value);
+
+        // Obtener el ID de la cuenta empresarial desde el payload
+        $wabaId = data_get($payload, 'entry.0.id');
+        
+        if (!$wabaId) {
+            Log::channel('whatsapp')->warning('⚠️ [BUSINESS_CAPABILITY] No WABA ID found in payload', $payload);
+            return;
+        }
+
+        // Buscar la cuenta empresarial
+        $businessAccount = WhatsappModelResolver::business_account()->find($wabaId);
+        
+        if (!$businessAccount) {
+            Log::channel('whatsapp')->warning('⚠️ [BUSINESS_CAPABILITY] Business account not found', [
+                'waba_id' => $wabaId
+            ]);
+            return;
+        }
+
+        // Obtener el límite de mensajes (puede venir en diferentes formatos según la versión)
+        $messagingLimitTier = null;
+        $messagingLimitValue = null;
+
+        // Versión 24.0 y posteriores: max_daily_conversations_per_business viene como string (TIER_2K, etc.)
+        if (isset($value['max_daily_conversations_per_business'])) {
+            $messagingLimitTier = $value['max_daily_conversations_per_business'];
+            $messagingLimitValue = MessagingLimitHelper::convertTierToLimitValue($messagingLimitTier);
+        }
+        // Versión 23.0 y anteriores: max_daily_conversation_per_phone viene como número
+        elseif (isset($value['max_daily_conversation_per_phone'])) {
+            $limitValue = $value['max_daily_conversation_per_phone'];
+            
+            // Convertir el número a tier (el helper maneja -1 como ilimitado)
+            $messagingLimitTier = MessagingLimitHelper::convertLimitValueToTier($limitValue);
+            $messagingLimitValue = ($limitValue == -1) ? null : $limitValue;
+        }
+
+        // Actualizar la cuenta empresarial
+        if ($messagingLimitTier !== null) {
+            $businessAccount->messaging_limit_tier = $messagingLimitTier;
+            $businessAccount->messaging_limit_value = $messagingLimitValue;
+            $businessAccount->save();
+
+            Log::channel('whatsapp')->info('✅ [BUSINESS_CAPABILITY] Messaging limit updated', [
+                'waba_id' => $wabaId,
+                'messaging_limit_tier' => $messagingLimitTier,
+                'messaging_limit_value' => $messagingLimitValue,
+            ]);
+        } else {
+            Log::channel('whatsapp')->warning('⚠️ [BUSINESS_CAPABILITY] No messaging limit found in webhook', $value);
+        }
+    }
+
 }
