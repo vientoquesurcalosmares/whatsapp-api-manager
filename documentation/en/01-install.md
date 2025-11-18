@@ -5,27 +5,24 @@
 <table>
   <tr>
     <td align="left">
-      <a href="../../README.md" title="Sección anterior: Home">◄◄ Home</a>
+      <a href="../../README.md" title="Previous section: Home">◄◄ Home</a>
     </td>
     <td align="center">
-      <a href="00-content.md" title="Tabla of contents">▲ Table of contents</a>
+      <a href="00-content.md" title="Table of contents">▲ Table of contents</a>
     </td>
     <td align="right">
-      <a href="02-config-api.md" title="Sección siguiente">Configurar API ►►</a>
+      <a href="02-config-api.md" title="Next section">Configure API ►►</a>
     </td>
   </tr>
 </table>
 </div>
 
 <div align="center">
-<sub>Documentación del Webhook de WhatsApp Manager | 
-<a href="https://github.com/djdang3r/whatsapp-api-manager">Ver en GitHub</a></sub>
+<sub>WhatsApp Manager Webhook Documentation | 
+<a href="https://github.com/djdang3r/whatsapp-api-manager">View on GitHub</a></sub>
 </div>
 
-
 ---
-
-
 ## 🚀 Complete Installation
 
 ### 📋 Prerequisites
@@ -46,44 +43,46 @@ Before installing the package, you'll need a WhatsApp API Cloud account:
 
 2. **Publish configuration files**:
     This command will publish the package's base configuration files:
-   - Main configuration (config/whatsapp.php)
-   - Logging configuration (config/logging.php)
-   - Package core configuration
+   - Main configuration (config/whatsapp.php).
+   - Logging configuration (config/logging.php).
+   - Package core configuration.
         
     ```bash
     php artisan vendor:publish --tag=whatsapp-config
     ```
 
 3. **Configure logging (config/logging.php)**:
-    Add the whatsapp channel:
-    ```php
-    'channels' => [
-        'whatsapp' => [
-            'driver' => 'daily',
-            'path' => storage_path('logs/whatsapp.log'),
-            'level' => 'debug',
-            'days' => 7,
-            'tap' => [\ScriptDevelop\WhatsappManager\Logging\CustomizeFormatter::class],
+    Add the whatsapp channel.
+    - In the "config/logging.php" file, you must add a new channel for the package logs.
+        ```php
+        'channels' => [
+            'whatsapp' => [
+                'driver' => 'daily',
+                'path' => storage_path('logs/whatsapp.log'),
+                'level' => 'debug',
+                'days' => 7,
+                'tap' => [\ScriptDevelop\WhatsappManager\Logging\CustomizeFormatter::class],
+            ],
         ],
-    ],
-    ```
+        ```
 
 4. **Publish migrations (optional)**:
-    This command will publish the package migrations. Note that running `php artisan migrate` will automatically use the package migrations. Publish only if you want to customize them.
+    This command will publish the package migrations. It's not necessary to publish them since running "php artisan migrate" will take the migrations directly from the package. If you wish, you can publish them and edit them as needed.
 
     ```bash
     php artisan vendor:publish --tag=whatsapp-migrations
     ```
 
-5. **Publish webhook routes (required)**:
-    This command publishes the webhook routes file, which is mandatory for receiving incoming messages.
+5. **Publish routes (required)**:
+    This command will publish the webhook routes file. It's mandatory since it's needed to receive incoming messaging notifications.
 
     ```bash
     php artisan vendor:publish --tag=whatsapp-routes
     ```
 
-6. **Exclude webhook from CSRF protection (bootstrap/app.php)**:
-    Add the webhook route to CSRF exceptions:
+6. **Exclude webhook from CSRF (bootstrap/app.php)**:
+    You must exclude the webhook routes from CSRF. In the "bootstrap/app.php" file.
+
     ```php
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->validateCsrfTokens(except: [
@@ -99,6 +98,12 @@ Before installing the package, you'll need a WhatsApp API Cloud account:
     WHATSAPP_VERIFY_TOKEN=your-verify-token
     WHATSAPP_USER_MODEL=App\Models\User
     WHATSAPP_BROADCAST_CHANNEL_TYPE=private
+
+    # OPTIONALS VARIABLES
+    META_CLIENT_ID=123456789012345
+    META_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    META_REDIRECT_URI=https://yourdomain.com/meta/callback
+    META_SCOPES=whatsapp_business_management,whatsapp_business_messaging
     ```
 ---
 
@@ -116,11 +121,11 @@ Before installing the package, you'll need a WhatsApp API Cloud account:
     ```
 
 >⚠️ Important:
->Seeders are required for working with WhatsApp templates
+>The seeders are required for working with WhatsApp templates
 
 ---
 
-## **📁 Media Storage Configuration:**
+## **📁 Media Files Configuration:**
 
 1. **Create directory structure:**
     ```sh
@@ -131,6 +136,7 @@ Before installing the package, you'll need a WhatsApp API Cloud account:
     ├── stickers/
     └── videos/
     ```
+
 
 2. **Publish automatic structure (optional):**
     ```sh
@@ -154,7 +160,7 @@ Before installing the package, you'll need a WhatsApp API Cloud account:
 4. In the Webhooks section:
     - Webhook URL: https://yourdomain.com/whatsapp-webhook
     - Verify Token: Value of WHATSAPP_VERIFY_TOKEN in your .env
-    - Subscribe to events:
+    - Events to subscribe:
         - messages
         - message_statuses
         - message_template_status_update (optional)
@@ -164,11 +170,14 @@ Before installing the package, you'll need a WhatsApp API Cloud account:
 
 **Configuration summary:**
 
-| Parameter         | Recommended Value                              |
-|-------------------|-----------------------------------------------|
-| Webhook URL       | `https://yourdomain.com/whatsapp-webhook`     |
-| Verify Token      | Value of `WHATSAPP_VERIFY_TOKEN` in `.env`    |
-| Events            | `messages`, `message_statuses`                |
+| Parameter         | Recommended Value                                  |
+|-------------------|---------------------------------------------------|
+| Webhook URL       | `https://yourdomain.com/whatsapp-webhook`          |
+| Verify Token      | Value of `WHATSAPP_VERIFY_TOKEN` in your `.env`   |
+| Events            | `messages`, `message_statuses`                    |
+
+
+
 
 ## **🛠️ Ngrok - Local Development Tools:**
 **Using ngrok for local testing:**
@@ -180,23 +189,324 @@ Before installing the package, you'll need a WhatsApp API Cloud account:
 3. Expose your local server:
     ```sh
     ngrok http http://localhost:8000
+    
+    ngrok http --host-header=rewrite 8000
     ```
-4. Use the ngrok-generated URL as your webhook in Meta:
+4. Use the URL generated by ngrok as your webhook in Meta:
     ```sh
     https://xxxxxx.ngrok.io/whatsapp-webhook
     ```
 
+
 ## 🔍 Final Validation
 **After completing installation, verify:**
 
-1. Routes are published and accessible
-2. Verify token matches in .env and Meta
-3. Media directories have write permissions
-4. Storage symbolic link works correctly
-5. Selected events in Meta cover your needs
+1. Routes are published and accessible.
+2. Verify token matches in .env and Meta.
+3. Media directories have write permissions.
+4. Storage symbolic link works correctly.
+5. Selected events in Meta cover your needs.
 
 >💡 Tip:
 >To test the configuration, send a test message to your WhatsApp Business number and verify it appears in the logs (storage/logs/whatsapp.log).
+
+
+
+
+## Model and Webhook Customization
+
+**Table of Contents**
+1. Model Customization
+2. Webhook Customization
+3. Advanced Examples
+4. Troubleshooting
+
+
+**Model Customization**
+**📊 Introduction**
+The WhatsApp API Manager package allows complete customization of database models to adapt to your application's structure. You can extend, modify, or replace any package model.
+
+**🔧 Basic Configuration**
+To customize a model, modify the config/whatsapp.php file:
+
+```php
+'models' => [
+    'contact' => \App\Models\CustomContact::class,
+    'message' => \App\Models\CustomMessage::class,
+    // ... other models
+],
+```
+
+**🛠 Create a Custom Model**
+1. Extend the base model (recommended):
+
+```php
+namespace App\Models;
+
+use ScriptDevelop\WhatsappManager\Models\Contact as BaseContact;
+
+class CustomContact extends BaseContact
+{
+    protected $table = 'custom_contacts';
+    
+    // Add custom relationships
+    public function customOrders()
+    {
+        return $this->hasMany(Order::class, 'contact_id');
+    }
+    
+    // Override existing methods
+    public function someMethod()
+    {
+        // Custom logic
+    }
+}
+```
+
+2. Create a completely new model (advanced):
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use ScriptDevelop\WhatsappManager\Contracts\WhatsappContactInterface;
+
+class CustomContact extends Model implements WhatsappContactInterface
+{
+    // Implement all methods required by the interface
+}
+```
+
+
+## 📋 Custom Migrations
+If you change the table structure, create a custom migration:
+
+```bash
+php artisan make:migration modify_contacts_table
+```
+
+```php
+public function up()
+{
+    Schema::table('contacts', function (Blueprint $table) {
+        $table->string('custom_field')->nullable();
+        $table->index('custom_field');
+    });
+}
+```
+
+## 🔄 Update Configuration
+After creating your custom models, update the configuration:
+
+```php
+// config/whatsapp.php
+'models' => [
+    'contact' => \App\Models\CustomContact::class,
+    'message' => \App\Models\CustomMessage::class,
+    // ... other custom models
+],
+```
+
+# Webhook Customization
+
+## 🌐 Introduction
+
+  Webhook processing can be completely customized to adapt to specific business logic, integrations with other systems, or special handling of certain message types.
+
+
+## 🚀 Publish Base Processor
+Run the command to publish the base processor:
+
+```bash
+php artisan whatsapp:publish-webhook-processor
+```
+This will create the app/Services/WhatsappWebhookProcessor.php file.
+
+The command automatically updates your configuration:
+
+
+```php
+// config/whatsapp.php
+'webhook' => [
+    'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
+    'processor' => \App\Services\Whatsapp\WhatsappWebhookProcessor::class,
+],
+```
+
+## 💻 Basic Customization
+
+```php
+namespace App\Services;
+
+use ScriptDevelop\WhatsappManager\Services\WebhookProcessors\BaseWebhookProcessor;
+
+class WhatsappWebhookProcessor extends BaseWebhookProcessor
+{
+    public function handle($request)
+    {
+        // Custom logic before processing
+        \Log::info('Webhook received', $request->all());
+        
+        // Standard processing
+        return parent::handle($request);
+        
+        // Or completely custom processing
+    }
+}
+```
+
+## 🎯 Customization Examples
+1. Specific processing for certain messages:
+
+
+```php
+protected function processTextMessage(array $message, $contact, $whatsappPhone)
+{
+    // Custom logic before standard processing
+    if (str_contains($message['text']['body'], 'keyword')) {
+        $this->handleSpecialCommand($message, $contact);
+        return null; // Don't save to database
+    }
+    
+    // Standard processing
+    return parent::processTextMessage($message, $contact, $whatsappPhone);
+}
+```
+
+
+2. Integration with other systems:
+
+```php
+protected function handleIncomingMessage(array $message, ?array $contact, ?array $metadata)
+{
+    // Send to external system before processing
+    $this->sendToExternalSystem($message, $contact);
+    
+    // Standard processing
+    parent::handleIncomingMessage($message, $contact, $metadata);
+    
+    // Actions after processing
+    $this->triggerPostProcessing($message);
+}
+
+private function sendToExternalSystem($message, $contact)
+{
+    // Integration with CRM, ERP, etc.
+    Http::post('https://api.your-system.com/webhook', [
+        'message' => $message,
+        'contact' => $contact
+    ]);
+}
+```
+
+3. Media processing with AI:
+
+```php
+protected function processMediaMessage(array $message, $contact, $whatsappPhone)
+{
+    // Special processing for images
+    if ($message['type'] === 'image') {
+        return $this->processImageWithAI($message, $contact, $whatsappPhone);
+    }
+    
+    // Standard processing for other media types
+    return parent::processMediaMessage($message, $contact, $whatsappPhone);
+}
+```
+
+
+## 🔌 Custom Events
+You can fire custom events in your processor:
+
+```php
+protected function fireTextMessageReceived($contactRecord, $messageRecord)
+{
+    // Standard event
+    parent::fireTextMessageReceived($contactRecord, $messageRecord);
+    
+    // Custom event
+    event(new \App\Events\CustomTextMessageReceived($contactRecord, $messageRecord));
+}
+```
+
+
+## Advanced Examples
+**🤖 Ticket System Integration**
+
+```php
+protected function processTextMessage(array $message, $contact, $whatsappPhone)
+{
+    $text = $message['text']['body'];
+    
+    // Automatically create ticket for certain words
+    if (preg_match('/support|help|problem/i', $text)) {
+        $ticket = Ticket::create([
+            'contact_id' => $contact->id,
+            'description' => $text,
+            'source' => 'whatsapp'
+        ]);
+        
+        // Notify team
+        Notification::send($ticket->assignedTeam, new NewTicketNotification($ticket));
+    }
+    
+    return parent::processTextMessage($message, $contact, $whatsappPhone);
+}
+```
+
+## 🛒 Order Processing
+
+```php
+protected function processInteractiveMessage(array $message, $contact, $whatsappPhone)
+{
+    $interactiveType = $message['interactive']['type'];
+    
+    if ($interactiveType === 'button_reply') {
+        $buttonId = $message['interactive']['button_reply']['id'];
+        
+        // Handle product selection
+        if (str_starts_with($buttonId, 'product_')) {
+            $productId = str_replace('product_', '', $buttonId);
+            $this->addToCart($contact, $productId);
+        }
+    }
+    
+    return parent::processInteractiveMessage($message, $contact, $whatsappPhone);
+}
+```
+
+
+# Troubleshooting
+## ❌ Error: "Class not found"
+**If you encounter class not found errors:**
+
+1. Verify that namespaces in your configuration are correct
+2. Run composer dump-autoload
+3. Verify that classes exist in the specified location
+
+## 🔄 Reset to Default Configuration
+To revert to default models:
+
+```php
+// config/whatsapp.php
+'models' => [
+    'contact' => \ScriptDevelop\WhatsappManager\Models\Contact::class,
+    // ... other default models
+],
+```
+
+
+# 📞 Support
+**If you need help with customization:**
+
+1. Review examples in the documentation
+2. Check issues on GitHub
+3. Create a new issue with details of your implementation
+
+Note: Always test your customizations in a development environment before implementing them in production. Advanced customizations may affect package functionality.
+
+
+
 
 <br>
 
@@ -206,25 +516,26 @@ Before installing the package, you'll need a WhatsApp API Cloud account:
 <table>
   <tr>
     <td align="left">
-      <a href="../../README.md" title="Sección anterior: Home">◄◄ Home</a>
+      <a href="../../README.md" title="Previous section: Home">◄◄ Home</a>
     </td>
     <td align="center">
-      <a href="00-content.md" title="Tabla of contents">▲ Table of contents</a>
+      <a href="00-content.md" title="Table of contents">▲ Table of contents</a>
     </td>
     <td align="right">
-      <a href="02-config-api.md" title="Sección siguiente">Configurar API ►►</a>
+      <a href="02-config-api.md" title="Next section">Configure API ►►</a>
     </td>
   </tr>
 </table>
 </div>
 
 <div align="center">
-<sub>Documentation of Webhook de WhatsApp Manager | 
-<a href="https://github.com/djdang3r/whatsapp-api-manager">Ver en GitHub</a></sub>
+<sub>WhatsApp Manager Webhook Documentation | 
+<a href="https://github.com/djdang3r/whatsapp-api-manager">View on GitHub</a></sub>
 </div>
 
-
 ---
+
+
 
 ## ❤️ Support
 
@@ -236,3 +547,7 @@ If you find this project useful, consider supporting its development:
 ## 📄 License
 
 MIT License - See [LICENSE](LICENSE) for details
+
+
+
+

@@ -99,6 +99,7 @@ Antes de instalar el paquete, necesitarás una cuenta de WhatsApp API Cloud:
     WHATSAPP_USER_MODEL=App\Models\User
     WHATSAPP_BROADCAST_CHANNEL_TYPE=private
 
+    # VARIABLES OPCIONALES
     META_CLIENT_ID=123456789012345
     META_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     META_REDIRECT_URI=https://tudominio.com/meta/callback

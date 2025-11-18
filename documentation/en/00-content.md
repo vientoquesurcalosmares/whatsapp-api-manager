@@ -23,7 +23,7 @@ LARAVEL WhatsApp Manager
 ## Documentation
 
 ## 📚 Table of Contents
-<a href="01-instalacion.md" title="Documentation in Spanish">
+<a href="01-install.md" title="Documentation in English">
 1. 🚀 Installation
 </a>
 
@@ -31,7 +31,7 @@ LARAVEL WhatsApp Manager
    - Initial setup
    - Migrations
 
-<a href="02-config-api.md" title="Documentation in Spanish">
+<a href="02-config-api.md" title="Documentation in English">
 2. 🧩 API Configuration
 </a>
 
@@ -39,7 +39,7 @@ LARAVEL WhatsApp Manager
    - Webhook setup
    - Phone number management
 
-<a href="03-mensajes.md" title="Documentation in Spanish">
+<a href="03-messages.md" title="Documentation in English">
 3. 💬 Message Management
 </a>
 
@@ -48,7 +48,7 @@ LARAVEL WhatsApp Manager
    - Message templates
    - Message reception
 
-<a href="04-plantillas.md" title="Documentation in Spanish">
+<a href="04-templates.md" title="Documentation in English">
 4. 📋 Template Management
 </a>
 
@@ -56,7 +56,7 @@ LARAVEL WhatsApp Manager
    - Sending templates
    - Version management
 
-<a href="05-eventos.md" title="Documentation in Spanish">
+<a href="05-events.md" title="Documentation in English">
 5. 📡 Real-time Events
 </a>
 
@@ -64,7 +64,7 @@ LARAVEL WhatsApp Manager
    - Integrated webhooks
    - Supported event types
 
-<a href="06-webhook.md" title="Documentation in Spanish">
+<a href="06-webhook.md" title="Documentation in English">
 6. 🧪 Webhook
 </a>
 
