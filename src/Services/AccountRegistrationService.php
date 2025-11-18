@@ -142,6 +142,10 @@ class AccountRegistrationService
             $appData = $subscriptions['data'][0]['whatsapp_business_api_data'];
         }
 
+        // Obtener el límite de mensajes
+        $messagingLimitTier = $apiData['whatsapp_business_manager_messaging_limit'] ?? null;
+        $messagingLimitValue = $this->convertTierToLimitValue($messagingLimitTier);
+
         // El token se encripta automáticamente al guardar (vía mutador)
         return WhatsappModelResolver::business_account()->updateOrCreate(
             ['whatsapp_business_id' => $apiData['id']],
@@ -153,9 +157,39 @@ class AccountRegistrationService
                 'app_id' => $appData['id'] ?? null,          // ID de la primera app
                 'app_name' => $appData['name'] ?? null,      // Nombre de la primera app
                 'app_link' => $appData['link'] ?? null,      // Link de la primera app
-                'message_template_namespace' => $apiData['message_template_namespace'] ?? null
+                'message_template_namespace' => $apiData['message_template_namespace'] ?? null,
+                'messaging_limit_tier' => $messagingLimitTier,
+                'messaging_limit_value' => $messagingLimitValue,
             ]
         );
+    }
+
+    /**
+     * Convierte el tier de límite de mensajes a su valor numérico.
+     * 
+     * Según la documentación de Meta:
+     * - TIER_250 = 250 mensajes
+     * - TIER_2K = 2000 mensajes
+     * - TIER_10K = 10000 mensajes
+     * - TIER_100K = 100000 mensajes
+     * - null o valores desconocidos = null (ilimitado o no especificado)
+     *
+     * @param string|null $tier El tier del límite de mensajes (ej: "TIER_2K").
+     * @return int|null El número de mensajes correspondiente o null si es ilimitado/desconocido.
+     */
+    private function convertTierToLimitValue(?string $tier): ?int
+    {
+        if ($tier === null) {
+            return null;
+        }
+
+        return match ($tier) {
+            'TIER_250' => 250,
+            'TIER_2K' => 2000,
+            'TIER_10K' => 10000,
+            'TIER_100K' => 100000,
+            default => null, // Para valores desconocidos o ilimitados
+        };
     }
 
     /**

@@ -84,7 +84,9 @@ class WhatsappService
             'GET',
             Endpoints::GET_BUSINESS_ACCOUNT,
             ['whatsapp_business_id' => $whatsappBusinessId],
-            headers: $this->getAuthHeaders()
+            null,
+            ['fields' => 'id,name,timezone_id,whatsapp_business_manager_messaging_limit,message_template_namespace'],
+            $this->getAuthHeaders()
         );
 
         Log::channel('whatsapp')->debug('Respuesta de getBusinessAccount:', $response);

@@ -32,6 +32,8 @@ class WhatsappBusinessAccount extends Model
         'disconnected_at', // Nuevo campo
         'fully_removed_at', // Nuevo campo
         'disconnection_reason', // Nuevo campo
+        'messaging_limit_tier',
+        'messaging_limit_value',
     ];
 
     protected $casts = [
