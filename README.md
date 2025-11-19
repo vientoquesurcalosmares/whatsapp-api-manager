@@ -148,15 +148,15 @@ Before installing the package, make sure you meet the following requirements:
 <img src="https://img.shields.io/badge/📖_Read_Full_Documentation-4CAF50?style=for-the-badge&logoColor=white" alt="Full Documentation">
 </a>
 
-<a href="https://laravelwhatsappmanager.com/docs/en/installation">
+<a href="https://laravelwhatsappmanager.com/docs/en/guide.quick-start">
 <img src="https://img.shields.io/badge/⚡_Quick_Start_Guide-2196F3?style=for-the-badge&logoColor=white" alt="Quick Start">
 </a>
 
-<a href="https://laravelwhatsappmanager.com/docs/en/messages">
+<a href="https://laravelwhatsappmanager.com/docs/en/guide.messages.text">
 <img src="https://img.shields.io/badge/💬_API_Reference-FF5722?style=for-the-badge&logoColor=white" alt="API Reference">
 </a>
 
-<a href="https://laravelwhatsappmanager.com/docs/en/troubleshooting">
+<a href="https://laravelwhatsappmanager.com/docs/en/guide.installation">
 <img src="https://img.shields.io/badge/🔧_Troubleshooting-FFC107?style=for-the-badge&logoColor=white" alt="Troubleshooting">
 </a>
 
@@ -171,17 +171,17 @@ Before installing the package, make sure you meet the following requirements:
 <td width="50%" valign="top">
 
 #### 🚀 Getting Started
-- **[Installation & Setup](https://laravelwhatsappmanager.com/docs/en/installation)** - Get up and running in minutes
-- **[API Configuration](https://laravelwhatsappmanager.com/docs/en/api-configuration)** - Meta Business credentials setup
-- **[Requirements](https://laravelwhatsappmanager.com/docs/en/requirements)** - System and API requirements
+- **[Installation & Setup](https://laravelwhatsappmanager.com/docs/en/guide.installation)** - Get up and running in minutes
+- **[API Configuration](https://laravelwhatsappmanager.com/docs/en/guide.api-configuration)** - Meta Business credentials setup
+- **[Requirements](https://laravelwhatsappmanager.com/docs/en/guide.installation)** - System and API requirements
 
 </td>
 <td width="50%" valign="top">
 
 #### 💬 Core Features
-- **[Message Management](https://laravelwhatsappmanager.com/docs/en/messages)** - Send & receive all message types
-- **[Templates](https://laravelwhatsappmanager.com/docs/en/templates)** - Create and manage templates
-- **[Interactive Messages](https://laravelwhatsappmanager.com/docs/en/interactive)** - Buttons and lists
+- **[Message Management](https://laravelwhatsappmanager.com/docs/en/guide.messages)** - Send & receive all message types
+- **[Templates](https://laravelwhatsappmanager.com/docs/en/guide.templates)** - Create and manage templates
+- **[Interactive Messages](https://laravelwhatsappmanager.com/docs/en/guide.messages.interactive)** - Buttons and lists
 
 </td>
 </tr>
@@ -189,17 +189,16 @@ Before installing the package, make sure you meet the following requirements:
 <td width="50%" valign="top">
 
 #### 🔔 Advanced Topics
-- **[Webhooks](https://laravelwhatsappmanager.com/docs/en/webhooks)** - Real-time event handling
-- **[Events & Broadcasting](https://laravelwhatsappmanager.com/docs/en/events)** - Laravel Echo integration
-- **[Customization](https://laravelwhatsappmanager.com/docs/en/customization)** - Extend the package
+- **[Webhooks](https://laravelwhatsappmanager.com/docs/en/guide.webhook-full)** - Real-time event handling
+- **[Events & Broadcasting](https://laravelwhatsappmanager.com/docs/en/guide.events)** - Laravel Echo integration
+- **[Customization](https://laravelwhatsappmanager.com/docs/en/guide.advanced.custom-models)** - Extend the package
 
 </td>
 <td width="50%" valign="top">
 
 #### 🎯 Practical Examples
-- **[Chatbot Examples](https://laravelwhatsappmanager.com/docs/en/examples/chatbot)** - Build automated flows
-- **[Notification Systems](https://laravelwhatsappmanager.com/docs/en/examples/notifications)** - Alert your users
-- **[CRM Integration](https://laravelwhatsappmanager.com/docs/en/examples/crm)** - Connect with your CRM
+- **[Notification Systems](https://laravelwhatsappmanager.com/docs/en/guide.introduction)** - Alert your users
+- **[CRM Integration](https://laravelwhatsappmanager.com/docs/en/guide.introduction)** - Connect with your CRM
 
 </td>
 </tr>
@@ -338,7 +337,7 @@ Need help? You have several options:
 
 ### 📬 Support Channels
 
-- 📖 **Documentation:** [https://laravelwhatsappmanager.com/docs/en](https://laravelwhatsappmanager.com/docs/en)
+- 📖 **Documentation:** [https://laravelwhatsappmanager.com/docs/en/guide.installation](https://laravelwhatsappmanager.com/docs/en/guide.installation)
 - 🐛 **GitHub Issues:** [Report a problem](https://github.com/djdang3r/whatsapp-api-manager/issues)
 - 📧 **Email:**
   - [wilfredoperilla@gmail.com](mailto:wilfredoperilla@gmail.com)
@@ -529,19 +528,19 @@ Antes de instalar el paquete, asegúrate de cumplir con los siguientes requisito
 
 ### 🚀 Comienza con la Documentación Completa
 
-<a href="https://laravelwhatsappmanager.com/docs/es">
+<a href="https://laravelwhatsappmanager.com/docs/es/guide.installation">
 <img src="https://img.shields.io/badge/📖_Leer_Documentación_Completa-4CAF50?style=for-the-badge&logoColor=white" alt="Documentación Completa">
 </a>
 
-<a href="https://laravelwhatsappmanager.com/docs/es/installation">
+<a href="https://laravelwhatsappmanager.com/docs/es/guide.quick-start">
 <img src="https://img.shields.io/badge/⚡_Guía_de_Inicio_Rápido-2196F3?style=for-the-badge&logoColor=white" alt="Inicio Rápido">
 </a>
 
-<a href="https://laravelwhatsappmanager.com/docs/es/messages">
+<a href="https://laravelwhatsappmanager.com/docs/es/guide.messages">
 <img src="https://img.shields.io/badge/💬_Referencia_de_API-FF5722?style=for-the-badge&logoColor=white" alt="Referencia API">
 </a>
 
-<a href="https://laravelwhatsappmanager.com/docs/es/troubleshooting">
+<a href="https://laravelwhatsappmanager.com/docs/es/guide.installation">
 <img src="https://img.shields.io/badge/🔧_Solución_de_Problemas-FFC107?style=for-the-badge&logoColor=white" alt="Solución de Problemas">
 </a>
 
@@ -556,17 +555,17 @@ Antes de instalar el paquete, asegúrate de cumplir con los siguientes requisito
 <td width="50%" valign="top">
 
 #### 🚀 Primeros Pasos
-- **[Instalación y Configuración](https://laravelwhatsappmanager.com/docs/es/installation)** - Listo en minutos
-- **[Configuración de API](https://laravelwhatsappmanager.com/docs/es/api-configuration)** - Credenciales de Meta Business
-- **[Requisitos](https://laravelwhatsappmanager.com/docs/es/requirements)** - Requisitos del sistema y API
+- **[Instalación y Configuración](https://laravelwhatsappmanager.com/docs/es/guide.installation)** - Listo en minutos
+- **[Configuración de API](https://laravelwhatsappmanager.com/docs/es/guide.quick-start)** - Credenciales de Meta Business
+- **[Requisitos](https://laravelwhatsappmanager.com/docs/es/guide.installation)** - Requisitos del sistema y API
 
 </td>
 <td width="50%" valign="top">
 
 #### 💬 Funcionalidades Principales
-- **[Gestión de Mensajes](https://laravelwhatsappmanager.com/docs/es/messages)** - Enviar y recibir todo tipo de mensajes
-- **[Plantillas](https://laravelwhatsappmanager.com/docs/es/templates)** - Crear y gestionar plantillas
-- **[Mensajes Interactivos](https://laravelwhatsappmanager.com/docs/es/interactive)** - Botones y listas
+- **[Gestión de Mensajes](https://laravelwhatsappmanager.com/docs/es/guide.messages)** - Enviar y recibir todo tipo de mensajes
+- **[Plantillas](https://laravelwhatsappmanager.com/docs/es/guide.templates)** - Crear y gestionar plantillas
+- **[Mensajes Interactivos](https://laravelwhatsappmanager.com/docs/es/guide.messages.interactive)** - Botones y listas
 
 </td>
 </tr>
@@ -574,17 +573,16 @@ Antes de instalar el paquete, asegúrate de cumplir con los siguientes requisito
 <td width="50%" valign="top">
 
 #### 🔔 Temas Avanzados
-- **[Webhooks](https://laravelwhatsappmanager.com/docs/es/webhooks)** - Manejo de eventos en tiempo real
-- **[Eventos y Broadcasting](https://laravelwhatsappmanager.com/docs/es/events)** - Integración con Laravel Echo
-- **[Personalización](https://laravelwhatsappmanager.com/docs/es/customization)** - Extiende el paquete
+- **[Webhooks](https://laravelwhatsappmanager.com/docs/es/guide.webhook-full)** - Manejo de eventos en tiempo real
+- **[Eventos y Broadcasting](https://laravelwhatsappmanager.com/docs/es/guide.events)** - Integración con Laravel Echo
+- **[Personalización](https://laravelwhatsappmanager.com/docs/es/guide.advanced.custom-models)** - Extiende el paquete
 
 </td>
 <td width="50%" valign="top">
 
 #### 🎯 Ejemplos Prácticos
-- **[Ejemplos de Chatbot](https://laravelwhatsappmanager.com/docs/es/examples/chatbot)** - Construye flujos automatizados
-- **[Sistemas de Notificaciones](https://laravelwhatsappmanager.com/docs/es/examples/notifications)** - Alerta a tus usuarios
-- **[Integración con CRM](https://laravelwhatsappmanager.com/docs/es/examples/crm)** - Conecta con tu CRM
+- **[Sistemas de Notificaciones](https://laravelwhatsappmanager.com/docs/es/guide.installation)** - Alerta a tus usuarios
+- **[Integración con CRM](https://laravelwhatsappmanager.com/docs/es/guide.installation)** - Conecta con tu CRM
 
 </td>
 </tr>
@@ -723,7 +721,7 @@ Consulta el archivo [LICENSE](LICENSE) para más detalles.
 
 ### 📬 Canales de Soporte
 
-- 📖 **Documentación:** [https://laravelwhatsappmanager.com/docs/es](https://laravelwhatsappmanager.com/docs/es)
+- 📖 **Documentación:** [https://laravelwhatsappmanager.com/docs/es/guide.installation](https://laravelwhatsappmanager.com/docs/es/guide.installation)
 - 🐛 **Issues de GitHub:** [Reportar un problema](https://github.com/djdang3r/whatsapp-api-manager/issues)
 - 📧 **Email:**
   - [wilfredoperilla@gmail.com](mailto:wilfredoperilla@gmail.com)
