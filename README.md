@@ -1,10 +1,13 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/djdang3r/whatsapp-api-manager)
 
-![WhatsApp Business API Manager](https://raw.githubusercontent.com/djdang3r/whatsapp-api-manager/main/assets/whatsapp-api-cloud.png "WhatsApp Business API Manager")
+![WhatsApp API Cloud](assets/whatsapp-api-cloud.png "WhatsApp Business API Manager for Laravel")
+
+<div align="center">
 
 # WhatsApp Business API Manager for Laravel
 
-**The most elegant way to integrate WhatsApp Business in Laravel**
+### A complete solution to integrate WhatsApp Business API into your Laravel applications
+### Una solución completa para integrar WhatsApp Business API en tus aplicaciones Laravel
 
 <p align="center">
 <a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/v/scriptdevelop/whatsapp-manager.svg?style=flat-square" alt="Latest Version"></a>
@@ -18,554 +21,755 @@
 
 ### 🌐 Language / Idioma
 
-<a href="#english"><img src="https://flagcdn.com/us.svg" width="20"> 🇺🇸 English</a> | <a href="#español">🇪🇸 Español <img src="https://flagcdn.com/es.svg" width="20"></a>
-
----
-
-## 🇺🇸 English
-
-![WhatsApp Business API Manager](https://raw.githubusercontent.com/djdang3r/whatsapp-api-manager/main/assets/whatsapp-api-cloud.png "WhatsApp Business API Manager")
-
-<div align="center">
-
-### 📚 Complete Documentation Available!
-
-<a href="https://laravelwhatsappmanager.com/docs/en">
-  <img src="https://img.shields.io/badge/📖_View_Complete_Documentation-FF6B6B?style=for-the-badge&logo=bookstack&logoColor=white&labelColor=FF6B6B" alt="View Complete Documentation" height="50" />
-</a>
-
-**[👉 Click here to view the complete documentation](https://laravelwhatsappmanager.com/docs/en)**
+**[🇺🇸 English](#-english) | [🇪🇸 Español](#-español)**
 
 </div>
 
-# WhatsApp Business API Manager for Laravel
+---
 
-## 📖 Description
+<a name="english"></a>
 
-`scriptdevelop/whatsapp-manager` is a complete and elegant package designed to simplify the integration of WhatsApp Business API into your Laravel projects. It provides a fluid and expressive interface that feels natural in Laravel, allowing you to write clean and readable code.
+# 🇺🇸 English
 
-### ✨ Key Features
+## 📋 Table of Contents
 
-- **💬 Complete Messages**: Send and receive text, media, interactive, and template messages
-- **📋 Template Management**: Create, list, edit, delete, and send WhatsApp-approved templates
-- **📡 Integrated Webhooks**: Receive messages and updates in real-time
-- **🔘 Interactive Messages**: Buttons, dropdown lists, location requests, and more
-- **📍 Location and Contacts**: Share geographic locations and contact information
-- **🎯 Laravel Events**: Native integration with Laravel events
-- **⚡ Real-time Broadcasting**: 100% compatible with Laravel Echo and Reverb
-- **🔒 Secure and Validated**: Webhook validation, robust error handling
-- **📊 Detailed Logs**: Complete logging system for debugging
-- **🎨 Fully Customizable**: Extend models, customize webhooks, adapt everything to your needs
-- **🌐 Multi-account**: Manage multiple WhatsApp Business accounts simultaneously
-- **🚫 User Blocking**: Block, unblock, and list blocked users
-- **📱 Phone Number Management**: Register, sync, and manage phone numbers
-
-## 🚀 Quick Installation
-
-### 1. Install the package
-
-```bash
-composer require scriptdevelop/whatsapp-manager
-```
-
-### 2. Publish configuration
-
-```bash
-php artisan vendor:publish --tag=whatsapp-config
-php artisan vendor:publish --tag=whatsapp-routes
-```
-
-### 3. Configure environment variables
-
-Add to your `.env` file:
-
-```env
-WHATSAPP_API_URL=https://graph.facebook.com
-WHATSAPP_API_VERSION=v21.0
-WHATSAPP_VERIFY_TOKEN=your-verify-token
-WHATSAPP_USER_MODEL=App\Models\User
-WHATSAPP_BROADCAST_CHANNEL_TYPE=private
-
-# OPTIONAL VARIABLES
-META_CLIENT_ID=123456789012345
-META_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-META_REDIRECT_URI=https://yourdomain.com/meta/callback
-META_SCOPES=whatsapp_business_management,whatsapp_business_messaging
-```
-
-### 4. Run migrations
-
-```bash
-php artisan migrate
-```
-
-### 5. Ready to use!
-
-```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-
-Whatsapp::message()->sendTextMessage(
-    phoneNumberId: '123456789',
-    countryCode: '57',
-    phoneNumber: '3237121901',
-    message: 'Hello from Laravel!'
-);
-```
-
-## 💡 Usage Examples
-
-### Send Text Message
-
-```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-
-$message = Whatsapp::message()->sendTextMessage(
-    $phone->phone_number_id,
-    '57',
-    '3237121901',
-    'Hello, this is a test message.'
-);
-```
-
-### Send Image
-
-```php
-$file = new \SplFileInfo(storage_path('app/public/image.png'));
-
-$message = Whatsapp::message()->sendImageMessage(
-    $phone->phone_number_id,
-    '57',
-    '3237121901',
-    $file
-);
-```
-
-### Send Message with Buttons
-
-```php
-$response = Whatsapp::sendButtonMessage($phone->phone_number_id)
-    ->to('57', '31371235638')
-    ->withBody('Do you confirm your appointment for tomorrow at 3 PM?')
-    ->addButton('confirm', '✅ Confirm')
-    ->addButton('reschedule', '🔄 Reschedule')
-    ->withFooter('Please select an option')
-    ->send();
-```
-
-### Register Business Account
-
-```php
-$account = Whatsapp::account()->register([
-    'api_token' => 'your-access-token',
-    'business_id' => 'your-business-account-id'
-]);
-```
-
-### Create Template
-
-```php
-$template = Whatsapp::template()
-    ->createUtilityTemplate($account)
-    ->setName('order_confirmation')
-    ->setLanguage('en')
-    ->addHeader('TEXT', 'Order Confirmation')
-    ->addBody('Your order {{1}} has been confirmed.', ['12345'])
-    ->addFooter('Thank you for your purchase!')
-    ->save();
-```
-
-## 📚 Complete Documentation
-
-For complete documentation, detailed examples, advanced configuration guides, and more information, visit:
-
-### 🌐 [Official Documentation](https://laravelwhatsappmanager.com/docs/en)
-
-The official documentation includes:
-
-- 📖 **Complete Installation**: Detailed step-by-step guide
-- 🔧 **API Configuration**: Credentials, webhooks, phone numbers
-- 💬 **Message Management**: All message types with examples
-- 📋 **Template Management**: Creation, editing, deletion, and sending
-- 📡 **Real-time Events**: Laravel Echo and Reverb configuration
-- 🧪 **Webhooks**: Configuration and event handling
-- 🎨 **Customization**: Model extension and webhook customization
-- 🚀 **Advanced Examples**: Real use cases and best practices
+- [Introduction](#introduction)
+- [Key Features](#key-features)
+- [Requirements](#requirements)
+- [Documentation](#documentation)
+- [Important Warnings](#important-warnings)
+- [Contributing](#contributing)
+- [Support the Project](#support-the-project)
+- [License](#license)
+- [Support and Contact](#support-and-contact)
 
 ---
 
-## ⚠️ Important Legal Notice
+## 📖 Introduction
 
-This is an **UNOFFICIAL** WhatsApp package
+**WhatsApp Business API Manager** is a robust and scalable package specifically designed for Laravel that simplifies integration with the official WhatsApp Business Cloud API. This package enables developers to implement advanced WhatsApp messaging functionalities efficiently, securely, and professionally.
 
-**WhatsApp API Manager** is an independently developed open-source package that provides integration with the official WhatsApp Business Platform API. This project is **NOT affiliated, associated, authorized, endorsed, or officially connected** with WhatsApp LLC, Meta Platforms, Inc. or any of their subsidiaries or affiliates.
+With a modern and flexible architecture, the package provides an intuitive interface to manage all aspects of WhatsApp communication, from sending simple messages to implementing complex conversational flows with templates, webhooks, and real-time events.
 
-### © Property Rights
+### Why Choose This Package?
 
-The official WhatsApp names, WhatsApp logo, and all related trademarks are the exclusive property of WhatsApp LLC and Meta Platforms, Inc.
-
-### 👤 User Responsibility
-
-You are solely responsible for how you use this package. You must ensure compliance with all WhatsApp policies and applicable laws.
-
-### 📋 You must comply with:
-
-- ✓ WhatsApp Business Terms of Service
-- ✓ WhatsApp Business Policies
-- ✓ Meta Platform Policies
-- ✓ All applicable privacy and data protection laws and regulations
-
-**No Warranty:** This software is provided "as is", without warranties of any kind, express or implied. The developers assume no responsibility for damages or losses resulting from the use of this package.
+- ✅ **Native Laravel Integration** - Specifically designed for the Laravel ecosystem
+- ✅ **Robust Architecture** - Well-structured code following Laravel best practices
+- ✅ **Complete Documentation** - Detailed guides and practical examples
+- ✅ **Active Support** - Constant updates and active community
+- ✅ **Open Source** - 100% transparent under MIT license
+- ✅ **Production Ready** - Prepared for high-performance environments
 
 ---
 
-## 📢 WhatsApp Policies
+## 🚀 Key Features
 
-🚫 **Important:** 🚫
-- Always ensure compliance with [WhatsApp's Policies](https://www.whatsapp.com/legal/business-policy/) and terms of use when using this package.
-- Misuse may result in account suspension or legal action by WhatsApp.
-- Regularly review policy updates to avoid issues.
+### 💬 Complete Message Management
+
+- **Text Messages** - Send and receive formatted text messages
+- **Multimedia** - Full support for images, videos, audio, and documents
+- **Locations** - Share and receive geographic coordinates
+- **Contacts** - Exchange contact information
+- **Interactive Messages** - Quick reply buttons and option lists
+- **Reactions** - Support for emoji reactions to messages
+- **Read Status** - Track message delivery and read status
+
+### 📋 Template System
+
+- **Template Creation** - Complete interface to manage templates
+- **Pre-approved Templates** - Use Meta-verified templates
+- **Dynamic Variables** - Personalize messages with dynamic data
+- **Multimedia Components** - Templates with images, videos, and documents
+- **Action Buttons** - Call-to-action, URL, and quick replies
+- **Versioning** - Manage multiple template versions
+
+### 🔔 Webhooks and Real-time Events
+
+- **Integrated Webhooks** - Automatic reception of WhatsApp events
+- **Laravel Events** - Native integration with Laravel's event system
+- **Laravel Echo & Reverb** - Real-time notifications for your frontend
+- **Security Validation** - Automatic webhook signature verification
+- **Custom Events** - Create your own listeners for specific events
+
+### 📊 Management and Monitoring
+
+- **Multiple Numbers** - Manage multiple WhatsApp Business numbers
+- **Conversation Metrics** - Track costs and usage
+- **Logging System** - Detailed logging of all operations
+- **Job Queue** - Background processing with Laravel Queue
+- **Error Handling** - Robust error capture and management system
+- **Rate Limiting** - Control sending limits
+
+### 🔧 Customization and Extensibility
+
+- **Customizable Models** - Extend models to your needs
+- **Flexible Configuration** - Complete and documented configuration file
+- **Custom Middleware** - Add your own processing logic
+- **Service Providers** - Deep integration with Laravel's container
+- **Facades** - Simple and elegant access to functionalities
 
 ---
 
-## ❤️ Support
+## 📦 Requirements
 
-If you find this project useful, consider supporting its development:
+Before installing the package, make sure you meet the following requirements:
 
-[![GitHub Sponsors](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
-[![Mercado Pago](https://img.shields.io/badge/Donate%20via-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+### System Requirements
+
+- **PHP** >= 8.2
+- **Laravel** >= 12.0
+- **Composer** >= 2.0
+- **Database**: MySQL, PostgreSQL, SQLite, or SQL Server
+
+### WhatsApp Business API Requirements
+
+- **Meta Business Account** - [Create account](https://business.facebook.com/)
+- **Meta Application** - Configured with WhatsApp Business API
+- **Access Token** - Permanent access token from your application
+- **Verified Phone Number** - Verified WhatsApp Business number
+- **Webhook URL** - Publicly accessible URL to receive webhooks (HTTPS required)
+
+### Recommended Knowledge
+
+- Laravel fundamentals (Routing, Controllers, Models)
+- Basic REST API concepts
+- Knowledge of Webhooks and events
+- WhatsApp Business API policies and limitations
+
+---
+
+## 📚 Documentation
+
+<div align="center">
+
+### 🚀 Get Started with Full Documentation
+
+<a href="https://laravelwhatsappmanager.com/docs/en">
+<img src="https://img.shields.io/badge/📖_Read_Full_Documentation-4CAF50?style=for-the-badge&logoColor=white" alt="Full Documentation">
+</a>
+
+<a href="https://laravelwhatsappmanager.com/docs/en/installation">
+<img src="https://img.shields.io/badge/⚡_Quick_Start_Guide-2196F3?style=for-the-badge&logoColor=white" alt="Quick Start">
+</a>
+
+<a href="https://laravelwhatsappmanager.com/docs/en/messages">
+<img src="https://img.shields.io/badge/💬_API_Reference-FF5722?style=for-the-badge&logoColor=white" alt="API Reference">
+</a>
+
+<a href="https://laravelwhatsappmanager.com/docs/en/troubleshooting">
+<img src="https://img.shields.io/badge/🔧_Troubleshooting-FFC107?style=for-the-badge&logoColor=white" alt="Troubleshooting">
+</a>
+
+</div>
+
+---
+
+### 📖 Complete Guides Available
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+#### 🚀 Getting Started
+- **[Installation & Setup](https://laravelwhatsappmanager.com/docs/en/installation)** - Get up and running in minutes
+- **[API Configuration](https://laravelwhatsappmanager.com/docs/en/api-configuration)** - Meta Business credentials setup
+- **[Requirements](https://laravelwhatsappmanager.com/docs/en/requirements)** - System and API requirements
+
+</td>
+<td width="50%" valign="top">
+
+#### 💬 Core Features
+- **[Message Management](https://laravelwhatsappmanager.com/docs/en/messages)** - Send & receive all message types
+- **[Templates](https://laravelwhatsappmanager.com/docs/en/templates)** - Create and manage templates
+- **[Interactive Messages](https://laravelwhatsappmanager.com/docs/en/interactive)** - Buttons and lists
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+#### 🔔 Advanced Topics
+- **[Webhooks](https://laravelwhatsappmanager.com/docs/en/webhooks)** - Real-time event handling
+- **[Events & Broadcasting](https://laravelwhatsappmanager.com/docs/en/events)** - Laravel Echo integration
+- **[Customization](https://laravelwhatsappmanager.com/docs/en/customization)** - Extend the package
+
+</td>
+<td width="50%" valign="top">
+
+#### 🎯 Practical Examples
+- **[Chatbot Examples](https://laravelwhatsappmanager.com/docs/en/examples/chatbot)** - Build automated flows
+- **[Notification Systems](https://laravelwhatsappmanager.com/docs/en/examples/notifications)** - Alert your users
+- **[CRM Integration](https://laravelwhatsappmanager.com/docs/en/examples/crm)** - Connect with your CRM
+
+</td>
+</tr>
+</table>
+
+### 💡 Everything You Need
+
+The official documentation includes installation instructions, code examples, configuration guides, best practices, troubleshooting tips, and everything you need to integrate WhatsApp Business API into your Laravel application.
+
+---
+
+## ⚠️ Important Warnings
+
+### 🚫 WhatsApp Policies
+
+**IMPORTANT:** Using this package implies strict compliance with WhatsApp Business policies.
+
+- ✅ **Read and comply** with [WhatsApp Business Policy](https://www.whatsapp.com/legal/business-policy/)
+- ✅ **Get explicit consent** from users before sending messages
+- ✅ **Respect opt-outs** - Users must be able to unsubscribe easily
+- ✅ **Don't send SPAM** - Only relevant and requested messages
+- ✅ **Protect privacy** - Comply with GDPR, LGPD, and other regulations
+- ❌ **Avoid prohibited content** - No illegal, misleading, or abusive content
+
+**Non-compliance may result in:**
+- Temporary or permanent account suspension
+- Message sending restrictions
+- Legal action by Meta
+- Loss of API access
+
+### ⚠️ Project Status
+
+- **Current Version:** Alpha
+- **Status:** Active development
+- **Stability:** Functional but subject to changes
+- **Recommendation:** Use in development, be cautious in production
+- **Next version:** Beta (coming soon)
+
+**Considerations:**
+- The API may change in future versions
+- Report any bugs on [GitHub Issues](https://github.com/djdang3r/whatsapp-api-manager/issues)
+- Contributions are welcome to improve stability
 
 ---
 
 ## 🤝 Contributing
 
-Would you like to improve this package? Your collaboration is essential to keep growing!
+Your collaboration is essential to grow this project. All contributions are welcome:
 
-### 🚀 How to contribute?
+### Ways to Contribute
 
-1. **Fork the Repository**
-2. **Create a Branch** for your feature (`git checkout -b feature/my-new-feature`)
-3. **Make Changes** and commit (`git commit -m "Add my new feature"`)
-4. **Push** to your branch (`git push origin feature/my-new-feature`)
-5. **Open a Pull Request**
+- 🐛 **Report Bugs** - [Open Issue](https://github.com/djdang3r/whatsapp-api-manager/issues)
+- 💡 **Suggest Features** - Share your ideas
+- 📖 **Improve Documentation** - Help other developers
+- 🔧 **Submit Pull Requests** - Code, tests, improvements
+- ⭐ **Give a Star** - Help give visibility to the project
 
-### 💡 Contribution Guidelines
+### Contribution Process
 
-- Follow [Laravel's coding style guide](https://laravel.com/docs/contributions#coding-style)
-- Write clear and helpful comments
-- Include tests where possible
-- If you find a bug, open an [Issue](https://github.com/djdang3r/whatsapp-api-manager/issues) before submitting a PR
+1. **Fork** the repository
+2. **Create a branch** for your feature: `git checkout -b feature/my-feature`
+3. **Make your changes** following [Laravel's style guide](https://laravel.com/docs/contributions#coding-style)
+4. **Write tests** if possible
+5. **Commit** your changes: `git commit -m "feat: Add new feature"`
+6. **Push** to your branch: `git push origin feature/my-feature`
+7. **Open a Pull Request** describing your changes
+
+### Contribution Guidelines
+
+- Follow Laravel coding conventions
+- Write clean and well-documented code
+- Include tests for new features
+- Update documentation if necessary
+- Use descriptive commit messages
+
+**Every contribution counts! 🙌**
 
 ---
 
-## 👨‍💻 Support and Contact
+## ❤️ Support the Project
 
-Do you have questions, problems, or suggestions? We're here to help!
+If this project has been useful to you, consider supporting its development:
 
-- 📧 **Email:**  
-  [wilfredoperilla@gmail.com](mailto:wilfredoperilla@gmail.com)  
-  [support@scriptdevelop.com](mailto:support@scriptdevelop.com)
+### Ways to Support
 
-- 🐞 **Report an Issue:**  
-  [Open a GitHub Issue](https://github.com/djdang3r/whatsapp-api-manager/issues)
+<p align="center">
+<a href="https://github.com/sponsors/djdang3r">
+<img src="https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github" alt="GitHub Sponsors">
+</a>
+<a href="https://mpago.li/2qe5G7E">
+<img src="https://img.shields.io/badge/Donate%20via-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago" alt="Mercado Pago">
+</a>
+</p>
 
-- 💬 **Ideas or Improvements?**  
-  Your feedback and suggestions are welcome to keep improving this project!
+### Other Ways to Support
+
+- ⭐ **Star** the repository on GitHub
+- 🐦 **Share** the project on social media
+- 📝 **Write** an article or tutorial about the package
+- 💬 **Recommend** the package to other developers
+- 🐛 **Report bugs** and help improve quality
+
+**Your support motivates continuous development and keeps the project active. Thank you! 💙**
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License**. This means:
+
+- ✅ Commercial use allowed
+- ✅ Modification allowed
+- ✅ Distribution allowed
+- ✅ Private use allowed
+- ℹ️ Must include license and copyright notice
+
+See the [LICENSE](LICENSE) file for more details.
+
+---
+
+## 🚫 Disclaimer
+
+**Important:** This package is an independent open-source project and **is NOT affiliated with, endorsed, sponsored, or officially supported by Meta Platforms, Inc., WhatsApp LLC, or any of their subsidiaries.**
+
+- "WhatsApp", "Facebook", "Meta" and their logos are registered trademarks of Meta Platforms, Inc.
+- This package uses the official public WhatsApp Business Cloud API
+- Users are responsible for complying with all Meta and WhatsApp terms of service
+- Use of this package is at your own risk
+- The package developers are not responsible for misuse or policy violations
+
+---
+
+## 👨‍💻 Support and Contact
+
+Need help? You have several options:
+
+### 📬 Support Channels
+
+- 📖 **Documentation:** [https://laravelwhatsappmanager.com/docs/en](https://laravelwhatsappmanager.com/docs/en)
+- 🐛 **GitHub Issues:** [Report a problem](https://github.com/djdang3r/whatsapp-api-manager/issues)
+- 📧 **Email:**
+  - [wilfredoperilla@gmail.com](mailto:wilfredoperilla@gmail.com)
+  - [support@scriptdevelop.com](mailto:support@scriptdevelop.com)
+- 💬 **Discussions:** [GitHub Discussions](https://github.com/djdang3r/whatsapp-api-manager/discussions)
+
+### Response Times
+
+- GitHub Issues: 24-48 hours
+- Email: 48-72 hours
+- Priority support for sponsors
 
 ---
 
 <div align="center">
 
-# 🚀 Developed with ❤️ by [ScriptDevelop](https://scriptdevelop.com)
+## 🚀 Developed with ❤️ by [ScriptDevelop](https://scriptdevelop.com)
 
-## ✨ Powering your connection with WhatsApp Business API
+### ✨ Powering your connection with WhatsApp Business API
+
+**Development Team:**
+- **[Wilfredo Perilla](https://github.com/djdang3r)** - Lead Developer
+- **[@vientoquesurcalosmares](https://github.com/vientoquesurcalosmares)** - Contributor
 
 ---
 
-### 🔥 With support from:
+### ⭐ If you find this project useful, consider giving it a star
 
-**[@vientoquesurcalosmares](https://github.com/vientoquesurcalosmares)**
+[![GitHub stars](https://img.shields.io/github/stars/djdang3r/whatsapp-api-manager.svg?style=social&label=Star)](https://github.com/djdang3r/whatsapp-api-manager)
 
 </div>
 
 ---
 
+<div align="center">
+
+**[⬆ Back to top](#-english)**
+
+</div>
+
+---
+---
 ---
 
-## 🇪🇸 Español
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/djdang3r/whatsapp-api-manager)
 
-![WhatsApp Business API Manager](https://raw.githubusercontent.com/djdang3r/whatsapp-api-manager/main/assets/whatsapp-api-cloud.png "WhatsApp Business API Manager")
+![WhatsApp API Cloud](assets/whatsapp-api-cloud.png "WhatsApp Business API Manager for Laravel")
 
 <div align="center">
 
-### 📚 ¡Documentación Completa Disponible!
+# WhatsApp Business API Manager for Laravel
+
+### Una solución completa para integrar WhatsApp Business API en tus aplicaciones Laravel
+### A complete solution to integrate WhatsApp Business API into your Laravel applications
+
+<p align="center">
+<a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/v/scriptdevelop/whatsapp-manager.svg?style=flat-square" alt="Latest Version"></a>
+<a href="https://php.net/"><img src="https://img.shields.io/badge/PHP-8.2%2B-8892BF.svg?style=flat-square" alt="PHP Version"></a>
+<a href="https://laravel.com/"><img src="https://img.shields.io/badge/Laravel-12%2B-FF2D20.svg?style=flat-square" alt="Laravel Version"></a>
+<a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/dt/scriptdevelop/whatsapp-manager" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/l/scriptdevelop/whatsapp-manager" alt="License"></a>
+</p>
+
+---
+
+### 🌐 Language / Idioma
+
+**[🇺🇸 English](#-english) | [🇪🇸 Español](#-español)**
+
+</div>
+
+---
+
+<a name="español"></a>
+
+# 🇪🇸 Español
+
+## 📋 Índice
+
+- [Introducción](#introducción)
+- [Características Principales](#características-principales)
+- [Requisitos](#requisitos)
+- [Documentación](#documentación)
+- [Advertencias Importantes](#advertencias-importantes)
+- [Contribuir](#contribuir)
+- [Apoyo al Proyecto](#apoyo-al-proyecto)
+- [Licencia](#licencia)
+- [Soporte y Contacto](#soporte-y-contacto)
+
+---
+
+## 📖 Introducción
+
+**WhatsApp Business API Manager** es un paquete robusto y escalable diseñado específicamente para Laravel que simplifica la integración con la API oficial de WhatsApp Business Cloud. Este paquete permite a los desarrolladores implementar funcionalidades avanzadas de mensajería WhatsApp de forma eficiente, segura y profesional.
+
+Con una arquitectura moderna y flexible, el paquete proporciona una interfaz intuitiva para gestionar todos los aspectos de la comunicación por WhatsApp, desde el envío de mensajes simples hasta la implementación de flujos conversacionales complejos con plantillas, webhooks y eventos en tiempo real.
+
+### ¿Por qué elegir este paquete?
+
+- ✅ **Integración Nativa con Laravel** - Diseñado específicamente para el ecosistema Laravel
+- ✅ **Arquitectura Robusta** - Código bien estructurado, siguiendo las mejores prácticas de Laravel
+- ✅ **Documentación Completa** - Guías detalladas y ejemplos prácticos
+- ✅ **Soporte Activo** - Actualizaciones constantes y comunidad activa
+- ✅ **Código Abierto** - 100% transparente bajo licencia MIT
+- ✅ **Producción Ready** - Preparado para entornos de alto rendimiento
+
+---
+
+## 🚀 Características Principales
+
+### 💬 Gestión Completa de Mensajes
+
+- **Mensajes de Texto** - Envío y recepción de mensajes de texto con formato
+- **Multimedia** - Soporte completo para imágenes, videos, audio y documentos
+- **Ubicaciones** - Compartir y recibir coordenadas geográficas
+- **Contactos** - Intercambio de información de contacto
+- **Mensajes Interactivos** - Botones de respuesta rápida y listas de opciones
+- **Reacciones** - Soporte para emojis de reacción a mensajes
+- **Estados de Lectura** - Seguimiento de entrega y lectura de mensajes
+
+### 📋 Sistema de Plantillas (Templates)
+
+- **Creación de Plantillas** - Interfaz completa para gestionar plantillas
+- **Plantillas Pre-aprobadas** - Uso de plantillas verificadas por Meta
+- **Variables Dinámicas** - Personalización de mensajes con datos dinámicos
+- **Componentes Multimedia** - Plantillas con imágenes, videos y documentos
+- **Botones de Acción** - Call-to-action, URL y respuestas rápidas
+- **Versionado** - Gestión de múltiples versiones de plantillas
+
+### 🔔 Webhooks y Eventos en Tiempo Real
+
+- **Webhooks Integrados** - Recepción automática de eventos de WhatsApp
+- **Laravel Events** - Integración nativa con el sistema de eventos de Laravel
+- **Laravel Echo & Reverb** - Notificaciones en tiempo real para tu frontend
+- **Validación de Seguridad** - Verificación automática de firma de webhooks
+- **Eventos Personalizados** - Crea tus propios listeners para eventos específicos
+
+### 📊 Gestión y Monitoreo
+
+- **Múltiples Números** - Gestión de varios números de WhatsApp Business
+- **Métricas de Conversación** - Seguimiento de costos y uso
+- **Sistema de Logs** - Registro detallado de todas las operaciones
+- **Cola de Trabajos** - Procesamiento en background con Laravel Queue
+- **Manejo de Errores** - Sistema robusto de captura y gestión de errores
+- **Rate Limiting** - Control de límites de envío
+
+### 🔧 Personalización y Extensibilidad
+
+- **Modelos Personalizables** - Extiende los modelos a tus necesidades
+- **Configuración Flexible** - Archivo de configuración completo y documentado
+- **Middleware Personalizado** - Agrega tu propia lógica de procesamiento
+- **Service Providers** - Integración profunda con el contenedor de Laravel
+- **Facades** - Acceso simple y elegante a las funcionalidades
+
+---
+
+## 📦 Requisitos
+
+Antes de instalar el paquete, asegúrate de cumplir con los siguientes requisitos:
+
+### Requisitos del Sistema
+
+- **PHP** >= 8.2
+- **Laravel** >= 12.0
+- **Composer** >= 2.0
+- **Base de Datos**: MySQL, PostgreSQL, SQLite o SQL Server
+
+### Requisitos de WhatsApp Business API
+
+- **Cuenta de Meta Business** - [Crear cuenta](https://business.facebook.com/)
+- **Aplicación de Meta** - Configurada con WhatsApp Business API
+- **Token de Acceso** - Token de acceso permanente de tu aplicación
+- **Número de Teléfono Verificado** - Número de WhatsApp Business verificado
+- **Webhook URL** - URL pública accesible para recibir webhooks (HTTPS requerido)
+
+### Conocimientos Recomendados
+
+- Fundamentos de Laravel (Routing, Controllers, Models)
+- Conceptos básicos de APIs REST
+- Conocimiento de Webhooks y eventos
+- Políticas y limitaciones de WhatsApp Business API
+
+---
+
+## 📚 Documentación
+
+<div align="center">
+
+### 🚀 Comienza con la Documentación Completa
 
 <a href="https://laravelwhatsappmanager.com/docs/es">
-  <img src="https://img.shields.io/badge/📖_Ver_Documentación_Completa-FF6B6B?style=for-the-badge&logo=bookstack&logoColor=white&labelColor=FF6B6B" alt="Ver Documentación Completa" height="50" />
+<img src="https://img.shields.io/badge/📖_Leer_Documentación_Completa-4CAF50?style=for-the-badge&logoColor=white" alt="Documentación Completa">
 </a>
 
-**[👉 Haz clic aquí para ver la documentación completa](https://laravelwhatsappmanager.com/docs/es)**
+<a href="https://laravelwhatsappmanager.com/docs/es/installation">
+<img src="https://img.shields.io/badge/⚡_Guía_de_Inicio_Rápido-2196F3?style=for-the-badge&logoColor=white" alt="Inicio Rápido">
+</a>
+
+<a href="https://laravelwhatsappmanager.com/docs/es/messages">
+<img src="https://img.shields.io/badge/💬_Referencia_de_API-FF5722?style=for-the-badge&logoColor=white" alt="Referencia API">
+</a>
+
+<a href="https://laravelwhatsappmanager.com/docs/es/troubleshooting">
+<img src="https://img.shields.io/badge/🔧_Solución_de_Problemas-FFC107?style=for-the-badge&logoColor=white" alt="Solución de Problemas">
+</a>
 
 </div>
 
-# WhatsApp Business API Manager para Laravel
+---
 
-## 📖 Descripción
+### 📖 Guías Completas Disponibles
 
-`scriptdevelop/whatsapp-manager` es un paquete completo y elegante diseñado para facilitar la integración de la API de WhatsApp Business en tus proyectos Laravel. Proporciona una interfaz fluida y expresiva que se siente natural en Laravel, permitiéndote escribir código limpio y legible.
+<table>
+<tr>
+<td width="50%" valign="top">
 
-### ✨ Características Principales
+#### 🚀 Primeros Pasos
+- **[Instalación y Configuración](https://laravelwhatsappmanager.com/docs/es/installation)** - Listo en minutos
+- **[Configuración de API](https://laravelwhatsappmanager.com/docs/es/api-configuration)** - Credenciales de Meta Business
+- **[Requisitos](https://laravelwhatsappmanager.com/docs/es/requirements)** - Requisitos del sistema y API
 
-- **💬 Mensajes Completos**: Envía y recibe mensajes de texto, multimedia, interactivos y de plantilla
-- **📋 Gestión de Plantillas**: Crea, lista, edita, elimina y envía plantillas aprobadas por WhatsApp
-- **📡 Webhooks Integrados**: Recibe mensajes y actualizaciones en tiempo real
-- **🔘 Mensajes Interactivos**: Botones, listas desplegables, solicitudes de ubicación y más
-- **📍 Ubicación y Contactos**: Comparte ubicaciones geográficas e información de contactos
-- **🎯 Eventos Laravel**: Integración nativa con eventos de Laravel
-- **⚡ Broadcasting en Tiempo Real**: 100% compatible con Laravel Echo y Reverb
-- **🔒 Seguro y Validado**: Validación de webhooks, manejo robusto de errores
-- **📊 Logs Detallados**: Sistema completo de logging para debugging
-- **🎨 Totalmente Personalizable**: Extiende modelos, personaliza webhooks, adapta todo a tus necesidades
-- **🌐 Multi-cuenta**: Gestiona múltiples cuentas de WhatsApp Business simultáneamente
-- **🚫 Bloqueo de Usuarios**: Bloquea, desbloquea y lista usuarios bloqueados
-- **📱 Gestión de Números**: Registra, sincroniza y gestiona números telefónicos
+</td>
+<td width="50%" valign="top">
 
-## 🚀 Instalación Rápida
+#### 💬 Funcionalidades Principales
+- **[Gestión de Mensajes](https://laravelwhatsappmanager.com/docs/es/messages)** - Enviar y recibir todo tipo de mensajes
+- **[Plantillas](https://laravelwhatsappmanager.com/docs/es/templates)** - Crear y gestionar plantillas
+- **[Mensajes Interactivos](https://laravelwhatsappmanager.com/docs/es/interactive)** - Botones y listas
 
-### 1. Instalar el paquete
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
 
-```bash
-composer require scriptdevelop/whatsapp-manager
-```
+#### 🔔 Temas Avanzados
+- **[Webhooks](https://laravelwhatsappmanager.com/docs/es/webhooks)** - Manejo de eventos en tiempo real
+- **[Eventos y Broadcasting](https://laravelwhatsappmanager.com/docs/es/events)** - Integración con Laravel Echo
+- **[Personalización](https://laravelwhatsappmanager.com/docs/es/customization)** - Extiende el paquete
 
-### 2. Publicar configuración
+</td>
+<td width="50%" valign="top">
 
-```bash
-php artisan vendor:publish --tag=whatsapp-config
-php artisan vendor:publish --tag=whatsapp-routes
-```
+#### 🎯 Ejemplos Prácticos
+- **[Ejemplos de Chatbot](https://laravelwhatsappmanager.com/docs/es/examples/chatbot)** - Construye flujos automatizados
+- **[Sistemas de Notificaciones](https://laravelwhatsappmanager.com/docs/es/examples/notifications)** - Alerta a tus usuarios
+- **[Integración con CRM](https://laravelwhatsappmanager.com/docs/es/examples/crm)** - Conecta con tu CRM
 
-### 3. Configurar variables de entorno
+</td>
+</tr>
+</table>
 
-Agrega en tu archivo `.env`:
+### 💡 Todo lo que Necesitas
 
-```env
-WHATSAPP_API_URL=https://graph.facebook.com
-WHATSAPP_API_VERSION=v21.0
-WHATSAPP_VERIFY_TOKEN=your-verify-token
-WHATSAPP_USER_MODEL=App\Models\User
-WHATSAPP_BROADCAST_CHANNEL_TYPE=private
-
-# OPTIONAL VARIABLES
-META_CLIENT_ID=123456789012345
-META_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-META_REDIRECT_URI=https://yourdomain.com/meta/callback
-META_SCOPES=whatsapp_business_management,whatsapp_business_messaging
-```
-
-### 4. Ejecutar migraciones
-
-```bash
-php artisan migrate
-```
-
-### 5. ¡Listo para usar!
-
-```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-
-Whatsapp::message()->sendTextMessage(
-    phoneNumberId: '123456789',
-    countryCode: '57',
-    phoneNumber: '3237121901',
-    message: '¡Hola desde Laravel!'
-);
-```
-
-## 💡 Ejemplos de Uso
-
-### Enviar Mensaje de Texto
-
-```php
-use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
-
-$message = Whatsapp::message()->sendTextMessage(
-    $phone->phone_number_id,
-    '57',
-    '3237121901',
-    'Hola, este es un mensaje de prueba.'
-);
-```
-
-### Enviar Imagen
-
-```php
-$file = new \SplFileInfo(storage_path('app/public/image.png'));
-
-$message = Whatsapp::message()->sendImageMessage(
-    $phone->phone_number_id,
-    '57',
-    '3237121901',
-    $file
-);
-```
-
-### Enviar Mensaje con Botones
-
-```php
-$response = Whatsapp::sendButtonMessage($phone->phone_number_id)
-    ->to('57', '31371235638')
-    ->withBody('¿Confirmas tu cita para mañana a las 3 PM?')
-    ->addButton('confirmar', '✅ Confirmar')
-    ->addButton('reagendar', '🔄 Reagendar')
-    ->withFooter('Por favor selecciona una opción')
-    ->send();
-```
-
-### Registrar Cuenta de Negocio
-
-```php
-$account = Whatsapp::account()->register([
-    'api_token' => 'your-access-token',
-    'business_id' => 'your-business-account-id'
-]);
-```
-
-### Crear Plantilla
-
-```php
-$template = Whatsapp::template()
-    ->createUtilityTemplate($account)
-    ->setName('order_confirmation')
-    ->setLanguage('es')
-    ->addHeader('TEXT', 'Confirmación de Pedido')
-    ->addBody('Tu pedido {{1}} ha sido confirmado.', ['12345'])
-    ->addFooter('¡Gracias por tu compra!')
-    ->save();
-```
-
-## 📚 Documentación Completa
-
-Para la documentación completa, ejemplos detallados, guías de configuración avanzada y más información, visita:
-
-### 🌐 [Documentación Oficial](https://laravelwhatsappmanager.com/docs/es)
-
-La documentación oficial incluye:
-
-- 📖 **Instalación Completa**: Guía paso a paso detallada
-- 🔧 **Configuración de API**: Credenciales, webhooks, números telefónicos
-- 💬 **Gestión de Mensajes**: Todos los tipos de mensajes con ejemplos
-- 📋 **Gestión de Plantillas**: Creación, edición, eliminación y envío
-- 📡 **Eventos en Tiempo Real**: Configuración de Laravel Echo y Reverb
-- 🧪 **Webhooks**: Configuración y manejo de eventos
-- 🎨 **Personalización**: Extensión de modelos y personalización de webhooks
-- 🚀 **Ejemplos Avanzados**: Casos de uso reales y mejores prácticas
+La documentación oficial incluye instrucciones de instalación, ejemplos de código, guías de configuración, mejores prácticas, consejos de solución de problemas y todo lo que necesitas para integrar WhatsApp Business API en tu aplicación Laravel.
 
 ---
 
-## ⚠️ Aviso Legal Importante
+## ⚠️ Advertencias Importantes
 
-Este es un paquete **NO OFICIAL** de WhatsApp
+### 🚫 Políticas de WhatsApp
 
-**WhatsApp API Manager** es un paquete de código abierto desarrollado de forma independiente que proporciona una integración con la API oficial de WhatsApp Business Platform. Este proyecto **NO está afiliado, asociado, autorizado, respaldado ni oficialmente conectado** con WhatsApp LLC, Meta Platforms, Inc. o cualquiera de sus subsidiarias o afiliados.
+**IMPORTANTE:** El uso de este paquete implica el cumplimiento estricto de las políticas de WhatsApp Business.
 
-### © Derechos de Propiedad
+- ✅ **Lee y cumple** las [Políticas Comerciales de WhatsApp](https://www.whatsapp.com/legal/business-policy/)
+- ✅ **Obtén consentimiento** explícito de los usuarios antes de enviar mensajes
+- ✅ **Respeta los opt-outs** - Los usuarios deben poder darse de baja fácilmente
+- ✅ **No envíes SPAM** - Solo mensajes relevantes y solicitados
+- ✅ **Protege la privacidad** - Cumple con GDPR, LGPD y otras regulaciones
+- ❌ **Evita contenido prohibido** - Sin contenido ilegal, engañoso o abusivo
 
-Los nombres oficiales WhatsApp, el logotipo de WhatsApp y todas las marcas relacionadas son propiedad exclusiva de WhatsApp LLC y Meta Platforms, Inc.
+**El incumplimiento puede resultar en:**
+- Suspensión temporal o permanente de tu cuenta
+- Restricciones en el envío de mensajes
+- Acciones legales por parte de Meta
+- Pérdida de acceso a la API
 
-### 👤 Responsabilidad del Usuario
+### ⚠️ Estado del Proyecto
 
-Tú eres el único responsable de cómo utilizas este paquete. Debes asegurarte de cumplir con todas las políticas de WhatsApp y leyes aplicables.
+- **Versión Actual:** Alpha
+- **Estado:** En desarrollo activo
+- **Estabilidad:** Funcional pero sujeta a cambios
+- **Recomendación:** Úsalo en desarrollo, ten precaución en producción
+- **Próxima versión:** Beta (próximamente)
 
-### 📋 Debes cumplir con:
-
-- ✓ Términos de Servicio de WhatsApp Business
-- ✓ Políticas de WhatsApp Business
-- ✓ Políticas de la Plataforma de Meta
-- ✓ Todas las leyes y regulaciones aplicables de privacidad y protección de datos
-
-**Sin Garantía:** Este software se proporciona "tal cual", sin garantías de ningún tipo, expresas o implícitas. Los desarrolladores no asumen ninguna responsabilidad por daños o pérdidas resultantes del uso de este paquete.
-
----
-
-## 📢 Políticas de WhatsApp
-
-🚫 **Importante:** 🚫
-- Asegúrate de cumplir siempre con las [Políticas de WhatsApp](https://www.whatsapp.com/legal/business-policy/) y sus términos de uso al utilizar este paquete.
-- El uso indebido puede resultar en la suspensión de tu cuenta o acciones legales por parte de WhatsApp.
-- Revisa periódicamente las actualizaciones de las políticas para evitar inconvenientes.
-
----
-
-## ❤️ Apoyo
-
-Si este proyecto te resulta útil, considera apoyar su desarrollo:
-
-[![GitHub Sponsors](https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github)](https://github.com/sponsors/djdang3r)
-[![Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
+**Consideraciones:**
+- La API puede cambiar en futuras versiones
+- Reporta cualquier bug en [GitHub Issues](https://github.com/djdang3r/whatsapp-api-manager/issues)
+- Las contribuciones son bienvenidas para mejorar la estabilidad
 
 ---
 
 ## 🤝 Contribuir
 
-¿Te gustaría mejorar este paquete? ¡Tu colaboración es fundamental para seguir creciendo!
+Tu colaboración es fundamental para hacer crecer este proyecto. Todas las contribuciones son bienvenidas:
 
-### 🚀 ¿Cómo contribuir?
+### Formas de Contribuir
 
-1. **Haz un Fork** del repositorio
-2. **Crea una Rama** para tu funcionalidad (`git checkout -b feature/mi-nueva-funcionalidad`)
-3. **Realiza tus Cambios** y haz commit (`git commit -m "Agrega mi nueva funcionalidad"`)
-4. **Haz Push** a tu rama (`git push origin feature/mi-nueva-funcionalidad`)
-5. **Abre un Pull Request**
+- 🐛 **Reportar Bugs** - [Abrir Issue](https://github.com/djdang3r/whatsapp-api-manager/issues)
+- 💡 **Sugerir Funcionalidades** - Comparte tus ideas
+- 📖 **Mejorar Documentación** - Ayuda a otros desarrolladores
+- 🔧 **Enviar Pull Requests** - Código, tests, mejoras
+- ⭐ **Dar una Estrella** - Ayuda a dar visibilidad al proyecto
 
-### 💡 Sugerencias para contribuir
+### Proceso de Contribución
 
-- Sigue la [guía de estilo de código de Laravel](https://laravel.com/docs/contributions#coding-style)
-- Escribe comentarios claros y útiles
-- Incluye pruebas si es posible
-- Si encuentras un bug, abre un [Issue](https://github.com/djdang3r/whatsapp-api-manager/issues) antes de enviar el PR
+1. **Fork** el repositorio
+2. **Crea una rama** para tu feature: `git checkout -b feature/mi-funcionalidad`
+3. **Realiza tus cambios** siguiendo la [guía de estilo de Laravel](https://laravel.com/docs/contributions#coding-style)
+4. **Escribe tests** si es posible
+5. **Commit** tus cambios: `git commit -m "feat: Agrega nueva funcionalidad"`
+6. **Push** a tu rama: `git push origin feature/mi-funcionalidad`
+7. **Abre un Pull Request** describiendo tus cambios
+
+### Pautas de Contribución
+
+- Sigue las convenciones de código de Laravel
+- Escribe código limpio y bien documentado
+- Incluye tests para nuevas funcionalidades
+- Actualiza la documentación si es necesario
+- Usa mensajes de commit descriptivos
+
+**¡Cada contribución cuenta! 🙌**
 
 ---
 
-## 👨‍💻 Soporte y Contacto
+## ❤️ Apoyo al Proyecto
 
-¿Tienes dudas, problemas o sugerencias? ¡Estamos aquí para ayudarte!
+Si este proyecto te ha sido útil, considera apoyar su desarrollo:
 
-- 📧 **Email:**  
-  [wilfredoperilla@gmail.com](mailto:wilfredoperilla@gmail.com)  
-  [soporte@scriptdevelop.com](mailto:soporte@scriptdevelop.com)
+### Formas de Apoyar
 
-- 🐞 **Reporta un Issue:**  
-  [Abrir un Issue en GitHub](https://github.com/djdang3r/whatsapp-api-manager/issues)
+<p align="center">
+<a href="https://github.com/sponsors/djdang3r">
+<img src="https://img.shields.io/badge/Sponsor%20me-GitHub-blue?style=for-the-badge&logo=github" alt="GitHub Sponsors">
+</a>
+<a href="https://mpago.li/2qe5G7E">
+<img src="https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago" alt="Mercado Pago">
+</a>
+</p>
 
-- 💬 **¿Ideas o mejoras?**  
-  ¡Tus comentarios y sugerencias son bienvenidos para seguir mejorando este proyecto!
+### Otras Formas de Apoyar
+
+- ⭐ **Dale una estrella** al repositorio en GitHub
+- 🐦 **Comparte** el proyecto en redes sociales
+- 📝 **Escribe** un artículo o tutorial sobre el paquete
+- 💬 **Recomienda** el paquete a otros desarrolladores
+- 🐛 **Reporta bugs** y ayuda a mejorar la calidad
+
+**Tu apoyo motiva el desarrollo continuo y mantiene el proyecto activo. ¡Gracias! 💙**
 
 ---
 
 ## 📄 Licencia
 
-Este proyecto está bajo la licencia **MIT**. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+Este proyecto está bajo la licencia **MIT**. Esto significa que:
+
+- ✅ Uso comercial permitido
+- ✅ Modificación permitida
+- ✅ Distribución permitida
+- ✅ Uso privado permitido
+- ℹ️ Debe incluir el aviso de licencia y copyright
+
+Consulta el archivo [LICENSE](LICENSE) para más detalles.
+
+---
+
+## 🚫 Descargo de Responsabilidad
+
+**Importante:** Este paquete es un proyecto independiente de código abierto y **NO está afiliado, respaldado, patrocinado ni soportado oficialmente por Meta Platforms, Inc., WhatsApp LLC, ni ninguna de sus subsidiarias.**
+
+- "WhatsApp", "Facebook", "Meta" y sus logos son marcas registradas de Meta Platforms, Inc.
+- Este paquete utiliza la API oficial pública de WhatsApp Business Cloud
+- Los usuarios son responsables de cumplir con todos los términos de servicio de Meta y WhatsApp
+- El uso de este paquete está bajo tu propia responsabilidad
+- Los desarrolladores del paquete no son responsables del mal uso o violaciones de políticas
+
+---
+
+## 👨‍💻 Soporte y Contacto
+
+¿Necesitas ayuda? Tienes varias opciones:
+
+### 📬 Canales de Soporte
+
+- 📖 **Documentación:** [https://laravelwhatsappmanager.com/docs/es](https://laravelwhatsappmanager.com/docs/es)
+- 🐛 **Issues de GitHub:** [Reportar un problema](https://github.com/djdang3r/whatsapp-api-manager/issues)
+- 📧 **Email:**
+  - [wilfredoperilla@gmail.com](mailto:wilfredoperilla@gmail.com)
+  - [soporte@scriptdevelop.com](mailto:soporte@scriptdevelop.com)
+- 💬 **Discusiones:** [GitHub Discussions](https://github.com/djdang3r/whatsapp-api-manager/discussions)
+
+### Tiempos de Respuesta
+
+- Issues de GitHub: 24-48 horas
+- Email: 48-72 horas
+- Soporte prioritario para sponsors
 
 ---
 
 <div align="center">
 
-# 🚀 Desarrollado con ❤️ por [ScriptDevelop](https://scriptdevelop.com)
+## 🚀 Desarrollado con ❤️ por [ScriptDevelop](https://scriptdevelop.com)
 
-## ✨ Potenciando tu conexión con WhatsApp Business API
+### ✨ Potenciando tu conexión con WhatsApp Business API
+
+**Equipo de Desarrollo:**
+- **[Wilfredo Perilla](https://github.com/djdang3r)** - Lead Developer
+- **[@vientoquesurcalosmares](https://github.com/vientoquesurcalosmares)** - Contributor
 
 ---
 
-### 🔥 Con el apoyo de:
+### ⭐ Si este proyecto te resulta útil, considera darle una estrella
 
-**[@vientoquesurcalosmares](https://github.com/vientoquesurcalosmares)**
+[![GitHub stars](https://img.shields.io/github/stars/djdang3r/whatsapp-api-manager.svg?style=social&label=Star)](https://github.com/djdang3r/whatsapp-api-manager)
 
 </div>
 
 ---
+
+<div align="center">
+
+**[⬆ Volver arriba](#-español)**
+
+</div>
+
+---
+
+<div align="center">
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/djdang3r/whatsapp-api-manager)
+
+**Made with ❤️ for the Laravel community**
+
+</div>
