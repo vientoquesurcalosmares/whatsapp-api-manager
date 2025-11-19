@@ -1,6 +1,6 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/djdang3r/whatsapp-api-manager)
 
-![Ejemplo de plantilla de marketing](assets/Whatsapp'Manager.png "Plantilla de Marketing")
+![Ejemplo de plantilla de marketing](assets/Whatsapp-api-cloud.png "Plantilla de Marketing")
 
 # WhatsApp Business API Manager for Laravel
 

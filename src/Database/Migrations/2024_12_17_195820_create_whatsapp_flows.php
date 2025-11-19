@@ -8,7 +8,16 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     * 
+     * 
      */
+
+        //     -- Primero eliminar la constraint actual
+        // ALTER TABLE whatsapp_flows DROP CONSTRAINT whatsapp_flows_status_check;
+
+        // -- Crear una nueva constraint que acepte ambos casos
+        // ALTER TABLE whatsapp_flows ADD CONSTRAINT whatsapp_flows_status_check 
+        // CHECK (status IN ('draft', 'DRAFT', 'published', 'PUBLISHED', 'archived', 'ARCHIVED', 'deprecated', 'DEPRECATED'));
     public function up(): void
     {
         Schema::create('whatsapp_flows', function (Blueprint $table) {
