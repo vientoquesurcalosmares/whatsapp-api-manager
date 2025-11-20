@@ -1,5 +1,60 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/djdang3r/whatsapp-api-manager)
 
+---
+
+<div align="center">
+
+## ⚠️ IMPORTANT LEGAL NOTICE / AVISO LEGAL IMPORTANTE ⚠️
+
+<table>
+<tr>
+<td>
+
+### 🔴 THIS IS NOT AN OFFICIAL WHATSAPP OR META PRODUCT
+
+**This is an independent, open-source Laravel package** developed by the community to integrate with the **official WhatsApp Business Cloud API**. This package:
+
+- ❌ **IS NOT** affiliated with, endorsed, sponsored, or supported by Meta Platforms, Inc., WhatsApp LLC, or Facebook
+- ❌ **DOES NOT** collect, store, or request your WhatsApp, Meta, or Facebook credentials on this website or package
+- ❌ **IS NOT** a WhatsApp client or unofficial API
+- ✅ **IS** a legitimate development tool that uses the **official WhatsApp Business Cloud API** provided by Meta
+- ✅ **IS** 100% open-source (MIT License) and transparent - [View Source Code](https://github.com/djdang3r/whatsapp-api-manager)
+- ✅ **REQUIRES** you to create your own Meta Business account and obtain your own official API credentials directly from Meta
+
+**We do NOT provide WhatsApp API access.** You must obtain official access through [Meta for Developers](https://developers.facebook.com/).
+
+</td>
+</tr>
+<tr>
+<td>
+
+### 🔴 ESTO NO ES UN PRODUCTO OFICIAL DE WHATSAPP O META
+
+**Este es un paquete independiente de código abierto para Laravel** desarrollado por la comunidad para integrarse con la **API oficial de WhatsApp Business Cloud**. Este paquete:
+
+- ❌ **NO está** afiliado, respaldado, patrocinado ni soportado por Meta Platforms, Inc., WhatsApp LLC, o Facebook
+- ❌ **NO recopila**, almacena ni solicita tus credenciales de WhatsApp, Meta o Facebook en este sitio web o paquete
+- ❌ **NO es** un cliente de WhatsApp o API no oficial
+- ✅ **ES** una herramienta legítima de desarrollo que usa la **API oficial de WhatsApp Business Cloud** proporcionada por Meta
+- ✅ **ES** 100% código abierto (Licencia MIT) y transparente - [Ver Código Fuente](https://github.com/djdang3r/whatsapp-api-manager)
+- ✅ **REQUIERE** que crees tu propia cuenta de Meta Business y obtengas tus propias credenciales oficiales de API directamente desde Meta
+
+**NO proporcionamos acceso a la API de WhatsApp.** Debes obtener acceso oficial a través de [Meta for Developers](https://developers.facebook.com/).
+
+</td>
+</tr>
+</table>
+
+### 🔐 Security & Privacy / Seguridad y Privacidad
+
+- **This package does NOT handle your API credentials** - You configure them securely in your own Laravel application
+- **All API calls are made directly from your server to Meta's official servers** - No third-party intermediaries
+- **This website does NOT contain login forms or request any credentials** - All setup is done through Meta's official platform
+
+---
+
+</div>
+
 ![WhatsApp API Cloud](assets/whatsapp-api-cloud.png "WhatsApp Business API Manager for Laravel")
 
 <div align="center">
@@ -319,15 +374,69 @@ See the [LICENSE](LICENSE) file for more details.
 
 ---
 
-## 🚫 Disclaimer
+## 🚫 Legal Disclaimer & Non-Affiliation Notice
 
-**Important:** This package is an independent open-source project and **is NOT affiliated with, endorsed, sponsored, or officially supported by Meta Platforms, Inc., WhatsApp LLC, or any of their subsidiaries.**
+<div style="background-color: #fff3cd; border: 2px solid #ffc107; padding: 20px; border-radius: 5px;">
 
-- "WhatsApp", "Facebook", "Meta" and their logos are registered trademarks of Meta Platforms, Inc.
-- This package uses the official public WhatsApp Business Cloud API
-- Users are responsible for complying with all Meta and WhatsApp terms of service
-- Use of this package is at your own risk
-- The package developers are not responsible for misuse or policy violations
+### ⚠️ IMPORTANT LEGAL NOTICE
+
+**This is an INDEPENDENT, OPEN-SOURCE project and is NOT an official product of WhatsApp or Meta.**
+
+#### Non-Affiliation Statement
+
+This package **is NOT**:
+- ❌ Affiliated with, endorsed by, sponsored by, or officially supported by **Meta Platforms, Inc.**
+- ❌ Affiliated with, endorsed by, sponsored by, or officially supported by **WhatsApp LLC**
+- ❌ Affiliated with, endorsed by, sponsored by, or officially supported by **Facebook, Inc.**
+- ❌ An official WhatsApp or Meta product, service, or application
+- ❌ Authorized to represent WhatsApp, Meta, or Facebook in any capacity
+
+#### Trademark Notice
+
+- "WhatsApp", "Facebook", "Meta" and their respective logos are **registered trademarks** of Meta Platforms, Inc.
+- All trademarks, service marks, and logos used in this documentation belong to their respective owners
+- Use of these trademarks does NOT imply any affiliation or endorsement
+
+#### What This Package IS
+
+- ✅ An independent, community-developed **Laravel package**
+- ✅ Uses **ONLY** the official, public WhatsApp Business Cloud API provided by Meta
+- ✅ 100% **open-source** under MIT License - fully transparent and auditable
+- ✅ A development tool to help Laravel developers integrate with WhatsApp Business API
+
+#### User Responsibilities
+
+- ✅ **You are responsible** for obtaining your own official API access from Meta
+- ✅ **You are responsible** for complying with all Meta, WhatsApp, and Facebook terms of service
+- ✅ **You are responsible** for complying with WhatsApp Business Policy
+- ✅ **You are responsible** for securing your own API credentials
+- ✅ **You are responsible** for how you use this package in your applications
+
+#### Privacy & Security Notice
+
+- 🔒 This package **does NOT** collect, store, transmit, or have access to your API credentials
+- 🔒 This package **does NOT** act as a proxy or intermediary for API calls
+- 🔒 This website **does NOT** contain login forms or request credentials
+- 🔒 All API communication happens **directly** between your server and Meta's servers
+
+#### Liability Disclaimer
+
+- ⚖️ This package is provided "AS IS" without warranty of any kind
+- ⚖️ Use of this package is **at your own risk**
+- ⚖️ The developers are **NOT responsible** for:
+  - Policy violations or account suspensions
+  - Misuse of the package or API
+  - Any damages or losses from using this package
+  - Any legal issues arising from improper use
+
+#### Official Resources
+
+For official information, API access, and support:
+- **Official Meta for Developers:** https://developers.facebook.com/
+- **WhatsApp Business Platform:** https://business.whatsapp.com/
+- **Official API Documentation:** https://developers.facebook.com/docs/whatsapp
+
+</div>
 
 ---
 
@@ -703,15 +812,69 @@ Consulta el archivo [LICENSE](LICENSE) para más detalles.
 
 ---
 
-## 🚫 Descargo de Responsabilidad
+## 🚫 Aviso Legal y de No Afiliación
 
-**Importante:** Este paquete es un proyecto independiente de código abierto y **NO está afiliado, respaldado, patrocinado ni soportado oficialmente por Meta Platforms, Inc., WhatsApp LLC, ni ninguna de sus subsidiarias.**
+<div style="background-color: #fff3cd; border: 2px solid #ffc107; padding: 20px; border-radius: 5px;">
 
-- "WhatsApp", "Facebook", "Meta" y sus logos son marcas registradas de Meta Platforms, Inc.
-- Este paquete utiliza la API oficial pública de WhatsApp Business Cloud
-- Los usuarios son responsables de cumplir con todos los términos de servicio de Meta y WhatsApp
-- El uso de este paquete está bajo tu propia responsabilidad
-- Los desarrolladores del paquete no son responsables del mal uso o violaciones de políticas
+### ⚠️ AVISO LEGAL IMPORTANTE
+
+**Este es un proyecto INDEPENDIENTE de CÓDIGO ABIERTO y NO es un producto oficial de WhatsApp o Meta.**
+
+#### Declaración de No Afiliación
+
+Este paquete **NO es**:
+- ❌ Afiliado, respaldado, patrocinado ni soportado oficialmente por **Meta Platforms, Inc.**
+- ❌ Afiliado, respaldado, patrocinado ni soportado oficialmente por **WhatsApp LLC**
+- ❌ Afiliado, respaldado, patrocinado ni soportado oficialmente por **Facebook, Inc.**
+- ❌ Un producto, servicio o aplicación oficial de WhatsApp o Meta
+- ❌ Autorizado para representar a WhatsApp, Meta o Facebook en ninguna capacidad
+
+#### Aviso de Marcas Registradas
+
+- "WhatsApp", "Facebook", "Meta" y sus respectivos logos son **marcas registradas** de Meta Platforms, Inc.
+- Todas las marcas comerciales, marcas de servicio y logos utilizados en esta documentación pertenecen a sus respectivos propietarios
+- El uso de estas marcas NO implica ninguna afiliación o respaldo
+
+#### Lo que Este Paquete SÍ ES
+
+- ✅ Un **paquete Laravel** independiente desarrollado por la comunidad
+- ✅ Usa **SOLAMENTE** la API oficial pública de WhatsApp Business Cloud proporcionada por Meta
+- ✅ 100% **código abierto** bajo Licencia MIT - completamente transparente y auditable
+- ✅ Una herramienta de desarrollo para ayudar a desarrolladores Laravel a integrarse con la API de WhatsApp Business
+
+#### Responsabilidades del Usuario
+
+- ✅ **Eres responsable** de obtener tu propio acceso oficial a la API desde Meta
+- ✅ **Eres responsable** de cumplir con todos los términos de servicio de Meta, WhatsApp y Facebook
+- ✅ **Eres responsable** de cumplir con las Políticas Comerciales de WhatsApp
+- ✅ **Eres responsable** de asegurar tus propias credenciales de API
+- ✅ **Eres responsable** de cómo usas este paquete en tus aplicaciones
+
+#### Aviso de Privacidad y Seguridad
+
+- 🔒 Este paquete **NO recopila**, almacena, transmite ni tiene acceso a tus credenciales de API
+- 🔒 Este paquete **NO actúa** como proxy o intermediario para llamadas de API
+- 🔒 Este sitio web **NO contiene** formularios de inicio de sesión ni solicita credenciales
+- 🔒 Toda la comunicación API ocurre **directamente** entre tu servidor y los servidores de Meta
+
+#### Descargo de Responsabilidad Legal
+
+- ⚖️ Este paquete se proporciona "TAL CUAL" sin garantía de ningún tipo
+- ⚖️ El uso de este paquete es **bajo tu propio riesgo**
+- ⚖️ Los desarrolladores **NO son responsables** de:
+  - Violaciones de políticas o suspensiones de cuenta
+  - Mal uso del paquete o la API
+  - Daños o pérdidas por el uso de este paquete
+  - Problemas legales derivados del uso inadecuado
+
+#### Recursos Oficiales
+
+Para información oficial, acceso a la API y soporte:
+- **Meta for Developers Oficial:** https://developers.facebook.com/
+- **WhatsApp Business Platform:** https://business.whatsapp.com/
+- **Documentación Oficial de la API:** https://developers.facebook.com/docs/whatsapp
+
+</div>
 
 ---
 
