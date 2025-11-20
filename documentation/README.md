@@ -1,6 +1,6 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/djdang3r/whatsapp-api-manager)
 
-![Ejemplo de plantilla de marketing](assets/Whatsapp-api-cloud.png "Plantilla de Marketing")
+![Ejemplo de plantilla de marketing](assets/Whatsapp'Manager.png "Plantilla de Marketing")
 
 # WhatsApp Business API Manager for Laravel
 
@@ -2201,548 +2201,171 @@ event(new \Scriptdevelop\WhatsappManager\Events\MessageReceived([
 ---
 
 
-# 📡 Webhooks de WhatsApp API - Documentación Completa
-
-Este paquete proporciona soporte completo para los webhooks de WhatsApp Business API, permitiendo recibir y procesar en tiempo real todos los eventos y notificaciones de la plataforma.
-
----
-
-## 📊 Resumen Ejecutivo
-
-| Categoría | Cantidad | Estado |
-|-----------|----------|--------|
-| **Webhooks Implementados** | 11 | ✅ Activos |
-| **Tipos de Mensajes** | 12 | ✅ Soportados |
-| **Estados de Mensajes** | 4 | ✅ Soportados |
-| **Eventos de Plantillas** | 6 | ✅ Soportados |
-| **Webhooks Disponibles** | 21 | ⚠️ Comentados |
-
----
-
-## 🔐 1. Verificación del Webhook
-
-### Descripción
-Maneja el desafío de verificación inicial de Meta (Facebook) para validar que el endpoint del webhook es válido y está bajo tu control.
-
-### Detalles Técnicos
-- **Método HTTP**: `GET`
-- **Parámetros Requeridos**:
-  - `hub_mode`: Debe ser `"subscribe"`
-  - `hub_challenge`: Token de desafío generado por Meta
-  - `hub_verify_token`: Token de verificación configurado
-- **Validación**: Compara el `hub_verify_token` con el token configurado en tu aplicación
-- **Respuesta**: Retorna el `hub_challenge` si la verificación es exitosa
-
-### Ejemplo de Flujo
-```
-Meta → GET /whatsapp-webhook?hub_mode=subscribe&hub_challenge=ABC123&hub_verify_token=mi_token
-Tu App → 200 OK (con body: "ABC123")
-```
-
----
-
-## 💬 2. Webhook: `messages` - Mensajes Entrantes
-
-### Descripción
-Recibe y procesa todos los mensajes entrantes de WhatsApp, incluyendo texto, multimedia, interactivos y más.
-
-### Tipos de Mensajes Soportados
-
-#### 2.1. Mensajes de Texto (`text`)
-- **Descripción**: Mensajes de texto simples enviados por los usuarios
-- **Procesamiento**: 
-  - Extrae el contenido del mensaje
-  - Crea/actualiza el contacto
-  - Almacena el mensaje en la base de datos
-  - Dispara evento `TextMessageReceived`
-- **Datos Capturados**: Contenido del texto, timestamp, ID del mensaje, ID del contacto
-
-#### 2.2. Mensajes Interactivos (`interactive`)
-- **Descripción**: Respuestas a botones interactivos o listas desplegables
-- **Tipos Soportados**:
-  - `button_reply`: Respuestas a botones
-  - `list_reply`: Respuestas a listas desplegables
-- **Procesamiento**: 
-  - Extrae el título de la respuesta seleccionada
-  - Vincula la respuesta con el mensaje original
-  - Dispara evento `InteractiveMessageReceived`
-- **Datos Capturados**: Título de la respuesta, ID del botón/lista, mensaje original
-
-#### 2.3. Mensajes de Ubicación (`location`)
-- **Descripción**: Ubicaciones geográficas compartidas por los usuarios
-- **Procesamiento**: 
-  - Extrae coordenadas (latitud, longitud)
-  - Almacena nombre y dirección si están disponibles
-  - Dispara evento `LocationMessageReceived`
-- **Datos Capturados**: Latitud, longitud, nombre, dirección, precisión
-
-#### 2.4. Contactos Compartidos (`contacts`)
-- **Descripción**: Contactos de WhatsApp compartidos por los usuarios
-- **Procesamiento**: 
-  - Extrae información de los contactos compartidos
-  - Almacena nombres, números telefónicos y otros datos
-  - Dispara evento `ContactMessageReceived`
-- **Datos Capturados**: Nombres, números telefónicos, organizaciones
-
-#### 2.5. Reacciones (`reaction`)
-- **Descripción**: Reacciones con emojis a mensajes existentes
-- **Procesamiento**: 
-  - Identifica el mensaje original mediante `message_id`
-  - Almacena el emoji de la reacción
-  - Vincula la reacción con el mensaje original
-  - Dispara evento `ReactionReceived`
-- **Datos Capturados**: Emoji, ID del mensaje original, timestamp
-
-#### 2.6. Mensajes Multimedia
-Soporta los siguientes tipos de medios:
-
-##### 2.6.1. Imágenes (`image`)
-- **Formatos**: JPG, PNG, WEBP
-- **Procesamiento**: Descarga automática y almacenamiento local
-- **Datos Capturados**: URL, ID de media, caption (si existe), dimensiones
-
-##### 2.6.2. Audio (`audio`)
-- **Formatos**: OGG, AAC, MP3, AMR
-- **Procesamiento**: Descarga automática y almacenamiento local
-- **Datos Capturados**: URL, ID de media, duración, mime_type
-
-##### 2.6.3. Video (`video`)
-- **Formatos**: MP4, 3GP
-- **Procesamiento**: Descarga automática y almacenamiento local
-- **Datos Capturados**: URL, ID de media, caption, duración, dimensiones
-
-##### 2.6.4. Documentos (`document`)
-- **Formatos**: PDF, DOC, XLS, PPT, TXT
-- **Procesamiento**: Descarga automática y almacenamiento local
-- **Datos Capturados**: URL, ID de media, filename, caption, mime_type
-
-##### 2.6.5. Stickers (`sticker`)
-- **Procesamiento**: Descarga automática y almacenamiento local
-- **Datos Capturados**: URL, ID de media, dimensiones, mime_type
-
-**Evento Común**: Todos los mensajes multimedia disparan `MediaMessageReceived`
-
-#### 2.7. Mensajes del Sistema (`system`)
-- **Descripción**: Notificaciones del sistema de WhatsApp
-- **Procesamiento**: 
-  - Almacena información del evento del sistema
-  - Dispara evento `SystemMessageReceived`
-- **Casos de Uso**: Cambios de número, actualizaciones de cuenta, etc.
-
-#### 2.8. Mensajes No Soportados (`unsupported`)
-- **Descripción**: Mensajes que no pueden ser procesados por el sistema
-- **Procesamiento**: 
-  - Registra información del error
-  - Almacena detalles técnicos del fallo
-  - Dispara evento `UnsupportedMessageReceived`
-- **Datos Capturados**: Código de error, título, mensaje, detalles técnicos
-
-### Eventos Disparados
-- `MessageReceived`: Para todos los tipos de mensajes
-- `TextMessageReceived`: Específico para mensajes de texto
-- `InteractiveMessageReceived`: Para mensajes interactivos
-- `LocationMessageReceived`: Para ubicaciones
-- `ContactMessageReceived`: Para contactos compartidos
-- `ReactionReceived`: Para reacciones
-- `MediaMessageReceived`: Para todos los tipos multimedia
-- `SystemMessageReceived`: Para mensajes del sistema
-- `UnsupportedMessageReceived`: Para mensajes no soportados
-
----
-
-## 📊 3. Estados de Mensajes (dentro del webhook `messages`)
-
-### Descripción
-Notificaciones sobre el estado de los mensajes enviados desde tu aplicación.
-
-### Estados Soportados
-
-#### 3.1. `sent` - Mensaje Enviado
-- **Descripción**: El mensaje fue enviado exitosamente desde tu servidor
-- **Procesamiento**: 
-  - Actualiza el estado del mensaje en la base de datos
-  - Registra el timestamp de envío
-- **Datos Capturados**: Timestamp de envío, ID del mensaje
-
-#### 3.2. `delivered` - Mensaje Entregado
-- **Descripción**: El mensaje fue entregado al dispositivo del destinatario
-- **Procesamiento**: 
-  - Actualiza el estado del mensaje
-  - Registra el timestamp de entrega (`delivered_at`)
-  - Dispara evento `MessageDelivered`
-- **Datos Capturados**: Timestamp de entrega, ID del mensaje
-
-#### 3.3. `read` - Mensaje Leído
-- **Descripción**: El destinatario abrió y leyó el mensaje
-- **Procesamiento**: 
-  - Actualiza el estado del mensaje
-  - Registra el timestamp de lectura (`read_at`)
-  - Dispara evento `MessageRead`
-- **Datos Capturados**: Timestamp de lectura, ID del mensaje
-
-#### 3.4. `failed` - Mensaje Fallido
-- **Descripción**: El mensaje no pudo ser enviado o entregado
-- **Procesamiento**: 
-  - Actualiza el estado del mensaje
-  - Registra información del error
-  - Manejo especial para opt-out de marketing (código 131050)
-  - Dispara evento `MessageFailed` o `WhatsappMarketingOptOut`
-- **Datos Capturados**: 
-  - Código de error
-  - Título del error
-  - Mensaje de error
-  - Detalles técnicos
-  - Timestamp del fallo (`failed_at`)
-
-### Gestión de Conversaciones
-Cuando un mensaje cambia de estado, también se procesa información de conversación:
-- **Tiempo de expiración**: Cuándo expira la ventana de conversación
-- **Origen**: Origen de la conversación (business_initiated, user_initiated)
-- **Modelo de precios**: Modelo de facturación aplicado
-- **Categoría**: Categoría de la conversación
-
----
-
-## 📝 4. Webhook: `message_template_status_update` - Actualización de Estado de Plantillas
-
-### Descripción
-Notificaciones sobre cambios en el estado de las plantillas de mensajes.
-
-### Eventos Soportados
-
-#### 4.1. Estados de Aprobación
-- **`APPROVED`**: La plantilla fue aprobada por Meta
-- **`REJECTED`**: La plantilla fue rechazada por Meta
-- **`PENDING`**: La plantilla está pendiente de revisión
-
-#### 4.2. Eventos de Gestión
-- **`CREATE`**: Nueva plantilla creada
-- **`UPDATE`**: Plantilla actualizada
-- **`DELETE`**: Plantilla eliminada
-- **`PENDING_DELETION`**: Plantilla marcada para eliminación
-- **`DISABLE`**: Plantilla deshabilitada
-
-### Procesamiento
-- Actualiza el estado de la plantilla en la base de datos
-- Mantiene historial de versiones de plantillas
-- Dispara eventos específicos según el tipo de cambio:
-  - `TemplateCreated`
-  - `TemplateUpdated`
-  - `TemplateApproved`
-  - `TemplateRejected`
-  - `TemplateDeleted`
-
-### Datos Capturados
-- Estado actual de la plantilla
-- Razón de rechazo (si aplica)
-- Timestamp del cambio
-- Versión de la plantilla
-
----
-
-## ⭐ 5. Webhook: `message_template_quality_update` - Actualización de Calidad de Plantillas
-
-### Descripción
-Notificaciones sobre cambios en la calificación de calidad de las plantillas.
-
-### Procesamiento
-- Actualiza la calificación de calidad de la plantilla
-- Almacena métricas de rendimiento
-- Puede afectar los límites de envío de mensajes
-
-### Datos Capturados
-- Calificación de calidad (GREEN, YELLOW, RED)
-- Métricas de rendimiento
-- Timestamp de actualización
-
----
-
-## 📱 6. Webhook: `phone_number_quality_update` - Actualización de Calidad de Números
-
-### Descripción
-Notificaciones sobre cambios en la calificación de calidad de los números telefónicos.
-
-### Procesamiento
-- Actualiza la calificación del número telefónico
-- Almacena métricas de calidad
-- Puede afectar los límites de envío
-
-### Datos Capturados
-- Calificación de calidad (GREEN, YELLOW, RED)
-- Métricas de calidad
-- Timestamp de actualización
-
----
-
-## 🏢 7. Webhook: `account_update` - Actualización de Cuenta
-
-### Descripción
-Notificaciones sobre cambios en la cuenta empresarial de WhatsApp.
-
-### Eventos Soportados
-
-#### 7.1. `PARTNER_APP_INSTALLED`
-- **Descripción**: Una aplicación de socio fue instalada en la cuenta
-- **Procesamiento**: 
-  - Registra la instalación de la app
-  - Almacena información del socio
-  - Dispara evento `PartnerAppInstalled`
-
-#### 7.2. `PARTNER_ADDED`
-- **Descripción**: Un nuevo socio fue agregado a la cuenta
-- **Procesamiento**: 
-  - Registra el nuevo socio
-  - Almacena información del socio
-  - Dispara evento `PartnerAdded`
-
-#### 7.3. `PARTNER_APP_UNINSTALLED`
-- **Descripción**: Una aplicación de socio fue desinstalada
-- **Procesamiento**: 
-  - Registra la desinstalación
-  - Actualiza el estado de la app
-  - Dispara evento `PartnerAppUninstalled`
-
-#### 7.4. `PARTNER_REMOVED`
-- **Descripción**: Un socio fue removido de la cuenta
-- **Procesamiento**: 
-  - Registra la remoción del socio
-  - Actualiza el estado de la cuenta
-  - Dispara evento `PartnerRemoved`
-
-### Datos Capturados
-- ID de la cuenta empresarial (WABA ID)
-- Información del socio
-- Tipo de evento
-- Timestamp del cambio
-
----
-
-## 📈 8. Webhook: `business_capability_update` - Actualización de Capacidades de Negocio
-
-### Descripción
-Notificaciones sobre cambios en las capacidades y límites de la cuenta empresarial, especialmente límites de mensajes.
-
-### Procesamiento
-- **Versión 24.0+**: Recibe `max_daily_conversations_per_business` como string (ej: "TIER_2K")
-- **Versión 23.0 y anteriores**: Recibe `max_daily_conversation_per_phone` como número (-1 = ilimitado)
-- Actualiza automáticamente los campos en la base de datos:
-  - `messaging_limit_tier`: Tier del límite (TIER_250, TIER_2K, TIER_10K, TIER_100K, TIER_UNLIMITED)
-  - `messaging_limit_value`: Valor numérico del límite (250, 2000, 10000, 100000, null para ilimitado)
-
-### Tiers Soportados
-| Tier | Valor Numérico | Descripción |
-|------|----------------|-------------|
-| `TIER_250` | 250 | Límite inicial para cuentas nuevas |
-| `TIER_2K` | 2000 | Límite después de verificación o ampliación |
-| `TIER_10K` | 10000 | Límite con aumento automático |
-| `TIER_100K` | 100000 | Límite alto con aumento automático |
-| `TIER_UNLIMITED` | null | Límite ilimitado |
-
-### Datos Capturados
-- Tier del límite de mensajes
-- Valor numérico del límite
-- ID de la cuenta empresarial
-- Timestamp de actualización
-
----
-
-## 📚 9. Webhook: `history` - Sincronización de Historial
-
-### Descripción
-Sincroniza mensajes históricos cuando se configura un nuevo webhook o se requiere una sincronización completa.
-
-### Procesamiento
-- Procesa mensajes históricos en lotes
-- Crea/actualiza contactos y mensajes en la base de datos
-- Maneja errores de sincronización
-- Soporta múltiples tipos de mensajes históricos:
-  - Texto
-  - Imágenes
-  - Audio
-  - Video
-  - Documentos
-  - Stickers
-  - Interactivos
-  - Ubicaciones
-  - Contactos
-  - Reacciones
-
-### Manejo de Errores
-- Registra errores de sincronización
-- Almacena detalles técnicos de los fallos
-- Permite reintentos y recuperación
-
----
-
-## 🔄 10. Webhook: `smb_app_state_sync` - Sincronización de Estado de App SMB
-
-### Descripción
-Sincroniza el estado de las aplicaciones de Small and Medium Business (SMB).
-
-### Procesamiento
-- Actualiza el estado de las apps SMB
-- Sincroniza configuraciones
-- Mantiene consistencia entre múltiples apps
-
----
-
-## 📨 11. Webhook: `smb_message_echoes` - Eco de Mensajes SMB
-
-### Descripción
-Recibe ecos de mensajes enviados desde aplicaciones SMB.
-
-### Procesamiento
-- Procesa ecos de mensajes SMB
-- Vincula mensajes con aplicaciones SMB
-- Dispara evento `CoexistenceSmbMessageEcho`
-
----
-
-## ⚙️ 12. Webhook: `message_template` - Eventos de Plantillas
-
-### Descripción
-Procesado junto con `message_template_status_update` para manejar todos los eventos relacionados con plantillas.
-
-### Procesamiento
-- Maneja eventos de creación, actualización y eliminación
-- Sincroniza cambios en plantillas
-- Mantiene consistencia con la API de Meta
-
----
-
-## 👤 13. Webhook: `user_preferences` - Preferencias de Usuario
-
-### Descripción
-Notificaciones sobre cambios en las preferencias de los usuarios.
-
-### Procesamiento
-- Actualiza preferencias de usuarios
-- Almacena configuraciones personalizadas
-- Sincroniza cambios de preferencias
-
----
-
-## 📋 Webhooks Disponibles pero No Implementados
-
-Los siguientes webhooks están listados en la configuración pero actualmente no están implementados. Pueden ser activados descomentándolos en `src/Config/whatsapp.php`:
-
-### Webhooks de Cuenta
-- `account_alerts` - Alertas de cuenta
-- `account_review_update` - Actualización de revisión de cuenta
-- `account_settings_update` - Actualización de configuración de cuenta
-
-### Webhooks de Negocio
-- `business_status_update` - Actualización de estado de negocio
-
-### Webhooks de Comunicación
-- `calls` - Llamadas de voz/video
-- `message_echoes` - Eco de mensajes
-- `messaging_handovers` - Transferencias de mensajería
-
-### Webhooks de Plantillas
-- `message_template_components_update` - Actualización de componentes de plantilla
-- `template_category_update` - Actualización de categoría de plantilla
-- `template_correct_category_detection` - Detección correcta de categoría
-
-### Webhooks de Números
-- `phone_number_name_update` - Actualización de nombre de número
-
-### Webhooks de Flujos
-- `flows` - Flujos de WhatsApp
-
-### Webhooks de Pagos
-- `payment_configuration_update` - Actualización de configuración de pagos
-
-### Webhooks de Seguridad
-- `security` - Eventos de seguridad
-
-### Webhooks de Socios
-- `partner_solutions` - Soluciones de socios
-
-### Webhooks de Eventos
-- `automatic_events` - Eventos automáticos
-- `tracking_events` - Eventos de seguimiento
-
-### Webhooks de Grupos (v24.0+)
-- `group_lifecycle_update` - Actualización del ciclo de vida de grupo
-- `group_participants_update` - Actualización de participantes de grupo
-- `group_settings_update` - Actualización de configuración de grupo
-- `group_status_update` - Actualización de estado de grupo
-
----
-
-## 🎯 Funcionalidades Adicionales del Sistema de Webhooks
-
-### Gestión de Contactos
-- **Normalización Automática**: Separa código de país y número telefónico
-- **Persistencia Inteligente**: Crea/actualiza contactos automáticamente
-- **Datos Enriquecidos**: Almacena nombre del contacto cuando está disponible
-
-### Gestión de Conversaciones
-- **Seguimiento Completo**: Registra conversaciones con:
-  - Tiempo de expiración
-  - Origen (business_initiated, user_initiated)
-  - Modelo de precios
-  - Categoría
-
-### Sistema de Eventos Personalizados
-- **Eventos Configurables**: Dispara eventos Laravel para cada tipo de mensaje y cambio de estado
-- **Ejemplos de Eventos**:
-  - `TextMessageReceived`
-  - `MessageDelivered`
-  - `MessageRead`
-  - `MessageFailed`
-  - `TemplateApproved`
-  - Y muchos más...
-
-### Manejo de Errores
-- **Registro Detallado**: Logs específicos para WhatsApp en canal dedicado
-- **Persistencia de Errores**: Guarda errores en base de datos con:
-  - Código de error
-  - Título
-  - Mensaje
-  - Detalles técnicos
-
-### Soporte para Contexto de Mensajes
-- **Manejo de Hilos**: Relaciona mensajes/respuestas mediante `message_context_id`
-- **Búsqueda Inteligente**: Recupera mensaje original en respuestas
-
-### Normalización de Números Telefónicos
-- **Funcionalidad Avanzada**: Separa código de país y número local
-- **Base de Datos Completa**: Utiliza lista completa de códigos de países para análisis preciso
-
-### Integración con Servicios Externos
-- **Conexión con Meta API**:
-  - Descarga de multimedia
-  - Obtención de URLs de archivos
-  - Validación de tokens
-
-### Sistema de Categorización de Plantillas
-- **Clasificación Automática**: Asocia plantillas con categorías predefinidas
-- **Persistencia Completa**: Almacena estructura JSON completa de plantillas
-
-### Gestión de Versiones de Plantillas
-- **Control de Cambios**: Registra diferentes versiones de plantillas
-- **Detección Inteligente**: Usa hash de contenido para identificar cambios
-
-### Soporte para Múltiples Cuentas
-- **Diseño Multi-tenant**: Relaciona mensajes con números telefónicos específicos
-- **Identificación Precisa**: Usa `phone_number_id` para determinar origen
-
-### Sistema de Logs Especializado
-- **Canales Dedicados**: Usa canal `whatsapp` para registros
-- **Niveles Múltiples**: Info, Warning, Error según contexto
-- **Detalles Completos**: Incluye payloads completos para depuración
-
-### Extensibilidad
-- **Diseño Flexible**: Permite cambiar implementación de modelos mediante `WhatsappModelResolver`
-- **Abstracción Completa**: Facilita testing y personalización
-
----
-
-## 📖 Referencias
-
-Para más información sobre los webhooks de WhatsApp Business API, consulta la [documentación oficial de Meta](https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks).
+# Webhook: Funcionalidades Soportadas
+1. Verificación del Webhook
+    Descripción: Maneja el desafío de verificación inicial de Meta (Facebook) para validar el endpoint.
+
+    - Método: GET
+    - Parámetros: hub_mode, hub_challenge, hub_verify_token
+    - Validación: Compara el token de verificación con el configurado
+
+2. Procesamiento de Mensajes Entrantes
+    Tipos soportados:
+
+- text: Mensajes de texto simples
+- interactive: Respuestas a botones/listas
+- image, audio, video, document, sticker: Multimedia
+- location: Ubicaciones geográficas
+
+contacts: Contactos compartidos
+
+reaction: Reacciones (emoji)
+
+unsupported: Mensajes no soportados
+
+3. Gestión de Estados de Mensajes
+Estados manejados:
+
+sent: Enviado
+
+delivered: Entregado
+
+read: Leído
+
+failed: Fallido (con detalle de errores)
+
+Persistencia: Registra timestamps exactos (delivered_at, read_at, failed_at)
+
+4. Manejo de Plantillas (Templates)
+Eventos soportados:
+
+APPROVED/REJECTED/PENDING: Estados de aprobación
+
+CREATE: Creación de plantillas
+
+UPDATE: Actualización de plantillas
+
+DELETE: Eliminación de plantillas
+
+DISABLE: Deshabilitación de plantillas
+
+Versiones: Mantiene historial de versiones de plantillas
+
+5. Gestión de Multimedia
+Descarga automática: Descarga y almacena archivos multimedia
+
+Tipos soportados:
+
+Imágenes (JPG, PNG, WEBP)
+
+Audio (OGG, AAC, MP3, AMR)
+
+Video (MP4, 3GP)
+
+Documentos (PDF, DOC, XLS, PPT, TXT)
+
+Almacenamiento: Guarda en sistema de archivos con rutas públicas
+
+6. Gestión de Contactos
+Normalización: Separa código de país y número telefónico
+
+Persistencia: Crea/actualiza contactos automáticamente
+
+Datos: Almacena nombre del contacto (cuando está disponible)
+
+7. Gestión de Conversaciones
+Seguimiento: Registra conversaciones con:
+
+Tiempo de expiración
+
+Origen
+
+Modelo de precios
+
+Categoría
+
+8. Sistema de Eventos Personalizados
+Eventos configurables:
+
+Recepción de cada tipo de mensaje
+
+Cambios de estado (entregado, leído, fallido)
+
+Ejemplo: fireTextMessageReceived(), fireMessageFailed()
+
+9. Manejo de Errores
+Registro detallado: Logs específicos para WhatsApp
+
+Persistencia: Guarda errores en base de datos:
+
+Código de error
+
+Título
+
+Mensaje
+
+Detalles técnicos
+
+10. Soporte para Contexto de Mensajes
+Manejo de hilos: Relaciona mensajes/respuestas mediante message_context_id
+
+Búsqueda: Recupera mensaje original en respuestas
+
+11. Normalización de Números Telefónicos
+Funcionalidad: Separa código de país y número local
+
+Base de datos: Utiliza lista de códigos de países para análisis preciso
+
+12. Integración con Servicios Externos
+Conexión con Meta API:
+
+Descarga de multimedia
+
+Obtención de URLs de archivos
+
+Validación de tokens
+
+13. Sistema de Categorización de Plantillas
+Clasificación: Asocia plantillas con categorías predefinidas
+
+Persistencia: Almacena estructura JSON completa de plantillas
+
+14. Gestión de Versiones de Plantillas
+Control de cambios: Registra diferentes versiones de plantillas
+
+Detección de modificaciones: Usa hash de contenido para identificar cambios
+
+15. Soporte para Múltiples Cuentas de WhatsApp
+Diseño: Relaciona mensajes con números telefónicos específicos
+
+Identificación: Usa phone_number_id para determinar origen
+
+16. Manejo de Reacciones (Emojis)
+Persistencia: Registra reacciones como mensajes especiales
+
+Relación: Vincula reacciones con mensaje original
+
+17. Soporte para Mensajes No Soportados
+Registro: Captura y almacena información de errores
+
+Detalles: Incluye metadatos técnicos del fallo
+
+18. Sistema de Logs Especializado
+Canales dedicados: Usa canal whatsapp para registros
+
+Niveles: Info, Warning, Error según contexto
+
+Detalles: Incluye payloads completos para depuración
+
+19. Extensibilidad mediante Model Resolver
+Diseño flexible: Permite cambiar implementación de modelos
+
+Abstracción: WhatsappModelResolver para acceso a entidades
+
+20. Validación de Respuestas
+Mecanismo: Soporta validación de entradas de usuario
+
+Personalización: Mensajes de error configurables
 
 
 ---
