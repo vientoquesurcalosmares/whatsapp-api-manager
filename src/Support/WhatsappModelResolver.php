@@ -30,7 +30,7 @@ class WhatsappModelResolver
         $class = config("whatsapp.models.$method");
 
         if (!class_exists($class)) {
-            throw new InvalidArgumentException("No se encontró el modelo para [$method]. Verifica whatsapp.models.$method en tu configuración.");
+            throw new InvalidArgumentException(whatsapp_trans('messages.model_not_found_for_method', ['method' => $method]));
         }
 
         return $class::query();
@@ -44,7 +44,7 @@ class WhatsappModelResolver
         $class = config("whatsapp.models.$key");
 
         if (!class_exists($class)) {
-            throw new InvalidArgumentException("No se encontró el modelo para [$key]");
+            throw new InvalidArgumentException(whatsapp_trans('messages.model_not_found_for_key', ['key' => $key]));
         }
 
         return $class::query();

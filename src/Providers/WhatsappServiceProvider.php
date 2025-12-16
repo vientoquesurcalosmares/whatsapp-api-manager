@@ -110,6 +110,14 @@ class WhatsappServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        // Cargar archivos de traducción
+        $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'whatsapp');
+
+        // Publicar archivos de traducción
+        $this->publishes([
+            __DIR__ . '/../resources/lang' => resource_path('lang/vendor/whatsapp'),
+        ], 'whatsapp-translations');
+
         // Publicar archivos de configuración
         $this->publishes([
             __DIR__ . '/../Config/whatsapp.php' => config_path('whatsapp.php'),
@@ -190,7 +198,7 @@ class WhatsappServiceProvider extends ServiceProvider
             $path = "{$basePath}/{$folder}";
             if (!is_dir($path)) {
                 mkdir($path, 0755, true);
-                $this->app['log']->info("Directorio creado: {$path}");
+                $this->app['log']->info(whatsapp_trans('messages.directory_created', ['path' => $path]));
             }
         }
     }
@@ -207,20 +215,20 @@ class WhatsappServiceProvider extends ServiceProvider
             // Asegurar directorio padre
             $parentDir = dirname($mediaLinkPath);
             if (!is_dir($parentDir) && !@mkdir($parentDir, 0755, true) && !is_dir($parentDir)) {
-                throw new \RuntimeException("No se pudo crear el directorio: {$parentDir}");
+                throw new \RuntimeException(whatsapp_trans('messages.could_not_create_directory', ['dir' => $parentDir]));
             }
 
             // Crear enlace solo si no existe
             if (!file_exists($mediaLinkPath)) {
                 if (@symlink($mediaBasePath, $mediaLinkPath)) {
-                    $this->app['log']->info('Enlace simbólico creado exitosamente.');
+                    $this->app['log']->info(whatsapp_trans('messages.symlink_created'));
                 } else {
-                    $this->app['log']->warning("Falló la creación automática del enlace. Ejecuta manualmente: php artisan storage:link");
+                    $this->app['log']->warning(whatsapp_trans('messages.symlink_failed'));
                 }
             }
         } catch (\Throwable $e) {
-            $this->app['log']->error("Error en storage link: {$e->getMessage()}");
-            $this->app['log']->warning("El paquete se instaló correctamente, pero debes ejecutar MANUALMENTE: php artisan storage:link");
+            $this->app['log']->error(whatsapp_trans('messages.storage_link_error', ['message' => $e->getMessage()]));
+            $this->app['log']->warning(whatsapp_trans('messages.user_instructions') . ' php artisan storage:link');
         }
     }
 

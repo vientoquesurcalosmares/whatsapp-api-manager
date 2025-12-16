@@ -61,7 +61,7 @@ class TemplateService
             'waba_id' => $account->whatsapp_business_id,
         ]);
 
-        Log::channel('whatsapp')->info('Iniciando sincronización de plantillas.', [
+        Log::channel('whatsapp')->info(whatsapp_trans('messages.template_starting_sync'), [
             'endpoint' => $endpoint,
             'business_id' => $account->whatsapp_business_id,
         ]);
@@ -70,7 +70,7 @@ class TemplateService
             'Authorization' => 'Bearer ' . $account->api_token,
         ];
 
-        Log::channel('whatsapp')->info('Iniciando sincronización de plantillas.', [
+        Log::channel('whatsapp')->info(whatsapp_trans('messages.template_starting_sync'), [
             'endpoint' => $endpoint,
             'headers' => $headers,
         ]);
@@ -109,7 +109,7 @@ class TemplateService
                 ->get();
 
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error al sincronizar plantillas.', [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.template_error_syncing'), [
                 'error_message' => $e->getMessage(),
                 'endpoint' => $endpoint,
                 'business_id' => $account->whatsapp_business_id,
@@ -177,7 +177,7 @@ class TemplateService
      */    public function getTemplateById(Model $account, string $templateId): Model
     {
         if (empty($templateId)) {
-            throw new InvalidArgumentException('El ID de la plantilla es obligatorio.');
+            throw new InvalidArgumentException(whatsapp_trans('messages.template_id_required'));
         }
 
         $endpoint = Endpoints::build(Endpoints::GET_TEMPLATE, [
@@ -212,7 +212,7 @@ class TemplateService
             // Almacenar o actualizar la plantilla en la base de datos
             return $this->storeOrUpdateTemplate($account, $response);
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error al obtener la plantilla.', [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.template_error_getting'), [
                 'error_message' => $e->getMessage(),
                 'endpoint' => $endpoint,
                 'template_id' => $templateId,
@@ -265,7 +265,7 @@ class TemplateService
             $templateData = $response['data'][0] ?? null;
 
             if (!$templateData) {
-                Log::channel('whatsapp')->warning('No se encontró la plantilla con el nombre especificado.', [
+                Log::channel('whatsapp')->warning(whatsapp_trans('messages.template_not_found_by_name'), [
                     'template_name' => $templateName,
                 ]);
                 return null;
@@ -276,7 +276,7 @@ class TemplateService
             // Almacenar o actualizar la plantilla en la base de datos
             return $this->storeOrUpdateTemplate($account, $templateData);
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error al obtener la plantilla por nombre.', [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.template_error_getting_by_name'), [
                 'error_message' => $e->getMessage(),
                 'endpoint' => $endpoint,
                 'template_name' => $templateName,
@@ -334,7 +334,7 @@ class TemplateService
         $template = WhatsappModelResolver::template()->where('wa_template_id', $templateId)->first();
 
         if(!$template){
-            Log::channel('whatsapp')->error('La plantilla no existe!', [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.template_not_exists'), [
                 'wa_template_id' => $templateId
             ]);
 
@@ -389,7 +389,7 @@ class TemplateService
 
             return false;
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error al eliminar la plantilla por ID.', [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.template_error_deleting_by_id'), [
                 'error_message' => $e->getMessage(),
                 'template_id' => $templateId,
             ]);
@@ -410,7 +410,7 @@ class TemplateService
         $template = WhatsappModelResolver::template()->where('name', $templateName)->first();
 
         if(!$template){
-            Log::channel('whatsapp')->error('La plantilla no existe!', [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.template_not_exists'), [
                 'name' => $templateName
             ]);
 
@@ -464,7 +464,7 @@ class TemplateService
 
             return false;
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error al eliminar la plantilla por nombre.', [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.template_error_deleting_by_name'), [
                 'error_message' => $e->getMessage(),
                 'template_name' => $templateName,
             ]);
@@ -492,7 +492,7 @@ class TemplateService
      */
     protected function storeOrUpdateTemplate(Model $account, array $templateData): Model
     {
-        Log::channel('whatsapp')->info('Procesando plantilla.', [
+        Log::channel('whatsapp')->info(whatsapp_trans('messages.template_processing'), [
             'template_id' => $templateData['id'],
             'template_name' => $templateData['name'],
         ]);
@@ -530,7 +530,7 @@ class TemplateService
             // Validar que el flujo existe en la base de datos
             $flow = $this->flowService->getFlowById($apiFlowId);
             if (!$flow) {
-                Log::channel('whatsapp')->error('Flujo no encontrado en la base de datos', [
+                Log::channel('whatsapp')->error(whatsapp_trans('messages.template_flow_not_found_in_db'), [
                     'flow_id' => $apiFlowId,
                     'template_id' => $templateId
                 ]);
@@ -550,7 +550,7 @@ class TemplateService
 
             return $flow;
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error en syncTemplateFlowRelation', [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.template_error_sync_flow_relation'), [
                 'error' => $e->getMessage(),
                 'account_id' => $account->whatsapp_business_id,
                 'template_id' => $templateId,
@@ -649,7 +649,7 @@ class TemplateService
                 ->delete();
 
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error al sincronizar componentes.', [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.template_error_syncing_components'), [
                 'template_id' => $template->template_id,
                 'error_message' => $e->getMessage(),
             ]);
@@ -700,31 +700,31 @@ class TemplateService
     protected function validateTemplateData(array $templateData): void
     {
         if (empty($templateData['name'])) {
-            throw new InvalidArgumentException('El nombre de la plantilla es obligatorio.');
+            throw new InvalidArgumentException(whatsapp_trans('messages.template_name_required'));
         }
 
         if (empty($templateData['language'])) {
-            throw new InvalidArgumentException('El idioma de la plantilla es obligatorio.');
+            throw new InvalidArgumentException(whatsapp_trans('messages.template_language_required'));
         }
 
         if (empty($templateData['category'])) {
-            throw new InvalidArgumentException('La categoría de la plantilla es obligatoria.');
+            throw new InvalidArgumentException(whatsapp_trans('messages.template_category_name_required'));
         }
 
         if (empty($templateData['components']) || !is_array($templateData['components'])) {
-            throw new InvalidArgumentException('Los componentes de la plantilla son obligatorios.');
+            throw new InvalidArgumentException(whatsapp_trans('messages.template_components_required'));
         }
 
         $validCategories = ['AUTHENTICATION', 'MARKETING', 'UTILITY'];
 
         if (!in_array($templateData['category'], $validCategories)) {
-            throw new InvalidArgumentException('Categoría inválida');
+            throw new InvalidArgumentException(whatsapp_trans('messages.invalid_category'));
         }
 
         if (isset($templateData['parameter_format'])) {
             $validFormats = ['POSITIONAL', 'NAMED'];
             if (!in_array($templateData['parameter_format'], $validFormats)) {
-                throw new InvalidArgumentException('Formato de parámetro inválido');
+                throw new InvalidArgumentException(whatsapp_trans('messages.invalid_parameter_format'));
             }
         }
     }
@@ -807,14 +807,14 @@ class TemplateService
         $responseData = json_decode($response, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \RuntimeException('Error al decodificar la respuesta JSON: ' . json_last_error_msg());
+            throw new \RuntimeException(whatsapp_trans('messages.template_error_decoding_json', ['error' => json_last_error_msg()]));
         }
 
         // Obtener el ID de la sesión de carga
         $uploadSessionId = $responseData['id'] ?? null;
 
         if (!$uploadSessionId) {
-            throw new \Exception('No se pudo obtener el ID de la sesión de carga.');
+            throw new \Exception(whatsapp_trans('messages.template_upload_session_id_not_obtained'));
         }
 
         Log::channel('whatsapp')->info('Sesión de carga creada exitosamente.', ['uploadSessionId' => $uploadSessionId]);
@@ -898,14 +898,14 @@ class TemplateService
         $responseData = json_decode($response, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \RuntimeException('Error al decodificar la respuesta JSON: ' . json_last_error_msg());
+            throw new \RuntimeException(whatsapp_trans('messages.template_error_decoding_json', ['error' => json_last_error_msg()]));
         }
 
         // Obtener el identificador del archivo
         $handle = $responseData['h'] ?? null;
 
         if (!$handle) {
-            throw new \Exception('No se pudo obtener el identificador del archivo.');
+            throw new \Exception(whatsapp_trans('messages.template_file_identifier_not_obtained'));
         }
 
         Log::channel('whatsapp')->info('Archivo subido exitosamente.', ['handle' => $handle]);

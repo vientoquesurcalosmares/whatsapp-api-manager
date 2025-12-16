@@ -56,7 +56,7 @@ class WhatsappService
     protected function ensureAccountIsSet(): void
     {
         if (!$this->businessAccount) {
-            throw new \RuntimeException('Debes establecer una cuenta primero usando forAccount()');
+            throw new \RuntimeException(whatsapp_trans('messages.whatsapp_must_set_account_first'));
         }
     }
 
@@ -355,7 +355,7 @@ class WhatsappService
 
         $phone = WhatsappModelResolver::phone_number()->find($phoneNumberId);
         if (!$phone) {
-            throw new \RuntimeException('Número telefónico no encontrado');
+            throw new \RuntimeException(whatsapp_trans('messages.whatsapp_phone_number_not_found'));
         }
         
         $apiPhoneId = $phone->api_phone_number_id;

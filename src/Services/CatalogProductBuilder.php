@@ -51,7 +51,7 @@ class CatalogProductBuilder
     public function startSection(string $title): self
     {
         if ($this->currentSection) {
-            throw new \LogicException('Debes cerrar la sección actual antes de iniciar otra');
+            throw new \LogicException(whatsapp_trans('messages.catalog_must_close_section_before_starting_another'));
         }
         
         $this->currentSection = $title;
@@ -62,7 +62,7 @@ class CatalogProductBuilder
     public function addProduct(string $productId): self
     {
         if (!$this->currentSection) {
-            throw new \LogicException('Debes iniciar una sección primero con startSection()');
+            throw new \LogicException(whatsapp_trans('messages.catalog_must_start_section_first'));
         }
 
         $this->sections[$this->currentSection]['product_items'][] = [

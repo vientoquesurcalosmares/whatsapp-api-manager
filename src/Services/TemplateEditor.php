@@ -105,21 +105,20 @@ class TemplateEditor extends TemplateBuilder
             
             if ($errorCode === 100 && $errorSubcode === 2388023) {
                 throw new TemplateUpdateException(
-                    'No puedes actualizar una plantilla con el mismo nombre e idioma inmediatamente después de eliminar otra. ' .
-                    'Espera 4 semanas o usa un nombre diferente.'
+                    whatsapp_trans('messages.template_update_same_name_error')
                 );
             }
             
-            Log::channel('whatsapp')->error('Error de API al actualizar plantilla', [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.template_api_error_updating'), [
                 'error' => $responseBody,
                 'status' => $response->getStatusCode()
             ]);
             throw $e;
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error general al actualizar plantilla', [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.template_general_error_updating'), [
                 'error_message' => $e->getMessage(),
             ]);
-            throw new TemplateUpdateException('Error actualizando plantilla: ' . $e->getMessage(), 0, $e);
+            throw new TemplateUpdateException(whatsapp_trans('messages.template_update_error', ['message' => $e->getMessage()]), 0, $e);
         }
     }
 
@@ -134,25 +133,28 @@ class TemplateEditor extends TemplateBuilder
         $originalCategory = $this->template->category->name;
         if ($this->templateData['category'] !== $originalCategory) {
             throw new InvalidArgumentException(
-                "No se puede cambiar la categoría de una plantilla existente. Original: $originalCategory, Nueva: {$this->templateData['category']}"
+                whatsapp_trans('messages.template_cannot_change_category', [
+                    'original' => $originalCategory,
+                    'new' => $this->templateData['category']
+                ])
             );
         }
 
         // Validar estado de la plantilla
         if ($this->template->status === 'APPROVED') {
             throw new InvalidArgumentException(
-                'No se pueden modificar plantillas aprobadas. Crea una nueva versión.'
+                whatsapp_trans('messages.template_approved_cannot_modify')
             );
         }
 
         // Validar que el cuerpo existe
         if (!$this->componentExists('BODY')) {
-            throw new TemplateComponentException('El componente BODY es obligatorio en todas las plantillas.');
+            throw new TemplateComponentException(whatsapp_trans('messages.template_body_required'));
         }
 
         // Validar límite de botones
         if ($this->buttonCount > 10) {
-            throw new TemplateComponentException('No se pueden tener más de 10 botones en una plantilla.');
+            throw new TemplateComponentException(whatsapp_trans('messages.template_max_buttons_exceeded'));
         }
 
         // Validar que solo hay un componente de cada tipo (excepto botones)
@@ -162,7 +164,7 @@ class TemplateEditor extends TemplateBuilder
 
         foreach (['HEADER', 'BODY', 'FOOTER'] as $componentType) {
             if (($componentCounts[$componentType] ?? 0) > 1) {
-                throw new TemplateComponentException("Solo puede haber un componente $componentType por plantilla.");
+                throw new TemplateComponentException(whatsapp_trans('messages.template_only_one_component_per_type', ['type' => $componentType]));
             }
         }
     }
@@ -248,7 +250,7 @@ class TemplateEditor extends TemplateBuilder
     public function addHeader(string $format, string $content, ?array $example = null): self
     {
         if ($this->hasHeader()) {
-            throw new TemplateComponentException('La plantilla ya tiene un HEADER. Use changeHeader() para modificarlo.');
+            throw new TemplateComponentException(whatsapp_trans('messages.template_already_has_header'));
         }
 
         return parent::addHeader($format, $content, $example);
@@ -257,7 +259,7 @@ class TemplateEditor extends TemplateBuilder
     public function changeHeader(string $format, string $content, ?array $example = null): self
     {
         if (!$this->hasHeader()) {
-            throw new TemplateComponentException('La plantilla no tiene un HEADER. Use addHeader() para agregar uno.');
+            throw new TemplateComponentException(whatsapp_trans('messages.template_no_header_to_change'));
         }
 
         $this->removeHeader();
@@ -287,7 +289,7 @@ class TemplateEditor extends TemplateBuilder
     public function addBody(string $text, ?array $example = null): self
     {
         if ($this->hasBody()) {
-            throw new TemplateComponentException('La plantilla ya tiene un BODY. Use changeBody() para modificarlo.');
+            throw new TemplateComponentException(whatsapp_trans('messages.template_already_has_body'));
         }
 
         return parent::addBody($text, $example);
@@ -296,7 +298,7 @@ class TemplateEditor extends TemplateBuilder
     public function changeBody(string $text, ?array $example = null): self
     {
         if (!$this->hasBody()) {
-            throw new TemplateComponentException('La plantilla no tiene un BODY. Use addBody() para agregar uno.');
+            throw new TemplateComponentException(whatsapp_trans('messages.template_no_body_to_change'));
         }
 
         $this->removeBody();
@@ -305,7 +307,7 @@ class TemplateEditor extends TemplateBuilder
 
     public function removeBody(): self
     {
-        throw new TemplateComponentException('El componente BODY es obligatorio y no puede ser eliminado.');
+        throw new TemplateComponentException(whatsapp_trans('messages.template_body_cannot_be_removed'));
     }
 
     public function hasBody(): bool
@@ -325,7 +327,7 @@ class TemplateEditor extends TemplateBuilder
     public function addFooter(string $text): self
     {
         if ($this->hasFooter()) {
-            throw new TemplateComponentException('La plantilla ya tiene un FOOTER. Use changeFooter() para modificarlo.');
+            throw new TemplateComponentException(whatsapp_trans('messages.template_already_has_footer'));
         }
 
         return parent::addFooter($text);
@@ -334,7 +336,7 @@ class TemplateEditor extends TemplateBuilder
     public function changeFooter(string $text): self
     {
         if (!$this->hasFooter()) {
-            throw new TemplateComponentException('La plantilla no tiene un FOOTER. Use addFooter() para agregar uno.');
+            throw new TemplateComponentException(whatsapp_trans('messages.template_no_footer_to_change'));
         }
 
         $this->removeFooter();
@@ -364,7 +366,7 @@ class TemplateEditor extends TemplateBuilder
     public function addButton(string $type, string $text, ?string $urlOrPhone = null, ?array $example = null): self
     {
         if ($this->buttonCount >= 10) {
-            throw new TemplateComponentException('No se pueden agregar más de 10 botones a una plantilla.');
+            throw new TemplateComponentException(whatsapp_trans('messages.template_max_buttons_exceeded'));
         }
 
         return parent::addButton($type, $text, $urlOrPhone, $example);
@@ -382,7 +384,7 @@ class TemplateEditor extends TemplateBuilder
     public function addFlowButton(string $text, string $flowId, ?string $flowToken = null): self
     {
         if ($this->buttonCount >= 10) {
-            throw new TemplateComponentException('No se pueden agregar más de 10 botones a una plantilla.');
+            throw new TemplateComponentException(whatsapp_trans('messages.template_max_buttons_exceeded'));
         }
 
         return parent::addFlowButton($text, $flowId, $flowToken);
@@ -399,7 +401,7 @@ class TemplateEditor extends TemplateBuilder
         $buttons = $this->getButtons();
 
         if (!isset($buttons[$index])) {
-            throw new TemplateComponentException("No existe un botón en la posición $index");
+            throw new TemplateComponentException(whatsapp_trans('messages.template_button_not_found_at_index', ['index' => $index]));
         }
 
         $this->removeButton($index);
@@ -466,14 +468,14 @@ class TemplateEditor extends TemplateBuilder
         $buttonsComponent = $this->getComponentsByType('BUTTONS');
 
         if (empty($buttonsComponent)) {
-            throw new TemplateComponentException('No existe un componente BUTTONS');
+            throw new TemplateComponentException(whatsapp_trans('messages.template_no_buttons_component'));
         }
 
         $componentIndex = array_key_first($buttonsComponent);
         $buttons = $buttonsComponent[$componentIndex]['buttons'] ?? [];
 
         if (!isset($buttons[$index])) {
-            throw new TemplateComponentException("Índice de botón inválido: $index");
+            throw new TemplateComponentException(whatsapp_trans('messages.template_invalid_button_index', ['index' => $index]));
         }
 
         unset($buttons[$index]);

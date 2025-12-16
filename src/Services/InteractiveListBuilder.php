@@ -67,7 +67,7 @@ class InteractiveListBuilder
     public function startSection(string $title): self
     {
         if ($this->currentSection) {
-            throw new \LogicException('Debes cerrar la sección actual antes de iniciar otra');
+            throw new \LogicException(whatsapp_trans('messages.interactive_must_close_section_before_starting_another'));
         }
         
         $this->currentSection = $title;
@@ -78,15 +78,15 @@ class InteractiveListBuilder
     public function addRow(string $id, string $title, ?string $description = null): self
     {
         if (strlen($title) > 24) {
-            throw new \InvalidArgumentException('Título máximo 24 caracteres');
+            throw new \InvalidArgumentException('Maximum title length is 24 characters');
         }
         
         if ($description && strlen($description) > 72) {
-            throw new \InvalidArgumentException('Descripción máxima 72 caracteres');
+            throw new \InvalidArgumentException('Maximum description length is 72 characters');
         }
         
         if (!$this->currentSection) {
-            throw new \LogicException('Debes iniciar una sección primero con startSection()');
+            throw new \LogicException(whatsapp_trans('messages.interactive_must_start_section_first'));
         }
 
         $this->sections[$this->currentSection][] = [
@@ -101,7 +101,7 @@ class InteractiveListBuilder
     public function endSection(): self
     {
         if (!$this->currentSection) {
-            throw new \LogicException('No hay sección activa para cerrar');
+            throw new \LogicException('There is no active section to close');
         }
         
         $this->currentSection = null;
@@ -123,7 +123,7 @@ class InteractiveListBuilder
     public function send(): Model
     {
         if ($this->currentSection) {
-            throw new \LogicException('Tienes una sección abierta sin cerrar');
+            throw new \LogicException('You have an open section that needs to be closed');
         }
         
         // Convertir secciones al formato requerido

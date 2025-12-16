@@ -265,7 +265,7 @@ class TemplateMessageBuilder
         if (!isset($this->buttonTextIndexMap[$normalizedButtonText])) {
             $availableButtons = implode("', '", array_keys($this->buttonTextIndexMap));
             throw new InvalidArgumentException(
-                "Botón '$buttonText' no encontrado. Botones disponibles: '$availableButtons'"
+                whatsapp_trans('messages.template_button_not_found', ['button' => $buttonText, 'available' => $availableButtons])
             );
         }
 
@@ -273,7 +273,7 @@ class TemplateMessageBuilder
         $button = $this->templateStructure['by_type']['BUTTONS']['buttons'][$buttonIndex] ?? null;
 
         if (!$button) {
-            throw new InvalidArgumentException("Botón '$buttonText' no encontrado en la estructura.");
+            throw new InvalidArgumentException(whatsapp_trans('messages.template_button_not_found_in_structure', ['button' => $buttonText]));
         }
 
         if (strtoupper($button['type'] ?? '') !== 'URL') {
@@ -297,7 +297,7 @@ class TemplateMessageBuilder
         } else {
             // Botón estático: NO debe recibir parámetros
             if (!empty($parameter)) {
-                throw new InvalidArgumentException("El botón '$buttonText' tiene una URL estática y no debe recibir parámetros.");
+                throw new InvalidArgumentException(whatsapp_trans('messages.template_button_static_url_no_params', ['button' => $buttonText]));
             }
             $this->buttonParameters[$buttonIndex] = [];
         }
@@ -373,7 +373,7 @@ class TemplateMessageBuilder
         $this->validate();
 
         // Establecer el idioma desde la estructura de la plantilla
-        $this->language = $this->templateStructure['language'] ?? throw new InvalidArgumentException('El idioma no está definido en la estructura de la plantilla.');
+        $this->language = $this->templateStructure['language'] ?? throw new InvalidArgumentException(whatsapp_trans('messages.template_language_not_defined'));
 
         // Construir el payload
         $payload = $this->buildPayload();
@@ -391,11 +391,11 @@ class TemplateMessageBuilder
     protected function validate(): void
     {
         if (empty($this->phoneNumber)) {
-            throw new InvalidArgumentException('El número de teléfono es obligatorio.');
+            throw new InvalidArgumentException(whatsapp_trans('messages.template_phone_required'));
         }
 
         if (empty($this->templateIdentifier)) {
-            throw new InvalidArgumentException('El identificador de la plantilla es obligatorio.');
+            throw new InvalidArgumentException(whatsapp_trans('messages.template_identifier_required'));
         }
 
         // ✅ Permitir envíos sin componentes si la plantilla no tiene placeholders
@@ -409,7 +409,7 @@ class TemplateMessageBuilder
 
         // ❌ Solo exigir componentes si la plantilla tiene placeholders dinámicos
         if ($hasDynamicComponents && !$hasUserComponents) {
-            throw new InvalidArgumentException('Debes incluir al menos un componente dinámico en el mensaje.');
+            throw new InvalidArgumentException(whatsapp_trans('messages.template_must_include_dynamic_component'));
         }
     }
 
@@ -694,16 +694,16 @@ class TemplateMessageBuilder
         );
 
         if (!isset($response['messages'][0]['message_status']) || $response['messages'][0]['message_status'] !== 'accepted') {
-            Log::channel('whatsapp')->error('Error al enviar el mensaje de plantilla.', [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.template_error_sending'), [
                 'endpoint' => $endpoint,
                 'payload' => $payload,
                 'response' => $response,
             ]);
 
-            $errorData = $response['error'] ?? ['message' => 'Estado desconocido o mensaje no creado'];
-            throw new WhatsappApiException('Error al enviar el mensaje.', $errorData);
+            $errorData = $response['error'] ?? ['message' => whatsapp_trans('messages.template_unknown_status')];
+            throw new WhatsappApiException(whatsapp_trans('messages.template_error_sending_message'), $errorData);
 
-            // throw new WhatsappApiException('Error al enviar el mensaje.', $response['error'] ?? []);
+            // throw new WhatsappApiException(whatsapp_trans('messages.template_error_sending_message'), $response['error'] ?? []);
         }
 
         $message->update([

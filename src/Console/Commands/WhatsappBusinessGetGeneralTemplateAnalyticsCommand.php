@@ -19,20 +19,20 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
      * @var string
      */
     protected $signature = 'whatsapp:get-general-template-analytics
-                            {--force : Forzar obtención de 90 días incluso si hay datos}
-                            {--template=* : Obtener analytics para templates específicos (puede usarse múltiples veces)}
-                            {--days= : Número específico de días a obtener (máximo 90)}
-                            {--account=* : Procesar cuentas específicas (puede usarse múltiples veces)}
-                            {--show-errors : Mostrar logs de error durante la ejecución}
-                            {--show-info : Mostrar logs de información durante la ejecución}
-                            {--show-warning : Mostrar logs de advertencia durante la ejecución}';
+                            {--force : Force retrieval of 90 days even if data exists}
+                            {--template=* : Get analytics for specific templates (can be used multiple times)}
+                            {--days= : Specific number of days to retrieve (maximum 90)}
+                            {--account=* : Process specific accounts (can be used multiple times)}
+                            {--show-errors : Show error logs during execution}
+                            {--show-info : Show information logs during execution}
+                            {--show-warning : Show warning logs during execution}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Obtiene analytics de templates de WhatsApp Business desde la API de Meta para una, varias o todas las cuentas según las opciones proporcionadas';
+    protected $description = 'Retrieves WhatsApp Business template analytics from the Meta API';
 
     /**
      * Account de WhatsApp Business actual
@@ -55,28 +55,32 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
      */
     public function handle(): int
     {
-        $this->info('🚀 Iniciando obtención de analytics de templates de WhatsApp Business...');
+        $this->info('🚀 ' . whatsapp_trans('analytics.starting'));
 
         try {
-            $this->currency = config('whatsapp.api.currency', 'USD'); // Valor por defecto
+            $this->currency = config('whatsapp.api.currency', 'USD');
 
-            // 1. Obtener cuentas a procesar
+            // 1. Get accounts to process
             $accounts = $this->getAccountsToProcess();
 
             if ($accounts->isEmpty()) {
-                $this->logError('❌ No se encontraron cuentas de WhatsApp Business para procesar');
+                $this->logError('❌ ' . whatsapp_trans('analytics.no_accounts_found'));
                 return Command::FAILURE;
             }
 
-            $this->logInfo("🏢 Procesando <fg=blue>" . $accounts->count() . "</> cuenta(s) de WhatsApp Business");
+            $this->logInfo('🏢 ' . whatsapp_trans('analytics.processing_accounts', ['count' => $accounts->count()]));
 
-            // 2. Determinar período de análisis
+            // 2. Determine analysis period
             $days = $this->determineDaysToFetch();
             $endDate = Carbon::now('UTC');
             $startDate = $endDate->copy()->subDays($days - 1);
-            $this->logInfo("📅 Obteniendo analytics de los últimos <fg=blue>{$days}</> días (desde <fg=blue>{$startDate->format('Y-m-d')}</> hasta <fg=blue>{$endDate->format('Y-m-d')}</>)");
+            $this->logInfo('📅 ' . whatsapp_trans('analytics.analyzing_period', [
+                'days' => $days,
+                'start' => $startDate->format('Y-m-d'),
+                'end' => $endDate->format('Y-m-d')
+            ]));
 
-            // 3. Procesar por cada cuenta
+            // 3. Process each account
             $totalProcessed    = 0;
             $totalSaved        = 0;
             $totalSkipped      = 0;
@@ -84,7 +88,10 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             $accountsProcessed = 0;
 
             foreach ($accounts as $account) {
-                $this->info("🏢 Procesando cuenta: <fg=blue>{$account->whatsapp_business_id} | {$account->name}</>");
+                $this->info('🏢 ' . whatsapp_trans('analytics.processing_account', [
+                    'id' => $account->whatsapp_business_id,
+                    'name' => $account->name
+                ]));
 
                 $result = $this->processAccount($account, $startDate, $endDate);
 
@@ -94,34 +101,42 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                     $totalSkipped += $result['skipped'];
                     $totalErrors += $result['errors'];
                     $accountsProcessed++;
-                    $this->logInfo("   ✅ Cuenta procesada: <fg=blue>{$result['processed']}</> procesados, <fg=blue>{$result['saved']}</> guardados, <fg=blue>{$result['skipped']}</> omitidos (porque sus valores son 0), <fg=blue>{$result['errors']}</> errores");
+                    $this->logInfo('   ✅ ' . whatsapp_trans('analytics.account_processed', [
+                        'processed' => $result['processed'],
+                        'saved' => $result['saved'],
+                        'skipped' => $result['skipped'],
+                        'errors' => $result['errors']
+                    ]));
                 } else {
-                    $this->logError("   ❌ Error procesando cuenta: <fg=blue>{$result['error']}</>");
+                    $this->logError('   ❌ ' . whatsapp_trans('analytics.account_error', ['error' => $result['error']]));
                 }
 
-                // Pausa entre cuentas para evitar rate limiting
+                // Pause between accounts to avoid rate limiting
                 if ($account !== $accounts->last()) {
-                    $this->logInfo("⏱️ Pausa de <fg=blue>3</> segundos entre cuentas...");
+                    $this->logInfo('⏱️ ' . whatsapp_trans('analytics.pause_between_accounts'));
                     sleep(3);
                 }
             }
 
-            // 4. Resumen final
-            $this->logInfo("✅ Proceso completado:");
-            $this->logInfo("   🏢 Cuentas procesadas: <fg=blue>{$accountsProcessed}/{$accounts->count()}</>");
-            $this->logInfo("   📊 Registros procesados: <fg=blue>{$totalProcessed}</>");
-            $this->logInfo("   💾 Registros guardados: <fg=blue>{$totalSaved}</>");
-            $this->logInfo("   ⏭️ Registros omitidos (porque sus valores son 0): <fg=blue>{$totalSkipped}</>");
+            // 4. Final summary
+            $this->logInfo('✅ ' . whatsapp_trans('analytics.process_completed'));
+            $this->logInfo('   🏢 ' . whatsapp_trans('analytics.accounts_processed', [
+                'processed' => $accountsProcessed,
+                'total' => $accounts->count()
+            ]));
+            $this->logInfo('   📊 ' . whatsapp_trans('analytics.records_processed', ['count' => $totalProcessed]));
+            $this->logInfo('   💾 ' . whatsapp_trans('analytics.records_saved', ['count' => $totalSaved]));
+            $this->logInfo('   ⏭️ ' . whatsapp_trans('analytics.records_skipped', ['count' => $totalSkipped]));
             $color = 'blue';
             if( $totalErrors > 0 ) {
                 $color = 'red';
             }
-            $this->logInfo("   ❌ Errores totales: <fg={$color}>{$totalErrors}</>");
+            $this->logInfo('   ❌ ' . whatsapp_trans('analytics.total_errors', ['color' => $color, 'count' => $totalErrors]));
 
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->logError("💥 Error general: " . $e->getMessage());
+            $this->logError('💥 ' . whatsapp_trans('analytics.general_error', ['message' => $e->getMessage()]));
             if ($this->option('show-errors')) {
                 Log::error('WhatsApp Analytics Cron Error', [
                     'error' => $e->getMessage(),
@@ -133,11 +148,11 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
     }
 
     /**
-     * Obtener cuentas a procesar
+     * Get accounts to process
      */
     protected function getAccountsToProcess()
     {
-        // Si se especifican cuentas específicas
+        // If specific accounts are specified
         $specificAccounts = $this->option('account');
         if (!empty($specificAccounts)) {
             $accounts = WhatsappModelResolver::business_account()
@@ -147,39 +162,44 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 ->get();
 
             if ($accounts->isEmpty()) {
-                $this->logError("❌ No se encontraron cuentas válidas con los IDs: <fg=blue>" . implode(', ', $specificAccounts) . "</>");
+                $this->logError('❌ ' . whatsapp_trans('analytics.no_accounts_with_ids', [
+                    'ids' => implode(', ', $specificAccounts)
+                ]));
                 return collect();
             }
 
-            $this->logInfo("🎯 <fg=blue>" . count($specificAccounts) . "</> cuenta(s) específica(s): " . implode(', ', $specificAccounts));
-            $this->logInfo("🔍 Encontradas <fg=blue>" . $accounts->count() . "</> cuenta(s) válida(s) con token configurado");
+            $this->logInfo('🎯 ' . whatsapp_trans('analytics.specific_accounts', [
+                'count' => count($specificAccounts),
+                'ids' => implode(', ', $specificAccounts)
+            ]));
+            $this->logInfo('🔍 ' . whatsapp_trans('analytics.found_valid_accounts', ['count' => $accounts->count()]));
             return $accounts;
         }
 
-        // Obtener todas las cuentas activas con token configurado
+        // Get all active accounts with configured token
         $accounts = WhatsappModelResolver::business_account()
             ->whereNotNull('api_token')
             ->where('api_token', '!=', '')
             ->get();
 
-        $this->logInfo("🔍 Encontradas <fg=blue>" . $accounts->count() . "</> cuentas con token configurado");
+        $this->logInfo('🔍 ' . whatsapp_trans('analytics.found_accounts_with_token', ['count' => $accounts->count()]));
         return $accounts;
     }
 
     /**
-     * Procesar una cuenta específica
+     * Process a specific account
      */
     protected function processAccount($account, Carbon $startDate, Carbon $endDate): array
     {
         try {
-            // Configurar la cuenta actual
+            // Configure current account
             $this->account = $account;
 
-            // Configurar cliente HTTP
+            // Configure HTTP client
             if (!$this->setupApiClientForAccount()) {
                 return [
                     'success' => false,
-                    'error' => 'No se pudo configurar el cliente API',
+                    'error' => whatsapp_trans('analytics.api_client_setup_failed'),
                     'processed' => 0,
                     'saved' => 0,
                     'skipped' => 0,
@@ -187,11 +207,11 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 ];
             }
 
-            // Obtener templates de esta cuenta
+            // Get templates for this account
             $templates = $this->getTemplatesChunksForAccount($account);
 
             if ($templates->isEmpty()) {
-                $this->logInfo("   ⚠️ No se encontraron templates para esta cuenta");
+                $this->logInfo('   ⚠️ ' . whatsapp_trans('analytics.no_templates_found'));
                 return [
                     'success' => true,
                     'processed' => 0,
@@ -201,16 +221,21 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 ];
             }
 
-            $this->logInfo("   📋 Procesando <fg=blue>" . $templates->flatten()->count() . "</> templates en chunks de <fg=blue>10</>");
+            $this->logInfo('   📋 ' . whatsapp_trans('analytics.processing_templates', [
+                'count' => $templates->flatten()->count()
+            ]));
 
-            // Procesar cada chunk de templates
+            // Process each template chunk
             $processed = 0;
             $saved = 0;
             $skipped = 0;
             $errors = 0;
 
             foreach ($templates as $chunkIndex => $templateChunk) {
-                $this->logInfo("   🔄 Chunk <fg=blue>" . ($chunkIndex + 1) . "</>/<fg=blue>" . $templates->count() . "</>");
+                $this->logInfo('   🔄 ' . whatsapp_trans('analytics.processing_chunk', [
+                    'current' => ($chunkIndex + 1),
+                    'total' => $templates->count()
+                ]));
 
                 $result = $this->processTemplateChunk($templateChunk, $startDate, $endDate);
                 $processed += $result['processed'];
@@ -218,7 +243,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 $skipped += $result['skipped'];
                 $errors += $result['errors'];
 
-                // Pausa entre chunks para evitar rate limiting
+                // Pause between chunks to avoid rate limiting
                 if ($chunkIndex < $templates->count() - 1) {
                     sleep(2);
                 }
@@ -253,50 +278,53 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
     }
 
     /**
-     * Configurar cliente API para la cuenta actual
+     * Configure API client for current account
      */
     protected function setupApiClientForAccount(): bool
     {
         if (!$this->account->api_token) {
-            $this->logWarn("   ⚠️ Token de API no configurado en la cuenta");
+            $this->logWarn('   ⚠️ ' . whatsapp_trans('analytics.api_token_not_configured'));
             return false;
         }
 
         $this->client = new GuzzleClient([
             'timeout' => config('whatsapp.api.timeout', 30),
-            'verify' => false // ⚠️ Solo para desarrollo
+            'verify' => false
         ]);
 
         return true;
     }
 
     /**
-     * Obtener templates en chunks de 10 para una cuenta específica
+     * Get templates in chunks of 10 for a specific account
      */
     protected function getTemplatesChunksForAccount($account)
     {
         $query = WhatsappModelResolver::template()
             ->select('wa_template_id', 'name')
-            //Asegurar que solo se obtienen templates aprobados
+            // Ensure only approved templates are retrieved
             ->where('status', '=', 'APPROVED')
             ->where('whatsapp_business_id', $account->whatsapp_business_id);
 
-        // Si se especifican templates específicos
+        // If specific templates are specified
         $specificTemplates = $this->option('template');
         if (!empty($specificTemplates)) {
             $query->whereIn('wa_template_id', $specificTemplates);
-            $this->logInfo("   🎯 Filtrando por <fg=blue>" . count($specificTemplates) . "</> template(s) específico(s): <fg=blue>" . implode(', ', $specificTemplates) . "</>");
+            $this->logInfo('   🎯 ' . whatsapp_trans('analytics.filtering_templates', [
+                'count' => count($specificTemplates),
+                'ids' => implode(', ', $specificTemplates)
+            ]));
         }
 
         return $query->pluck('wa_template_id')->chunk(10);
     }
 
     /**
-     * Determinar cuántos días obtener
+     * Determine how many days to fetch
      */
     protected function determineDaysToFetch(): int
     {
-        // Si se especifica días manualmente
+        // If days are specified manually
         if ($this->option('days')) {
             $inputDays = (int)$this->option('days');
             $days = $inputDays > 90 ? 90 : $inputDays;
@@ -304,42 +332,45 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
             if ($inputDays > 90) {
                 $color = 'red';
             }
-            $this->logInfo("🎯 Días especificados manualmente: <fg={$color}>{$inputDays}</> (máximo permitido: <fg=blue>90</>)");
+            $this->logInfo('🎯 ' . whatsapp_trans('analytics.days_specified', [
+                'color' => $color,
+                'input' => $inputDays
+            ]));
             return $days;
         }
 
-        // Si se fuerza obtención completa
+        // If forced full retrieval
         if ($this->option('force')) {
-            $this->logInfo("🔒 Modo forzado: obteniendo <fg=blue>90</> días");
+            $this->logInfo('🔒 ' . whatsapp_trans('analytics.forced_mode'));
             return 90;
         }
 
-        // Verificar si la tabla está vacía
+        // Check if table is empty
         $hasData = WhatsappModelResolver::general_template_analytics()->exists();
 
         if (!$hasData) {
-            $this->logInfo("📝 <fg=yellow>Tabla vacía:</> obteniendo <fg=blue>90</> días iniciales");
+            $this->logInfo('📝 ' . whatsapp_trans('analytics.empty_table'));
             return 90;
         } else {
-            $this->logInfo("🔄 Tabla con datos: obteniendo <fg=blue>7</> días para actualización");
+            $this->logInfo('🔄 ' . whatsapp_trans('analytics.update_mode'));
             return 7;
         }
     }
 
     /**
-     * Obtener templates en chunks de 10 (método legacy)
+     * Get templates in chunks of 10 (legacy method)
      */
     protected function getTemplatesChunks()
     {
         $query = WhatsappModelResolver::template()->select('wa_template_id', 'name');
 
-        // Si se especifican templates específicos
+        // If specific templates are specified
         $specificTemplates = $this->option('template');
         if (!empty($specificTemplates)) {
             $query->whereIn('wa_template_id', $specificTemplates);
         }
 
-        // Si hay una cuenta configurada, filtrar por ella
+        // If an account is configured, filter by it
         if ($this->account) {
             $query->where('whatsapp_business_id', $this->account->whatsapp_business_id);
         }
@@ -348,7 +379,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
     }
 
     /**
-     * Procesar un chunk de templates
+     * Process a template chunk
      */
     protected function processTemplateChunk($templateIds, Carbon $startDate, Carbon $endDate): array
     {
@@ -358,11 +389,11 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
         $errors = 0;
 
         try {
-            // Llamar a la API
+            // Call the API
             $analyticsData = $this->fetchAnalyticsFromApi($templateIds->toArray(), $startDate, $endDate);
 
             if (!$analyticsData) {
-                $this->logWarn("⚠️ No se pudieron obtener datos para este chunk");
+                $this->logWarn('⚠️ ' . whatsapp_trans('analytics.no_data_for_chunk'));
                 return [
                     'processed' => 0,
                     'saved' => 0,
@@ -371,13 +402,13 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 ];
             }
 
-            // Procesar respuesta de la API
+            // Process API response
             foreach ($analyticsData['data'] as $dataGroup) {
                 foreach ($dataGroup['data_points'] as $dataPoint) {
                     try {
                         $processed++;
 
-                        // Verificar si se guardará realmente el registro
+                        // Check if the record will actually be saved
                         $sent = $dataPoint['sent'] ?? 0;
                         $delivered = $dataPoint['delivered'] ?? 0;
                         $read = $dataPoint['read'] ?? 0;
@@ -392,13 +423,16 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                         $saved++;
                     } catch (\Exception $e) {
                         $errors++;
-                        $this->logWarn("❌ Error guardando template <fg=blue>{$dataPoint['template_id']}</>: " . $e->getMessage());
+                        $this->logWarn('❌ ' . whatsapp_trans('analytics.error_saving_template', [
+                            'id' => $dataPoint['template_id'],
+                            'message' => $e->getMessage()
+                        ]));
                     }
                 }
             }
 
         } catch (\Exception $e) {
-            $this->logError("💥 Error procesando chunk: " . $e->getMessage());
+            $this->logError('💥 ' . whatsapp_trans('analytics.chunk_processing_error', ['message' => $e->getMessage()]));
             $errors = count($templateIds);
         }
 
@@ -411,7 +445,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
     }
 
     /**
-     * Obtener analytics desde la API de WhatsApp
+     * Fetch analytics from WhatsApp API
      */
     protected function fetchAnalyticsFromApi(array $templateIds, Carbon $startDate, Carbon $endDate): ?array
     {
@@ -434,7 +468,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                         'READ',
                     ],
                     'template_ids' => $templateIds,
-                    'limit' => 2000, // Máximo para obtener todos los días
+                    'limit' => 2000,
                 ],
             ]);
 
@@ -444,15 +478,15 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 return json_decode($response->getBody()->getContents(), true);
             }
 
-            $this->logWarn("⚠️ API respondió con código: <fg=blue>{$statusCode}</>");
+            $this->logWarn('⚠️ ' . whatsapp_trans('analytics.api_response_code', ['code' => $statusCode]));
             return null;
 
         } catch (RequestException $e) {
-            $this->logError("🔌 Error de conexión con la API: " . $e->getMessage());
+            $this->logError('🔌 ' . whatsapp_trans('analytics.api_connection_error', ['message' => $e->getMessage()]));
 
             if ($e->hasResponse()) {
                 $errorBody = $e->getResponse()->getBody()->getContents();
-                $this->logError("📄 Respuesta de error: " . $errorBody);
+                $this->logError('📄 ' . whatsapp_trans('analytics.api_error_response', ['body' => $errorBody]));
             }
 
             return null;
@@ -460,11 +494,11 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
     }
 
     /**
-     * Guardar datos de analytics en la base de datos
+     * Save analytics data to database
      */
     protected function saveAnalyticsData(array $dataPoint, array $dataGroup): void
     {
-        // Verificar que la suma de métricas principales sea mayor a cero
+        // Verify that the sum of main metrics is greater than zero
         $sent = $dataPoint['sent'] ?? 0;
         $delivered = $dataPoint['delivered'] ?? 0;
         $read = $dataPoint['read'] ?? 0;
@@ -472,21 +506,21 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
         $totalMetrics = $sent + $delivered + $read;
 
         if ($totalMetrics <= 0) {
-            // No hay datos relevantes, omitir el guardado
+            // No relevant data, skip saving
             return;
         }
 
         DB::transaction(function () use ($dataPoint, $dataGroup, $sent, $delivered, $read) {
-            // Timestamps en UTC (de la API)
+            // Timestamps in UTC (from API)
             $startTimestamp = $dataPoint['start'];
             $endTimestamp   = $dataPoint['end'];
 
-            // Crear fechas desde timestamps manteniendo UTC (sin conversión de zona horaria)
-            // Esto evita que las fechas cambien al día anterior cuando se convierten a timezone local
+            // Create dates from timestamps maintaining UTC (without timezone conversion)
+            // This prevents dates from changing to the previous day when converted to local timezone
             $startDate = Carbon::createFromTimestamp($startTimestamp, 'UTC');
             $endDate   = Carbon::createFromTimestamp($endTimestamp, 'UTC');
 
-            // Guardar registro principal
+            // Save main record
             $analytics = WhatsappModelResolver::general_template_analytics()->updateOrCreate([
                 'wa_template_id'  => $dataPoint['template_id'],
                 'start_timestamp' => $startTimestamp, // UTC
@@ -502,13 +536,13 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 'json_data'       => $dataPoint,
             ]);
 
-            // Asegurar que tenemos el ID del registro
+            // Ensure we have the record ID
             $analytics->refresh();
 
-            // Guardar datos de clicks
+            // Save click data
             if (isset($dataPoint['clicked']) && is_array($dataPoint['clicked'])) {
                 foreach ($dataPoint['clicked'] as $clickData) {
-                    //Conversando con Wilfredo vemos que no es necesario guardar si count es 0
+                    // No need to save if count is 0
                     if (isset($clickData['type']) && isset($clickData['count']) && $clickData['count'] > 0) {
                         WhatsappModelResolver::general_template_analytics_clicked()->updateOrCreate(
                             [
@@ -524,10 +558,10 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
                 }
             }
 
-            // Guardar datos de costos
+            // Save cost data
             if (isset($dataPoint['cost']) && is_array($dataPoint['cost'])) {
                 foreach ($dataPoint['cost'] as $costData) {
-                    //Conversando con Wilfredo vemos que no es necesario guardar si value es 0
+                    // No need to save if value is 0
                     if (isset($costData['type']) && isset($costData['value']) && $costData['value'] > 0) {
                         $costModel = WhatsappModelResolver::general_template_analytics_cost()->firstOrNew([
                             'general_template_analytics_id' => $analytics->id,

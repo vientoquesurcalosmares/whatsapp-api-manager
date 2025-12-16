@@ -8,7 +8,13 @@ use Illuminate\Support\Facades\File;
 class MergeLoggingConfig extends Command
 {
     protected $signature = 'whatsapp:merge-logging';
-    protected $description = 'Agrega el canal de logs de WhatsApp al archivo existente';
+    protected $description;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->description = whatsapp_trans('console.merge_logging_description');
+    }
 
     public function handle()
     {
@@ -17,7 +23,7 @@ class MergeLoggingConfig extends Command
 
         try {
             if (!File::exists($projectConfigPath)) {
-                $this->error("❌ Archivo logging.php no encontrado");
+                $this->error(whatsapp_trans('console.logging_file_not_found', ['path' => $projectConfigPath]));
                 return 1;
             }
 
@@ -31,20 +37,20 @@ class MergeLoggingConfig extends Command
                 );
 
                 if ($newContent === null) {
-                    $this->error("❌ Error al modificar el archivo de configuración");
+                    $this->error(whatsapp_trans('console.error_modifying_config', ['error' => 'regex pattern did not match']));
                     return 2;
                 }
 
                 File::put($projectConfigPath, $newContent);
-                $this->info("✅ Canal 'whatsapp' agregado exitosamente");
+                $this->info(whatsapp_trans('console.channel_added_success', ['path' => $projectConfigPath]));
                 return 0;
             }
 
-            $this->info("ℹ️ El canal 'whatsapp' ya existe");
+            $this->info(whatsapp_trans('console.channel_already_exists', ['path' => $projectConfigPath]));
             return 0;
 
         } catch (\Exception $e) {
-            $this->error("🔥 Error crítico: " . $e->getMessage());
+            $this->error(whatsapp_trans('console.critical_error', ['error' => $e->getMessage()]));
             return 3;
         }
     }

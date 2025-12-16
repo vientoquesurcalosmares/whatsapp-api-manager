@@ -25,24 +25,6 @@
 
 </td>
 </tr>
-<tr>
-<td>
-
-### 🔴 ESTO NO ES UN PRODUCTO OFICIAL DE WHATSAPP O META
-
-**Este es un paquete independiente de código abierto para Laravel** desarrollado por la comunidad para integrarse con la **API oficial de WhatsApp Business Cloud**. Este paquete:
-
-- ❌ **NO está** afiliado, respaldado, patrocinado ni soportado por Meta Platforms, Inc., WhatsApp LLC, o Facebook
-- ❌ **NO recopila**, almacena ni solicita tus credenciales de WhatsApp, Meta o Facebook en este sitio web o paquete
-- ❌ **NO es** un cliente de WhatsApp o API no oficial
-- ✅ **ES** una herramienta legítima de desarrollo que usa la **API oficial de WhatsApp Business Cloud** proporcionada por Meta
-- ✅ **ES** 100% código abierto (Licencia MIT) y transparente - [Ver Código Fuente](https://github.com/djdang3r/whatsapp-api-manager)
-- ✅ **REQUIERE** que crees tu propia cuenta de Meta Business y obtengas tus propias credenciales oficiales de API directamente desde Meta
-
-**NO proporcionamos acceso a la API de WhatsApp.** Debes obtener acceso oficial a través de [Meta for Developers](https://developers.facebook.com/).
-
-</td>
-</tr>
 </table>
 
 ### 🔐 Security & Privacy / Seguridad y Privacidad
@@ -523,6 +505,28 @@ Need help? You have several options:
 <a name="español"></a>
 
 # 🇪🇸 Español
+
+
+<table>
+<tr>
+<td>
+
+### 🔴 ESTO NO ES UN PRODUCTO OFICIAL DE WHATSAPP O META
+
+**Este es un paquete independiente de código abierto para Laravel** desarrollado por la comunidad para integrarse con la **API oficial de WhatsApp Business Cloud**. Este paquete:
+
+- ❌ **NO está** afiliado, respaldado, patrocinado ni soportado por Meta Platforms, Inc., WhatsApp LLC, o Facebook
+- ❌ **NO recopila**, almacena ni solicita tus credenciales de WhatsApp, Meta o Facebook en este sitio web o paquete
+- ❌ **NO es** un cliente de WhatsApp o API no oficial
+- ✅ **ES** una herramienta legítima de desarrollo que usa la **API oficial de WhatsApp Business Cloud** proporcionada por Meta
+- ✅ **ES** 100% código abierto (Licencia MIT) y transparente - [Ver Código Fuente](https://github.com/djdang3r/whatsapp-api-manager)
+- ✅ **REQUIERE** que crees tu propia cuenta de Meta Business y obtengas tus propias credenciales oficiales de API directamente desde Meta
+
+**NO proporcionamos acceso a la API de WhatsApp.** Debes obtener acceso oficial a través de [Meta for Developers](https://developers.facebook.com/).
+
+</td>
+</tr>
+</table>
 
 ## 📋 Índice
 

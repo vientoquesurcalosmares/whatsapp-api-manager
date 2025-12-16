@@ -23,7 +23,7 @@ class BlockService
     public function blockUsers(string $phoneNumberId, array $users): array
     {
         $phone = WhatsappModelResolver::phone_number()->find($phoneNumberId);
-        if (!$phone) throw new \RuntimeException('Número telefónico no encontrado');
+        if (!$phone) throw new \RuntimeException(whatsapp_trans('messages.phone_number_not_found'));
         
         // Formatear números
         $formattedUsers = $this->formatUsers($phone, $users);
@@ -39,7 +39,7 @@ class BlockService
         if (empty($usersToBlock)) {
             return [
                 'success' => true,
-                'message' => 'Los usuarios ya estaban bloqueados',
+                'message' => whatsapp_trans('messages.users_already_blocked'),
                 'already_blocked' => $alreadyBlocked
             ];
         }
@@ -74,7 +74,7 @@ class BlockService
     public function unblockUsers(string $phoneNumberId, array $users): array
     {
         $phone = WhatsappModelResolver::phone_number()->find($phoneNumberId);
-        if (!$phone) throw new \RuntimeException('Número telefónico no encontrado');
+        if (!$phone) throw new \RuntimeException(whatsapp_trans('messages.phone_number_not_found'));
         
         // Formatear números
         $formattedUsers = $this->formatUsers($phone, $users);
@@ -91,7 +91,7 @@ class BlockService
         if (empty($usersToUnblock)) {
             return [
                 'success' => true,
-                'message' => 'Los usuarios ya estaban desbloqueados',
+                'message' => whatsapp_trans('messages.users_already_unblocked'),
                 'already_unblocked' => $notBlocked
             ];
         }
@@ -175,7 +175,7 @@ class BlockService
             $contact = Contact::create([
                 'wa_id' => $userIdentifier,
                 'phone_number' => $userIdentifier,
-                'first_name' => 'Usuario Bloqueado',
+                'first_name' => whatsapp_trans('messages.blocked_user'),
                 'accepts_marketing' => false,
                 'marketing_opt_out_at' => now()
             ]);
@@ -211,14 +211,14 @@ class BlockService
     }
 
     public function listBlockedUsers(
-        string $phoneNumberId, 
-        int $limit = 50, 
-        ?string $after = null, 
+        string $phoneNumberId,
+        int $limit = 50,
+        ?string $after = null,
         ?string $before = null
     ): array {
         $phone = WhatsappModelResolver::phone_number()->find($phoneNumberId);
         if (!$phone) {
-            throw new \RuntimeException('Número telefónico no encontrado');
+            throw new \RuntimeException(whatsapp_trans('messages.phone_number_not_found'));
         }
 
         $endpoint = Endpoints::build(

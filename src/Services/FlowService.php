@@ -81,7 +81,7 @@ class FlowService
             return WhatsappModelResolver::flow()->where('whatsapp_business_account_id', $account->whatsapp_business_id)->get();
 
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error al sincronizar flujos: ' . $e->getMessage(), [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.flow_error_syncing', ['message' => $e->getMessage()]), [
                 'endpoint' => $endpoint,
                 'business_id' => $account->whatsapp_business_id
             ]);
@@ -117,7 +117,7 @@ class FlowService
             ]
         );
 
-        Log::channel('whatsapp')->info('Flujo actualizado en la base de datos:', ['flow' => $flow]);
+        Log::channel('whatsapp')->info(whatsapp_trans('messages.flow_updated_in_database'), ['flow' => $flow]);
 
         // Procesar screens y elements si existen en json_structure
         if (!empty($flowData['json_structure']['screens'])) {
@@ -175,7 +175,7 @@ class FlowService
 
             // Asegurar que la respuesta tiene los datos necesarios
             if (empty($response['id']) || empty($response['name'])) {
-                Log::channel('whatsapp')->error('Respuesta de flujo inválida', ['response' => $response]);
+                Log::channel('whatsapp')->error(whatsapp_trans('messages.invalid_flow_response'), ['response' => $response]);
                 return null;
             }
 
@@ -188,7 +188,7 @@ class FlowService
             return $updatedFlow;
 
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error al sincronizar flujo por ID: ' . $e->getMessage(), [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.flow_error_syncing_by_id', ['message' => $e->getMessage()]), [
                 'flow_id' => $flowId,
             ]);
             return null;
@@ -206,7 +206,7 @@ class FlowService
     {
         foreach ($screens as $screenData) {
             if (empty($screenData['name'])) {
-                throw new InvalidArgumentException("El campo 'name' es obligatorio para sincronizar las pantallas.");
+                throw new InvalidArgumentException(whatsapp_trans('messages.flow_screen_name_required'));
             }
 
             $screen = $flow->screens()->updateOrCreate(
@@ -253,7 +253,7 @@ class FlowService
     {
         // Validar que el flujo tenga un ID válido
         if (empty($flow->wa_flow_id)) {
-            throw new InvalidArgumentException('El flujo no tiene un ID válido, no puede ser publicado.');
+            throw new InvalidArgumentException(whatsapp_trans('messages.flow_invalid_id_cannot_publish'));
         }
 
         $endpoint = Endpoints::build(Endpoints::PUBLISH_FLOW, [
@@ -287,10 +287,10 @@ class FlowService
 
             return true;
         } catch (\Exception $e) {
-            Log::error('Error al publicar el flujo: ' . $e->getMessage(), [
+            Log::error(whatsapp_trans('messages.flow_error_publishing', ['message' => $e->getMessage()]), [
                 'flow_id' => $flow->wa_flow_id,
             ]);
-            throw new \RuntimeException('Error al publicar el flujo: ' . $e->getMessage());
+            throw new \RuntimeException(whatsapp_trans('messages.flow_error_publishing', ['message' => $e->getMessage()]));
         }
     }
 }

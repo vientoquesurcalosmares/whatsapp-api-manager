@@ -90,7 +90,7 @@ class WhatsappManager
      * @param array $subscribedFields
      * @return array
      */
-    public function subscribeApp(array $subscribedFields = null): array
+    public function subscribeApp(?array $subscribedFields = null): array
     {
         return $this->account()->subscribeApp($subscribedFields);
     }

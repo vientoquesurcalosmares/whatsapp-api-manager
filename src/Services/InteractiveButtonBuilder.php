@@ -46,7 +46,7 @@ class InteractiveButtonBuilder
     public function addButton(string $id, string $title): self
     {
         if (count($this->buttons) >= 3) {
-            throw new \InvalidArgumentException('Máximo 3 botones permitidos');
+            throw new \InvalidArgumentException('Maximum 3 buttons allowed');
         }
         
         $this->buttons[] = ['id' => $id, 'title' => $title];

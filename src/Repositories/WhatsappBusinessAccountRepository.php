@@ -11,21 +11,21 @@ use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
 class WhatsappBusinessAccountRepository
 {
     /**
-     * Encuentra una cuenta empresarial por ID.
+     * Find a business account by ID.
      */
     public function find(string $id): Model
     {
         $account = WhatsappModelResolver::business_account()->find($id);
 
         if (!$account) {
-            throw new ModelNotFoundException("Whatsapp Business Account $id no encontrada");
+            throw new ModelNotFoundException("Whatsapp Business Account $id not found");
         }
 
         return $account;
     }
 
     /**
-     * Encuentra una cuenta por número de teléfono.
+     * Find an account by phone number ID.
      */
     public function findByPhoneNumberId(string $phoneNumberId): Model
     {

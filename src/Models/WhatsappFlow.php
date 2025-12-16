@@ -82,7 +82,7 @@ class WhatsappFlow extends Model
     {
         // Validar que el flujo tenga un ID válido
         if (empty($this->wa_flow_id)) {
-            throw new InvalidArgumentException('El flujo no tiene un ID válido, no puede ser publicado.');
+            throw new InvalidArgumentException(whatsapp_trans('messages.flow_invalid_id_cannot_publish'));
         }
 
         $flowService = app(FlowService::class);
@@ -94,7 +94,7 @@ class WhatsappFlow extends Model
     {
         // Validar que el flujo tenga un ID válido
         if (empty($this->wa_flow_id)) {
-            throw new InvalidArgumentException('El flujo no tiene un ID válido, no puede ser sincronizado.');
+            throw new InvalidArgumentException(whatsapp_trans('messages.flow_invalid_id_cannot_sync'));
         }
 
         $flowService = app(FlowService::class);
@@ -102,7 +102,7 @@ class WhatsappFlow extends Model
         $updatedFlow = $flowService->syncFlowById($this->whatsappBusinessAccount, $this->wa_flow_id);
 
         if (!$updatedFlow) {
-            throw new \RuntimeException('Error al sincronizar el flujo desde la API.');
+            throw new \RuntimeException(whatsapp_trans('messages.flow_error_syncing_from_api'));
         }
 
         return true;

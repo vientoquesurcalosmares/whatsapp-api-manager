@@ -32,7 +32,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         if ($request->isMethod('post')) {
             return $this->processIncomingMessage($request);
         }
-        Log::channel('whatsapp')->error('Registro webhook invalido', [$request]);
+        Log::channel('whatsapp')->error(whatsapp_trans('messages.webhook_registration_invalid'), [$request]);
         return response()->json(['error' => 'Invalid request method.'], 400);
     }
 
@@ -42,10 +42,10 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             $request->input('hub_mode') === 'subscribe' &&
             $request->input('hub_verify_token') === $verifyToken
         ) {
-            Log::channel('whatsapp')->info('Configuracion de webhook valido!', [$request]);
+            Log::channel('whatsapp')->info(whatsapp_trans('messages.webhook_configuration_valid'), [$request]);
             return response()->make($request->input('hub_challenge'), 200);
         }
-        Log::channel('whatsapp')->error('Error al registrar webhook!', [$request]);
+        Log::channel('whatsapp')->error(whatsapp_trans('messages.webhook_registration_error'), [$request]);
         return response()->json(['error' => 'Invalid verify token.'], 403);
     }
 
@@ -321,7 +321,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         }
 
         if (!$textContent) {
-            Log::channel('whatsapp')->warning('No se pudo extraer contenido del mensaje interactivo.', $message);
+            Log::channel('whatsapp')->warning(whatsapp_trans('messages.webhook_could_not_extract_interactive_content'), $message);
             return null;
         }
 
@@ -344,7 +344,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'message_context_id' => $this->getContextMessageId($message),
             ]);
 
-        Log::channel('whatsapp')->info('Mensaje interactivo procesado y guardado.', [
+        Log::channel('whatsapp')->info(whatsapp_trans('messages.webhook_interactive_message_processed'), [
             'message_id' => $messageRecord->message_id,
             'wa_id' => $message['id'],
             'content' => $textContent,
@@ -556,7 +556,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         $reaction = $message['reaction'] ?? null;
 
         if (!$reaction || !isset($reaction['emoji'], $reaction['message_id'])) {
-            Log::channel('whatsapp')->warning('Reacción inválida o incompleta.', $message);
+            Log::channel('whatsapp')->warning(whatsapp_trans('messages.webhook_reaction_invalid_or_incomplete'), $message);
             return null;
         }
 
@@ -702,7 +702,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             $this->processConversationData($messageRecord, $status);
         }
 
-        Log::channel('whatsapp')->info('Estado actualizado', [
+        Log::channel('whatsapp')->info(whatsapp_trans('messages.webhook_status_updated'), [
             'message_id' => $messageRecord->message_id,
             'wa_id' => $messageId,
             'status' => $statusValue,
@@ -789,7 +789,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // Validar ID de conversación
         if (empty($conversationData['id'])) {
-            Log::channel('whatsapp')->warning('Conversation ID inválido', $conversationData);
+            Log::channel('whatsapp')->warning(whatsapp_trans('messages.webhook_conversation_id_invalid'), $conversationData);
             return;
         }
 
@@ -1666,7 +1666,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 $messageData
             );
 
-            Log::channel('whatsapp')->debug('✅ [COEXISTENCE] Mensaje histórico guardado', [
+            Log::channel('whatsapp')->debug(whatsapp_trans('messages.webhook_historical_message_saved'), [
                 'message_id' => $messageRecord->message_id,
                 'type' => $messageType,
                 'method' => $messageRecord->message_method,
@@ -1674,7 +1674,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             ]);
 
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('❌ [COEXISTENCE] Error al guardar mensaje histórico', [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.webhook_error_saving_historical_message'), [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'message_data' => $messageData
@@ -2404,7 +2404,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 $messageData
             );
 
-            Log::channel('whatsapp')->info('✅ [COEXISTENCE] Mensaje multimedia SMB echo guardado', [
+            Log::channel('whatsapp')->info(whatsapp_trans('messages.webhook_multimedia_smb_echo_saved'), [
                 'message_id' => $messageRecord->message_id,
                 'type' => $messageType
             ]);
@@ -2425,7 +2425,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 ]
             );
 
-            Log::channel('whatsapp')->info('✅ [COEXISTENCE] Registro de archivo multimedia creado', [
+            Log::channel('whatsapp')->info(whatsapp_trans('messages.webhook_multimedia_file_record_created'), [
                 'media_file_id' => $mediaFileRecord->media_file_id ?? $mediaFileRecord->id,
                 'message_id' => $messageRecord->message_id,
                 'url' => $publicPath
@@ -2438,7 +2438,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             $this->fireSmbMessageEcho($contactRecord, $messageRecord);
 
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('❌ [COEXISTENCE] Error al procesar archivo multimedia SMB echo', [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.webhook_error_processing_multimedia_file'), [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'message_type' => $messageType
@@ -2514,7 +2514,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 $messageData
             );
 
-            Log::channel('whatsapp')->info('✅ [COEXISTENCE] SMB message echo guardado exitosamente', [
+            Log::channel('whatsapp')->info(whatsapp_trans('messages.webhook_smb_echo_saved_successfully'), [
                 'message_id' => $messageRecord->message_id,
                 'wa_id' => $messageRecord->wa_id,
                 'type' => $messageType,
@@ -2529,7 +2529,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             }
 
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('❌ [COEXISTENCE] Error al guardar mensaje SMB echo no multimedia', [
+            Log::channel('whatsapp')->error(whatsapp_trans('messages.webhook_error_saving_non_multimedia_message'), [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'message_data' => $messageData ?? []
