@@ -2,8 +2,8 @@
     "$schema": "https://json-schema.org/draft-04/schema#",
     "title": "Composer Package",
     "name": "scriptdevelop/whatsapp-manager",
-    "version": "1.1.3",
-    "description": "Laravel package for WhatsApp Business API management",
+    "version": "1.0.429",
+    "description": "Paquete para manejo de WhatsApp Business API en Laravel",
     "keywords": ["whatsapp", "laravel", "api", "messaging", "whatsappapi", "notifications", "php"],
     "type": "library",
     "license": "MIT",
@@ -18,15 +18,14 @@
         "mockery/mockery": "^1.6"
     },
     "suggest": {
-        "laravel/reverb": "Allows receiving websocket events from the package via broadcasting"
+        "laravel/reverb": "Permite recibir eventos websocket desde el paquete vía broadcasting"
     },
     "autoload": {
         "psr-4": {
             "ScriptDevelop\\WhatsappManager\\": "src/"
         },
         "files": [
-            "src/Helpers/CountryCodes.php",
-            "src/Helpers/trans.php"
+            "src/Helpers/CountryCodes.php"
         ]
     },
     "extra": {

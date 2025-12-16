@@ -19,8 +19,8 @@ class WhatsappWebhookController extends Controller
         } catch (\Exception $e) {
             // Fallback a la implementación por defecto
             $this->processor = new BaseWebhookProcessor();
-
-            \Log::warning(whatsapp_trans('messages.webhook_processor_not_resolved'), [
+            
+            \Log::warning('WebhookProcessorInterface no pudo ser resuelto, usando implementación por defecto', [
                 'error' => $e->getMessage()
             ]);
         }
@@ -31,11 +31,11 @@ class WhatsappWebhookController extends Controller
         try {
             return $this->processor->handle($request);
         } catch (\Exception $e) {
-            \Log::error(whatsapp_trans('messages.webhook_processing_error'), [
+            \Log::error('Error en el procesamiento del webhook', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-
+            
             return response()->json(['error' => 'Internal server error'], 500);
         }
     }

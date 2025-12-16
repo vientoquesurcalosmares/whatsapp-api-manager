@@ -48,7 +48,7 @@ class AccountRegistrationService
      */
     public function register(array $data, ?array $subscribedFields = null): Model
     {
-        Log::channel('whatsapp')->info(whatsapp_trans('messages.account_starting_registration'), ['business_id' => $data['business_id']]);
+        Log::channel('whatsapp')->info('Iniciando registro de cuenta', ['business_id' => $data['business_id']]);
 
         $this->validateInput($data);
 
@@ -73,7 +73,7 @@ class AccountRegistrationService
             return $account->load(['phoneNumbers.businessProfile']);
 
         } catch (ApiException | InvalidApiResponseException $e) {
-            Log::channel('whatsapp')->error(whatsapp_trans('messages.error_account_registration') . ' ' . $e->getMessage());
+            Log::channel('whatsapp')->error("Error registro cuenta: {$e->getMessage()}");
             throw $e;
         }
     }
@@ -87,7 +87,7 @@ class AccountRegistrationService
     private function validateInput(array $data): void
     {
         if (empty($data['api_token']) || empty($data['business_id'])) {
-            throw new \InvalidArgumentException(whatsapp_trans('messages.account_api_token_business_id_required'));
+            throw new \InvalidArgumentException('Token API y Business ID son requeridos');
         }
     }
 
@@ -105,7 +105,7 @@ class AccountRegistrationService
             ->withTempToken($data['api_token'])
             ->getBusinessAccount($data['business_id']);
 
-        Log::channel('whatsapp')->debug('BUSINESS ACCOUNT API RESPONSE:', [
+        Log::channel('whatsapp')->debug('RESPUESTA API BUSINESS ACCOUNT:', [
             'business_id' => $data['business_id'],
             'response' => $response
         ]);
@@ -120,7 +120,7 @@ class AccountRegistrationService
             ->withTempToken($data['api_token'])
             ->getBusinessAccountApp($data['business_id']);
 
-        Log::channel('whatsapp')->debug('BUSINESS ACCOUNT SUBSCRIPTIONS API RESPONSE:', [
+        Log::channel('whatsapp')->debug('RESPUESTA API BUSINESS ACCOUNT SUSCRIPTIONS:', [
             'business_id' => $data['business_id'],
             'response' => $response
         ]);
@@ -147,18 +147,18 @@ class AccountRegistrationService
         $messagingLimitTier = $apiData['whatsapp_business_manager_messaging_limit'] ?? null;
         $messagingLimitValue = MessagingLimitHelper::convertTierToLimitValue($messagingLimitTier);
 
-        Log::channel('whatsapp')->debug('Extracted messaging limit values:', [
+        Log::channel('whatsapp')->debug('Valores de límite de mensajes extraídos:', [
             'messaging_limit_tier' => $messagingLimitTier,
             'messaging_limit_value' => $messagingLimitValue,
             'api_data_key_exists' => isset($apiData['whatsapp_business_manager_messaging_limit']),
-            'api_data_value' => $apiData['whatsapp_business_manager_messaging_limit'] ?? 'DOES NOT EXIST',
+            'api_data_value' => $apiData['whatsapp_business_manager_messaging_limit'] ?? 'NO EXISTE',
         ]);
 
         // El token se encripta automáticamente al guardar (vía mutador)
         $account = WhatsappModelResolver::business_account()->updateOrCreate(
             ['whatsapp_business_id' => $apiData['id']],
             [
-                'name' => $apiData['name'] ?? whatsapp_trans('messages.account_nameless'),
+                'name' => $apiData['name'] ?? 'Sin nombre',
                 'api_token' => $apiToken, // Se encripta aquí
                 'phone_number_id' => $apiData['phone_number_id'] ?? $apiData['id'],
                 'timezone_id' => $apiData['timezone_id'] ?? 0,
@@ -175,7 +175,7 @@ class AccountRegistrationService
         $account->messaging_limit_value = $messagingLimitValue;
         $account->save();
 
-        Log::channel('whatsapp')->debug('Account saved/updated:', [
+        Log::channel('whatsapp')->debug('Cuenta guardada/actualizada:', [
             'whatsapp_business_id' => $account->whatsapp_business_id,
             'messaging_limit_tier' => $account->messaging_limit_tier,
             'messaging_limit_value' => $account->messaging_limit_value,
@@ -203,7 +203,7 @@ class AccountRegistrationService
                 $this->updateOrCreatePhoneNumber($account, $phoneData);
             }
         } catch (ApiException $e) {
-            Log::channel('whatsapp')->error(whatsapp_trans('messages.error_phone_numbers') . ' ' . $e->getMessage());
+            Log::channel('whatsapp')->error("Error números telefónicos: {$e->getMessage()}");
             throw $e;
         }
     }
@@ -262,7 +262,7 @@ class AccountRegistrationService
                 ]
             );
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error(whatsapp_trans('messages.error_saving_number'), [
+            Log::channel('whatsapp')->error('Error al guardar número', [
                 'error' => $e->getMessage(),
                 'data' => $phoneData
             ]);
@@ -298,12 +298,12 @@ class AccountRegistrationService
                 ->getBusinessProfile($phone->api_phone_number_id);
 
             if (!isset($profileData['data'][0])) {
-                throw new InvalidApiResponseException(whatsapp_trans('messages.account_profile_not_found'));
+                throw new InvalidApiResponseException("Perfil no encontrado");
             }
 
             $this->upsertBusinessProfile($phone, $profileData['data'][0]);
         } catch (ApiException | InvalidApiResponseException $e) {
-            Log::channel('whatsapp')->error(whatsapp_trans('messages.error_profile') . ' ' . $e->getMessage());
+            Log::channel('whatsapp')->error("Error en perfil: {$e->getMessage()}");
             throw $e;
         }
     }

@@ -8,9 +8,6 @@ use GuzzleHttp\Exception\GuzzleException;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Exceptions\ApiException;
 
 /**
- * ApiClient class to interact with the WhatsApp Business API.
- * Provides methods to make HTTP requests to the API.
- *
  * Clase ApiClient para interactuar con la API de WhatsApp Business.
  * Proporciona métodos para realizar solicitudes HTTP a la API.
  */
@@ -24,21 +21,20 @@ class ApiClient
      */
     protected Client $client;
     /**
-     * @var string API base URL / URL base de la API.
+     * @var string Base URL de la API.
      */
     protected string $baseUrl;
     /**
-     * @var string API version / Versión de la API.
+     * @var string Versión de la API.
      */
     protected string $version;
 
     /**
-     * ApiClient class constructor.
      * Constructor de la clase ApiClient.
      *
-     * @param string $baseUrl API base URL / URL base de la API.
-     * @param string $version API version / Versión de la API.
-     * @param int $timeout Request timeout in seconds / Tiempo de espera para las solicitudes (en segundos).
+     * @param string $baseUrl URL base de la API.
+     * @param string $version Versión de la API.
+     * @param int $timeout Tiempo de espera para las solicitudes (en segundos).
      */
     public function __construct(string $baseUrl, string $version, int $timeout = 30)
     {
@@ -52,18 +48,22 @@ class ApiClient
     }
 
     /**
-     * Executes a generic API request.
      * Ejecuta una petición genérica a la API.
-     *
-     * @param string $method HTTP method (GET, POST, etc.) / Método HTTP (GET, POST, etc.).
-     * @param string $endpoint API endpoint / Endpoint de la API.
-     * @param array $params URL parameters / Parámetros de la URL.
-     * @param mixed $data Data to send (can be array, JSON, or stream) / Datos a enviar (puede ser un array, JSON o un flujo).
-     * @param array $query Additional query parameters / Parámetros de consulta adicionales.
-     * @param array $headers Additional HTTP headers / Encabezados HTTP adicionales.
-     * @return array API response decoded as array / Respuesta de la API decodificada como array.
-     * @throws ApiException If an error occurs during the request / Si ocurre un error durante la solicitud.
+     */
+    /**
+     * @param string $method Método HTTP (GET, POST, etc.).
+     * @param string $endpoint Endpoint de la API.
+     * @param array $params Parámetros de la URL.
+     * @param mixed $data Datos a enviar (puede ser un array, JSON o un flujo).
+     * @param array $query Parámetros de consulta adicionales.
+     * @param array $headers Encabezados HTTP adicionales.
+     * @return array Respuesta de la API decodificada como array.
+     * @throws ApiException Si ocurre un error durante la solicitud.
+     */
+    /**
      * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    /**
      * @throws \RuntimeException
      */
     public function request(
@@ -121,23 +121,23 @@ class ApiClient
                     $logArray['response_body'] = $response->getBody()->getContents();
                 }
 
-                Log::channel('whatsapp')->info(whatsapp_trans('messages.api_successful_response'), $logArray);
+                Log::channel('whatsapp')->info('Respuesta exitosa de la API.', $logArray);
 
                 if( $is_multimedia==true ){
                     return $response->getBody()->getContents();
                 }
 
-                // When it's a multimedia file, return raw content
+                //Revisar aquí, cuando es archivo multimedia se necesita retornar $response->getBody()->getContents()
                 return json_decode($response->getBody(), true) ?: [];
             }
 
-            // Handle unsuccessful status codes
-            Log::channel('whatsapp')->warning(whatsapp_trans('messages.error_api_response'), [
+            // Manejar códigos de estado no exitosos
+            Log::channel('whatsapp')->warning('ERROR Respuesta no exitosa de la API.', [
                 'status_code' => $statusCode,
                 'response_body' => $response->getBody()->getContents(),
             ]);
 
-            throw new ApiException(whatsapp_trans('messages.api_unsuccessful_response'), $statusCode);
+            throw new ApiException('Respuesta no exitosa de la API.', $statusCode);
 
         } catch (GuzzleException $e) {
             Log::channel('whatsapp')->error('API Error', [
@@ -169,13 +169,12 @@ class ApiClient
     }
 
     /**
-     * Builds the final URL for the request.
      * Construye la URL final para la solicitud.
      *
-     * @param string $endpoint API endpoint / Endpoint de la API.
-     * @param array $params URL parameters / Parámetros de la URL.
-     * @param array $query Additional query parameters / Parámetros de consulta adicionales.
-     * @return string Built URL / URL construida.
+     * @param string $endpoint Endpoint de la API.
+     * @param array $params Parámetros de la URL.
+     * @param array $query Parámetros de consulta adicionales.
+     * @return string URL construida.
      */
     protected function buildUrl(string $endpoint, array $params, array $query = [], $is_multimedia=false): string
     {
@@ -194,17 +193,16 @@ class ApiClient
             $url .= '?' . http_build_query($query);
         }
 
-        Log::channel('whatsapp')->info(whatsapp_trans('messages.api_url_built'), ['url' => $url]);
+        Log::channel('whatsapp')->info('URL construida:', ['url' => $url]);
 
         return $url;
     }
 
     /**
-     * Handles Guzzle exceptions and converts them to ApiException.
      * Maneja excepciones de Guzzle y las convierte en ApiException.
      *
-     * @param GuzzleException $e Guzzle exception / Excepción de Guzzle.
-     * @return ApiException Custom exception / Excepción personalizada.
+     * @param GuzzleException $e Excepción de Guzzle.
+     * @return ApiException Excepción personalizada.
      */
     protected function handleException(GuzzleException $e): ApiException
     {
@@ -212,20 +210,20 @@ class ApiClient
         $body = [];
         $message = $e->getMessage();
 
-        // Only if it's an exception with response (e.g., 4xx/5xx)
+        // Solo si es una excepción con respuesta (ej: 4xx/5xx)
         if ($e instanceof \GuzzleHttp\Exception\RequestException && $e->hasResponse()) {
             $response = $e->getResponse();
             $statusCode = $response->getStatusCode();
             $body = json_decode($response->getBody(), true);
             $message = $body['error']['message'] ?? $message;
 
-            Log::channel('whatsapp')->error(whatsapp_trans('messages.api_error_in_response'), [
+            Log::channel('whatsapp')->error('Error en la respuesta de la API.', [
                 'status_code' => $statusCode,
                 'response_body' => $body,
                 'headers' => $response->getHeaders(),
             ]);
 
-            Log::channel('whatsapp')->error(whatsapp_trans('messages.api_error_in_response'), [
+            Log::channel('whatsapp')->error('Error en la respuesta de la API.', [
                 'status_code' => $statusCode,
                 'response_body' => $body,
                 'headers' => $response->getHeaders(),

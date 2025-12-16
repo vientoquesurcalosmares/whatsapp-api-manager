@@ -19,10 +19,10 @@ class ValidationException extends Exception
     protected $statusCode = 422;
 
     public function __construct(
-        ?string $message = null,
+        string $message = null,
         array $errors = [],
         int $code = 0,
-        ?Exception $previous = null
+        Exception $previous = null
     ) {
         parent::__construct(
             $message ?? Lang::get('whatsapp-manager::validation.generic'),

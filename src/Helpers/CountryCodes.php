@@ -8,7 +8,7 @@ class CountryCodes
 {
     public static function list(): array
     {
-        // Predefined country codes / Códigos de país predefinidos
+        // Códigos de país predefinidos
         $defaultCodes = [
             '1'     => 'US/CA',    // Estados Unidos/Canadá
             '7'     => 'RU',       // Rusia
@@ -254,27 +254,15 @@ class CountryCodes
     }
 
     /**
-     * Used to properly normalize international phone numbers. Currently especially useful for the Mexico case,
-     * ensuring there's always a 1 between the area code and the 10 digits of the phone number.
-     * However, it can be useful in the future if we discover more special cases, although theoretically there shouldn't be any!
-     * 
-     * Sirve para normalizar adecuadamente celulares internacionales. Actualmente especialmente útil para el caso de México,
-     * asegurando que siempre haya un 1 entre la lada y los 10 dígitos del celular.
-     * Sin embargo, puede ser útil en el futuro si descubrimos más casos especiales, ¡aunque teóricamente no debería haberlos!
-     * 
-     * @param int $countryCode
-     * @param string $phoneNumber
+     * Sirve para normalizar adecuadamente celulares internacionales, aunque actualmente sirve especialmente para el caso de México, y que siempre tenga el 1 entre la lada y los 10 dígitos del ceular, pero también puede servir en el futuro si nos damos cuenta de que hay mas casos especiales, aunque se supone que no debería!
+     * @param [type] $countryCode
+     * @param [type] $phoneNumber
      * @return array
      */
     public static function normalizeInternationalPhone($countryCode, $phoneNumber): array
     {
-        // If the country is Mexico, according to ChatGPT this is the only case in the world that has a 1 after the area code
-        // followed by 10 digits of the phone number like 521 1234567890.
-        // Therefore, check if it's a Mexico number and the $phoneNumber is exactly 10 digits, then add the initial 1.
-        // 
-        // Si el país es México, según ChatGPT este es el único caso en el mundo que tiene un 1 después del código de área
-        // seguido de 10 dígitos del celular como 521 1234567890.
-        // Por lo tanto, comprobar si es un número de México y el $phoneNumber es exactamente 10 dígitos, entonces agregar el 1 inicial.
+        //Si el país es México, según ChatGPT este es el único caso en el mundo que tiene un 1 después del código de area y luego vienen 10 dígitos del celular así 521 1234567890
+        //Por lo tanto comprobar si es número de méxico y el $phoneNumber son exactamente 10 números, entonces agregar el 1 inicial
         if( $countryCode==52 && Str::length($phoneNumber)==10 )
         {
             $phoneNumber = '1'.$phoneNumber;

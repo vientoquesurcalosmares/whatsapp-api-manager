@@ -226,7 +226,7 @@ class FlowEditor
     public function save(): Model
     {
         if (empty($this->flow->wa_flow_id)) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.flow_no_wa_flow_id_cannot_edit'));
+            throw new InvalidArgumentException('El flujo no tiene wa_flow_id, no puede ser editado en la API.');
         }
 
         $flowId = $this->flow->wa_flow_id;
@@ -257,7 +257,7 @@ class FlowEditor
         $this->flowData['json_structure'] = $flowJson;
 
         if (empty($flowJson['screens'])) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.flow_must_have_at_least_one_screen'));
+            throw new InvalidArgumentException('El flujo debe tener al menos una pantalla.');
         }
 
         $tmpFile = tempnam(sys_get_temp_dir(), 'flow_') . '.json';
@@ -328,7 +328,7 @@ class FlowEditor
         $screens = [];
         foreach ($this->flowData['json_structure']['screens'] as $screen) {
             if (empty($screen['name'])) {
-                throw new InvalidArgumentException(whatsapp_trans('messages.flow_screen_name_required'));
+                throw new InvalidArgumentException("El campo 'name' es obligatorio para construir el JSON del flujo.");
             }
 
             $children = [];

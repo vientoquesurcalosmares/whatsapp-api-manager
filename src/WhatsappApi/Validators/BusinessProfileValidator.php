@@ -31,17 +31,17 @@ class BusinessProfileValidator
             $profileData = $profileData['data'][0] ?? []; // Extraer el primer perfil
         }
 
-        // Check if profile is empty
+        // Verificar si el perfil está vacío
         if (empty($profileData)) {
-            throw new InvalidApiResponseException(whatsapp_trans('validation.empty_profile_response'));
+            throw new InvalidApiResponseException("La respuesta del perfil está vacía");
         }
 
-        Log::channel('whatsapp')->debug(whatsapp_trans('validation.received_data_validator'), $profileData);
+        Log::channel('whatsapp')->debug('Datos recibidos en el validador:', $profileData);
 
         $validator = Validator::make($profileData, $this->rules);
 
         if ($validator->fails()) {
-            Log::channel('whatsapp')->error(whatsapp_trans('validation.validation_errors'), $validator->errors()->toArray());
+            Log::channel('whatsapp')->error('Errores de validación:', $validator->errors()->toArray());
             throw InvalidApiResponseException::fromValidationError(
                 $validator->errors()->first(),
                 $validator->errors()->toArray()

@@ -70,7 +70,7 @@ class TemplateBuilder
     public function setName(string $name): self
     {
         if (strlen($name) > 512) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_name_max_length'));
+            throw new InvalidArgumentException('El nombre de la plantilla no puede exceder los 512 caracteres.');
         }
 
         $this->templateData['name'] = $name;
@@ -84,7 +84,7 @@ class TemplateBuilder
 
         if (!in_array($format, $validFormats)) {
             throw new InvalidArgumentException(
-                whatsapp_trans('messages.template_invalid_parameter_format', ['formats' => implode(', ', $validFormats)])
+                "Formato de parámetro inválido. Use: " . implode(', ', $validFormats)
             );
         }
 
@@ -115,7 +115,7 @@ class TemplateBuilder
     {
         $validCategories = ['AUTHENTICATION', 'MARKETING', 'UTILITY'];
         if (!in_array($category, $validCategories)) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_invalid_category'));
+            throw new InvalidArgumentException('Categoría inválida. Debe ser AUTHENTICATION, MARKETING o UTILITY.');
         }
 
         $this->templateData['category'] = $category;
@@ -138,16 +138,16 @@ class TemplateBuilder
         ]);
 
         if ($this->componentExists('HEADER')) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_only_one_header'));
+            throw new InvalidArgumentException('Solo se permite un componente HEADER por plantilla.');
         }
 
         $validFormats = ['TEXT', 'IMAGE', 'VIDEO', 'DOCUMENT', 'LOCATION'];
         if (!in_array($format, $validFormats)) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_invalid_header_format'));
+            throw new InvalidArgumentException('Formato inválido para el HEADER. Debe ser uno de: TEXT, IMAGE, VIDEO, DOCUMENT, LOCATION.');
         }
 
         if ($format === 'TEXT' && strlen($content) > 60) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_header_text_max_length'));
+            throw new InvalidArgumentException('El texto del HEADER no puede exceder los 60 caracteres.');
         }
 
         if ($format === 'TEXT') {
@@ -156,7 +156,7 @@ class TemplateBuilder
             $placeholders = $matches[1] ?? [];
 
             if (count($placeholders) > 1) {
-                throw new InvalidArgumentException(whatsapp_trans('messages.template_header_only_one_parameter'));
+                throw new InvalidArgumentException('El HEADER solo puede tener un único parámetro o ninguno.');
             }
 
             // VALIDACIÓN: Verificar que las variables no estén al principio ni al final
@@ -167,7 +167,7 @@ class TemplateBuilder
             // Validar el ejemplo si hay un parámetro
             if (!empty($placeholders)) {
                 if ($example === null) {
-                    throw new InvalidArgumentException(whatsapp_trans('messages.template_header_example_required'));
+                    throw new InvalidArgumentException('El campo "example" es obligatorio para headers con un parámetro.');
                 }
             }
 
@@ -183,7 +183,7 @@ class TemplateBuilder
                     $namedParams = [];
                     foreach ($placeholders as $paramName) {
                         if (!isset($example[$paramName])) {
-                            throw new InvalidArgumentException(whatsapp_trans('messages.template_missing_parameter_value', ['param' => $paramName]));
+                            throw new InvalidArgumentException("Falta valor para parámetro: $paramName");
                         }
                         $namedParams[] = [
                             'param_name' => $paramName,
@@ -205,7 +205,7 @@ class TemplateBuilder
             $filePath = $content;
 
             if (!file_exists($filePath)) {
-                throw new InvalidArgumentException(whatsapp_trans('messages.template_file_not_found', ['file' => $filePath]));
+                throw new InvalidArgumentException("El archivo no existe: $filePath");
             }
 
             $fileSize = filesize($filePath);
@@ -230,7 +230,7 @@ class TemplateBuilder
             ];
         } elseif ($format === 'LOCATION') {
             if (!empty($content)) {
-                throw new InvalidArgumentException(whatsapp_trans('messages.template_location_no_content'));
+                throw new InvalidArgumentException('El HEADER de tipo LOCATION no debe tener contenido.');
             }
 
             $headerComponent = [
@@ -265,7 +265,7 @@ class TemplateBuilder
             return $example;
         }
 
-        throw new InvalidArgumentException(whatsapp_trans('messages.template_invalid_example_format'));
+        throw new InvalidArgumentException('Formato de ejemplo inválido para el HEADER');
     }
 
     /**
@@ -279,11 +279,11 @@ class TemplateBuilder
     public function addBody(string $text, ?array $example = null): self
     {
         if ($this->componentExists('BODY')) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_only_one_body'));
+            throw new InvalidArgumentException('Solo se permite un componente BODY por plantilla.');
         }
 
         if (strlen($text) > 1024) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_body_max_length'));
+            throw new InvalidArgumentException('El texto del BODY no puede exceder los 1024 caracteres.');
         }
 
         $this->validateParameters($text, $example, 'BODY');
@@ -306,7 +306,7 @@ class TemplateBuilder
                 $namedParams = [];
                 foreach ($placeholders as $key => $paramName) {
                     if (!isset($example[$key])) {
-                        throw new InvalidArgumentException(whatsapp_trans('messages.template_missing_parameter_value', ['param' => $paramName]));
+                        throw new InvalidArgumentException("Falta valor para parámetro: $paramName");
                     }
                     $namedParams[] = [
                         'param_name' => $paramName,
@@ -330,7 +330,7 @@ class TemplateBuilder
                             $orderedExample[] = $example[$index];
                         } else {
                             throw new InvalidArgumentException(
-                                whatsapp_trans('messages.template_missing_parameter_value', ['param' => $paramName])
+                                "Falta valor para parámetro: $paramName"
                             );
                         }
                     }
@@ -340,7 +340,7 @@ class TemplateBuilder
                 // Validar consistencia en cantidad de parámetros
                 if (count($example) !== count($placeholders)) {
                     throw new InvalidArgumentException(
-                        whatsapp_trans('messages.template_param_count_mismatch')
+                        'El número de ejemplos debe coincidir con los parámetros en el texto'
                     );
                 }
 
@@ -375,11 +375,11 @@ class TemplateBuilder
     public function addFooter(string $text): self
     {
         if ($this->componentExists('FOOTER')) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_only_one_footer'));
+            throw new InvalidArgumentException('Solo se permite un componente FOOTER por plantilla.');
         }
 
         if (strlen($text) > 60) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_footer_max_length'));
+            throw new InvalidArgumentException('El texto del FOOTER no puede exceder los 60 caracteres.');
         }
 
         $this->validateParameters($text, null, 'FOOTER');
@@ -407,12 +407,12 @@ class TemplateBuilder
     {
         // Validar el número máximo de botones
         if ($this->buttonCount >= 10) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_max_buttons'));
+            throw new InvalidArgumentException('No se pueden agregar más de 10 botones a una plantilla.');
         }
 
         // Validar el texto del botón
         if (strlen($text) > 25) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_button_text_max_length'));
+            throw new InvalidArgumentException('El texto del botón no puede exceder los 25 caracteres.');
         }
 
         // Crear el botón base
@@ -425,14 +425,14 @@ class TemplateBuilder
         switch ($type) {
             case 'PHONE_NUMBER':
                 if (!preg_match('/^\+?[1-9]\d{1,14}$/', $urlOrPhone)) {
-                    throw new InvalidArgumentException(whatsapp_trans('messages.template_invalid_phone_format'));
+                    throw new InvalidArgumentException('El número de teléfono no es válido. Debe estar en formato internacional, como +1234567890.');
                 }
                 $button['phone_number'] = $urlOrPhone;
                 break;
 
             case 'URL':
                 if (strlen($urlOrPhone) > 2000) {
-                    throw new InvalidArgumentException(whatsapp_trans('messages.template_url_max_length'));
+                    throw new InvalidArgumentException('La URL no puede exceder los 2000 caracteres.');
                 }
                 $button['url'] = $urlOrPhone;
 
@@ -444,25 +444,25 @@ class TemplateBuilder
                 foreach ($placeholders as $placeholder) {
                     if (!is_numeric($placeholder)) {
                         throw new InvalidArgumentException(
-                            whatsapp_trans('messages.template_url_invalid_parameter')
+                            "Parámetro no válido: '$placeholder'. Los botones URL solo admiten parámetros posicionales ({{1}})."
                         );
                     }
                 }
 
                 // Validar máximo un parámetro por botón
                 if (count($placeholders) > 1) {
-                    throw new InvalidArgumentException(whatsapp_trans('messages.template_url_only_one_parameter'));
+                    throw new InvalidArgumentException('Los botones URL solo pueden tener un único parámetro.');
                 }
 
                 // Validar que el parámetro sea {{1}}
                 if (!empty($placeholders) && $placeholders[0] !== '1') {
-                    throw new InvalidArgumentException(whatsapp_trans('messages.template_url_parameter_must_be_one'));
+                    throw new InvalidArgumentException('El parámetro del botón URL debe ser {{1}}.');
                 }
 
                 // Validar el ejemplo si hay parámetro
                 if (!empty($placeholders)) {
                     if (empty($example) || count($example) !== 1) {
-                        throw new InvalidArgumentException(whatsapp_trans('messages.template_url_example_required'));
+                        throw new InvalidArgumentException('El campo "example" es obligatorio y debe contener exactamente un valor cuando la URL incluye un parámetro.');
                     }
 
                     // CORRECCIÓN CRÍTICA: Convertir a array simple siempre
@@ -476,10 +476,10 @@ class TemplateBuilder
 
             case 'FLOW':
                 // Este caso se maneja en otro método (addFlowButton)
-                throw new InvalidArgumentException(whatsapp_trans('messages.template_use_add_flow_button'));
+                throw new InvalidArgumentException('Usa el método addFlowButton para botones de tipo FLOW.');
 
             default:
-                throw new InvalidArgumentException(whatsapp_trans('messages.template_invalid_button_type'));
+                throw new InvalidArgumentException('Tipo de botón no válido. Debe ser uno de: PHONE_NUMBER, URL, QUICK_REPLY.');
         }
 
         // Buscar el componente BUTTONS existente
@@ -514,24 +514,24 @@ class TemplateBuilder
     public function addFlowButton(string $text, string $flowId, ?string $flowToken = null): self
     {
         if ($this->buttonCount >= 10) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_max_buttons'));
+            throw new InvalidArgumentException('No se pueden agregar más de 10 botones a una plantilla.');
         }
 
         if (strlen($text) > 25) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_button_text_max_length'));
+            throw new InvalidArgumentException('El texto del botón no puede exceder los 25 caracteres.');
         }
 
         if (empty($flowId)) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_flow_id_required'));
+            throw new InvalidArgumentException('El ID del flujo (flow_id) es obligatorio.');
         }
 
         $flow = $this->flowService->getFlowById($flowId);
         if (!$flow) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_flow_not_found', ['flowId' => $flowId]));
+            throw new InvalidArgumentException("El flujo con ID ($flowId) no existe o no ha sido aprobado por META.");
         }
 
         if (!in_array($flow->status, ['approved', 'published'])) {
-            throw new \Exception(whatsapp_trans('messages.template_flow_not_approved'));
+            throw new \Exception("El flujo debe estar aprobado o publicado.");
         }
 
         $button = [
@@ -595,11 +595,11 @@ class TemplateBuilder
         $placeholders = $matches[1] ?? [];
 
         if ($type === 'HEADER' && count($placeholders) > 1) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_header_only_one_param'));
+            throw new InvalidArgumentException('El HEADER solo puede tener un único parámetro.');
         }
 
         if ($type === 'FOOTER' && !empty($placeholders)) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_footer_no_params'));
+            throw new InvalidArgumentException('El FOOTER no puede tener parámetros.');
         }
 
         // Validación específica por formato
@@ -625,7 +625,7 @@ class TemplateBuilder
         foreach ($placeholders as $p) {
             if (!is_numeric($p)) {
                 throw new InvalidArgumentException(
-                    whatsapp_trans('messages.template_param_non_numeric', ['param' => $p])
+                    "Parámetro no numérico: '$p'. POSITIONAL requiere {{1}}, {{2}}"
                 );
             }
             $intPlaceholders[] = (int)$p;
@@ -638,7 +638,7 @@ class TemplateBuilder
 
             if ($min !== 1) {
                 throw new InvalidArgumentException(
-                    whatsapp_trans('messages.template_param_first_must_be_one')
+                    'El primer parámetro POSITIONAL debe ser {{1}}'
                 );
             }
 
@@ -649,7 +649,7 @@ class TemplateBuilder
                 array_diff($expectedRange, $actualValues))
             {
                 throw new InvalidArgumentException(
-                    whatsapp_trans('messages.template_param_invalid_sequence', ['max' => $max])
+                    'Secuencia POSITIONAL inválida. Debe usar números consecutivos desde {{1}} hasta {{'.$max.'}}'
                 );
             }
         }
@@ -657,7 +657,7 @@ class TemplateBuilder
         // Validar coincidencia con ejemplos
         if ($example && count($example) !== count($intPlaceholders)) {
             throw new InvalidArgumentException(
-                whatsapp_trans('messages.template_param_count_mismatch')
+                'Número de ejemplos no coincide con parámetros en el texto'
             );
         }
     }
@@ -667,7 +667,7 @@ class TemplateBuilder
         foreach ($placeholders as $placeholder) {
             if (!preg_match('/^[a-z_][a-z0-9_]*$/', $placeholder)) {
                 throw new InvalidArgumentException(
-                    whatsapp_trans('messages.template_param_invalid_name', ['param' => $placeholder])
+                    "Nombre de parámetro inválido: '$placeholder'. Solo caracteres alfanuméricos y guiones bajos"
                 );
             }
         }
@@ -679,7 +679,7 @@ class TemplateBuilder
 
             if (!empty($missingParams)) {
                 throw new InvalidArgumentException(
-                    whatsapp_trans('messages.template_param_missing_examples', ['params' => implode(', ', $missingParams)])
+                    'Faltan ejemplos para parámetros: ' . implode(', ', $missingParams)
                 );
             }
         }
@@ -694,19 +694,19 @@ class TemplateBuilder
     public function build(): array
     {
         if (empty($this->templateData['name'])) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_name_required'));
+            throw new InvalidArgumentException('El nombre de la plantilla es obligatorio.');
         }
 
         if (empty($this->templateData['language'])) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_language_required'));
+            throw new InvalidArgumentException('El idioma de la plantilla es obligatorio.');
         }
 
         if (empty($this->templateData['category'])) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_category_name_required'));
+            throw new InvalidArgumentException('La categoría de la plantilla es obligatoria.');
         }
 
         if (empty($this->getComponentsByType('BODY'))) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_body_required'));
+            throw new InvalidArgumentException('El componente BODY es obligatorio.');
         }
 
         return $this->templateData;
@@ -755,8 +755,8 @@ class TemplateBuilder
             $jsonData = json_encode($this->templateData, JSON_UNESCAPED_UNICODE);
             if ($jsonData === false) {
                 $error = json_last_error_msg();
-                Log::channel('whatsapp')->error(whatsapp_trans('messages.template_json_encode_error'), ['error' => $error, 'data' => $this->templateData]);
-                throw new \Exception(whatsapp_trans('messages.template_error_encoding_json', ['error' => $error]));
+                Log::channel('whatsapp')->error('Error al codificar JSON.', ['error' => $error, 'data' => $this->templateData]);
+                throw new \Exception('Error al codificar JSON: ' . $error);
             }
 
             // Enviar la solicitud a la API
@@ -812,7 +812,7 @@ class TemplateBuilder
                 $this->createInitialVersion($template, $fullTemplateResponse);
 
             } catch (\Exception $e) {
-                Log::channel('whatsapp')->error(whatsapp_trans('messages.template_error_getting_full_details'), [
+                Log::channel('whatsapp')->error('Error al obtener detalles completos de la plantilla', [
                     'template_id' => $response['id'] ?? 'unknown',
                     'error' => $e->getMessage()
                 ]);
@@ -838,13 +838,13 @@ class TemplateBuilder
                 );
             }
 
-            Log::channel('whatsapp')->error(whatsapp_trans('messages.template_api_error_saving'), [
+            Log::channel('whatsapp')->error('Error de API al guardar la plantilla.', [
                 'error' => $responseBody,
                 'status' => $response->getStatusCode()
             ]);
             throw $e;
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error(whatsapp_trans('messages.template_general_error_saving'), [
+            Log::channel('whatsapp')->error('Error general al guardar la plantilla.', [
                 'error_message' => $e->getMessage(),
             ]);
             throw $e;
@@ -874,19 +874,19 @@ class TemplateBuilder
     protected function validateTemplate(): void
     {
         if (empty($this->templateData['name'])) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_name_required'));
+            throw new InvalidArgumentException('El nombre de la plantilla es obligatorio.');
         }
 
         if (empty($this->templateData['language'])) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_language_required'));
+            throw new InvalidArgumentException('El idioma de la plantilla es obligatorio.');
         }
 
         if (empty($this->templateData['category'])) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_category_name_required'));
+            throw new InvalidArgumentException('La categoría de la plantilla es obligatoria.');
         }
 
         if (empty($this->getComponentsByType('BODY'))) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_body_required'));
+            throw new InvalidArgumentException('El componente BODY es obligatorio.');
         }
     }
 
@@ -911,7 +911,7 @@ class TemplateBuilder
     protected function getCategoryId(string $categoryName): string
     {
         if (empty($categoryName)) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.template_category_name_required'));
+            throw new InvalidArgumentException('El nombre de la categoría es obligatorio.');
         }
 
         $category = WhatsappModelResolver::template_category()->firstOrCreate(

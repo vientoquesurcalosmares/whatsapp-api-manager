@@ -34,7 +34,7 @@ class FlowBuilder
     public function name(string $name): self
     {
         if (strlen($name) > 120) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.flow_name_max_length'));
+            throw new InvalidArgumentException('El nombre del flujo no puede exceder los 120 caracteres.');
         }
         $this->flowData['name'] = $name;
         return $this;
@@ -56,7 +56,7 @@ class FlowBuilder
     {
         $validTypes = ['AUTHENTICATION', 'MARKETING', 'UTILITY', 'SERVICE'];
         if (!in_array($type, $validTypes)) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.flow_invalid_type', ['types' => implode(', ', $validTypes)]));
+            throw new InvalidArgumentException('Tipo de flujo inválido. Valores permitidos: ' . implode(', ', $validTypes));
         }
         $this->flowData['flow_type'] = $type;
         return $this;
@@ -70,7 +70,7 @@ class FlowBuilder
         ];
         if (!in_array($category, $validCategories)) {
             throw new InvalidArgumentException(
-                whatsapp_trans('messages.flow_invalid_category', ['categories' => implode(', ', $validCategories)])
+                'Categoría inválida. Valores permitidos: ' . implode(', ', $validCategories)
             );
         }
         $this->flowData['categories'] = [$category];
@@ -89,7 +89,7 @@ class FlowBuilder
     public function screen(string $name): ScreenBuilder
     {
         if (empty($name)) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.flow_screen_name_required'));
+            throw new InvalidArgumentException('El nombre de la pantalla es obligatorio.');
         }
 
         // Finalizar la pantalla actual si existe
@@ -124,7 +124,7 @@ class FlowBuilder
 
         // Validación mínima
         if (empty($this->flowData['name'])) {
-            throw new InvalidArgumentException(whatsapp_trans('messages.flow_name_required'));
+            throw new InvalidArgumentException('El nombre del flujo es obligatorio.');
         }
 
         // Construir estructura de pantallas en formato WhatsApp
@@ -364,7 +364,7 @@ class FlowBuilder
             return $flow;
 
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error(whatsapp_trans('messages.flow_error_saving', ['message' => $e->getMessage()]), [
+            Log::channel('whatsapp')->error('Error al guardar flujo: ' . $e->getMessage(), [
                 'endpoint' => $endpoint,
                 'flow_data' => $flowData
             ]);
