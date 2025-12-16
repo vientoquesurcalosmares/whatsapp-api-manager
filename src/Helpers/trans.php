@@ -13,6 +13,12 @@ if (!function_exists('whatsapp_trans')) {
      */
     function whatsapp_trans(string $key, array $replace = [], ?string $locale = null): string
     {
-        return TranslationHelper::trans($key, $replace, $locale);
+        try {
+            return TranslationHelper::trans($key, $replace, $locale);
+        } catch (\Throwable $e) {
+            // Fallback: return the key if translation fails
+            \Log::error('Translation error for key: ' . $key, ['error' => $e->getMessage()]);
+            return $key;
+        }
     }
 }

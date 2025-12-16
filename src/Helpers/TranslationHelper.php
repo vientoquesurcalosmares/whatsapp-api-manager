@@ -14,9 +14,20 @@ class TranslationHelper
      */
     public static function trans(string $key, array $replace = [], ?string $locale = null): string
     {
-        $locale = $locale ?? config('whatsapp.locale', config('app.locale', 'en'));
+        try {
+            $locale = $locale ?? config('whatsapp.locale', config('app.locale', 'en'));
+            $translation = __("whatsapp::{$key}", $replace, $locale);
 
-        return __("whatsapp::{$key}", $replace, $locale);
+            // If translation key is returned as-is, try without namespace
+            if ($translation === "whatsapp::{$key}") {
+                $translation = __($key, $replace, $locale);
+            }
+
+            return $translation;
+        } catch (\Throwable $e) {
+            // Return the key itself if all fails
+            return $key;
+        }
     }
 
     /**
