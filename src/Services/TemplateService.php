@@ -125,7 +125,7 @@ class TemplateService
     {
         // Generar hash único de la estructura actual
         $structureHash = md5(json_encode($templateData['components'] ?? []));
-        
+
         // Buscar si ya existe esta versión
         $existingVersion = WhatsappModelResolver::template_version()
             ->where('template_id', $template->template_id)
@@ -153,7 +153,7 @@ class TemplateService
     public function activateVersion(string $versionId): void
     {
         $version = WhatsappModelResolver::template_version()->findOrFail($versionId);
-        
+
         // Desactivar todas las demás versiones de esta plantilla
         WhatsappModelResolver::template_version()
             ->where('template_id', $version->template_id)
@@ -162,7 +162,7 @@ class TemplateService
 
         // Activar esta versión
         $version->update(['is_active' => true]);
-        
+
         // Actualizar estado de la plantilla principal
         $version->template->update(['status' => $version->status]);
     }
@@ -174,7 +174,8 @@ class TemplateService
      * @param string $templateId El ID de la plantilla.
      * @return Model La plantilla obtenida.
      * @throws InvalidArgumentException Si el ID de la plantilla no es válido.
-     */    public function getTemplateById(Model $account, string $templateId): Model
+     */
+    public function getTemplateById(Model $account, string $templateId): Model
     {
         if (empty($templateId)) {
             throw new InvalidArgumentException('El ID de la plantilla es obligatorio.');
@@ -210,7 +211,12 @@ class TemplateService
             $this->validateTemplateData($response);
 
             // Almacenar o actualizar la plantilla en la base de datos
-            return $this->storeOrUpdateTemplate($account, $response);
+            $template = $this->storeOrUpdateTemplate($account, $response);
+
+            // Crear nueva versión si la plantilla fue actualizada
+            $this->createOrUpdateVersion($template, $response);
+
+            return $template;
         } catch (\Exception $e) {
             Log::channel('whatsapp')->error('Error al obtener la plantilla.', [
                 'error_message' => $e->getMessage(),
@@ -274,7 +280,12 @@ class TemplateService
             $this->validateTemplateData($templateData);
 
             // Almacenar o actualizar la plantilla en la base de datos
-            return $this->storeOrUpdateTemplate($account, $templateData);
+            $template = $this->storeOrUpdateTemplate($account, $templateData);
+
+            // Crear nueva versión si la plantilla fue actualizada
+            $this->createOrUpdateVersion($template, $templateData);
+
+            return $template;
         } catch (\Exception $e) {
             Log::channel('whatsapp')->error('Error al obtener la plantilla por nombre.', [
                 'error_message' => $e->getMessage(),
