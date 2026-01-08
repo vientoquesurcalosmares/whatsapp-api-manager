@@ -146,7 +146,17 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             Log::channel('whatsapp')->warning('Unable to split phone number.', ['fullPhone' => $fullPhone]);
             return;
         }
+        $contactName = $contact['profile']['name'] ?? null;
 
+        Log::channel('whatsapp')->info('CONTACT Processing message from contact.', [
+            'wa_id' => $contact['wa_id'],
+            'country_code' => $countryCode,
+            'phone_number' => $phoneNumber,
+            'contact_name' => $contactName,
+            'raw_profile' => $contact['profile'] ?? null,
+        ]);
+
+        // Usar firstOrCreate
         $contactRecord = WhatsappModelResolver::contact()->firstOrCreate(
             [
                 'country_code' => $countryCode,
@@ -154,14 +164,40 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             ],
             [
                 'wa_id' => $contact['wa_id'],
-                'contact_name' => $contact['profile']['name'] ?? null,
+                'contact_name' => $contactName,
             ]
         );
 
-        $contactRecord->update([
-            'wa_id' => $contact['wa_id'], // Siempre actualizarlo
-            'contact_name' => $contact['profile']['name'] ?? $contactRecord->contact_name,
+        Log::channel('whatsapp')->info('CONTACT After firstOrCreate.', [
+            'contact_id' => $contactRecord->contact_id,
+            'wa_id' => $contactRecord->wa_id,
+            'contact_name' => $contactRecord->contact_name,
+            'was_created' => $contactRecord->wasRecentlyCreated,
+            'attributes' => $contactRecord->getAttributes(),
         ]);
+
+        // Actualizar el contacto con los datos más recientes
+        if ($contactRecord->wa_id !== $contact['wa_id'] || $contactRecord->contact_name !== $contactName) {
+            // Intentar actualización con Query Builder (sin Eloquent)
+            Log::channel('whatsapp')->info('CONTACT Trying Query Builder update.', [
+                'contact_name_value' => $contactName,
+            ]);
+
+            $updateResult = \DB::table('whatsapp_contacts')
+                ->where('contact_id', $contactRecord->contact_id)
+                ->update([
+                    'wa_id' => $contact['wa_id'],
+                    'contact_name' => $contactName,
+                    'updated_at' => now(),
+                ]);
+
+            Log::channel('whatsapp')->info('CONTACT Query Builder update result.', [
+                'rows_affected' => $updateResult,
+            ]);
+
+            // Recargar el modelo
+            $contactRecord->refresh();
+        }
 
         $apiPhoneNumberId = $metadata['phone_number_id'] ?? null;
 
