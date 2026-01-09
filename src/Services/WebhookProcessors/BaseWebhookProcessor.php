@@ -475,6 +475,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
                 'message_type' => strtoupper($message['type']),
                 'message_content' => $caption,
+                'caption' => $caption,
                 'json_content' => json_encode($message),
                 'status' => 'received',
                 'message_context_id' => $this->getContextMessageId($message),
