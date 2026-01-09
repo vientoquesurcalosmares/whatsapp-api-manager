@@ -176,6 +176,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             'attributes' => $contactRecord->getAttributes(),
         ]);
 
+
         // Actualizar el contacto con los datos más recientes
         if ($contactRecord->wa_id !== $contact['wa_id'] || $contactRecord->contact_name !== $contactName) {
             // Intentar actualización con Query Builder (sin Eloquent)
@@ -183,17 +184,22 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'contact_name_value' => $contactName,
             ]);
 
-            $updateResult = \DB::table('whatsapp_contacts')
-                ->where('contact_id', $contactRecord->contact_id)
-                ->update([
-                    'wa_id' => $contact['wa_id'],
-                    'contact_name' => $contactName,
-                    'updated_at' => now(),
-                ]);
-
-            Log::channel('whatsapp')->info('CONTACT Query Builder update result.', [
-                'rows_affected' => $updateResult,
+            $contactRecord->update([
+                'wa_id' => $contact['wa_id'],
+                'contact_name' => $contactName,
             ]);
+
+            // $updateResult = \DB::table('whatsapp_contacts')
+            //     ->where('contact_id', $contactRecord->contact_id)
+            //     ->update([
+            //         'wa_id' => $contact['wa_id'],
+            //         'contact_name' => $contactName,
+            //         'updated_at' => now(),
+            //     ]);
+
+            // Log::channel('whatsapp')->info('CONTACT Query Builder update result.', [
+            //     'rows_affected' => $updateResult,
+            // ]);
 
             // Recargar el modelo
             $contactRecord->refresh();
