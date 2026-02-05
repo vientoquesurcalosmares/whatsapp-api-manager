@@ -16,6 +16,28 @@ LARAVEL WHatsapp Manager
 
 ---
 
+## 📌 Important Notice / Aviso Importante
+
+> ### 🇬🇧 English
+> 
+> **Online Documentation Discontinued**
+> 
+> We regret to inform you that our online documentation website has been discontinued due to lack of organizational support and budget constraints. As a result, we have migrated all documentation into this repository to ensure continuity and accessibility.
+>
+> You can find the complete documentation in the `/documentation` folder, available in both English and Spanish. We appreciate your understanding and remain committed to providing quality support through this repository.
+
+---
+
+> ### 🇪🇸 Español
+> 
+> **Documentación en Línea Desactivada**
+> 
+> Lamentamos informarle que nuestro sitio web de documentación en línea ha sido desactivado debido a limitaciones de apoyo organizativo y presupuestario. Como resultado, hemos migrado toda la documentación a este repositorio para garantizar la continuidad y la accesibilidad.
+>
+> Puede encontrar la documentación completa en la carpeta `/documentation`, disponible en inglés y español. Agradecemos su comprensión y nos comprometemos a continuar brindando soporte de calidad a través de este repositorio.
+
+---
+
 ### 🌐 Language / Idioma
 
 <a href="documentation/en/01-install.md"><img src="https://flagcdn.com/us.svg" width="20"> 🇺🇸 English</a> | <a href="documentation/es/01-instalacion.md" title="Sección siguiente">🇪🇸 Español<img src="https://flagcdn.com/es.svg" width="20"></a>
