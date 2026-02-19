@@ -486,7 +486,7 @@ Gracias por tu apoyo 💙
         ->to('57', '3135666627')
         ->usingTemplate('soporte_telefonico')
         ->addBody(['Ticket #456'])
-        ->addButton('Llamar Soporte', []) // Botón PHONE_NUMBER
+        // Botón PHONE_NUMBER No se debe pasar en el codigo se envia por defecto
         ->send();
 
 
@@ -522,7 +522,7 @@ Gracias por tu apoyo 💙
     // - Botones: 
     //   * Quick Reply: "Más información"
     //   * URL dinámico: "Ver producto" -> https://mitienda.com/producto/{{1}}
-    //   * Teléfono: "Llamar ahora"
+    //   * Teléfono: "Llamar ahora" este boton No se debe pasar en el codigo se envia por defecto
     
     $productImageUrl = 'https://example.com/images/producto-destacado.jpg';
     
@@ -534,7 +534,7 @@ Gracias por tu apoyo 💙
         ->addBody(['María', 'nuestro nuevo producto premium'])
         ->addButton('Más información', [])     // Quick Reply (sin parámetros)
         ->addButton('Ver producto', ['PROD-789']) // URL dinámico (con parámetro)
-        ->addButton('Llamar ahora', [])        // Phone Number (sin parámetros)
+        // Phone Number (sin parámetros) No se debe pasar en el codigo se envia por defecto
         ->send();
 
     // EJEMPLO 8: Plantilla con VIDEO y BOTONES
