@@ -468,7 +468,17 @@ class TemplateBuilder
                     }
 
                     // CORRECCIÓN CRÍTICA: Convertir a array simple siempre
-                    $button['example'] = [$example];
+                    $flatExample = [];
+                    foreach ($example as $item) {
+                        if (is_array($item)) {
+                            foreach ($item as $subItem) {
+                                $flatExample[] = (string) $subItem;
+                            }
+                        } else {
+                            $flatExample[] = (string) $item;
+                        }
+                    }
+                    $button['example'] = $flatExample;
                 }
                 break;
 

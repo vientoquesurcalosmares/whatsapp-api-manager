@@ -366,8 +366,7 @@ Gracias por tu apoyo 💙
     $imagePath = storage_path('app/public/laravel-whatsapp-manager.png');
 
     // Crear una plantilla de marketing con imagen y botones de URL
-    $template = Whatsapp::template()
-        ->createMarketingTemplate($account)
+    $template = Whatsapp::template()->createMarketingTemplate($account)
         ->setName('image_template_test_2')
         ->setLanguage('en_US')
         ->setCategory('MARKETING')
