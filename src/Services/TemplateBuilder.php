@@ -218,6 +218,8 @@ class TemplateBuilder
             $sessionId = $this->templateService->createUploadSession($this->account, $filePath, $mimeType);
             $mediaId = $this->templateService->uploadMedia($this->account, $sessionId, $filePath, $mimeType);
 
+            $mediaId = explode("\n", trim($mediaId))[0];
+
             if (!mb_check_encoding($mediaId, 'UTF-8')) {
                 Log::channel('whatsapp')->warning('Corrigiendo codificación de mediaId no UTF-8.', ['mediaId' => $mediaId]);
                 $mediaId = mb_convert_encoding($mediaId, 'UTF-8', 'auto');
@@ -466,7 +468,17 @@ class TemplateBuilder
                     }
 
                     // CORRECCIÓN CRÍTICA: Convertir a array simple siempre
-                    $button['example'] = array_values($example);
+                    $flatExample = [];
+                    foreach ($example as $item) {
+                        if (is_array($item)) {
+                            foreach ($item as $subItem) {
+                                $flatExample[] = (string) $subItem;
+                            }
+                        } else {
+                            $flatExample[] = (string) $item;
+                        }
+                    }
+                    $button['example'] = $flatExample;
                 }
                 break;
 
@@ -828,8 +840,13 @@ class TemplateBuilder
             // Manejo específico para errores de Guzzle
             $response = $e->getResponse();
             $responseBody = json_decode($response->getBody(), true);
+
             $errorCode = $responseBody['error']['code'] ?? null;
             $errorSubcode = $responseBody['error']['error_subcode'] ?? null;
+
+            $errorUserMsg = $responseBody['error']['error_user_msg'] 
+                 ?? $responseBody['error']['message'] 
+                 ?? 'Error desconocido de la API';
 
             if ($errorCode === 100 && $errorSubcode === 2388023) {
                 throw new \Exception(
@@ -840,9 +857,10 @@ class TemplateBuilder
 
             Log::channel('whatsapp')->error('Error de API al guardar la plantilla.', [
                 'error' => $responseBody,
+                'user_message' => $errorUserMsg,
                 'status' => $response->getStatusCode()
             ]);
-            throw $e;
+            throw new \Exception('Error al crear plantilla en WhatsApp: ' . $errorUserMsg);
         } catch (\Exception $e) {
             Log::channel('whatsapp')->error('Error general al guardar la plantilla.', [
                 'error_message' => $e->getMessage(),

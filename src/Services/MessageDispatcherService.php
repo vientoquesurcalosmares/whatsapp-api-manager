@@ -345,6 +345,7 @@ class MessageDispatcherService
             'message_type' => 'IMAGE',
             'message_content' => $caption !== null ? $caption : null,
             'message_method' => 'OUTPUT',
+            'caption' => $caption !== null ? $caption : null,
             'status' => MessageStatus::PENDING,
         ]);
 
@@ -466,6 +467,7 @@ class MessageDispatcherService
             'message_type' => 'IMAGE',
             'message_content' => $caption !== null ? $caption : null,
             'message_method' => 'OUTPUT',
+            'caption' => $caption !== null ? $caption : null,
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
         ]);
@@ -1149,8 +1151,9 @@ class MessageDispatcherService
             'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'DOCUMENT',
-            'message_content' => $caption, // Puede ser null
+            'message_content' => $caption !== null ? $caption : null,
             'message_method' => 'OUTPUT',
+            'caption' => $caption !== null ? $caption : null,
             'status' => MessageStatus::PENDING,
         ]);
 
@@ -1268,8 +1271,9 @@ class MessageDispatcherService
             'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'DOCUMENT',
-            'message_content' => $caption, // Puede ser null
+            'message_content' => $caption !== null ? $caption : null,
             'message_method' => 'OUTPUT',
+            'caption' => $caption !== null ? $caption : null,
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
         ]);
@@ -1369,6 +1373,7 @@ class MessageDispatcherService
             'message_type' => 'DOCUMENT',
             'message_content' => $caption.' '.$link, // Puede ser null
             'message_method' => 'OUTPUT',
+            'caption' => $caption !== null ? $caption : null,
             'status' => MessageStatus::PENDING,
         ]);
 
@@ -1468,6 +1473,7 @@ class MessageDispatcherService
             'message_type' => 'DOCUMENT',
             'message_content' => $caption . ' ' . $link, // Puede ser null
             'message_method' => 'OUTPUT',
+            'caption' => $caption !== null ? $caption : null,
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
         ]);
@@ -1888,8 +1894,9 @@ class MessageDispatcherService
             'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'VIDEO',
-            'message_content' => $caption, // Puede ser null
+            'message_content' => $caption !== null ? $caption : null,
             'message_method' => 'OUTPUT',
+            'caption' => $caption !== null ? $caption : null,
             'status' => MessageStatus::PENDING,
         ]);
 
@@ -2006,8 +2013,9 @@ class MessageDispatcherService
             'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'VIDEO',
-            'message_content' => $caption, // Puede ser null
+            'message_content' => $caption !== null ? $caption : null,
             'message_method' => 'OUTPUT',
+            'caption' => $caption !== null ? $caption : null,
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
         ]);
@@ -2104,8 +2112,9 @@ class MessageDispatcherService
             'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'VIDEO',
-            'message_content' => $caption, // Puede ser null
+            'message_content' => $caption !== null ? $caption : null,
             'message_method' => 'OUTPUT',
+            'caption' => $caption !== null ? $caption : null,
             'status' => MessageStatus::PENDING,
         ]);
 
@@ -2203,8 +2212,9 @@ class MessageDispatcherService
             'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
             'message_to' => $fullPhoneNumber,
             'message_type' => 'VIDEO',
-            'message_content' => $caption, // Puede ser null
+            'message_content' => $caption !== null ? $caption : null,
             'message_method' => 'OUTPUT',
+            'caption' => $caption !== null ? $caption : null,
             'status' => MessageStatus::PENDING,
             'message_context_id' => $contextMessage->message_id, // Relación con el mensaje de contexto
         ]);
