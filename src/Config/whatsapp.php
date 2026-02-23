@@ -16,6 +16,8 @@ return [
         //Contactos
         'contact' => \ScriptDevelop\WhatsappManager\Models\Contact::class,
 
+        'contact_profile' => \ScriptDevelop\WhatsappManager\Models\WhatsappContactProfile::class,
+
         'conversation' => \ScriptDevelop\WhatsappManager\Models\Conversation::class,
 
         //Archivos multimedia
