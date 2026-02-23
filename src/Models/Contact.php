@@ -113,4 +113,38 @@ class Contact extends Model
         $response = $service->unblockUsers($phoneNumberId, [$this->wa_id]);
         return $response['success'] ?? false;
     }
+
+    /**
+     * Relación muchos a muchos con números de teléfono a través de la tabla pivote.
+     */
+    public function phoneNumberProfiles()
+    {
+        return $this->belongsToMany(WhatsappPhoneNumber::class, 'whatsapp_contact_profiles', 'contact_id', 'phone_number_id')
+                    ->using(WhatsappContactProfile::class)
+                    ->withPivot([
+                        'profile_picture',
+                        'alias',
+                        'contact_name',
+                        'first_name',
+                        'last_name',
+                        'middle_name',
+                        'suffix',
+                        'prefix',
+                        'organization',
+                        'department',
+                        'title',
+                        'birthday',
+                        'last_interaction_at',
+                        'metadata',
+                    ])
+                    ->withTimestamps();
+    }
+
+    /**
+     * Acceso directo a los perfiles (pivots) desde el contacto.
+     */
+    public function contactProfilePivots()
+    {
+        return $this->hasMany(WhatsappContactProfile::class, 'contact_id');
+    }
 }
