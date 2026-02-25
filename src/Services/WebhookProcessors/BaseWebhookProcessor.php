@@ -82,6 +82,16 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 return response()->json(['success' => true]);
         }
 
+        if ($field === 'phone_number_name_update') {
+            $this->handlePhoneNumberNameUpdate($value);
+            return response()->json(['success' => true]);
+        }
+
+        if ($field === 'phone_number_quality_update') {
+            $this->handlePhoneNumberQualityUpdate($value);
+            return response()->json(['success' => true]);
+        }
+
         if ($field === 'message_template' or $field=== 'message_template_status_update') {
             $this->handleTemplateEvent($value);
             return response()->json(['success' => true]);
@@ -104,11 +114,34 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // Si es mensaje normal
         elseif (isset($value['messages'][0])) {
-            $this->handleIncomingMessage(
-                $value['messages'][0] ?? [],
-                $value['contacts'][0] ?? null,
-                $value['metadata'] ?? null
-            );
+            $message = $value['messages'][0];
+            $messageType = $message['type'] ?? '';
+
+            if ($messageType === 'edit') {
+                $this->handleEditMessage(
+                    $message,
+                    $value['contacts'][0] ?? null,
+                    $value['metadata'] ?? null
+                );
+            } elseif ($messageType === 'revoke') {
+                $this->handleRevokeMessage(
+                    $message,
+                    $value['contacts'][0] ?? null,
+                    $value['metadata'] ?? null
+                );
+            } elseif ($messageType === 'system') {
+                // Los mensajes de sistema NO incluyen contacts, solo metadata
+                $this->handleSystemMessage(
+                    $message,
+                    $value['metadata'] ?? null
+                );
+            } else {
+                $this->handleIncomingMessage(
+                    $message,
+                    $value['contacts'][0] ?? null,
+                    $value['metadata'] ?? null
+                );
+            }
         }
 
         // Si es status de mensaje (entregado, leído, etc.)
@@ -259,6 +292,366 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             'message_type' => $messageType,
             'content' => $logMessage,
         ]);
+    }
+
+    /**
+     * Procesa un evento de edición de mensaje.
+     *
+     * @param array $message  El array del mensaje (contiene 'edit')
+     * @param array|null $contact Información del contacto
+     * @param array|null $metadata Metadatos del número de teléfono
+     */
+    protected function handleEditMessage(array $message, ?array $contact, ?array $metadata): void
+    {
+        // 1. Obtener el modelo del número de teléfono (igual)
+        $apiPhoneNumberId = $metadata['phone_number_id'] ?? null;
+        $whatsappPhone = null;
+        if ($apiPhoneNumberId) {
+            $whatsappPhone = WhatsappModelResolver::phone_number()
+                ->where('api_phone_number_id', $apiPhoneNumberId)
+                ->first();
+        }
+        if (!$whatsappPhone) {
+            Log::channel('whatsapp')->error('No matching WhatsappPhoneNumber found for api_phone_number_id in edit.', [
+                'api_phone_number_id' => $apiPhoneNumberId,
+            ]);
+            return;
+        }
+
+        // 2. Obtener o crear el contacto (igual)
+        if (empty($contact['wa_id'])) {
+            Log::channel('whatsapp')->warning('No wa_id found in contact for edit.', $contact ?? []);
+            return;
+        }
+        $fullPhone = preg_replace('/\D/', '', $message['from'] ?? '');
+        [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
+        if (empty($countryCode) || empty($phoneNumber)) {
+            Log::channel('whatsapp')->warning('Unable to split phone number in edit.', ['fullPhone' => $fullPhone]);
+            return;
+        }
+        $contactName = $contact['profile']['name'] ?? null;
+        $contactRecord = WhatsappModelResolver::contact()->updateOrCreate(
+            ['wa_id' => $contact['wa_id']],
+            [
+                'country_code' => $countryCode,
+                'phone_number' => $phoneNumber,
+                'contact_name' => $contactName,
+            ]
+        );
+
+        // 3. Extraer datos de edición
+        $editData = $message['edit'] ?? [];
+        $originalMessageId = $editData['original_message_id'] ?? null;
+        $newMessage = $editData['message'] ?? [];
+
+        if (!$originalMessageId || empty($newMessage)) {
+            Log::channel('whatsapp')->warning('Invalid edit payload', $message);
+            return;
+        }
+
+        // 4. Buscar el mensaje original por su wa_id
+        $originalMessage = WhatsappModelResolver::message()->where('wa_id', $originalMessageId)->first();
+        if (!$originalMessage) {
+            Log::channel('whatsapp')->warning('Original message not found for edit', ['original_wa_id' => $originalMessageId]);
+            return;
+        }
+
+        // 5. Procesar el nuevo contenido (texto o multimedia) - igual que antes
+        $newMessageType = $newMessage['type'] ?? '';
+        $content = null;
+        $mediaId = null;
+        $caption = null;
+        $mimeType = null;
+        $sha256 = null;
+
+        switch ($newMessageType) {
+            case 'text':
+                $content = $newMessage['text']['body'] ?? '';
+                break;
+
+            case 'image':
+            case 'audio':
+            case 'video':
+            case 'document':
+            case 'sticker':
+                $mediaId = $newMessage[$newMessageType]['id'] ?? null;
+                $caption = $newMessage[$newMessageType]['caption'] ?? strtoupper($newMessageType);
+                $mimeType = $newMessage[$newMessageType]['mime_type'] ?? null;
+                $sha256 = $newMessage[$newMessageType]['sha256'] ?? null;
+                $content = $caption;
+                break;
+
+            case 'location':
+                $location = $newMessage['location'] ?? [];
+                $content = "Ubicación: " . ($location['name'] ?? '') . " - " . ($location['address'] ?? '');
+                $content .= " | Lat: {$location['latitude']}, Lon: {$location['longitude']}";
+                break;
+
+            case 'contacts':
+                $content = "Contactos compartidos: " . count($newMessage['contacts'] ?? []);
+                break;
+
+            case 'reaction':
+                $content = $newMessage['reaction']['emoji'] ?? '';
+                break;
+
+            default:
+                $content = 'Mensaje editado de tipo no soportado';
+        }
+
+        // 6. Crear el nuevo mensaje de tipo EDIT que apunta al original
+        $editMessageData = [
+            'wa_id'               => $message['id'],
+            'whatsapp_phone_id'   => $whatsappPhone->phone_number_id,
+            'contact_id'          => $contactRecord->contact_id,
+            'conversation_id'     => $originalMessage->conversation_id,
+            'messaging_product'   => $message['messaging_product'] ?? 'whatsapp',
+            'message_from'        => preg_replace('/[\D+]/', '', $message['from']),
+            'message_to'          => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+            'message_type'        => 'EDIT',
+            'message_content'     => $content,
+            'json_content'        => json_encode($message),
+            'status'              => 'received',
+            'message_context_id'  => $this->getContextMessageId($newMessage),
+            'original_message_id' => $originalMessage->message_id, // <-- NUEVO: referencia al original
+        ];
+
+        $editMessageRecord = WhatsappModelResolver::message()->create($editMessageData);
+
+        // 7. Si es multimedia, descargar y guardar (igual que antes)
+        if ($mediaId && in_array($newMessageType, ['image', 'audio', 'video', 'document', 'sticker'])) {
+            try {
+                $mediaUrl = $this->getMediaUrl($mediaId, $whatsappPhone);
+                if ($mediaUrl) {
+                    $mediaContent = $this->downloadMedia($mediaUrl, $whatsappPhone);
+                    if ($mediaContent) {
+                        $mediaType = $newMessageType . 's';
+                        $directory = config("whatsapp.media.storage_path.$mediaType");
+                        if (!$directory) {
+                            throw new \RuntimeException("No storage path for media type: $mediaType");
+                        }
+                        if (!file_exists($directory)) {
+                            mkdir($directory, 0755, true);
+                        }
+
+                        $extension = $this->getFileExtension($mimeType);
+                        if ($newMessageType === 'audio' && $extension === 'bin') $extension = 'ogg';
+                        if ($newMessageType === 'sticker' && $extension === 'bin') $extension = 'webp';
+
+                        $fileName = "{$mediaId}.{$extension}";
+                        $directory = rtrim($directory, '/');
+                        $filePath = "{$directory}/{$fileName}";
+                        file_put_contents($filePath, $mediaContent);
+
+                        $relativePath = str_replace(storage_path('app/public/'), '', $directory . '/' . $fileName);
+                        $publicPath = Storage::url($relativePath);
+
+                        WhatsappModelResolver::media_file()->updateOrCreate(
+                            [
+                                'message_id' => $editMessageRecord->message_id,
+                                'media_id'   => $mediaId,
+                            ],
+                            [
+                                'media_type' => $newMessageType,
+                                'file_name'  => $fileName,
+                                'url'        => $publicPath,
+                                'mime_type'  => $mimeType,
+                                'sha256'     => $sha256,
+                            ]
+                        );
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::channel('whatsapp')->error('Error downloading media for edit', [
+                    'error'    => $e->getMessage(),
+                    'media_id' => $mediaId
+                ]);
+            }
+        }
+
+        // 8. Actualizar el mensaje original con marcas de edición
+        $originalMessage->update([
+            'is_edited'            => true,
+            'last_edit_message_id' => $editMessageRecord->message_id,
+            'edited_at'            => now(), // usamos el campo existente
+        ]);
+
+        // 9. Disparar evento de edición
+        $this->fireMessageEdited($originalMessage, $editMessageRecord);
+
+        Log::channel('whatsapp')->info('Edit message processed', [
+            'original_message_id' => $originalMessage->message_id,
+            'edit_message_id'     => $editMessageRecord->message_id,
+            'new_type'            => $newMessageType,
+        ]);
+    }
+
+    /**
+     * Procesa un evento de revocación de mensaje (eliminación).
+     *
+     * @param array $message  El array del mensaje (contiene 'revoke')
+     * @param array|null $contact Información del contacto
+     * @param array|null $metadata Metadatos del número de teléfono
+     */
+    protected function handleRevokeMessage(array $message, ?array $contact, ?array $metadata): void
+    {
+        // 1. Obtener el modelo del número de teléfono
+        $apiPhoneNumberId = $metadata['phone_number_id'] ?? null;
+        $whatsappPhone = null;
+        if ($apiPhoneNumberId) {
+            $whatsappPhone = WhatsappModelResolver::phone_number()
+                ->where('api_phone_number_id', $apiPhoneNumberId)
+                ->first();
+        }
+        if (!$whatsappPhone) {
+            Log::channel('whatsapp')->error('No matching WhatsappPhoneNumber found for api_phone_number_id in revoke.', [
+                'api_phone_number_id' => $apiPhoneNumberId,
+            ]);
+            return;
+        }
+
+        // 2. Obtener o crear el contacto (necesario para registrar el evento, aunque no haya nuevo contenido)
+        if (empty($contact['wa_id'])) {
+            Log::channel('whatsapp')->warning('No wa_id found in contact for revoke.', $contact ?? []);
+            return;
+        }
+        $fullPhone = preg_replace('/\D/', '', $message['from'] ?? '');
+        [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
+        if (empty($countryCode) || empty($phoneNumber)) {
+            Log::channel('whatsapp')->warning('Unable to split phone number in revoke.', ['fullPhone' => $fullPhone]);
+            return;
+        }
+        $contactName = $contact['profile']['name'] ?? null;
+        $contactRecord = WhatsappModelResolver::contact()->updateOrCreate(
+            ['wa_id' => $contact['wa_id']],
+            [
+                'country_code' => $countryCode,
+                'phone_number' => $phoneNumber,
+                'contact_name' => $contactName,
+            ]
+        );
+
+        // 3. Extraer el ID del mensaje original
+        $revokeData = $message['revoke'] ?? [];
+        $originalMessageId = $revokeData['original_message_id'] ?? null;
+
+        if (!$originalMessageId) {
+            Log::channel('whatsapp')->warning('Invalid revoke payload - missing original_message_id', $message);
+            return;
+        }
+
+        // 4. Buscar el mensaje original en la base de datos
+        $originalMessage = WhatsappModelResolver::message()->where('wa_id', $originalMessageId)->first();
+        if (!$originalMessage) {
+            Log::channel('whatsapp')->warning('Original message not found for revoke', ['original_wa_id' => $originalMessageId]);
+            return;
+        }
+
+        // 5. Marcar el mensaje original como revocado
+        $originalMessage->update([
+            'is_revoked'  => true,
+            'revoked_at'  => now(),
+        ]);
+
+        // 6. (Opcional) Crear un mensaje de tipo REVOKE para registrar el evento
+        $revokeMessageData = [
+            'wa_id'               => $message['id'], // ID del evento de revocación
+            'whatsapp_phone_id'   => $whatsappPhone->phone_number_id,
+            'contact_id'          => $contactRecord->contact_id,
+            'conversation_id'     => $originalMessage->conversation_id, // hereda la conversación del original
+            'messaging_product'   => $message['messaging_product'] ?? 'whatsapp',
+            'message_from'        => preg_replace('/[\D+]/', '', $message['from']),
+            'message_to'          => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+            'message_type'        => 'REVOKE',
+            'message_content'     => 'Mensaje revocado', // Podría ser un texto genérico o vacío
+            'json_content'        => json_encode($message),
+            'status'              => 'received',
+            'original_message_id' => $originalMessage->message_id, // referencia al original
+        ];
+
+        $revokeMessageRecord = WhatsappModelResolver::message()->create($revokeMessageData);
+
+        // 7. Disparar evento de revocación
+        $this->fireMessageRevoked($originalMessage, $revokeMessageRecord);
+
+        Log::channel('whatsapp')->info('Revoke message processed', [
+            'original_message_id' => $originalMessage->message_id,
+            'revoke_message_id'   => $revokeMessageRecord->message_id,
+        ]);
+    }
+
+    /**
+     * Procesa un mensaje de sistema (ej: cambio de número).
+     *
+     * @param array $message  El array del mensaje (contiene 'system')
+     * @param array|null $metadata Metadatos del número de teléfono
+     */
+    protected function handleSystemMessage(array $message, ?array $metadata): void
+    {
+        // 1. Obtener el modelo del número de teléfono del negocio
+        $apiPhoneNumberId = $metadata['phone_number_id'] ?? null;
+        $whatsappPhone = null;
+        if ($apiPhoneNumberId) {
+            $whatsappPhone = WhatsappModelResolver::phone_number()
+                ->where('api_phone_number_id', $apiPhoneNumberId)
+                ->first();
+        }
+        if (!$whatsappPhone) {
+            Log::channel('whatsapp')->error('No matching WhatsappPhoneNumber found for api_phone_number_id in system message.', [
+                'api_phone_number_id' => $apiPhoneNumberId,
+            ]);
+            return;
+        }
+
+        // 2. Extraer datos del mensaje
+        $from = $message['from'] ?? ''; // número antiguo (puede ser el wa_id)
+        $system = $message['system'] ?? [];
+        $systemType = $system['type'] ?? '';
+        $newWaId = $system['wa_id'] ?? null; // nuevo ID (puede ser el nuevo número)
+        $body = $system['body'] ?? ''; // texto descriptivo
+
+        // 3. Normalizar el número antiguo y dividir en código de país + número
+        $fullPhone = preg_replace('/\D/', '', $from);
+        [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
+        if (empty($countryCode) || empty($phoneNumber)) {
+            Log::channel('whatsapp')->warning('Unable to split phone number in system message.', ['fullPhone' => $fullPhone]);
+            return;
+        }
+
+        // 4. Intentar extraer el nombre del perfil desde el body (para crearlo si es necesario)
+        $contactName = null;
+        if ($systemType === 'user_changed_number') {
+            // El body tiene formato: "User <name> changed from <old> to <new>"
+            if (preg_match('/User (.*?) changed from/', $body, $matches)) {
+                $contactName = $matches[1];
+            }
+        }
+
+        // 5. Buscar el contacto existente por wa_id antiguo o por número
+        $contactRecord = WhatsappModelResolver::contact()
+            ->where('wa_id', $from)
+            ->orWhere(function($query) use ($countryCode, $phoneNumber) {
+                $query->where('country_code', $countryCode)
+                    ->where('phone_number', $phoneNumber);
+            })
+            ->first();
+
+        if (!$contactRecord) {
+            // Crear nuevo contacto con los datos antiguos
+            $contactRecord = WhatsappModelResolver::contact()->create([
+                'wa_id'         => $from,
+                'country_code'  => $countryCode,
+                'phone_number'  => $phoneNumber,
+                'contact_name'  => $contactName,
+            ]);
+            Log::channel('whatsapp')->info('Contact created from system message', [
+                'contact_id' => $contactRecord->contact_id
+            ]);
+        }
+
+        // 6. Llamar al procesamiento existente de mensajes de sistema
+        //    Este método ya maneja 'user_changed_number' y actualiza el contacto con el nuevo wa_id
+        $this->processSystemMessage($message, $contactRecord, $whatsappPhone);
     }
 
     private function getMessageContentForType(string $messageType, array $message): ?string
@@ -744,12 +1137,11 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         return [null, null];
     }
 
-    private function updateMessageStatus(Model $message, array $status): Model
+    protected function updateMessageStatus(Model $message, array $status): Model
     {
         $statusValue = $status['status'] ?? null;
         $timestamp = $status['timestamp'] ?? null;
-        $errorCode = $status['errors'][0]['code'] ?? null;
-
+        $errorCode = null;
         $updateData = ['status' => $statusValue];
 
         if ($timestamp) {
@@ -763,29 +1155,37 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             };
         }
 
-        if ($statusValue == 'failed' && $errorCode == 131050) {
-            $updateData['is_marketing_opt_out'] = true;
-            $this->updateContactMarketingPreference($message->contact_id, false);
-        }
+        // Procesar errores de forma robusta
+        if ($statusValue == 'failed' && isset($status['errors']) && !empty($status['errors'])) {
+            $firstError = $status['errors'][0];
 
-        //Si falló el mensaje, guardar los datos del error
-        if( $statusValue=='failed' && isset($status['errors']) && isset($status['errors'][0]) ){
-            $updateData['code_error'] = (integer)$status['errors'][0]['code'];
-            $updateData['title_error'] = $status['errors'][0]['title'];
-            $updateData['message_error'] = $status['errors'][0]['message'];
+            if (is_string($firstError)) {
+                // Caso: error en forma de string simple
+                $updateData['message_error'] = $firstError;
+                $updateData['code_error'] = null;
+                $updateData['title_error'] = 'Normalization error';
+                $updateData['details_error'] = $firstError;
+            } elseif (is_array($firstError)) {
+                // Caso: error con estructura (code, title, message, error_data)
+                $updateData['code_error'] = (int)($firstError['code'] ?? 0);
+                $updateData['title_error'] = $firstError['title'] ?? 'Unknown error';
+                $updateData['message_error'] = $firstError['message'] ?? '';
 
-            if( isset($status['errors'][0]['error_data']) ){
-                if( isset($status['errors'][0]['error_data']['details']) ){
-                    $updateData['details_error'] = $status['errors'][0]['error_data']['details'];
+                if (isset($firstError['error_data'])) {
+                    $updateData['details_error'] = is_array($firstError['error_data'])
+                        ? ($firstError['error_data']['details'] ?? json_encode($firstError['error_data']))
+                        : (string)$firstError['error_data'];
                 }
-                else{
-                    $updateData['details_error'] = $status['errors'][0]['error_data'];
+
+                // Manejar código específico de marketing opt-out
+                if (isset($firstError['code']) && $firstError['code'] == 131050) {
+                    $updateData['is_marketing_opt_out'] = true;
+                    $this->updateContactMarketingPreference($message->contact_id, false);
                 }
             }
         }
 
         $message->update($updateData);
-
         return $message;
     }
 
@@ -898,16 +1298,27 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
     protected function processUnsupportedMessage(array $message, Model $contact, Model $whatsappPhone): ?Model
     {
-        $errorCode = $message['errors'][0]['code'] ?? null;
-        $errorTitle = $message['errors'][0]['title'] ?? 'Unsupported content';
-        $errorDetails = $message['errors'][0]['error_data']['details'] ?? 'Unknown error';
+        $firstError = $message['errors'][0] ?? null;
 
-        $content = "Unsupported message. Error: $errorCode - $errorTitle: $errorDetails";
+        if (is_string($firstError)) {
+            $errorCode = null;
+            $errorTitle = 'Unsupported content';
+            $errorDetails = $firstError;
+            $content = "Unsupported message. Error: $errorDetails";
+        } elseif (is_array($firstError)) {
+            $errorCode = $firstError['code'] ?? null;
+            $errorTitle = $firstError['title'] ?? 'Unsupported content';
+            $errorDetails = $firstError['error_data']['details'] ?? 'Unknown error';
+            $content = "Unsupported message. Error: $errorCode - $errorTitle: $errorDetails";
+        } else {
+            $errorCode = null;
+            $errorTitle = 'Unsupported content';
+            $errorDetails = 'No error details available';
+            $content = "Unsupported message.";
+        }
 
         $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
-            [
-                'wa_id' => $message['id'],
-            ],
+            ['wa_id' => $message['id']],
             [
                 'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
                 'contact_id' => $contact->contact_id,
@@ -1150,6 +1561,66 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         Log::channel('whatsapp')->info("Template updated: {$template->name}", [
             'template_id' => $template->template_id
         ]);
+    }
+
+    /**
+     * Procesa la actualización de calidad/límite de mensajes de un número de teléfono.
+     *
+     * @param array $value Datos del webhook phone_number_quality_update
+     */
+    protected function handlePhoneNumberQualityUpdate(array $value): void
+    {
+        Log::channel('whatsapp')->info('📊 [PHONE_NUMBER_QUALITY_UPDATE] Processing quality update', $value);
+
+        // 1. Extraer datos del payload
+        $displayPhoneNumber = $value['display_phone_number'] ?? null;
+        $event = $value['event'] ?? null;
+        $oldLimit = $value['old_limit'] ?? null; // deprecated, pero lo guardamos en log si se desea
+        $currentLimit = $value['current_limit'] ?? null; // deprecated, priorizar el nuevo campo
+        $maxDailyConversations = $value['max_daily_conversations_per_business'] ?? null;
+
+        if (!$displayPhoneNumber) {
+            Log::channel('whatsapp')->warning('⚠️ [PHONE_NUMBER_QUALITY_UPDATE] Missing display_phone_number', $value);
+            return;
+        }
+
+        // 2. Determinar el nuevo nivel de límite (usar max_daily_conversations_per_business si existe, sino current_limit)
+        $newLimitTier = $maxDailyConversations ?? $currentLimit;
+        if (!$newLimitTier) {
+            Log::channel('whatsapp')->warning('⚠️ [PHONE_NUMBER_QUALITY_UPDATE] No limit tier provided', $value);
+            return;
+        }
+
+        // 3. Buscar el número de teléfono en la base de datos por display_phone_number
+        $phoneNumber = WhatsappModelResolver::phone_number()
+            ->where('display_phone_number', $displayPhoneNumber)
+            ->first();
+
+        if (!$phoneNumber) {
+            Log::channel('whatsapp')->warning('⚠️ [PHONE_NUMBER_QUALITY_UPDATE] Phone number not found', [
+                'display_phone_number' => $displayPhoneNumber
+            ]);
+            return;
+        }
+
+        // 4. Preparar datos para actualizar
+        $updateData = [
+            'messaging_limit_tier'       => $newLimitTier,
+            'messaging_limit_updated_at' => now(),
+        ];
+
+        // 5. Actualizar el registro
+        $phoneNumber->update($updateData);
+
+        Log::channel('whatsapp')->info('✅ [PHONE_NUMBER_QUALITY_UPDATE] Phone number messaging limit updated', [
+            'phone_number_id' => $phoneNumber->phone_number_id,
+            'display_phone_number' => $displayPhoneNumber,
+            'new_limit_tier' => $newLimitTier,
+            'event' => $event,
+        ]);
+
+        // 6. Disparar evento (opcional pero recomendado)
+        $this->firePhoneNumberQualityUpdated($phoneNumber, $value);
     }
 
     protected function handleTemplateDeletion(array $templateData): void
@@ -2197,6 +2668,66 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     }
 
     /**
+     * Procesa la actualización del nombre visible de un número de teléfono.
+     *
+     * @param array $value Datos del webhook phone_number_name_update
+     */
+    protected function handlePhoneNumberNameUpdate(array $value): void
+    {
+        Log::channel('whatsapp')->info('📞 [PHONE_NUMBER_NAME_UPDATE] Processing name verification update', $value);
+
+        // 1. Extraer datos del payload
+        $displayPhoneNumber = $value['display_phone_number'] ?? null;
+        $decision = $value['decision'] ?? null;
+        $requestedName = $value['requested_verified_name'] ?? null;
+        $rejectionReason = $value['rejection_reason'] ?? null;
+
+        if (!$displayPhoneNumber || !$decision) {
+            Log::channel('whatsapp')->warning('⚠️ [PHONE_NUMBER_NAME_UPDATE] Missing required fields', $value);
+            return;
+        }
+
+        // 2. Buscar el número de teléfono en la base de datos por display_phone_number
+        $phoneNumber = WhatsappModelResolver::phone_number()
+            ->where('display_phone_number', $displayPhoneNumber)
+            ->first();
+
+        if (!$phoneNumber) {
+            Log::channel('whatsapp')->warning('⚠️ [PHONE_NUMBER_NAME_UPDATE] Phone number not found', [
+                'display_phone_number' => $displayPhoneNumber
+            ]);
+            return;
+        }
+
+        // 3. Preparar datos para actualizar
+        $updateData = [
+            'requested_verified_name' => $requestedName,
+            'name_decision'           => $decision,
+            'name_rejection_reason'   => $rejectionReason,
+            'name_verified_at'        => now(),
+        ];
+
+        // Si la decisión es APPROVED, también actualizamos el verified_name
+        if ($decision === 'APPROVED' && $requestedName) {
+            $updateData['verified_name'] = $requestedName;
+            // Opcionalmente, actualizar name_status si lo usas
+            // $updateData['name_status'] = 'APPROVED';
+        }
+
+        // 4. Actualizar el registro
+        $phoneNumber->update($updateData);
+
+        Log::channel('whatsapp')->info('✅ [PHONE_NUMBER_NAME_UPDATE] Phone number name verification updated', [
+            'phone_number_id' => $phoneNumber->phone_number_id,
+            'display_phone_number' => $displayPhoneNumber,
+            'decision' => $decision,
+        ]);
+
+        // 5. Disparar evento (opcional pero recomendado)
+        $this->firePhoneNumberNameUpdated($phoneNumber, $value);
+    }
+
+    /**
      * Maneja la desinstalación de la aplicación partner
      */
     protected function handlePartnerAppUninstalled(array $wabaInfo): void
@@ -2757,10 +3288,24 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
      */
     protected function fireUnsupportedSmbMessageEcho(Model $contactRecord, Model $messageRecord, array $echo): void
     {
-        $errorCode = $echo['errors'][0]['code'] ?? null;
-        $errorTitle = $echo['errors'][0]['title'] ?? 'Unsupported content';
-        $errorMessage = $echo['errors'][0]['message'] ?? 'Unknown error';
-        $errorDetails = $echo['errors'][0]['error_data']['details'] ?? 'No additional details available';
+        $firstError = $echo['errors'][0] ?? null;
+
+        if (is_string($firstError)) {
+            $errorCode = null;
+            $errorTitle = 'Unsupported content';
+            $errorMessage = $firstError;
+            $errorDetails = $firstError;
+        } elseif (is_array($firstError)) {
+            $errorCode = $firstError['code'] ?? null;
+            $errorTitle = $firstError['title'] ?? 'Unsupported content';
+            $errorMessage = $firstError['message'] ?? 'Unknown error';
+            $errorDetails = $firstError['error_data']['details'] ?? 'No additional details available';
+        } else {
+            $errorCode = null;
+            $errorTitle = 'Unsupported content';
+            $errorMessage = 'Unknown error';
+            $errorDetails = 'No additional details available';
+        }
 
         // Primero disparar el evento estándar de SMB echo
         $this->fireSmbMessageEcho($contactRecord, $messageRecord);
@@ -2774,7 +3319,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'title_error' => $errorTitle,
                 'message_error' => $errorMessage,
                 'details_error' => $errorDetails,
-                'is_smb_echo' => true, // Indicar que es un eco SMB
+                'is_smb_echo' => true,
             ]));
         }
 
@@ -2939,6 +3484,50 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'business_account_id' => $businessAccount->whatsapp_business_id,
                 'waba_id' => $wabaInfo['waba_id'] ?? null
             ]);
+        }
+    }
+
+    protected function fireMessageEdited(Model $originalMessage, Model $editMessage): void
+    {
+        $event = config('whatsapp.events.messages.message.edited');
+        if ($event) {
+            event(new $event([
+                'original_message' => $originalMessage,
+                'edit_message'     => $editMessage,
+            ]));
+        }
+    }
+
+    protected function fireMessageRevoked(Model $originalMessage, Model $revokeMessage): void
+    {
+        $event = config('whatsapp.events.messages.message.revoked');
+        if ($event) {
+            event(new $event([
+                'original_message' => $originalMessage,
+                'revoke_message'   => $revokeMessage,
+            ]));
+        }
+    }
+
+    protected function firePhoneNumberNameUpdated(Model $phoneNumber, array $payload): void
+    {
+        $event = config('whatsapp.events.phone_number.name_updated');
+        if ($event) {
+            event(new $event([
+                'phone_number' => $phoneNumber,
+                'payload'      => $payload,
+            ]));
+        }
+    }
+
+    protected function firePhoneNumberQualityUpdated(Model $phoneNumber, array $payload): void
+    {
+        $event = config('whatsapp.events.phone_number.quality_updated');
+        if ($event) {
+            event(new $event([
+                'phone_number' => $phoneNumber,
+                'payload'      => $payload,
+            ]));
         }
     }
 

@@ -1,0 +1,25 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('whatsapp_phone_numbers', function (Blueprint $table) {
+            // Agregar campo para el nivel de límite de mensajes (TIER_50, TIER_2K, etc.)
+            $table->string('messaging_limit_tier', 50)->nullable()->after('quality_rating');
+            // Timestamp de la última actualización del límite
+            $table->timestamp('messaging_limit_updated_at')->nullable()->after('messaging_limit_tier');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('whatsapp_phone_numbers', function (Blueprint $table) {
+            $table->dropColumn(['messaging_limit_tier', 'messaging_limit_updated_at']);
+        });
+    }
+};
