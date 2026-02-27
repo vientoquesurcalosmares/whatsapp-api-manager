@@ -110,6 +110,41 @@ class WhatsappPhoneNumber extends Model
                     ->distinct();
     }
 
+    /**
+     * Relación muchos a muchos con contactos a través de la tabla pivote personalizada.
+     * Esta relación permite almacenar datos adicionales del contacto para este número.
+     */
+    public function contactProfiles()
+    {
+        return $this->belongsToMany(Contact::class, 'whatsapp_contact_profiles', 'phone_number_id', 'contact_id')
+                    ->using(WhatsappContactProfile::class)
+                    ->withPivot([
+                        'profile_picture',
+                        'alias',
+                        'contact_name',
+                        'first_name',
+                        'last_name',
+                        'middle_name',
+                        'suffix',
+                        'prefix',
+                        'organization',
+                        'department',
+                        'title',
+                        'birthday',
+                        'last_interaction_at',
+                        'metadata',
+                    ])
+                    ->withTimestamps();
+    }
+
+    /**
+     * Acceso directo a los registros pivote (perfiles).
+     */
+    public function contactProfilePivots()
+    {
+        return $this->hasMany(WhatsappContactProfile::class, 'phone_number_id');
+    }
+
     public function blockedUsers()
     {
         return $this->hasMany(config('whatsapp.models.blocked_user'), 'phone_number_id');

@@ -429,7 +429,7 @@ Thank you for your support 💙
     $account = WhatsappBusinessAccount::first();
     $phone = WhatsappPhoneNumber::first();
 
-    // Send template 1
+    // Send template 1: template without buttons or without needing to provide parameters for buttons
     $message = Whatsapp::template()
         ->sendTemplateMessage($phone)
         ->to('57', '3137555908')
@@ -437,32 +437,146 @@ Thank you for your support 💙
         ->addBody(['12345'])
         ->send();
 
-    // Send template 2
-
+    // Send template 2: template with URL button that does not require parameters (static URL)
     $message = Whatsapp::template()
         ->sendTemplateMessage($phone)
         ->to('57', '3135666627')
         ->usingTemplate('payment_link')
         ->addHeader('TEXT', '123456')
         ->addBody(['20000'])
-        ->addButton('URL', 'Pay', '1QFwRV', ['[https://mpago.li/1QFwRV]'])
+        ->addButton('Pay', []) // If the button in the template is static, no parameters are needed
+        ->send();
+
+    // Send template 3: template with URL button that requires parameters (dynamic URL)
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('dynamic_payment_link')
+        ->addHeader('TEXT', '123456')
+        ->addBody(['20000'])
+        ->addButton('Pay', ['1QFwRV']) // If the button in the template has a placeholder, pass the value for that placeholder
+        ->send();
+
+    // EXAMPLE 4: Template with multiple buttons
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('options_menu')
+        ->addBody(['Juan Pérez'])
+        ->addButton('View Catalog', [])       // Static Quick Reply
+        ->addButton('Contact', [])            // Static Quick Reply
+        ->addButton('Buy', ['PROD123'])       // Dynamic URL with parameter
+        ->send();
+
+    // EXAMPLE 5: Template with phone number button
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('phone_support')
+        ->addBody(['Ticket #456'])
+        // PHONE_NUMBER button is sent by default; no need to pass in code
         ->send();
 
     $message = Whatsapp::template()
         ->sendTemplateMessage($phone)
         ->to('57', '3135666627')
-        ->usingTemplate('payment_link')
-        ->addHeader('TEXT', '123456')
-        ->addBody(['20000'])
-        ->addButton(
-            'URL', // Button type
-            'Pay', // Button text
-            '1QFwRV', // Button variable (URL type only)
-            ['[https://mpago.li/1QFwRV]'] // Example URL (not sent, used as reference)
-        )
+        ->usingTemplate('this_is_a_new_variable_test')
+        ->addHeader('TEXT', 'Test_one')
+        ->addBody(['Test_one'])
         ->send();
-    ```
 
+    // EXAMPLE 6: Template with IMAGE in header
+    // Assuming you have a template named 'promo_with_image' that includes:
+    // - Header type IMAGE
+    // - Body with variables: "Hello {{1}}, take advantage of our {{2}}% offer"
+
+    $imageUrl = 'https://example.com/images/promo.jpg'; // Public image URL
+
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('promo_with_image')
+        ->addHeader('IMAGE', $imageUrl)
+        ->addBody(['Juan', '30'])
+        ->send();
+
+    // EXAMPLE 7: Template with IMAGE and various BUTTONS
+    // Assuming you have a template named 'featured_product' that includes:
+    // - Header type IMAGE
+    // - Body with variables: "{{1}}, we present {{2}}"
+    // - Footer: "Valid until end of month"
+    // - Buttons:
+    //   * Quick Reply: "More info"
+    //   * Dynamic URL: "View product" -> https://mystore.com/product/{{1}}
+    //   * Phone: "Call now" (sent by default, not passed in code)
+
+    $productImageUrl = 'https://example.com/images/featured-product.jpg';
+
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('featured_product')
+        ->addHeader('IMAGE', $productImageUrl)
+        ->addBody(['María', 'our new premium product'])
+        ->addButton('More info', [])               // Quick Reply (no parameters)
+        ->addButton('View product', ['PROD-789'])   // Dynamic URL (with parameter)
+        // Phone Number button is sent by default; no need to pass in code
+        ->send();
+
+    // EXAMPLE 8: Template with VIDEO and BUTTONS
+    // Assuming you have a template named 'tutorial_video' that includes:
+    // - Header type VIDEO
+    // - Body with variables: "Hello {{1}}, check out this tutorial about {{2}}"
+    // - Buttons:
+    //   * Static URL: "Subscribe" -> https://youtube.com/channel/123
+    //   * Quick Reply: "Next tutorial"
+
+    $videoUrl = 'https://example.com/videos/tutorial.mp4';
+
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('tutorial_video')
+        ->addHeader('VIDEO', $videoUrl)
+        ->addBody(['Carlos', 'digital sales'])
+        ->addButton('Subscribe', [])
+        ->addButton('Next tutorial', [])
+        ->send();
+
+    // EXAMPLE 9: Template with DOCUMENT and information
+    // Assuming you have a template named 'send_invoice' that includes:
+    // - Header type DOCUMENT
+    // - Body with variables: "{{1}}, we attach your invoice No. {{2}}"
+    // - URL button: "Download PDF" -> https://invoices.com/{{1}}
+
+    $documentUrl = 'https://example.com/docs/invoice-2024.pdf';
+
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('send_invoice')
+        ->addHeader('DOCUMENT', $documentUrl)
+        ->addBody(['Dear customer', '2024-001'])
+        ->addButton('Download PDF', ['2024-001'])
+        ->send();
+
+    // EXAMPLE 10: Complete marketing template with image and multiple buttons
+    // Assuming you have a template named 'super_promo' that includes:
+    // - Header type IMAGE
+    // - Body: "¡{{1}}! {{2}}% off on {{3}}"
+    // - Footer: "Use code {{1}} at checkout"
+    // - Buttons:
+    //   * Dynamic URL: "Buy now" -> https://store.com/promo/{{1}}
+    //   * Phone Number: "Contact advisor"
+    //   * Quick Reply: "No, thanks"
+
+    $promoImageUrl = 'https://example.com/images/super-promo-christmas.jpg';
+
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3135666627')
+        ->usingTemplate('super_promo')
+        
 ---
 
 <div align="center">

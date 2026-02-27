@@ -16,6 +16,8 @@ return [
         //Contactos
         'contact' => \ScriptDevelop\WhatsappManager\Models\Contact::class,
 
+        'contact_profile' => \ScriptDevelop\WhatsappManager\Models\WhatsappContactProfile::class,
+
         'conversation' => \ScriptDevelop\WhatsappManager\Models\Conversation::class,
 
         //Archivos multimedia
@@ -153,6 +155,8 @@ return [
                 'system' => [
                     'received' => \Scriptdevelop\WhatsappManager\Events\SystemMessageReceived::class,
                 ],
+                'edited'    => \Scriptdevelop\WhatsappManager\Events\MessageEdited::class,
+                'revoked'   => \Scriptdevelop\WhatsappManager\Events\MessageRevoked::class,
             ],
             'reaction' => [
                 /**
@@ -175,6 +179,8 @@ return [
         ],
         'phone_number' => [
             'updated' => \Scriptdevelop\WhatsappManager\Events\PhoneNumberStatusUpdated::class, //Aun no se implementa
+            'name_updated' => \Scriptdevelop\WhatsappManager\Events\PhoneNumberNameUpdated::class,
+            'quality_updated' => \Scriptdevelop\WhatsappManager\Events\PhoneNumberQualityUpdated::class,
         ],
         'template' => [
             'approved' => \Scriptdevelop\WhatsappManager\Events\TemplateApproved::class, //Aun no se implementa
