@@ -189,7 +189,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             'raw_profile' => $contact['profile'] ?? null,
         ]);
 
-        // Usar firstOrCreate
+        // Usar updateOrCreate
         $contactRecord = WhatsappModelResolver::contact()->updateOrCreate(
             [
                 'wa_id' => $contact['wa_id'],
@@ -200,6 +200,42 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'contact_name' => $contactName,
             ]
         );
+
+        Log::channel('whatsapp')->info('CONTACT After updateOrCreate.', [
+            'contact_id' => $contactRecord->contact_id,
+            'wa_id' => $contactRecord->wa_id,
+            'contact_name' => $contactRecord->contact_name,
+            'was_created' => $contactRecord->wasRecentlyCreated,
+            'attributes' => $contactRecord->getAttributes(),
+        ]);
+
+        // Actualizar el contacto con los datos más recientes
+        /*if ($contactRecord->wa_id !== $contact['wa_id'] || $contactRecord->contact_name !== $contactName) {
+            // Intentar actualización con Query Builder (sin Eloquent)
+            Log::channel('whatsapp')->info('CONTACT Trying Query Builder update.', [
+                'contact_name_value' => $contactName,
+            ]);
+
+            $contactRecord->update([
+                'wa_id' => $contact['wa_id'],
+                'contact_name' => $contactName,
+            ]);
+
+            // $updateResult = \DB::table('whatsapp_contacts')
+            //     ->where('contact_id', $contactRecord->contact_id)
+            //     ->update([
+            //         'wa_id' => $contact['wa_id'],
+            //         'contact_name' => $contactName,
+            //         'updated_at' => now(),
+            //     ]);
+
+            // Log::channel('whatsapp')->info('CONTACT Query Builder update result.', [
+            //     'rows_affected' => $updateResult,
+            // ]);
+
+            // Recargar el modelo
+            $contactRecord->refresh();
+        }*/
 
         $apiPhoneNumberId = $metadata['phone_number_id'] ?? null;
 
@@ -3533,7 +3569,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
     /**
      * Maneja las actualizaciones de capacidades de negocio (límites de mensajes, etc.)
-     * 
+     *
      * @param array $value Datos del webhook business_capability_update
      * @param array $payload Payload completo del webhook
      */
@@ -3543,7 +3579,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // Obtener el ID de la cuenta empresarial desde el payload
         $wabaId = data_get($payload, 'entry.0.id');
-        
+
         if (!$wabaId) {
             Log::channel('whatsapp')->warning('⚠️ [BUSINESS_CAPABILITY] No WABA ID found in payload', $payload);
             return;
@@ -3551,7 +3587,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // Buscar la cuenta empresarial
         $businessAccount = WhatsappModelResolver::business_account()->find($wabaId);
-        
+
         if (!$businessAccount) {
             Log::channel('whatsapp')->warning('⚠️ [BUSINESS_CAPABILITY] Business account not found', [
                 'waba_id' => $wabaId
@@ -3571,7 +3607,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         // Versión 23.0 y anteriores: max_daily_conversation_per_phone viene como número
         elseif (isset($value['max_daily_conversation_per_phone'])) {
             $limitValue = $value['max_daily_conversation_per_phone'];
-            
+
             // Convertir el número a tier (el helper maneja -1 como ilimitado)
             $messagingLimitTier = MessagingLimitHelper::convertLimitValueToTier($limitValue);
             $messagingLimitValue = ($limitValue == -1) ? null : $limitValue;
