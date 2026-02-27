@@ -742,8 +742,13 @@ class TemplateBuilder
                         Log::channel('whatsapp')->warning('Corrigiendo codificación de un valor no UTF-8.', ['value' => $value]);
                         $value = mb_convert_encoding($value, 'UTF-8', 'auto');
                     }
-                    // Eliminar caracteres invisibles o no imprimibles
-                    $value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value);
+                    // Eliminar caracteres invisibles o no imprimibles, excepto los saltos de línea
+                    //Se comenta la línea anterior, provoca eliminar incluso saltos de línea que son necesarios para el formato de la plantilla, se reemplaza por la siguiente línea que conserva los saltos de línea pero elimina otros caracteres invisibles
+                    //$value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value);
+                    $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $value);
+
+                    // Si se encuentran 3 o más saltos de línea consecutivos, se reemplazan por 2, ya que whatsapp no permite más de 2 saltos de línea consecutivos en los textos de las plantillas
+                    $value = preg_replace('/\n{3,}/', "\n\n", $value);
                 }
             });
 
@@ -844,8 +849,8 @@ class TemplateBuilder
             $errorCode = $responseBody['error']['code'] ?? null;
             $errorSubcode = $responseBody['error']['error_subcode'] ?? null;
 
-            $errorUserMsg = $responseBody['error']['error_user_msg'] 
-                 ?? $responseBody['error']['message'] 
+            $errorUserMsg = $responseBody['error']['error_user_msg']
+                 ?? $responseBody['error']['message']
                  ?? 'Error desconocido de la API';
 
             if ($errorCode === 100 && $errorSubcode === 2388023) {
@@ -951,7 +956,7 @@ class TemplateBuilder
     protected function validateVariablePosition(string $text, string $componentName): void
     {
         $trimmedText = trim($text);
-        
+
         // Verificar si el texto comienza con una variable
         if (preg_match('/^\s*\{\{\d+\}\}/', $trimmedText)) {
             throw new InvalidArgumentException(
@@ -959,7 +964,7 @@ class TemplateBuilder
                 "WhatsApp Business API no permite parámetros al inicio del contenido."
             );
         }
-        
+
         // Verificar si el texto termina con una variable
         if (preg_match('/\{\{\d+\}\}\s*$/', $trimmedText)) {
             throw new InvalidArgumentException(
@@ -967,14 +972,14 @@ class TemplateBuilder
                 "WhatsApp Business API no permite parámetros al final del contenido."
             );
         }
-        
+
         // Validación adicional: verificar que haya texto antes y después de cada variable
         $pattern = '/\{\{\d+\}\}/';
         $parts = preg_split($pattern, $trimmedText);
-        
+
         foreach ($parts as $index => $part) {
             $part = trim($part);
-            
+
             // Si es el primer segmento y está vacío, significa que la variable está al principio
             if ($index === 0 && empty($part)) {
                 throw new InvalidArgumentException(
@@ -982,7 +987,7 @@ class TemplateBuilder
                     "Agrega texto antes del primer parámetro."
                 );
             }
-            
+
             // Si es el último segmento y está vacío, significa que la variable está al final
             if ($index === count($parts) - 1 && empty($part)) {
                 throw new InvalidArgumentException(
