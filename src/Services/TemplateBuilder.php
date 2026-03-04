@@ -306,13 +306,13 @@ class TemplateBuilder
             // Estructura diferente para parámetros NAMED vs POSITIONAL
             if ($this->parameterFormat === 'NAMED') {
                 $namedParams = [];
-                foreach ($placeholders as $key => $paramName) {
-                    if (!isset($example[$key])) {
+                foreach ($placeholders as $paramName) {
+                    if (!isset($example[$paramName])) {
                         throw new InvalidArgumentException("Falta valor para parámetro: $paramName");
                     }
                     $namedParams[] = [
                         'param_name' => $paramName,
-                        'example' => $example[$key],
+                        'example' => $example[$paramName],
                     ];
                 }
                 $formattedExample = ['body_text_named_params' => $namedParams];
@@ -685,9 +685,9 @@ class TemplateBuilder
         }
 
         if ($example) {
-            $exampleKeys = array_keys($example);
-            $placeholderKeys = array_keys($placeholders);
-            $missingParams = array_diff($placeholderKeys, $exampleKeys);
+            $exampleKeys     = array_keys($example);
+            $placeholderKeys = array_values($placeholders);
+            $missingParams   = array_diff($placeholderKeys, $exampleKeys);
 
             if (!empty($missingParams)) {
                 throw new InvalidArgumentException(

@@ -1006,7 +1006,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         }
 
         // Opcional: guardar la reacción asociada al mensaje original
-        $originalMessage = WhatsappModelResolver::message()->where('wa_id', $reaction['message_id'])->first();
+        $originalMessage = WhatsappModelResolver::message()->select('message_id')->where('wa_id', $reaction['message_id'])->first();
 
         $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
             [
@@ -1015,7 +1015,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             [
                 'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
                 'contact_id' => $contact->contact_id,
-                'conversation_id' => $originalMessage?->conversation_id,
+                'conversation_id' => $originalMessage?->message_id ?? null,
                 'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
                 'message_from' => preg_replace('/[\D+]/', '', $message['from']),
                 'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
