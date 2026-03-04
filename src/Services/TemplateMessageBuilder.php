@@ -132,7 +132,7 @@ class TemplateMessageBuilder
         if ($versionId) {
             $this->templateVersion = WhatsappModelResolver::template_version()->find($versionId);
         }
-        
+
         $this->fetchTemplateStructure();
         return $this;
     }
@@ -155,10 +155,10 @@ class TemplateMessageBuilder
 
         if ($type === 'TEXT') {
             $placeholders = $this->templateStructure['placeholders']['HEADER'] ?? [];
-            
+
             // Procesar parámetros usando el método unificado
             $formattedParams = $this->processParameters($placeholders, $content);
-        } 
+        }
         elseif (in_array($type, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
             // Validar que el contenido sea una URL válida
             if (!filter_var($content, FILTER_VALIDATE_URL)) {
@@ -166,12 +166,12 @@ class TemplateMessageBuilder
                     "El contenido para $type debe ser una URL válida"
                 );
             }
-            
+
             $formattedParams[] = [
                 'type' => strtolower($type),
                 strtolower($type) => ['link' => $content]
             ];
-        } 
+        }
         elseif ($type === 'LOCATION') {
             // Location no lleva parámetros, pero validamos que no se pase contenido
             if (!empty($content)) {
@@ -179,12 +179,12 @@ class TemplateMessageBuilder
                     "El header de tipo LOCATION no debe tener contenido"
                 );
             }
-            
+
             // Location se representa con un array vacío
             $formattedParams[] = [
                 'type' => 'location'
             ];
-        } 
+        }
         else {
             throw new InvalidArgumentException(
                 "Tipo de header no válido: $type. Válidos: TEXT, IMAGE, VIDEO, DOCUMENT, LOCATION"
@@ -245,10 +245,10 @@ class TemplateMessageBuilder
         $this->ensureTemplateStructureLoaded();
 
         if (empty($this->buttonTextIndexMap)) {
-            $buttonsComponent = $this->templateStructure['by_type']['BUTTONS'] ?? 
-                                $this->templateStructure['by_type']['buttons'] ?? 
+            $buttonsComponent = $this->templateStructure['by_type']['BUTTONS'] ??
+                                $this->templateStructure['by_type']['buttons'] ??
                                 null;
-            
+
             if ($buttonsComponent && isset($buttonsComponent['buttons'])) {
                 foreach ($buttonsComponent['buttons'] as $index => $button) {
                     $normalizedText = strtolower(trim($button['text']));
@@ -461,10 +461,7 @@ class TemplateMessageBuilder
         }
 
         $rawStructure = $this->templateVersion->template_structure;
-        
-        // Recuperar formato de parámetros almacenado
-        $this->parameterFormat = $this->templateVersion->parameter_format ?? 'POSITIONAL';
-        
+
         $this->templateStructure = [
             'language' => $this->template->language,
             'components' => $rawStructure,
@@ -479,14 +476,17 @@ class TemplateMessageBuilder
         foreach ($rawStructure as $component) {
             $type = strtoupper($component['type'] ?? '');
             $this->templateStructure['by_type'][$type] = $component;
-            
+
             // Extraer placeholders
             if ($type === 'HEADER' && isset($component['text'])) {
                 preg_match_all('/{{(.*?)}}/', $component['text'], $matches);
                 $this->templateStructure['placeholders']['HEADER'] = $matches[1] ?? [];
             }
-            
+
             if ($type === 'BODY' && isset($component['text'])) {
+                if (isset($component['example']['body_text_named_params'])) {
+                    $this->parameterFormat = 'NAMED';
+                }
                 preg_match_all('/{{(.*?)}}/', $component['text'], $matches);
                 $this->templateStructure['placeholders']['BODY'] = $matches[1] ?? [];
             }
@@ -496,26 +496,27 @@ class TemplateMessageBuilder
     protected function processParameters(array $placeholders, array $values): array
     {
         $parameters = [];
-        
+
         if ($this->parameterFormat === 'NAMED') {
             // Check if the provided array is sequential and not associative
-            $isSequential = array_is_list($values);
-            
+            $isSequential = array_is_list(array_keys($values));
+            //dd($isSequential, $placeholders, $values);
+
             if ($isSequential) {
                 // Determine if they provided the exact number of parameters needed
                 if (count($values) !== count($placeholders)) {
                     throw new InvalidArgumentException(
-                        "Número de parámetros no coincide. Esperados (nombrados): " . 
+                        "Número de parámetros no coincide. Esperados (nombrados): " .
                         count($placeholders) . ", Recibidos: " . count($values)
                     );
                 }
-                
+
                 // Map the sequential values to the named placeholders in order
-                foreach ($placeholders as $index => $placeholder) {
+                foreach ($placeholders as $placeholder) {
                     $parameters[] = [
                         'type' => 'text',
                         'parameter_name' => $placeholder,
-                        'text' => $values[$index]
+                        'text' => $values[$placeholder]
                     ];
                 }
             } else {
@@ -535,11 +536,11 @@ class TemplateMessageBuilder
         } else {
             if (count($values) !== count($placeholders)) {
                 throw new InvalidArgumentException(
-                    "Número de parámetros no coincide. Esperados: " . 
+                    "Número de parámetros no coincide. Esperados: " .
                     count($placeholders) . ", Recibidos: " . count($values)
                 );
             }
-            
+
             foreach ($values as $value) {
                 $parameters[] = [
                     'type' => 'text',
@@ -547,7 +548,7 @@ class TemplateMessageBuilder
                 ];
             }
         }
-        
+
         return $parameters;
     }
 
