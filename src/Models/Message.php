@@ -60,7 +60,7 @@ class Message extends Model
 
     /**
      * Cuando un mensaje es de tipo plantailla, hay que devolver un objeto con el contenido del template formateado
-     * @return void
+     * @return array
      */
     public function getTemplateContentFormatAttribute(): array
     {
@@ -123,16 +123,36 @@ class Message extends Model
 
                 if( $bodyComponent and $bodyComponent->has('parameters') ){
                     $bodyParameters = $bodyComponent->get('parameters', collect());
-                    // Reemplazo de {{1}}, {{2}}, ... por los valores de $bodyParameters en orden
-                    $body_text = preg_replace_callback('/\{\{(\d+)\}\}/', function ($matches) use ($bodyParameters) {
-                            $index = (int)$matches[1] - 1; // {{1}} corresponde al índice 0
-                            if (isset($bodyParameters[$index]['text'])) {
-                                return $bodyParameters[$index]['text'];
+                    $bodyParametersByName = collect($bodyParameters)
+                        ->filter(function ($parameter) {
+                            return !empty(Arr::get($parameter, 'parameter_name'));
+                        })
+                        ->keyBy(function ($parameter) {
+                            return Str::lower((string) Arr::get($parameter, 'parameter_name'));
+                        });
+
+                    $body_text = preg_replace_callback('/\{\{(\d+|[a-zA-Z_][a-zA-Z0-9_]*)\}\}/', function ($matches) use ($bodyParameters, $bodyParametersByName) {
+                            $token = trim($matches[1]);
+
+                            if( is_numeric($token) ){
+                                $index = (int)$token - 1;
+
+                                if( isset($bodyParameters[$index]['text']) ){
+                                    return $bodyParameters[$index]['text'];
+                                }
+
+                                return $matches[0];
                             }
-                            return $matches[0]; // Si no existe, deja el marcador igual
+
+                            $parameterByName = $bodyParametersByName->get(Str::lower($token));
+
+                            if( $parameterByName && isset($parameterByName['text']) ){
+                                return $parameterByName['text'];
+                            }
+
+                            return $matches[0];
                         }, $body_text);
                 }
-
             }
 
             $foundButtons = $template_version_structure->first(function ($item) {
@@ -167,6 +187,10 @@ class Message extends Model
                                 return $matches[0]; // Si no existe, deja el marcador igual
                             }, $payload);
                     }
+                    elseif( Str::upper($type)=='PHONE_NUMBER' ){
+                        $payload = Arr::get($button, 'phone_number', '');
+                    }
+
                     $buttons[] = [
                         'type'    => $type,
                         'text'    => $text,
