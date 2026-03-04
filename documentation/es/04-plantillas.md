@@ -597,6 +597,28 @@ Gracias por tu apoyo 💙
         ->addButton('No, gracias', [])
         ->send();
 
+    // EJEMPLO 11: Plantilla con parámetros NOMBRADOS usando un Arreglo Asociativo (Recomendado)
+    // Suponiendo que tienes una plantilla llamada 'confirmacion_orden_nombrada' que espera {{primer_nombre}} y {{numero_orden}}
+    // El orden no importa cuando se utilizan arreglos asociativos
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3137555908')
+        ->usingTemplate('confirmacion_orden_nombrada')
+        ->addBody([
+            'numero_orden' => 'SKBUP2-4CPIG9', 
+            'primer_nombre' => 'Jessica'
+        ])
+        ->send();
+
+    // EJEMPLO 12: Plantilla con parámetros NOMBRADOS usando un Arreglo Secuencial
+    // Suponiendo la misma plantilla 'confirmacion_orden_nombrada'. Si usas un arreglo secuencial/lineal, 
+    // los valores DEBEN ser proporcionados en el orden exacto en que los placeholders aparecen en el texto de la plantilla.
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3137555908')
+        ->usingTemplate('confirmacion_orden_nombrada')
+        ->addBody(['Jessica', 'SKBUP2-4CPIG9']) // Jessica -> primer_nombre, SKBUP2.. -> numero_orden
+        ->send();
     ```
 
 ### Notas Importantes sobre Plantillas con Multimedia

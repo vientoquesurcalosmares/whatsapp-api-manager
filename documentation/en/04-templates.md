@@ -576,7 +576,37 @@ Thank you for your support 💙
         ->sendTemplateMessage($phone)
         ->to('57', '3135666627')
         ->usingTemplate('super_promo')
-        
+        ->addHeader('IMAGE', $promoImageUrl)
+        ->addBody(['¡ÚLTIMA OPORTUNIDAD!', '50', 'toda la tienda'])
+        ->addButton('Comprar ahora', ['NAVIDAD50'])
+        ->addButton('Contactar asesor', [])
+        ->addButton('No, gracias', [])
+        ->send();
+
+    // EXAMPLE 11: Template with NAMED parameters using an Associative Array (Recommended)
+    // Assuming a template named 'named_order_confirmation' exists that expects {{first_name}} and {{order_number}}
+    // Order does not matter when using associative arrays
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3137555908')
+        ->usingTemplate('named_order_confirmation')
+        ->addBody([
+            'order_number' => 'SKBUP2-4CPIG9', 
+            'first_name' => 'Jessica'
+        ])
+        ->send();
+
+    // EXAMPLE 12: Template with NAMED parameters using a Sequential Array
+    // Assuming the same template 'named_order_confirmation'. If using a sequential array, 
+    // the values MUST be provided in the exact order the placeholders appear in the template text.
+    $message = Whatsapp::template()
+        ->sendTemplateMessage($phone)
+        ->to('57', '3137555908')
+        ->usingTemplate('named_order_confirmation')
+        ->addBody(['Jessica', 'SKBUP2-4CPIG9']) // Jessica -> first_name, SKBUP2.. -> order_number
+        ->send();
+    ```
+
 ---
 
 <div align="center">

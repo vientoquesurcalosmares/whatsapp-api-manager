@@ -498,16 +498,39 @@ class TemplateMessageBuilder
         $parameters = [];
         
         if ($this->parameterFormat === 'NAMED') {
-            foreach ($placeholders as $placeholder) {
-                if (!isset($values[$placeholder])) {
+            // Check if the provided array is sequential and not associative
+            $isSequential = array_is_list($values);
+            
+            if ($isSequential) {
+                // Determine if they provided the exact number of parameters needed
+                if (count($values) !== count($placeholders)) {
                     throw new InvalidArgumentException(
-                        "Falta parámetro nombrado: '$placeholder'"
+                        "Número de parámetros no coincide. Esperados (nombrados): " . 
+                        count($placeholders) . ", Recibidos: " . count($values)
                     );
                 }
-                $parameters[] = [
-                    'type' => 'text',
-                    'text' => $values[$placeholder]
-                ];
+                
+                // Map the sequential values to the named placeholders in order
+                foreach ($placeholders as $index => $placeholder) {
+                    $parameters[] = [
+                        'type' => 'text',
+                        'parameter_name' => $placeholder,
+                        'text' => $values[$index]
+                    ];
+                }
+            } else {
+                foreach ($placeholders as $placeholder) {
+                    if (!isset($values[$placeholder])) {
+                        throw new InvalidArgumentException(
+                            "Falta parámetro nombrado: '$placeholder'"
+                        );
+                    }
+                    $parameters[] = [
+                        'type' => 'text',
+                        'parameter_name' => $placeholder,
+                        'text' => $values[$placeholder]
+                    ];
+                }
             }
         } else {
             if (count($values) !== count($placeholders)) {
