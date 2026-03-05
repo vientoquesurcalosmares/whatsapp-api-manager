@@ -1015,7 +1015,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             [
                 'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
                 'contact_id' => $contact->contact_id,
-                'conversation_id' => $originalMessage?->message_id ?? null,
+                //'conversation_id' => $conversation->conversation_id ?? null, //Nota 2026-03-05: Por lo pronto no se usará este campo para las reacciones, ya que no es claro si se debe asociar a la conversación del mensaje original o no.
                 'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
                 'message_from' => preg_replace('/[\D+]/', '', $message['from']),
                 'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
@@ -1023,7 +1023,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'message_content' => $reaction['emoji'],
                 'json_content' => json_encode($message),
                 'status' => 'received',
-                'message_context_id' => $reaction['message_id'],
+                'message_context_id' => $originalMessage?->message_id ?? null,
             ]);
 
         Log::channel('whatsapp')->info('Reacción procesada.', [
