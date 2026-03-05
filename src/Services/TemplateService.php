@@ -137,34 +137,39 @@ class TemplateService
             if ($existingVersion->status !== $templateData['status']) {
                 $existingVersion->update(['status' => $templateData['status']]);
             }
+
+            $this->createOrUpdateDefaultTemplateVersion($templateData['status'] ?? 'PENDING', $template, $existingVersion);
+
             return $existingVersion;
         }
 
-        // Crear nueva versión
-        return WhatsappModelResolver::template_version()->create([
+        $templateVersion = WhatsappModelResolver::template_version()->create([
             'template_id' => $template->template_id,
             'version_hash' => $structureHash,
             'template_structure' => $templateData['components'] ?? [],
             'status' => $templateData['status'],
             'is_active' => ($templateData['status'] === 'APPROVED'),
         ]);
+
+        $this->createOrUpdateDefaultTemplateVersion($templateData['status'] ?? 'PENDING', $template, $templateVersion);
+
+        // Crear nueva versión
+        return $templateVersion;
     }
 
-    public function activateVersion(string $versionId): void
+    /**
+     * Crea o actualiza la versión predeterminada de una plantilla Aprobada.
+     *
+     * @param string $status
+     * @param Model $template
+     * @param Model $version
+     * @return void
+     */
+    protected function createOrUpdateDefaultTemplateVersion(string $status, Model $template, Model $version): void
     {
-        $version = WhatsappModelResolver::template_version()->findOrFail($versionId);
-
-        // Desactivar todas las demás versiones de esta plantilla
-        WhatsappModelResolver::template_version()
-            ->where('template_id', $version->template_id)
-            ->where('version_id', '!=', $versionId)
-            ->update(['is_active' => false]);
-
-        // Activar esta versión
-        $version->update(['is_active' => true]);
-
-        // Actualizar estado de la plantilla principal
-        $version->template->update(['status' => $version->status]);
+        if( $status === 'APPROVED' && $template && $version ){
+            WhatsappModelResolver::template_version_default()->upsertDefault($template->template_id, $version->version_id);
+        }
     }
 
     /**

@@ -51,7 +51,7 @@ class TemplateEditor extends TemplateBuilder
         $this->templateData['name'] = $this->template->name;
         $this->templateData['language'] = $this->template->language;
         $this->templateData['category'] = $this->template->category->name;
-        
+
         // Cargar formato de parámetros existente
         $this->parameterFormat = $this->templateData['parameter_format'] ?? 'POSITIONAL';
 
@@ -83,12 +83,13 @@ class TemplateEditor extends TemplateBuilder
         try {
             $this->validateForUpdate();
             $this->sanitizeTemplateData();
+            dd('paro', $this->templateData);
 
             // Actualizar en la API de WhatsApp
-            $response = $this->updateTemplateInApi();
+            $fullTemplateResponse = $this->updateTemplateInApi();
 
             // Actualizar en la base de datos
-            $this->updateTemplateInDatabase();
+            $this->updateTemplateInDatabase($fullTemplateResponse);
 
             // Sincronizar relaciones de flujo si hay botones tipo FLOW
             $this->syncFlowRelations();
@@ -102,14 +103,14 @@ class TemplateEditor extends TemplateBuilder
             $responseBody = json_decode($response->getBody(), true);
             $errorCode = $responseBody['error']['code'] ?? null;
             $errorSubcode = $responseBody['error']['error_subcode'] ?? null;
-            
+
             if ($errorCode === 100 && $errorSubcode === 2388023) {
                 throw new TemplateUpdateException(
                     'No puedes actualizar una plantilla con el mismo nombre e idioma inmediatamente después de eliminar otra. ' .
                     'Espera 4 semanas o usa un nombre diferente.'
                 );
             }
-            
+
             Log::channel('whatsapp')->error('Error de API al actualizar plantilla', [
                 'error' => $responseBody,
                 'status' => $response->getStatusCode()
@@ -139,11 +140,12 @@ class TemplateEditor extends TemplateBuilder
         }
 
         // Validar estado de la plantilla
-        if ($this->template->status === 'APPROVED') {
+        //Nota Cuau: Si se debería poder editar una plantilla aprobada, pero cuando se guarde en base de dato shay que crear una nueva versión
+        /*if ($this->template->status === 'APPROVED') {
             throw new InvalidArgumentException(
                 'No se pueden modificar plantillas aprobadas. Crea una nueva versión.'
             );
-        }
+        }*/
 
         // Validar que el cuerpo existe
         if (!$this->componentExists('BODY')) {
@@ -165,24 +167,6 @@ class TemplateEditor extends TemplateBuilder
                 throw new TemplateComponentException("Solo puede haber un componente $componentType por plantilla.");
             }
         }
-    }
-
-    /**
-     * Sanitiza los datos de la plantilla
-     */
-    protected function sanitizeTemplateData(): void
-    {
-        array_walk_recursive($this->templateData, function (&$value) {
-            if (is_string($value)) {
-                // Convertir a UTF-8 si es necesario
-                if (!mb_check_encoding($value, 'UTF-8')) {
-                    $value = mb_convert_encoding($value, 'UTF-8', 'auto');
-                }
-
-                // Eliminar caracteres no imprimibles
-                $value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value);
-            }
-        });
     }
 
     /**
@@ -217,13 +201,15 @@ class TemplateEditor extends TemplateBuilder
     /**
      * Actualiza la plantilla en la base de datos
      */
-    protected function updateTemplateInDatabase(): void
+    protected function updateTemplateInDatabase($apiResponse): void
     {
         $this->template->update([
             'name' => $this->templateData['name'],
-            'json' => json_encode($this->templateData, JSON_UNESCAPED_UNICODE),
+            'json' => json_encode($apiResponse, JSON_UNESCAPED_UNICODE),
             'status' => 'PENDING', // Vuelve a estado de revisión
         ]);
+
+        $this->createInitialVersion($this->template, $apiResponse);
     }
 
     /**
@@ -234,6 +220,12 @@ class TemplateEditor extends TemplateBuilder
         $this->templateData = ['components' => []];
         $this->buttonCount = 0;
     }
+
+    /*public function setParameterFormat(string $format): self
+    {
+        parent::setParameterFormat($format);
+        return $this;
+    }*/
 
     /**
      * =================================================================
@@ -305,7 +297,9 @@ class TemplateEditor extends TemplateBuilder
 
     public function removeBody(): self
     {
-        throw new TemplateComponentException('El componente BODY es obligatorio y no puede ser eliminado.');
+        $this->removeComponent('BODY');
+        return $this;
+        //throw new TemplateComponentException('El componente BODY es obligatorio y no puede ser eliminado.');
     }
 
     public function hasBody(): bool
