@@ -168,7 +168,8 @@ class TemplateService
     protected function createOrUpdateDefaultTemplateVersion(string $status, Model $template, Model $version): void
     {
         if( $status === 'APPROVED' && $template && $version ){
-            WhatsappModelResolver::template_version_default()->upsertDefault($template->template_id, $version->version_id);
+            $templateVersionDefaultModel = config('whatsapp.models.template_version_default');
+            $templateVersionDefaultModel::upsertDefault($template->template_id, $version->version_id);
         }
     }
 
