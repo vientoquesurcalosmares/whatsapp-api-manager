@@ -83,7 +83,6 @@ class TemplateEditor extends TemplateBuilder
         try {
             $this->validateForUpdate();
             $this->sanitizeTemplateData();
-            dd('paro', $this->templateData);
 
             // Actualizar en la API de WhatsApp
             $fullTemplateResponse = $this->updateTemplateInApi();
@@ -117,10 +116,33 @@ class TemplateEditor extends TemplateBuilder
             ]);
             throw $e;
         } catch (\Exception $e) {
+            $arr_error = [];
+            $arr_error[] = $e->getMessage();
+            try{
+                if( method_exists($e, 'getDetails') ){
+                    $details = $e->getDetails();
+
+                    if( $details ){
+                        if( isset($details['error']) ){
+                            $detailsError = $details['error'];
+                            if( isset($detailsError['error_user_title']) ){
+                                $arr_error[] = $detailsError['error_user_title'];
+                            }
+                            if( isset($detailsError['error_user_msg']) ){
+                                $arr_error[] = $detailsError['error_user_msg'];
+                            }
+                        }
+                    }
+                }
+            }
+            catch (\Exception $ex) {
+                //dd($ex);
+            }
+
             Log::channel('whatsapp')->error('Error general al actualizar plantilla', [
-                'error_message' => $e->getMessage(),
+                'error_message' => $arr_error,
             ]);
-            throw new TemplateUpdateException('Error actualizando plantilla: ' . $e->getMessage(), 0, $e);
+            throw new TemplateUpdateException('Error actualizando plantilla: ' . implode(', ', $arr_error), 0, $e);
         }
     }
 
@@ -183,12 +205,12 @@ class TemplateEditor extends TemplateBuilder
             'Content-Type' => 'application/json',
         ];
 
-        Log::debug('Actualizando plantilla en API', [
+        Log::channel('whatsapp')->debug('Actualizando plantilla en API', [
             'endpoint' => $endpoint,
             'data' => $this->templateData
         ]);
 
-        return $this->apiClient->request(
+        $response = $this->apiClient->request(
             'POST',
             $endpoint,
             [],
@@ -196,6 +218,12 @@ class TemplateEditor extends TemplateBuilder
             [],
             $headers
         );
+
+        Log::channel('whatsapp')->info('Respuesta recibida de la API al editar plantilla.', [
+            'response' => $response
+        ]);
+
+        return $response;
     }
 
     /**
@@ -203,13 +231,39 @@ class TemplateEditor extends TemplateBuilder
      */
     protected function updateTemplateInDatabase($apiResponse): void
     {
-        $this->template->update([
-            'name' => $this->templateData['name'],
-            'json' => json_encode($apiResponse, JSON_UNESCAPED_UNICODE),
-            'status' => 'PENDING', // Vuelve a estado de revisión
-        ]);
+        try {
+            $endpoint = Endpoints::build(Endpoints::GET_TEMPLATE, [
+                'template_id' => $apiResponse['id'],
+            ]);
 
-        $this->createInitialVersion($this->template, $apiResponse);
+            $headers = [
+                'Authorization' => 'Bearer ' . $this->account->api_token,
+            ];
+
+            $fullTemplateResponse = $this->apiClient->request(
+                'GET',
+                $endpoint,
+                [],
+                null,
+                [],
+                $headers
+            );
+
+            // Actualizar el registro con los datos completos que incluyen URLs
+            $this->template->update([
+                'name' => $fullTemplateResponse['name'] ?? $this->templateData['name'],
+                'json' => json_encode($fullTemplateResponse, JSON_UNESCAPED_UNICODE),
+                'status' => $fullTemplateResponse['status'] ?? 'PENDING', // Vuelve a estado de revisión a menos que la API indique lo contrario
+            ]);
+
+            $this->createInitialVersion($this->template, $fullTemplateResponse);
+
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error al obtener detalles completos de la plantilla', [
+                'template_id' => $apiResponse['id'] ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**
