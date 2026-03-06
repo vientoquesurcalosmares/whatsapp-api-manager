@@ -19,7 +19,7 @@ return new class extends Migration
             return;
         }
 
-        Artisan::call('whatsapp-business:backfill-template-version-default', [
+        Artisan::call('whatsapp:backfill-template-version-default', [
             '--chunk' => 200,
         ]);
     }

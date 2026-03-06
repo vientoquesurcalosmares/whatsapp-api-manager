@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands;
+namespace ScriptDevelop\WhatsappManager\Console\Commands;
 
 use Illuminate\Console\Command;
 use ScriptDevelop\WhatsappManager\Models\Template;
@@ -12,7 +12,7 @@ class WhatsappBusinessBackfillTemplateVersionDefaultCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'whatsapp-business:backfill-template-version-default
+    protected $signature = 'whatsapp:backfill-template-version-default
                             {--chunk=200 : Tamaño de lote para procesar templates}
                             {--dry-run : Simula cambios sin escribir en base de datos}';
 
