@@ -101,15 +101,10 @@ class Template extends Model
 
     /**
      * Obtiene la versión APROBADA por defecto de la plantilla, si no existe el registro entonces buscará la última versión APROBADA del template y la establecerá como versión por defecto.
-     * @return \Illuminate\Database\Eloquent\Model|null
      */
     public function versionDefault()
     {
-        if (!$this->exists || empty($this->template_id)) {
-            return null;
-        }
-
-        $defaultVersion = $this->hasOneThrough(
+        return $this->hasOneThrough(
                 config('whatsapp.models.template_version'),
                 config('whatsapp.models.template_version_default'),
                 'template_id',
@@ -117,27 +112,7 @@ class Template extends Model
                 'template_id',
                 'version_id'
             )
-            ->where('status', 'APPROVED')
-            ->first();
-
-        if ($defaultVersion) {
-            return $defaultVersion;
-        }
-
-        $templateVersionDefaultModel = config('whatsapp.models.template_version_default');
-
-        $lastVersion = $this->versions()
-            ->orderBy('created_at', 'desc')
-            ->where('status', 'APPROVED')
-            ->first();
-
-        if (!$lastVersion) {
-            return null;
-        }
-
-        $templateVersionDefaultModel::upsertDefault($this->template_id, $lastVersion->version_id);
-
-        return $lastVersion;
+            ->where('status', 'APPROVED');
     }
 
     // Relación con la última versión aprobada
@@ -162,7 +137,6 @@ class Template extends Model
             $templateVersionDefaultModel = config('whatsapp.models.template_version_default');
             $templateVersionDefaultModel::upsertDefault($this->template_id, $createVersion->version_id);
         }
-
 
         // Crear nueva versión
         return $createVersion;
