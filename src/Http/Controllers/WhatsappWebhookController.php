@@ -10,7 +10,7 @@ use ScriptDevelop\WhatsappManager\Services\WebhookProcessors\BaseWebhookProcesso
 class WhatsappWebhookController extends Controller
 {
     protected $processor;
-    
+
     public function __construct()
     {
         try {
@@ -19,23 +19,23 @@ class WhatsappWebhookController extends Controller
         } catch (\Exception $e) {
             // Fallback a la implementación por defecto
             $this->processor = new BaseWebhookProcessor();
-            
-            \Log::warning('WebhookProcessorInterface no pudo ser resuelto, usando implementación por defecto', [
+
+            \Log::channel('whatsapp')->warning('WebhookProcessorInterface no pudo ser resuelto, usando implementación por defecto', [
                 'error' => $e->getMessage()
             ]);
         }
     }
-    
+
     public function handle(Request $request)
     {
         try {
             return $this->processor->handle($request);
         } catch (\Exception $e) {
-            \Log::error('Error en el procesamiento del webhook', [
+            \Log::channel('whatsapp')->error('Error en el procesamiento del webhook', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json(['error' => 'Internal server error'], 500);
         }
     }

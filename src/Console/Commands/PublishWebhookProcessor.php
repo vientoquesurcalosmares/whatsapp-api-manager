@@ -57,10 +57,10 @@ use ScriptDevelop\WhatsappManager\Services\WebhookProcessors\BaseWebhookProcesso
 
 /**
  * Custom WhatsApp Webhook Processor
- * 
+ *
  * Extend this class to add custom functionality to your WhatsApp webhook processing.
  * You can override any method from BaseWebhookProcessor to implement your own logic.
- * 
+ *
  * Common methods to override:
  * - handle() - Main webhook processing
  * - processTextMessage() - Text messages
@@ -68,7 +68,7 @@ use ScriptDevelop\WhatsappManager\Services\WebhookProcessors\BaseWebhookProcesso
  * - processInteractiveMessage() - Interactive buttons and lists
  * - handleStatusUpdate() - Message status updates (delivered, read, failed)
  * - handleTemplateEvent() - Template-related events
- * 
+ *
  * See BaseWebhookProcessor for all available methods.
  */
 class WhatsappWebhookProcessor extends BaseWebhookProcessor
@@ -82,7 +82,7 @@ class WhatsappWebhookProcessor extends BaseWebhookProcessor
     {
         // Initialize any custom configuration here
         $this->redirectUrl = config('whatsapp.webhook.redirect_url', env('WHATSAPP_WEBHOOK_REDIRECT_URL'));
-        
+
         // Call parent constructor if needed
         // parent::__construct();
     }
@@ -100,7 +100,7 @@ class WhatsappWebhookProcessor extends BaseWebhookProcessor
 
         // Add custom post-processing logic here
         $this->customPostProcessing($request);
-        
+
         // Optional: Redirect webhook to external URL
         $this->redirectToExternalUrl($request);
 
@@ -116,11 +116,11 @@ class WhatsappWebhookProcessor extends BaseWebhookProcessor
     {
         // Add your custom logic here
         $textContent = $message['text']['body'] ?? '';
-        
+
         if (str_contains(strtolower($textContent), 'hello')) {
-            \Log::info("Greeting received from: {$contact->phone_number}");
+            \Log::channel('whatsapp')->info("Greeting received from: {$contact->phone_number}");
         }
-        
+
         if (str_contains(strtolower($textContent), 'help')) {
             return $this->handleHelpCommand($message, $contact, $whatsappPhone);
         }
@@ -139,7 +139,7 @@ class WhatsappWebhookProcessor extends BaseWebhookProcessor
     {
         // Custom logic for media messages
         $mediaType = $message['type'];
-        \Log::info("Media received - Type: {$mediaType}, From: {$contact->phone_number}");
+        \Log::channel('whatsapp')->info("Media received - Type: {$mediaType}, From: {$contact->phone_number}");
 
         // Add custom media processing (AI analysis, storage, etc.)
         if ($mediaType === 'image') {
@@ -161,8 +161,8 @@ class WhatsappWebhookProcessor extends BaseWebhookProcessor
         // Custom logic for status updates
         $messageId = $status['id'] ?? null;
         $statusValue = $status['status'] ?? null;
-        
-        \Log::info("Message status update - ID: {$messageId}, Status: {$statusValue}");
+
+        \Log::channel('whatsapp')->info("Message status update - ID: {$messageId}, Status: {$statusValue}");
 
         // Add custom status tracking logic
         $this->trackMessageStatus($status);
@@ -238,8 +238,8 @@ class WhatsappWebhookProcessor extends BaseWebhookProcessor
     protected function handleHelpCommand(array $message, $contact, $whatsappPhone)
     {
         // Implement help command logic
-        \Log::info("Help command triggered by: {$contact->phone_number}");
-        
+        \Log::channel('whatsapp')->info("Help command triggered by: {$contact->phone_number}");
+
         // You can choose to not save the message by returning null
         // or modify the message before saving
         return null;
@@ -254,7 +254,7 @@ class WhatsappWebhookProcessor extends BaseWebhookProcessor
     {
         // Integrate with image analysis services
         // Example: Google Vision API, AWS Rekognition, etc.
-        \Log::info("Image analysis for contact: {$contact->phone_number}");
+        \Log::channel('whatsapp')->info("Image analysis for contact: {$contact->phone_number}");
     }
     */
 
@@ -265,7 +265,7 @@ class WhatsappWebhookProcessor extends BaseWebhookProcessor
     protected function trackMessageStatus(array $status): void
     {
         // Integrate with external analytics or CRM
-        \Log::info("Tracking message status in external system");
+        \Log::channel('whatsapp')->info("Tracking message status in external system");
     }
     */
 }
@@ -275,7 +275,7 @@ PHP;
     protected function updateConfiguration(): void
     {
         $configPath = config_path('whatsapp.php');
-        
+
         if (!File::exists($configPath)) {
             $this->warn('Configuration file not found. Please update your whatsapp config manually:');
             $this->info("'processor' => \\App\\Services\\Whatsapp\\WhatsappWebhookProcessor::class");
@@ -283,7 +283,7 @@ PHP;
         }
 
         $configContent = File::get($configPath);
-        
+
         // Check if processor configuration already exists
         if (strpos($configContent, "'processor'") !== false) {
             // Update existing processor configuration
