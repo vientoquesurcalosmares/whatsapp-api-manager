@@ -14,7 +14,6 @@ use ScriptDevelop\WhatsappManager\Services\BlockService;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
 use ScriptDevelop\WhatsappManager\Services\TemplateService;
 use ScriptDevelop\WhatsappManager\Services\FlowService;
-use ScriptDevelop\WhatsappManager\Console\Commands\WhatsappBusinessGetTemplateAnalyticsCommand;
 
 class WhatsappServiceProvider extends ServiceProvider
 {
@@ -153,11 +152,7 @@ class WhatsappServiceProvider extends ServiceProvider
                 __DIR__ . '/../Database/Seeders/WhatsappTemplateLanguageSeeder.php' => database_path('seeders/WhatsappTemplateLanguageSeeder.php'),
             ], 'whatsapp-seeders');
 
-            $this->commands([
-                CheckUserModel::class,
-                \ScriptDevelop\WhatsappManager\Console\Commands\PublishWebhookProcessor::class,
-                \ScriptDevelop\WhatsappManager\Console\Commands\WhatsappBusinessGetGeneralTemplateAnalyticsCommand::class,
-            ]);
+            $this->registerPackageCommands();
 
             // Registrar el schedule automáticamente
             $this->registerSchedule();
@@ -260,5 +255,27 @@ class WhatsappServiceProvider extends ServiceProvider
     {
         // El schedule debe agregarse manualmente en routes/console.php del proyecto
         // Ver las instrucciones en el comentario de arriba
+    }
+
+    /**
+     * Registrar automáticamente todos los comandos del paquete.
+     */
+    protected function registerPackageCommands(): void
+    {
+        $commandFiles = glob(__DIR__ . '/../Console/Commands/*.php') ?: [];
+        $commandClasses = [];
+
+        foreach ($commandFiles as $commandFile) {
+            $className = pathinfo($commandFile, PATHINFO_FILENAME);
+            $fqcn = "ScriptDevelop\\WhatsappManager\\Console\\Commands\\{$className}";
+
+            if (class_exists($fqcn) && is_subclass_of($fqcn, \Illuminate\Console\Command::class)) {
+                $commandClasses[] = $fqcn;
+            }
+        }
+
+        if (!empty($commandClasses)) {
+            $this->commands($commandClasses);
+        }
     }
 }

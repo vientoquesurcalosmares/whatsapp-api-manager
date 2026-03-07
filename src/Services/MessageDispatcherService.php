@@ -323,7 +323,7 @@ class MessageDispatcherService
         try {
             $fileId = $this->uploadFile($phoneNumberModel, $file, 'image');
         } catch (\Exception $e) {
-            Log::error('Error subiendo archivo para cabecera');
+            Log::channel('whatsapp')->error('Error subiendo archivo para cabecera');
             throw $e;
         }
 
@@ -445,7 +445,7 @@ class MessageDispatcherService
         try {
             $fileId = $this->uploadFile($phoneNumberModel, $file, 'image');
         } catch (\Exception $e) {
-            Log::error('Error subiendo archivo para cabecera');
+            Log::channel('whatsapp')->error('Error subiendo archivo para cabecera');
             throw $e;
         }
 
@@ -737,7 +737,7 @@ class MessageDispatcherService
         try {
             $fileId = $this->uploadFile($phoneNumberModel, $file, 'audio');
         } catch (\Exception $e) {
-            Log::error('Error subiendo archivo para cabecera');
+            Log::channel('whatsapp')->error('Error subiendo archivo para cabecera');
             throw $e;
         }
 
@@ -850,7 +850,7 @@ class MessageDispatcherService
         try {
             $fileId = $this->uploadFile($phoneNumberModel, $file, 'audio');
         } catch (\Exception $e) {
-            Log::error('Error subiendo archivo para cabecera');
+            Log::channel('whatsapp')->error('Error subiendo archivo para cabecera');
             throw $e;
         }
 
@@ -1131,7 +1131,7 @@ class MessageDispatcherService
         try {
             $fileId = $this->uploadFile($phoneNumberModel, $file, 'document');
         } catch (\Exception $e) {
-            Log::error('Error subiendo archivo para cabecera');
+            Log::channel('whatsapp')->error('Error subiendo archivo para cabecera');
             throw $e;
         }
 
@@ -1251,7 +1251,7 @@ class MessageDispatcherService
         try {
             $fileId = $this->uploadFile($phoneNumberModel, $file, 'document');
         } catch (\Exception $e) {
-            Log::error('Error subiendo archivo para cabecera');
+            Log::channel('whatsapp')->error('Error subiendo archivo para cabecera');
             throw $e;
         }
 
@@ -1552,7 +1552,7 @@ class MessageDispatcherService
         try {
             $fileId = $this->uploadFile($phoneNumberModel, $file, 'sticker');
         } catch (\Exception $e) {
-            Log::error('Error subiendo archivo para cabecera');
+            Log::channel('whatsapp')->error('Error subiendo archivo para cabecera');
             throw $e;
         }
 
@@ -1675,7 +1675,7 @@ class MessageDispatcherService
         try {
             $fileId = $this->uploadFile($phoneNumberModel, $file, 'sticker');
         } catch (\Exception $e) {
-            Log::error('Error subiendo archivo para cabecera');
+            Log::channel('whatsapp')->error('Error subiendo archivo para cabecera');
             throw $e;
         }
 
@@ -1874,7 +1874,7 @@ class MessageDispatcherService
         try {
             $fileId = $this->uploadFile($phoneNumberModel, $file, 'video');
         } catch (\Exception $e) {
-            Log::error('Error subiendo archivo para cabecera');
+            Log::channel('whatsapp')->error('Error subiendo archivo para cabecera');
             throw $e;
         }
 
@@ -1993,7 +1993,7 @@ class MessageDispatcherService
         try {
             $fileId = $this->uploadFile($phoneNumberModel, $file, 'video');
         } catch (\Exception $e) {
-            Log::error('Error subiendo archivo para cabecera');
+            Log::channel('whatsapp')->error('Error subiendo archivo para cabecera');
             throw $e;
         }
 

@@ -274,7 +274,7 @@ class FlowService
                 $headers
             );
 
-            Log::info('Flujo publicado exitosamente.', [
+            Log::channel('whatsapp')->info('Flujo publicado exitosamente.', [
                 'flow_id' => $flow->wa_flow_id,
                 'response' => $response,
             ]);
@@ -287,7 +287,7 @@ class FlowService
 
             return true;
         } catch (\Exception $e) {
-            Log::error('Error al publicar el flujo: ' . $e->getMessage(), [
+            Log::channel('whatsapp')->error('Error al publicar el flujo: ' . $e->getMessage(), [
                 'flow_id' => $flow->wa_flow_id,
             ]);
             throw new \RuntimeException('Error al publicar el flujo: ' . $e->getMessage());

@@ -1462,6 +1462,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                     'rejection_reason' => $reason,
                     'is_active' => ($templateData['event'] === 'APPROVED'),
                 ]);
+
+                $this->createOrUpdateDefaultTemplateVersion($templateData['event'] ?? 'PENDING', $template, $lastVersion);
             } else {
                 // Caso excepcional: no hay versiones pero debemos crear una
                 $this->createTemplateVersion($template, array_merge($templateData, [
@@ -1496,6 +1498,9 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'status' => $event,
                 'rejection_reason' => $reason
             ]);
+
+            $this->createOrUpdateDefaultTemplateVersion($event, $template, $existingVersion);
+
             return;
         }
 
@@ -1508,10 +1513,28 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             'rejection_reason' => $reason
         ]);
 
+        $this->createOrUpdateDefaultTemplateVersion($event, $template, $version);
+
         Log::channel('whatsapp')->info('New template version created', [
             'template_id' => $template->template_id,
             'version_id' => $version->version_id
         ]);
+    }
+
+    /**
+     * Crea o actualiza la versión predeterminada de una plantilla Aprobada.
+     *
+     * @param string $status
+     * @param Model $template
+     * @param Model $version
+     * @return void
+     */
+    protected function createOrUpdateDefaultTemplateVersion(string $status, Model $template, Model $version): void
+    {
+        if( $status === 'APPROVED' && $template && $version ){
+            $templateVersionDefaultModel = config('whatsapp.models.template_version_default');
+            $templateVersionDefaultModel::upsertDefault($template->template_id, $version->version_id);
+        }
     }
 
     protected function handleTemplateCreation(array $templateData): void

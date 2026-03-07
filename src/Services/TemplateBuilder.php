@@ -725,6 +725,29 @@ class TemplateBuilder
     }
 
     /**
+     * Sanitiza los datos de la plantilla
+     */
+    protected function sanitizeTemplateData(): void
+    {
+        // Validar que todos los datos estén en UTF-8
+        array_walk_recursive($this->templateData, function (&$value) {
+            if (is_string($value)) {
+                if (!mb_check_encoding($value, 'UTF-8')) {
+                    Log::channel('whatsapp')->warning('Corrigiendo codificación de un valor no UTF-8.', ['value' => $value]);
+                    $value = mb_convert_encoding($value, 'UTF-8', 'auto');
+                }
+                // Eliminar caracteres invisibles o no imprimibles, excepto los saltos de línea
+                //Se comenta la línea anterior, provoca eliminar incluso saltos de línea que son necesarios para el formato de la plantilla, se reemplaza por la siguiente línea que conserva los saltos de línea pero elimina otros caracteres invisibles
+                //$value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value);
+                $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $value);
+
+                // Si se encuentran 3 o más saltos de línea consecutivos, se reemplazan por 2, ya que whatsapp no permite más de 2 saltos de línea consecutivos en los textos de las plantillas
+                $value = preg_replace('/\n{3,}/', "\n\n", $value);
+            }
+        });
+    }
+
+    /**
      * Guarda la plantilla en la API y la base de datos
      *
      * @return Model Modelo de plantilla creado
@@ -735,22 +758,7 @@ class TemplateBuilder
         try {
             $this->validateTemplate();
 
-            // Validar que todos los datos estén en UTF-8
-            array_walk_recursive($this->templateData, function (&$value) {
-                if (is_string($value)) {
-                    if (!mb_check_encoding($value, 'UTF-8')) {
-                        Log::channel('whatsapp')->warning('Corrigiendo codificación de un valor no UTF-8.', ['value' => $value]);
-                        $value = mb_convert_encoding($value, 'UTF-8', 'auto');
-                    }
-                    // Eliminar caracteres invisibles o no imprimibles, excepto los saltos de línea
-                    //Se comenta la línea anterior, provoca eliminar incluso saltos de línea que son necesarios para el formato de la plantilla, se reemplaza por la siguiente línea que conserva los saltos de línea pero elimina otros caracteres invisibles
-                    //$value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value);
-                    $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $value);
-
-                    // Si se encuentran 3 o más saltos de línea consecutivos, se reemplazan por 2, ya que whatsapp no permite más de 2 saltos de línea consecutivos en los textos de las plantillas
-                    $value = preg_replace('/\n{3,}/', "\n\n", $value);
-                }
-            });
+            $this->sanitizeTemplateData();
 
             $endpoint = Endpoints::build(Endpoints::CREATE_TEMPLATE, [
                 'waba_id' => $this->account->whatsapp_business_id,
@@ -879,13 +887,33 @@ class TemplateBuilder
      */
     protected function createInitialVersion(Model $template, array $apiResponse): Model
     {
-        return WhatsappModelResolver::template_version()->create([
+        $templateVersion = WhatsappModelResolver::template_version()->create([
             'template_id' => $template->template_id,
             'version_hash' => md5(json_encode($apiResponse['components'])),
             'template_structure' => $apiResponse['components'],
             'status' => $apiResponse['status'] ?? 'PENDING',
             'is_active' => ($apiResponse['status'] === 'APPROVED'),
         ]);
+
+        $this->createOrUpdateDefaultTemplateVersion($apiResponse['status'] ?? 'PENDING', $template, $templateVersion);
+
+        return $templateVersion;
+    }
+
+    /**
+     * Crea o actualiza la versión APROBADA predeterminada de una plantilla.
+     *
+     * @param string $status
+     * @param Model $template
+     * @param Model $version
+     * @return void
+     */
+    protected function createOrUpdateDefaultTemplateVersion(string $status, Model $template, Model $version): void
+    {
+        if( $status === 'APPROVED' && $template && $version ){
+            $templateVersionDefaultModel = config('whatsapp.models.template_version_default');
+            $templateVersionDefaultModel::upsertDefault($template->template_id, $version->version_id);
+        }
     }
 
     /**

@@ -51,7 +51,7 @@ class TemplateEditor extends TemplateBuilder
         $this->templateData['name'] = $this->template->name;
         $this->templateData['language'] = $this->template->language;
         $this->templateData['category'] = $this->template->category->name;
-        
+
         // Cargar formato de parámetros existente
         $this->parameterFormat = $this->templateData['parameter_format'] ?? 'POSITIONAL';
 
@@ -85,10 +85,10 @@ class TemplateEditor extends TemplateBuilder
             $this->sanitizeTemplateData();
 
             // Actualizar en la API de WhatsApp
-            $response = $this->updateTemplateInApi();
+            $fullTemplateResponse = $this->updateTemplateInApi();
 
             // Actualizar en la base de datos
-            $this->updateTemplateInDatabase();
+            $this->updateTemplateInDatabase($fullTemplateResponse);
 
             // Sincronizar relaciones de flujo si hay botones tipo FLOW
             $this->syncFlowRelations();
@@ -102,24 +102,47 @@ class TemplateEditor extends TemplateBuilder
             $responseBody = json_decode($response->getBody(), true);
             $errorCode = $responseBody['error']['code'] ?? null;
             $errorSubcode = $responseBody['error']['error_subcode'] ?? null;
-            
+
             if ($errorCode === 100 && $errorSubcode === 2388023) {
                 throw new TemplateUpdateException(
                     'No puedes actualizar una plantilla con el mismo nombre e idioma inmediatamente después de eliminar otra. ' .
                     'Espera 4 semanas o usa un nombre diferente.'
                 );
             }
-            
+
             Log::channel('whatsapp')->error('Error de API al actualizar plantilla', [
                 'error' => $responseBody,
                 'status' => $response->getStatusCode()
             ]);
             throw $e;
         } catch (\Exception $e) {
+            $arr_error = [];
+            $arr_error[] = $e->getMessage();
+            try{
+                if( method_exists($e, 'getDetails') ){
+                    $details = $e->getDetails();
+
+                    if( $details ){
+                        if( isset($details['error']) ){
+                            $detailsError = $details['error'];
+                            if( isset($detailsError['error_user_title']) ){
+                                $arr_error[] = $detailsError['error_user_title'];
+                            }
+                            if( isset($detailsError['error_user_msg']) ){
+                                $arr_error[] = $detailsError['error_user_msg'];
+                            }
+                        }
+                    }
+                }
+            }
+            catch (\Exception $ex) {
+                //dd($ex);
+            }
+
             Log::channel('whatsapp')->error('Error general al actualizar plantilla', [
-                'error_message' => $e->getMessage(),
+                'error_message' => $arr_error,
             ]);
-            throw new TemplateUpdateException('Error actualizando plantilla: ' . $e->getMessage(), 0, $e);
+            throw new TemplateUpdateException('Error actualizando plantilla: ' . implode(', ', $arr_error), 0, $e);
         }
     }
 
@@ -139,11 +162,12 @@ class TemplateEditor extends TemplateBuilder
         }
 
         // Validar estado de la plantilla
-        if ($this->template->status === 'APPROVED') {
+        //Nota Cuau: Si se debería poder editar una plantilla aprobada, pero cuando se guarde en base de dato shay que crear una nueva versión
+        /*if ($this->template->status === 'APPROVED') {
             throw new InvalidArgumentException(
                 'No se pueden modificar plantillas aprobadas. Crea una nueva versión.'
             );
-        }
+        }*/
 
         // Validar que el cuerpo existe
         if (!$this->componentExists('BODY')) {
@@ -168,24 +192,6 @@ class TemplateEditor extends TemplateBuilder
     }
 
     /**
-     * Sanitiza los datos de la plantilla
-     */
-    protected function sanitizeTemplateData(): void
-    {
-        array_walk_recursive($this->templateData, function (&$value) {
-            if (is_string($value)) {
-                // Convertir a UTF-8 si es necesario
-                if (!mb_check_encoding($value, 'UTF-8')) {
-                    $value = mb_convert_encoding($value, 'UTF-8', 'auto');
-                }
-
-                // Eliminar caracteres no imprimibles
-                $value = preg_replace('/[\x00-\x1F\x7F]/u', '', $value);
-            }
-        });
-    }
-
-    /**
      * Actualiza la plantilla en la API de WhatsApp
      */
     protected function updateTemplateInApi(): array
@@ -199,12 +205,12 @@ class TemplateEditor extends TemplateBuilder
             'Content-Type' => 'application/json',
         ];
 
-        Log::debug('Actualizando plantilla en API', [
+        Log::channel('whatsapp')->debug('Actualizando plantilla en API', [
             'endpoint' => $endpoint,
             'data' => $this->templateData
         ]);
 
-        return $this->apiClient->request(
+        $response = $this->apiClient->request(
             'POST',
             $endpoint,
             [],
@@ -212,18 +218,52 @@ class TemplateEditor extends TemplateBuilder
             [],
             $headers
         );
+
+        Log::channel('whatsapp')->info('Respuesta recibida de la API al editar plantilla.', [
+            'response' => $response
+        ]);
+
+        return $response;
     }
 
     /**
      * Actualiza la plantilla en la base de datos
      */
-    protected function updateTemplateInDatabase(): void
+    protected function updateTemplateInDatabase($apiResponse): void
     {
-        $this->template->update([
-            'name' => $this->templateData['name'],
-            'json' => json_encode($this->templateData, JSON_UNESCAPED_UNICODE),
-            'status' => 'PENDING', // Vuelve a estado de revisión
-        ]);
+        try {
+            $endpoint = Endpoints::build(Endpoints::GET_TEMPLATE, [
+                'template_id' => $apiResponse['id'],
+            ]);
+
+            $headers = [
+                'Authorization' => 'Bearer ' . $this->account->api_token,
+            ];
+
+            $fullTemplateResponse = $this->apiClient->request(
+                'GET',
+                $endpoint,
+                [],
+                null,
+                [],
+                $headers
+            );
+
+            // Actualizar el registro con los datos completos que incluyen URLs
+            $this->template->update([
+                'name' => $fullTemplateResponse['name'] ?? $this->templateData['name'],
+                'json' => json_encode($fullTemplateResponse, JSON_UNESCAPED_UNICODE),
+                'status' => $fullTemplateResponse['status'] ?? 'PENDING', // Vuelve a estado de revisión a menos que la API indique lo contrario
+            ]);
+
+            $this->createInitialVersion($this->template, $fullTemplateResponse);
+
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error al obtener detalles completos de la plantilla', [
+                'template_id' => $apiResponse['id'] ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -234,6 +274,12 @@ class TemplateEditor extends TemplateBuilder
         $this->templateData = ['components' => []];
         $this->buttonCount = 0;
     }
+
+    /*public function setParameterFormat(string $format): self
+    {
+        parent::setParameterFormat($format);
+        return $this;
+    }*/
 
     /**
      * =================================================================
@@ -305,7 +351,9 @@ class TemplateEditor extends TemplateBuilder
 
     public function removeBody(): self
     {
-        throw new TemplateComponentException('El componente BODY es obligatorio y no puede ser eliminado.');
+        $this->removeComponent('BODY');
+        return $this;
+        //throw new TemplateComponentException('El componente BODY es obligatorio y no puede ser eliminado.');
     }
 
     public function hasBody(): bool

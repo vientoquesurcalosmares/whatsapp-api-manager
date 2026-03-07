@@ -99,24 +99,46 @@ class Template extends Model
         return $this->hasMany(config('whatsapp.models.template_version'), 'template_id');
     }
 
+    /**
+     * Obtiene la versión APROBADA por defecto de la plantilla, si no existe el registro entonces buscará la última versión APROBADA del template y la establecerá como versión por defecto.
+     */
+    public function versionDefault()
+    {
+        return $this->hasOneThrough(
+                config('whatsapp.models.template_version'),
+                config('whatsapp.models.template_version_default'),
+                'template_id',
+                'version_id',
+                'template_id',
+                'version_id'
+            )
+            ->where('status', 'APPROVED');
+    }
+
     // Relación con la última versión aprobada
     public function activeVersion()
     {
-        return $this->hasOne(config('whatsapp.models.template_version'), 'template_id')
-            ->where('is_active', true);
+        /*return $this->hasOne(config('whatsapp.models.template_version'), 'template_id')
+            ->where('is_active', true);*/
+        return $this->versionDefault();
     }
 
     public function createNewVersion(array $newStructure): Model
     {
-        // Desactivar todas las versiones anteriores
-        $this->versions()->update(['is_active' => false]);
-
-        // Crear nueva versión
-        return $this->versions()->create([
+        $createVersion = $this->versions()->create([
             'version_hash' => md5(json_encode($newStructure)),
             'template_structure' => $newStructure,
             'status' => 'PENDING',
             'is_active' => true,
         ]);
+
+        if( $createVersion ) {
+            // Actualizar o crear el registro de versión por defecto
+            $templateVersionDefaultModel = config('whatsapp.models.template_version_default');
+            $templateVersionDefaultModel::upsertDefault($this->template_id, $createVersion->version_id);
+        }
+
+        // Crear nueva versión
+        return $createVersion;
     }
 }

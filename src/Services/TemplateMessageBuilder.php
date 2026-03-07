@@ -68,23 +68,6 @@ class TemplateMessageBuilder
     }
 
     /**
-     * Obtiene la versión aprobada más reciente.
-     */
-    protected function getLatestApprovedTemplateVersion(string $templateName): ?Model
-    {
-        $template = WhatsappModelResolver::template()
-            ->where('name', $templateName)
-            ->first();
-
-        if (!$template) return null;
-
-        return $template->versions()
-            ->where('status', 'APPROVED')
-            ->latest()
-            ->first();
-    }
-
-    /**
      * Establece el número de teléfono del destinatario.
      *
      * @param string $phoneNumber El número de teléfono sin el código de país.
@@ -238,8 +221,6 @@ class TemplateMessageBuilder
         return $this;
     }
 
-
-
     public function addButton(string $buttonText, array $parameter = []): self
     {
         $this->ensureTemplateStructureLoaded();
@@ -356,16 +337,6 @@ class TemplateMessageBuilder
      */
     public function send(): array
     {
-        // Obtener versión si no se especificó
-        if (!$this->templateVersion) {
-            $this->templateVersion = $this->getLatestApprovedTemplateVersion($this->templateIdentifier);
-        }
-
-        if (!$this->templateVersion) {
-            throw new \Exception("No hay versión aprobada para la plantilla: {$this->templateIdentifier}");
-        }
-
-
         // Consultar la estructura de la plantilla si es necesario
         $this->fetchTemplateStructure();
 
@@ -458,6 +429,10 @@ class TemplateMessageBuilder
 
         if (!$this->templateVersion) {
             $this->templateVersion = $this->template->activeVersion;
+
+            if( !$this->templateVersion ) {
+                throw new \Exception("No hay versión aprobada para la plantilla: {$this->templateIdentifier}");
+            }
         }
 
         $rawStructure = $this->templateVersion->template_structure;

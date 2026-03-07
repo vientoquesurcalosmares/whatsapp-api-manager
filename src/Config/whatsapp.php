@@ -41,6 +41,9 @@ return [
         //Versiones de plantillas
         'template_version' => \ScriptDevelop\WhatsappManager\Models\TemplateVersion::class,
 
+        //Versión por defecto de plantillas
+        'template_version_default' => \ScriptDevelop\WhatsappManager\Models\TemplateVersionDefault::class,
+
         //Template analytics
         'general_template_analytics' => \ScriptDevelop\WhatsappManager\Models\GeneralTemplateAnalytics::class,
 
