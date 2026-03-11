@@ -234,7 +234,8 @@ class TemplateService
     }
 
     /**
-     * Obtiene una plantilla por su nombre desde la API de WhatsApp.
+     * Obtiene solo una plantilla que coincida parcialmente por su nombre desde la API de WhatsApp.
+     * Nota: Si deseas obtener una coincidencia exacta por nombre y lenguaje, se recomienda usar getTemplateByNameLanguage.
      *
      * @param Model $account La cuenta empresarial de WhatsApp.
      * @param string $templateName El nombre de la plantilla.
@@ -297,6 +298,156 @@ class TemplateService
                 'error_message' => $e->getMessage(),
                 'endpoint' => $endpoint,
                 'template_name' => $templateName,
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Obtiene TODAS las plantillas que coincidan parcialmente por el nombre desde la API de WhatsApp.
+     * Nota: Si deseas obtener una coincidencia exacta por nombre y lenguaje, se recomienda usar getTemplateByNameLanguage.
+     *
+     * @param Model $account La cuenta empresarial de WhatsApp.
+     * @param string $templateName El nombre de la plantilla.
+     * @return array|null Las plantillas obtenidas o null si no existen.
+     */
+    public function getTemplatesByName(Model $account, string $templateName): ?array
+    {
+        $endpoint = Endpoints::build(Endpoints::GET_TEMPLATES, [
+            'waba_id' => $account->whatsapp_business_id,
+        ]);
+
+        $query = [
+            'name' => $templateName,
+        ];
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $account->api_token,
+        ];
+
+        Log::channel('whatsapp')->info('Obteniendo plantilla por nombre desde la API.', [
+            'endpoint' => $endpoint,
+            'query' => $query,
+            'headers' => $headers,
+        ]);
+
+        try {
+            $response = $this->apiClient->request(
+                'GET',
+                $endpoint,
+                [],
+                null,
+                $query,
+                $headers
+            );
+
+            Log::channel('whatsapp')->info('Respuesta recibida de la API.', [
+                'response' => $response,
+            ]);
+
+            $templatesData = $response['data'] ?? [];
+
+            if (empty($templatesData)) {
+                Log::channel('whatsapp')->warning('No se encontraron plantillas con el nombre especificado.', [
+                    'template_name' => $templateName,
+                ]);
+                return null;
+            }
+
+            $templates = [];
+
+            foreach( $templatesData as $templateData ){
+                $this->validateTemplateData($templateData);
+
+                // Almacenar o actualizar la plantilla en la base de datos
+                $template = $this->storeOrUpdateTemplate($account, $templateData);
+
+                // Crear nueva versión si la plantilla fue actualizada
+                $this->createOrUpdateVersion($template, $templateData);
+                $templates[] = $template;
+            }
+
+            return $templates;
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error al obtener la plantilla por nombre.', [
+                'error_message' => $e->getMessage(),
+                'endpoint' => $endpoint,
+                'template_name' => $templateName,
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Obtiene una plantilla por su nombre y lenguaje exacto desde la API de WhatsApp.
+     *
+     * @param Model $account La cuenta empresarial de WhatsApp.
+     * @param string $templateName El nombre de la plantilla.
+     * @param string $language El ID del idioma de la plantilla.
+     * @return Model|null La plantilla obtenida o null si no existe.
+     */
+    public function getTemplateByNameLanguage(Model $account, string $templateName, string $language): ?Model
+    {
+        $endpoint = Endpoints::build(Endpoints::GET_TEMPLATES, [
+            'waba_id' => $account->whatsapp_business_id,
+        ]);
+
+        $query = [
+            'name' => $templateName,
+        ];
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $account->api_token,
+        ];
+
+        Log::channel('whatsapp')->info('Obteniendo plantilla por nombre y lenguaje exacto desde la API.', [
+            'endpoint' => $endpoint,
+            'query' => $query,
+            'headers' => $headers,
+        ]);
+
+        try {
+            $response = $this->apiClient->request(
+                'GET',
+                $endpoint,
+                [],
+                null,
+                $query,
+                $headers
+            );
+
+            // Filtrar la respuesta para encontrar la plantilla con el nombre y lenguaje exactos
+            $templateData = collect($response['data'] ?? [])->first(function ($item) use ($templateName, $language) {
+                return $item['name'] === $templateName && $item['language'] === $language;
+            });
+
+            Log::channel('whatsapp')->info('Respuesta recibida de la API.', [
+                'response' => $response,
+                'templateData' => $templateData,
+            ]);
+
+            if (!$templateData) {
+                Log::channel('whatsapp')->warning('No se encontró la plantilla con el nombre especificado.', [
+                    'template_name' => $templateName,
+                ]);
+                return null;
+            }
+
+            $this->validateTemplateData($templateData);
+
+            // Almacenar o actualizar la plantilla en la base de datos
+            $template = $this->storeOrUpdateTemplate($account, $templateData);
+
+            // Crear nueva versión si la plantilla fue actualizada
+            $this->createOrUpdateVersion($template, $templateData);
+
+            return $template;
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error al obtener la plantilla por nombre.', [
+                'error_message' => $e->getMessage(),
+                'endpoint' => $endpoint,
+                'template_name' => $templateName,
+                'language' => $language,
             ]);
             throw $e;
         }
