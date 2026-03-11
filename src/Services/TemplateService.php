@@ -243,6 +243,14 @@ class TemplateService
      */
     public function getTemplateByName(Model $account, string $templateName): ?Model
     {
+        if (!$account) {
+            throw new InvalidArgumentException('La cuenta de WhatsApp es obligatoria.');
+        }
+
+        if (empty($templateName)) {
+            throw new InvalidArgumentException('El nombre de la plantilla es obligatorio.');
+        }
+
         $endpoint = Endpoints::build(Endpoints::GET_TEMPLATES, [
             'waba_id' => $account->whatsapp_business_id,
         ]);
@@ -313,6 +321,14 @@ class TemplateService
      */
     public function getTemplatesByName(Model $account, string $templateName): ?array
     {
+        if (!$account) {
+            throw new InvalidArgumentException('La cuenta de WhatsApp es obligatoria.');
+        }
+
+        if (empty($templateName)) {
+            throw new InvalidArgumentException('El nombre de la plantilla es obligatorio.');
+        }
+
         $endpoint = Endpoints::build(Endpoints::GET_TEMPLATES, [
             'waba_id' => $account->whatsapp_business_id,
         ]);
@@ -385,9 +401,22 @@ class TemplateService
      * @param string $templateName El nombre de la plantilla.
      * @param string $language El ID del idioma de la plantilla.
      * @return Model|null La plantilla obtenida o null si no existe.
+     * @throws InvalidArgumentException Si los parámetros requeridos están vacíos.
      */
     public function getTemplateByNameLanguage(Model $account, string $templateName, string $language): ?Model
     {
+        if (!$account) {
+            throw new InvalidArgumentException('La cuenta de WhatsApp es obligatoria.');
+        }
+
+        if (empty($templateName)) {
+            throw new InvalidArgumentException('El nombre de la plantilla es obligatorio.');
+        }
+
+        if (empty($language)) {
+            throw new InvalidArgumentException('El lenguaje de la plantilla es obligatorio.');
+        }
+
         $endpoint = Endpoints::build(Endpoints::GET_TEMPLATES, [
             'waba_id' => $account->whatsapp_business_id,
         ]);
