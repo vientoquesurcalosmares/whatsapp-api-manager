@@ -25,7 +25,7 @@ class TemplateMessageBuilder
     protected Model $account;
     protected Model $phone;
     protected ApiClient $apiClient;
-    protected ?Model $template = null;
+    public ?Model $template = null;
     protected TemplateService $templateService;
     protected string $phoneNumber;
     protected string $templateIdentifier; // Puede ser nombre o ID
@@ -107,9 +107,12 @@ class TemplateMessageBuilder
      * @param string $templateIdentifier El identificador de la plantilla.
      * @return self
      */
-    public function usingTemplate(string $templateIdentifier, ?string $versionId = null): self
+    public function usingTemplate(string $templateIdentifier, ?string $versionId = null, ?string $language = null): self
     {
         $this->templateIdentifier = $templateIdentifier;
+        if( !empty($language) ) {
+            $this->language = $language;
+        }
 
         // Si se especificó una versión, cargarla
         if ($versionId) {
@@ -418,8 +421,13 @@ class TemplateMessageBuilder
     {
         $template = WhatsappModelResolver::template()
             ->where('name', $this->templateIdentifier)
-            ->where('whatsapp_business_id', $this->phone->businessAccount->whatsapp_business_id)
-            ->first();
+            ->where('whatsapp_business_id', $this->phone->businessAccount->whatsapp_business_id);
+
+        if( !empty($this->language) ) {
+            $template->where('language', $this->language);
+        }
+
+        $template = $template->first();
 
         if (!$template) {
             throw new InvalidArgumentException("Plantilla '{$this->templateIdentifier}' no encontrada.");
