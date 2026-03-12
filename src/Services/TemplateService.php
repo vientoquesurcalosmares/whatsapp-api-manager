@@ -76,20 +76,36 @@ class TemplateService
         ]);
 
         try {
-            $response = $this->apiClient->request(
-                'GET',
-                $endpoint,
-                [],
-                null,
-                [],
-                $headers // Pasar los encabezados aquí
-            );
+            $templates = [];
 
-            Log::channel('whatsapp')->info('Respuesta recibida de la API.', [
-                'response' => $response,
-            ]);
+            $nextCursor = null;
 
-            $templates = $response['data'] ?? [];
+            do {
+                $query = [];
+                if ($nextCursor) {
+                    $query['after'] = $nextCursor;
+                }
+
+                $response = $this->apiClient->request(
+                    'GET',
+                    $endpoint,
+                    [],
+                    null,
+                    $query,
+                    $headers
+                );
+
+                Log::channel('whatsapp')->info('Respuesta recibida de la API.', [
+                    'response' => $response,
+                ]);
+
+                if (isset($response['data']) && !empty($response['data'])) {
+                    $templates = array_merge($templates, $response['data']);
+                    $nextCursor = $response['paging']['cursors']['after'] ?? null;
+                } else {
+                    $nextCursor = null;
+                }
+            } while ($nextCursor);
 
             foreach ($templates as $templateData) {
                 $this->validateTemplateData($templateData);
@@ -99,10 +115,15 @@ class TemplateService
                 $this->createOrUpdateVersion($template, $templateData);
             }
 
-            $apiTemplateIds = collect($templates)->pluck('id')->toArray();
-            WhatsappModelResolver::template()->where('whatsapp_business_id', $account->whatsapp_business_id)
-                ->whereNotIn('wa_template_id', $apiTemplateIds)
-                ->update(['status' => 'INACTIVE']);
+            if( !empty($templates) ){
+                $apiTemplateIds = collect($templates)->pluck('id')->toArray();
+                if( !empty($apiTemplateIds) ){
+                    WhatsappModelResolver::template()->where('whatsapp_business_id', $account->whatsapp_business_id)
+                        ->whereNotIn('wa_template_id', $apiTemplateIds)
+                        ->where('status', '<>', 'INACTIVE')
+                        ->update(['status' => 'INACTIVE']);
+                }
+            }
 
             return WhatsappModelResolver::template()->where('whatsapp_business_id', $account->whatsapp_business_id)
                 ->with(['category', 'components'])
