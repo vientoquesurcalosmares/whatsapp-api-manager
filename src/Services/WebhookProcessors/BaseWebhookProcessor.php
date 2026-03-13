@@ -15,6 +15,7 @@ use ScriptDevelop\WhatsappManager\Helpers\MessagingLimitHelper;
 use ScriptDevelop\WhatsappManager\Contracts\WebhookProcessorInterface;
 use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
+use ScriptDevelop\WhatsappManager\Services\TemplateService;
 
 class BaseWebhookProcessor implements WebhookProcessorInterface
 {
@@ -93,9 +94,27 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         }
 
         if ($field === 'message_template' or $field=== 'message_template_status_update') {
-            $this->handleTemplateEvent($value);
+            $this->handleTemplateEvent($payload, $field, $value);
             return response()->json(['success' => true]);
         }
+
+        /*if( $field==='message_template_components_update' ){
+            $templateId = $value['message_template_id'] ?? null;
+
+            if ( $templateId) {
+                $template = WhatsappModelResolver::template()
+                    ->where('wa_template_id', $templateId)
+                    ->first();
+                if (!$template) {
+                    Log::channel('whatsapp')->warning("Template not found: {$templateId}");
+
+                    //Usar la API para obtener el template, esto puede suceder por que se creó ó editó la plantilla desde el portal de Whatsapp Business, esto hará que en cuanto se aprueve o rechace se emita un webhook que esta clase procesará.
+                    $this->findTemplateAPI($payload);
+                }
+            }
+
+            return response()->json(['success' => true]);
+        }*/
 
         if ($field === 'user_preferences') {
             $this->handleUserPreferences($value);
@@ -109,7 +128,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // Si es evento de estado de plantilla
         if ($field === 'message_template_status_update' && isset($value['statuses'][0])) {
-            $this->handleTemplateStatusUpdate($value['statuses'][0]);
+            $this->handleTemplateStatusUpdate($value['statuses'][0], $payload, $field);
         }
 
         // Si es mensaje normal
@@ -1382,7 +1401,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         return $messageRecord;
     }
 
-    protected function handleTemplateEvent(array $templateData): void
+    protected function handleTemplateEvent(array $payload, string $field, array $templateData): void
     {
         $event = $templateData['event'] ?? null;
         $templateId = $templateData['id'] ?? null;
@@ -1399,7 +1418,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             case 'APPROVED':
             case 'REJECTED':
             case 'PENDING':
-                $this->handleTemplateStatusUpdate($templateData);
+                $this->handleTemplateStatusUpdate($templateData, $payload, $field);
                 break;
             case 'CREATE':
                 $this->handleTemplateCreation($templateData);
@@ -1419,11 +1438,13 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         }
     }
 
-    protected function handleTemplateStatusUpdate(array $templateData): void
+    protected function handleTemplateStatusUpdate(array $templateData, array $payload, string $field): void
     {
         $templateId = $templateData['id'] ?? null;
-        if( empty($templateId) ) {
-            $templateId = $templateData['message_template_id'] ?? null;
+
+        $message_template_id = $templateData['message_template_id'] ?? null;
+        if( !empty($message_template_id) ) {
+            $templateId = $message_template_id;
         }
         $newStatus = $templateData['event'] ?? null; // APPROVED, REJECTED, PENDING
         $reason = $templateData['reason'] ?? null;
@@ -1434,12 +1455,24 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             return;
         }
 
+        if( $field==='message_template_status_update' ){
+            Log::channel('whatsapp')->info("Get template ID: {$templateId}", $templateData);
+            //Usar la API para obtener el template, esto puede suceder por que se creó ó editó la plantilla desde el portal de Whatsapp Business, esto hará que en cuanto se aprueve o rechace se emita un webhook que esta clase procesará.
+            $this->findTemplateAPI($payload);
+
+            return;
+        }
+
         $template = WhatsappModelResolver::template()
             ->where('wa_template_id', $templateId)
             ->first();
 
         if (!$template) {
             Log::channel('whatsapp')->warning("Template not found: {$templateId}");
+
+            //Usar la API para obtener el template, esto puede suceder por que se creó ó editó la plantilla desde el portal de Whatsapp Business, esto hará que en cuanto se aprueve o rechace se emita un webhook que esta clase procesará.
+            $this->findTemplateAPI($payload);
+
             return;
         }
 
@@ -1476,6 +1509,39 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             'template_id' => $template->template_id,
             'reason' => $reason
         ]);
+    }
+
+    /**
+     * Se buscará un template mediante la api, al obtenerse se creará o actualizará según corresponda
+     * @return void
+     */
+    protected function findTemplateAPI(array $payload): void
+    {
+        $entry = data_get($payload, 'entry.0');
+        $businessAccountId = $entry['id'] ?? null;
+        $templateId = $entry['changes'][0]['value']['message_template_id'] ?? null;
+
+        if( empty($businessAccountId) || empty($templateId) ) {
+            Log::channel('whatsapp')->warning('Missing business account ID or template ID for API lookup.', $payload);
+            return;
+        }
+
+        $businessAccount = WhatsappModelResolver::business_account()
+            ->where('whatsapp_business_id', $businessAccountId)
+            ->first();
+
+        if (!$businessAccount) {
+            Log::channel('whatsapp')->warning("Business account not found: {$businessAccountId}");
+            return;
+        }
+
+        if (!$templateId) {
+            Log::channel('whatsapp')->warning('No template ID provided for API lookup.', $payload);
+            return;
+        }
+
+        $service = app(TemplateService::class);
+        $service->getTemplateById($businessAccount, $templateId);
     }
 
     protected function createTemplateVersion(Model $template, array $templateData): void

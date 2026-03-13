@@ -834,7 +834,8 @@ class TemplateBuilder
                 ]);
 
                 // Crear versión inicial
-                $this->createInitialVersion($template, $fullTemplateResponse);
+                //2026-03-12: Por lo pronto se comenta el crear una versión inicial, no va a ser necesaria, cuando el webhook se dispare y apruebe la plantilla en ese momento que se genere la versión, para evitar duplicados (Cuando la plantilla tiene un header de tipo imagen la URL siempre es distinta aunque sea un poco, esto hace que el HASH generado sea siempre distinto y provoque crear una nueva versión)
+                //$this->createInitialVersion($template, $fullTemplateResponse);
 
             } catch (\Exception $e) {
                 Log::channel('whatsapp')->error('Error al obtener detalles completos de la plantilla', [
