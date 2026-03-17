@@ -315,7 +315,9 @@ class TemplateBuilder
                         'example' => $example[$paramName],
                     ];
                 }
-                $formattedExample = ['body_text_named_params' => $namedParams];
+                if( !empty($namedParams) ){
+                    $formattedExample = ['body_text_named_params' => $namedParams];
+                }
             } else {
                 // POSITIONAL: Procesamiento especial
                 $orderedExample = [];
