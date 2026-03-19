@@ -241,6 +241,14 @@ class FlowBuilder
             $whatsappScreen['success'] = $screen['success'];
         }
 
+        // Auto-corrección: Si el botón principal tiene la acción 'complete', 
+        // Meta exige que la pantalla sea terminal. Lo forzamos automáticamente.
+        if (!empty($buttons)) {
+            $primaryBtnAction = $buttons[0]['action']['name'] ?? 'complete';
+            if ($primaryBtnAction === 'complete') {
+                $whatsappScreen['terminal'] = true;
+            }
+        }
         return $whatsappScreen;
     }
 
