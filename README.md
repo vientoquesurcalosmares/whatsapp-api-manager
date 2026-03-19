@@ -1,20 +1,28 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/djdang3r/whatsapp-api-manager)
 
-![Ejemplo de plantilla de marketing](assets/whatsapp-api-cloud.png "Plantilla de Marketing")
+<div align="center">
+  <img src="assets/whatsapp-api-cloud.png" alt="Ejemplo de plantilla de marketing" title="Plantilla de Marketing">
+</div>
 
-# WhatsApp Business API Manager for Laravel
+---
 
-LARAVEL WHatsapp Manager
+<div align="center">
+  <h2>🔥 🚀 ¡NUEVA ACTUALIZACIÓN / NEW UPDATE! 🚀 🔥</h2>
+  <h3>💯 <b>Soporte Oficial para Laravel 12 y Laravel 13</b> 💯</h3>
+  <p><i>Fully compatible and optimized for Laravel 12 & Laravel 13</i></p>
+</div>
+
+---
 
 <p align="center">
 <a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/v/scriptdevelop/whatsapp-manager.svg?style=flat-square" alt="Latest Version"></a>
 <a href="https://php.net/"><img src="https://img.shields.io/badge/PHP-8.2%2B-8892BF.svg?style=flat-square" alt="PHP Version"></a>
-<a href="https://laravel.com/"><img src="https://img.shields.io/badge/Laravel-12%2B-FF2D20.svg?style=flat-square" alt="Laravel Version"></a>
+<a href="https://laravel.com/"><img src="https://img.shields.io/badge/Laravel-12%20%7C%2013-FF2D20.svg?style=flat-square" alt="Laravel Version"></a>
 <a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/dt/scriptdevelop/whatsapp-manager" alt="Total Downloads"></a>
 <a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/l/scriptdevelop/whatsapp-manager" alt="License"></a>
 </p>
 
----
+# WhatsApp Business API Manager for Laravel
 
 ## 📌 Important Notice / Aviso Importante
 
@@ -73,7 +81,7 @@ Con este paquete podrás:
 > - Revisa periódicamente las actualizaciones de las políticas para evitar inconvenientes.
 
 
-> ## ⚠️ **Advertencia:**  ⚠️
+> ## ⚠️ **Advertencia:** ⚠️
 > - Este paquete se encuentra actualmente en versión **alpha**. Esto significa que está en desarrollo activo, puede contener errores y su API está sujeta a cambios importantes.  
 > - Próximamente se lanzará la versión **beta**. Se recomienda no usarlo en entornos de producción por el momento.
 
@@ -156,7 +164,7 @@ Si este proyecto te resulta útil, considera apoyar su desarrollo:
 >
 ># 🤝 ¡Contribuye con el Proyecto!
 >
->¿Te gustaría mejorar este paquete? ¡Tu colaboración es fundamental >para seguir creciendo!
+>¿Te gustaría mejorar este paquete? ¡Tu colaboración es fundamental para seguir creciendo!
 >
 ---
 
@@ -205,8 +213,7 @@ Cada contribución, por pequeña que sea, ayuda a mejorar el proyecto y a la com
 
 ## Descargo de responsabilidad
 
-Este paquete es un proyecto independiente y **no está afiliado, respaldado ni soportado por Meta Platforms, Inc.**  
-Todas las marcas registradas, marcas de servicio y logotipos utilizados en esta documentación, incluidos "WhatsApp" y "Facebook", son propiedad de Meta Platforms, Inc.
+Este paquete es un proyecto independiente y **no está afiliado, respaldado ni soportado por Meta Platforms, Inc.** Todas las marcas registradas, marcas de servicio y logotipos utilizados en esta documentación, incluidos "WhatsApp" y "Facebook", son propiedad de Meta Platforms, Inc.
 
 ---
 
@@ -221,15 +228,12 @@ Este proyecto está bajo la licencia **MIT**. Consulta el archivo [LICENSE](LICE
 ¿Tienes dudas, problemas o sugerencias?  
 ¡Estamos aquí para ayudarte!
 
-- 📧 **Email:**  
-    [wilfredoperilla@gmail.com](mailto:wilfredoperilla@gmail.com)  
+- 📧 **Email:** [wilfredoperilla@gmail.com](mailto:wilfredoperilla@gmail.com)  
     [soporte@scriptdevelop.com](mailto:soporte@scriptdevelop.com)
 
-- 🐞 **Reporta un Issue:**  
-    [Abrir un Issue en GitHub](https://github.com/djdang3r/whatsapp-api-manager/issues)
+- 🐞 **Reporta un Issue:** [Abrir un Issue en GitHub](https://github.com/djdang3r/whatsapp-api-manager/issues)
 
-- 💬 **¿Ideas o mejoras?**  
-    ¡Tus comentarios y sugerencias son bienvenidos para seguir mejorando este proyecto!
+- 💬 **¿Ideas o mejoras?** ¡Tus comentarios y sugerencias son bienvenidos para seguir mejorando este proyecto!
 
 ---
 
@@ -259,26 +263,13 @@ Me puedes apoyar como desarrollador open source en GitHub Sponsors:
 [![Donar con Mercado Pago](https://img.shields.io/badge/Donar%20con-Mercado%20Pago-blue?style=for-the-badge&logo=mercadopago)](https://mpago.li/2qe5G7E)
 Gracias por tu apoyo 💙
 
+<br><br><br>
 
-
-
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/djdang3r/whatsapp-api-manager)
-
-![Marketing Template Example](assets/whatsapp-api-cloud.png "Marketing Template")
-
-# WhatsApp Business API Manager for Laravel
-
-LARAVEL WhatsApp Manager
-
-<p align="center">
-<a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/v/scriptdevelop/whatsapp-manager.svg?style=flat-square" alt="Latest Version"></a>
-<a href="https://php.net/"><img src="https://img.shields.io/badge/PHP-8.2%2B-8892BF.svg?style=flat-square" alt="PHP Version"></a>
-<a href="https://laravel.com/"><img src="https://img.shields.io/badge/Laravel-12%2B-FF2D20.svg?style=flat-square" alt="Laravel Version"></a>
-<a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/dt/scriptdevelop/whatsapp-manager" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/l/scriptdevelop/whatsapp-manager" alt="License"></a>
-</p>
+#### 🇺🇸 English
 
 ---
+
+# scriptdevelop/whatsapp-api-manager
 
 ## Introduction
 
@@ -435,8 +426,7 @@ Don't hesitate to participate, propose ideas, or report issues!
 
 ## Disclaimer
 
-This package is an independent project and **is not affiliated with, endorsed, or sponsored by Meta Platforms, Inc.**  
-All trademarks, service marks, and logos used in this documentation, including "WhatsApp" and "Facebook", are property of Meta Platforms, Inc.
+This package is an independent project and **is not affiliated with, endorsed, or sponsored by Meta Platforms, Inc.** All trademarks, service marks, and logos used in this documentation, including "WhatsApp" and "Facebook", are property of Meta Platforms, Inc.
 
 ---
 
@@ -451,15 +441,12 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 Do you have questions, problems, or suggestions?  
 We're here to help!
 
-- 📧 **Email:**  
-    [wilfredoperilla@gmail.com](mailto:wilfredoperilla@gmail.com)  
+- 📧 **Email:** [wilfredoperilla@gmail.com](mailto:wilfredoperilla@gmail.com)  
     [support@scriptdevelop.com](mailto:support@scriptdevelop.com)
 
-- 🐞 **Report an Issue:**  
-    [Open a GitHub Issue](https://github.com/djdang3r/whatsapp-api-manager/issues)
+- 🐞 **Report an Issue:** [Open a GitHub Issue](https://github.com/djdang3r/whatsapp-api-manager/issues)
 
-- 💬 **Ideas or Improvements?**  
-    Your feedback and suggestions are welcome to keep improving this project!
+- 💬 **Ideas or Improvements?** Your feedback and suggestions are welcome to keep improving this project!
 
 ---
 
