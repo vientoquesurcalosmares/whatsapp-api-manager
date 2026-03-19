@@ -83,6 +83,12 @@ class FlowBuilder
         return $this;
     }
 
+    public function routingModel(array $routingModel): self
+    {
+        $this->flowData['routing_model'] = $routingModel;
+        return $this;
+    }
+
     /**
      * Comienza a construir una nueva pantalla
      */
@@ -129,19 +135,26 @@ class FlowBuilder
 
         // Construir estructura de pantallas en formato WhatsApp
         $whatsappScreens = [];
+        $screenIds = [];
         foreach ($this->screens as $screen) {
             $whatsappScreens[] = $this->convertToWhatsappScreen($screen);
+            $screenIds[] = strtoupper($screen['name']);
+        }
+
+        $routingModel = $this->flowData['routing_model'] ?? [];
+        if (empty($routingModel) && count($screenIds) > 0) {
+            for ($i = 0; $i < count($screenIds) - 1; $i++) {
+                $routingModel[$screenIds[$i]] = [$screenIds[$i + 1]];
+            }
+            $routingModel[$screenIds[count($screenIds) - 1]] = [];
         }
 
         // Construir estructura final del flujo
         $this->flowData['json_structure'] = [
-            'version' => '7.0', // Versión requerida por WhatsApp
+            'version' => '7.3', // Versión de la plantilla
+            'data_api_version' => '3.0',
+            'routing_model' => empty($routingModel) ? new \stdClass() : $routingModel,
             'screens' => $whatsappScreens,
-            'metadata' => [
-                'api_version' => '3.0',
-                'created_at' => now()->toISOString(),
-                'last_updated' => now()->toISOString()
-            ]
         ];
 
         // Asegurar que categories esté presente y sea un array
@@ -319,25 +332,85 @@ class FlowBuilder
         ];
 
         try {
+            // 1. Crear el flujo
             $response = $this->apiClient->request(
                 'POST',
                 $endpoint,
                 [],
                 [
-                        'name' => $flowData['name'],
-                        'categories' => $flowData['categories'],
-                        'endpoint_uri' => $flowData['endpoint_uri'],
-                        'data_api_version' => $flowData['data_api_version'],
-                        'json' => $flowData['json'],
-                    ],
+                    'name' => $flowData['name'],
+                    'categories' => $flowData['categories'],
+                ],
                 [],
                 $headers
             );
 
+            $flowId = $response['id'];
+
+            // 2. Subir el JSON (Componentes) del flujo
+            $assetEndpoint = Endpoints::build(Endpoints::UPDATE_FLOW_ASSETS, [
+                'flow_id' => $flowId,
+            ]);
+
+            $multipartData = [
+                'multipart' => [
+                    [
+                        'name' => 'name',
+                        'contents' => 'flow.json'
+                    ],
+                    [
+                        'name' => 'asset_type',
+                        'contents' => 'FLOW_JSON'
+                    ],
+                    [
+                        'name' => 'file',
+                        'contents' => $flowData['json'],
+                        'filename' => 'flow.json',
+                        'headers'  => ['Content-Type' => 'application/json']
+                    ]
+                ]
+            ];
+
+            $multipartHeaders = [
+                'Authorization' => 'Bearer ' . $this->account->api_token,
+            ];
+
+            $assetResponse = $this->apiClient->request(
+                'POST',
+                $assetEndpoint,
+                [],
+                $multipartData,
+                [],
+                $multipartHeaders
+            );
+
+            // 3. Opcional: Configurar endpoint_uri si se requiere
+            try {
+                $metaEndpoint = Endpoints::build(Endpoints::UPDATE_FLOW_METADATA, [
+                    'flow_id' => $flowId,
+                ]);
+
+                $this->apiClient->request(
+                    'POST',
+                    $metaEndpoint,
+                    [],
+                    [
+                        'endpoint_uri' => $flowData['endpoint_uri'],
+                    ],
+                    [],
+                    $headers
+                );
+            } catch (\Exception $metaEx) {
+                // Configurar endpoint puede requerir configuraciones de la app, permitimos que siga si falla
+                Log::channel('whatsapp')->warning('No se pudo configurar el endpoint_uri del flujo', [
+                    'error' => $metaEx->getMessage()
+                ]);
+            }
+
             // Crear registro en base de datos
             $flow = WhatsappModelResolver::flow()->create([
                 'whatsapp_business_account_id' => $this->account->whatsapp_business_id,
-                'wa_flow_id' => $response['id'],
+                'wa_flow_id' => $flowId,
                 'name' => $flowData['name'],
                 'flow_type' => $flowData['flow_type'] ?? 'UNKNOWN',
                 'description' => $flowData['description'] ?? '',
@@ -347,8 +420,8 @@ class FlowBuilder
                 'categories' => $response['categories'] ?? null,
                 'preview_url' => $response['preview']['preview_url'] ?? null,
                 'preview_expires_at' => $response['preview']['expires_at'] ?? null,
-                'validation_errors' => $response['validation_errors'] ?? null,
-                'json_version' => $response['json_version'] ?? null,
+                'validation_errors' => $assetResponse['validation_errors'] ?? ($response['validation_errors'] ?? null),
+                'json_version' => $assetResponse['json_version'] ?? ($response['json_version'] ?? null),
                 'health_status' => $response['health_status'] ?? null,
                 'application_id' => $response['application']['id'] ?? null,
                 'application_name' => $response['application']['name'] ?? null,
