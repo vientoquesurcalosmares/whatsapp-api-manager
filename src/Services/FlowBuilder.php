@@ -2,12 +2,9 @@
 
 namespace ScriptDevelop\WhatsappManager\Services;
 
-//use ScriptDevelop\WhatsappManager\Models\WhatsappFlow;
-//use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
 use Illuminate\Support\Facades\Log;
-
 use Illuminate\Database\Eloquent\Model;
 use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
 use InvalidArgumentException;
@@ -28,9 +25,9 @@ class FlowBuilder
         $this->flowService = $flowService;
     }
 
-    /**
-     * Establece el nombre del flujo
-     */
+    // ==========================================
+    // Metadatos del Flujo
+    // ==========================================
     public function name(string $name): self
     {
         if (strlen($name) > 120) {
@@ -40,18 +37,12 @@ class FlowBuilder
         return $this;
     }
 
-    /**
-     * Establece la descripción del flujo
-     */
     public function description(string $description): self
     {
         $this->flowData['description'] = $description;
         return $this;
     }
 
-    /**
-     * Establece el tipo de flujo
-     */
     public function type(string $type): self
     {
         $validTypes = ['AUTHENTICATION', 'MARKETING', 'UTILITY', 'SERVICE'];
@@ -65,8 +56,15 @@ class FlowBuilder
     public function category(string $category): self
     {
         $validCategories = [
-            'SIGN_UP', 'SIGN_IN', 'APPOINTMENT_BOOKING', 'LEAD_GENERATION',
-            'SHOPPING', 'CONTACT_US', 'CUSTOMER_SUPPORT', 'SURVEY', 'OTHER'
+            'SIGN_UP',
+            'SIGN_IN',
+            'APPOINTMENT_BOOKING',
+            'LEAD_GENERATION',
+            'SHOPPING',
+            'CONTACT_US',
+            'CUSTOMER_SUPPORT',
+            'SURVEY',
+            'OTHER'
         ];
         if (!in_array($category, $validCategories)) {
             throw new InvalidArgumentException(
@@ -77,6 +75,10 @@ class FlowBuilder
         return $this;
     }
 
+    /**
+     * Permite inyectar una estructura JSON avanzada completa.
+     * Si se usa, el método build() saltará la compilación de pantallas fluidas.
+     */
     public function setJsonStructure(array $structure): self
     {
         $this->flowData['json_structure'] = $structure;
@@ -89,9 +91,9 @@ class FlowBuilder
         return $this;
     }
 
-    /**
-     * Comienza a construir una nueva pantalla
-     */
+    // ==========================================
+    // Gestión de Pantallas (Fluent API)
+    // ==========================================
     public function screen(string $name): ScreenBuilder
     {
         if (empty($name)) {
@@ -108,32 +110,38 @@ class FlowBuilder
         return $this->currentScreen;
     }
 
-    /**
-     * Agrega una pantalla construida directamente
-     */
     public function addScreen(array $screenData): self
     {
         $this->screens[] = $screenData;
         return $this;
     }
 
-    /**
-     * Construye la estructura final del flujo
-     */
+    // ==========================================
+    // Compilación a Formato WhatsApp (Meta API)
+    // ==========================================
     public function build(): array
     {
-        // Si hay una pantalla en construcción, la agregamos
+        // 1. Si el desarrollador inyectó su propio JSON completo, lo respetamos
+        if (!empty($this->flowData['json_structure']['screens'])) {
+            $this->flowData['endpoint_uri'] = config('app.url') . '/whatsapp/flows/endpoint';
+            $this->flowData['data_api_version'] = '3.0';
+
+            if (empty($this->flowData['categories'])) {
+                $this->flowData['categories'] = ['OTHER'];
+            }
+            return $this->flowData;
+        }
+
+        // 2. Si usamos la API Fluida, cerramos la pantalla en curso
         if ($this->currentScreen) {
             $this->screens[] = $this->currentScreen->build();
             $this->currentScreen = null;
         }
 
-        // Validación mínima
         if (empty($this->flowData['name'])) {
             throw new InvalidArgumentException('El nombre del flujo es obligatorio.');
         }
 
-        // Construir estructura de pantallas en formato WhatsApp
         $whatsappScreens = [];
         $screenIds = [];
         foreach ($this->screens as $screen) {
@@ -149,57 +157,44 @@ class FlowBuilder
             $routingModel[$screenIds[count($screenIds) - 1]] = [];
         }
 
-        // Construir estructura final del flujo
         $this->flowData['json_structure'] = [
-            'version' => '7.3', // Versión de la plantilla
+            'version' => '7.3',
             'data_api_version' => '3.0',
             'routing_model' => empty($routingModel) ? new \stdClass() : $routingModel,
             'screens' => $whatsappScreens,
         ];
 
-        // Asegurar que categories esté presente y sea un array
         if (empty($this->flowData['categories'])) {
             $typeToCategory = [
                 'AUTHENTICATION' => 'SIGN_IN',
-                'MARKETING'      => 'LEAD_GENERATION',
-                'UTILITY'        => 'CUSTOMER_SUPPORT',
-                'SERVICE'        => 'CUSTOMER_SUPPORT',
+                'MARKETING' => 'LEAD_GENERATION',
+                'UTILITY' => 'CUSTOMER_SUPPORT',
+                'SERVICE' => 'CUSTOMER_SUPPORT',
             ];
             $flowType = $this->flowData['flow_type'] ?? 'UTILITY';
             $category = $typeToCategory[$flowType] ?? 'OTHER';
             $this->flowData['categories'] = [$category];
         }
 
-        $this->flowData['endpoint_uri'] = config('app.url').'/whatsapp/flows/endpoint';
+        $this->flowData['endpoint_uri'] = config('app.url') . '/whatsapp/flows/endpoint';
         $this->flowData['data_api_version'] = '3.0';
 
         return $this->flowData;
     }
 
-    /**
-     * Convierte una pantalla en formato WhatsApp
-     */
     protected function convertToWhatsappScreen(array $screen): array
     {
         $children = [];
         $buttons = [];
 
-        foreach ($screen['elements'] as $element) {
+        foreach ($screen['elements'] ?? [] as $element) {
             if ($element['type'] === 'button') {
-                $buttons[] = [
-                    'type' => 'QuickReplyButton',
-                    'title' => $element['label'] ?? 'Button',
-                    'on_click_action' => [
-                        'name' => $element['action']['name'] ?? 'complete',
-                        'payload' => $element['action']['payload'] ?? (object)[],
-                    ],
-                ];
+                $buttons[] = $element;
             } else {
                 $children[] = $this->convertToWhatsappElement($element);
             }
         }
 
-        // Agregar título y contenido como elementos separados
         if (!empty($screen['title'])) {
             array_unshift($children, [
                 'type' => 'TextHeading',
@@ -214,108 +209,107 @@ class FlowBuilder
             ]);
         }
 
-        // Agregar botones al final
+        // NUEVO FORMATO DE FOOTER (v3.0+)
         if (!empty($buttons)) {
+            $primaryBtn = $buttons[0];
             $children[] = [
                 'type' => 'Footer',
-                'buttons' => $buttons
+                'label' => $primaryBtn['label'] ?? 'Continuar',
+                'on-click-action' => $primaryBtn['action'] ?? [
+                    'name' => 'complete',
+                    'payload' => (object) []
+                ]
             ];
         }
 
-        return [
+        // Construir la pantalla base
+        $whatsappScreen = [
             'id' => strtoupper($screen['name']),
             'title' => $screen['title'] ?? '',
+            'data' => !empty($screen['data']) ? $screen['data'] : (object) [],
             'layout' => [
                 'type' => 'SingleColumnLayout',
                 'children' => $children
-            ],
-            'data' => [
-                'screen_id' => strtoupper($screen['name']),
-                'title' => $screen['title'] ?? '',
-                'content' => $screen['content'] ?? '',
             ]
         ];
+
+        // Agregar banderas opcionales si existen (terminal, success)
+        if (isset($screen['terminal'])) {
+            $whatsappScreen['terminal'] = $screen['terminal'];
+        }
+        if (isset($screen['success'])) {
+            $whatsappScreen['success'] = $screen['success'];
+        }
+
+        return $whatsappScreen;
     }
 
-    protected function convertButton(array $element): array
-    {
-        return [
-            'type' => 'QuickReplyButton',
-            'title' => $element['label'] ?? 'Button',
-            'on_click_action' => [
-                'name' => $element['action']['name'] ?? 'complete',
-                'payload' => $element['action']['payload'] ?? (object)[],
-            ],
-        ];
-    }
-
-    /**
-     * Convierte un elemento en formato WhatsApp
-     */
     protected function convertToWhatsappElement(array $element): array
     {
-        $base = [
-            'name' => $element['name'],
-            'label' => $element['label'] ?? '',
-            'data' => [
-                'element_id' => $element['name'],
-                'type' => $element['type'],
-                'label' => $element['label'] ?? ''
-            ]
-        ];
+        // ElementBuilder ya construye las llaves casi perfectas (ej. 'input-type', 'data-source')
+        // Aquí solo hacemos el mapeo final del tipo de componente y limpiamos variables basura.
+
+        $base = $element;
+        unset($base['name']); // Name se usa internamente o como id en inputs, lo procesaremos
 
         switch ($element['type']) {
             case 'input':
-                $converted = array_merge($base, [
-                    'type' => 'TextInput',
-                    'placeholder' => $element['placeholder'] ?? '',
-                    'required' => $element['required'] ?? false
-                ]);
+                $base['type'] = 'TextInput';
+                $base['name'] = $element['name'];
+
+                // MEJORA DEFENSIVA: Si el dev usó placeholder por costumbre, lo pasamos a helper-text o lo borramos.
+                if (isset($base['placeholder'])) {
+                    if (!isset($base['helper-text'])) {
+                        $base['helper-text'] = $base['placeholder'];
+                    }
+                    unset($base['placeholder']); // Meta odia esto, lo borramos.
+                }
                 break;
 
             case 'dropdown':
-                $converted = array_merge($base, [
-                    'type' => 'Dropdown',
-                    'options' => array_map(function($option) {
+                $base['type'] = 'Dropdown';
+                $base['name'] = $element['name'];
+                if (isset($base['options'])) {
+                    $base['options'] = array_map(function ($option) {
                         return [
                             'id' => $option['value'] ?? '',
                             'title' => $option['label'] ?? ''
                         ];
-                    }, $element['options'] ?? [])
-                ]);
+                    }, $base['options']);
+                }
                 break;
 
             case 'checkbox':
-                $converted = array_merge($base, [
-                    'type' => 'Checkbox',
-                    'required' => $element['required'] ?? false
-                ]);
+                $base['type'] = 'Checkbox';
+                $base['name'] = $element['name'];
                 break;
 
-            case 'button':
-                $converted = [
-                    'type' => 'QuickReplyButton',
-                    'title' => $element['label'] ?? 'Button',
-                    'on_click_action' => [
-                        'name' => $element['action']['name'] ?? 'complete',
-                        'payload' => $element['action']['payload'] ?? (object)[],
-                    ],
-                ];
+            // Componentes que pasan casi idénticos
+            case 'TextHeading':
+            case 'TextSubheading':
+            case 'TextBody':
+            case 'TextCaption':
+            case 'RadioButtonsGroup':
+            case 'If':
+                // ElementBuilder ya los preparó correctamente, solo aseguramos el 'name' en Radio
+                if ($element['type'] === 'RadioButtonsGroup') {
+                    $base['name'] = $element['name'];
+                }
                 break;
 
             default:
-                throw new InvalidArgumentException("Tipo de elemento no soportado: {$element['type']}");
+                throw new InvalidArgumentException("Tipo de elemento no soportado o mapeo faltante: {$element['type']}");
         }
 
-        // Limpieza de valores nulos
-        return array_filter($converted, function($value) {
+        // Limpieza estricta de nulos para no enviar basura a Meta
+        return array_filter($base, function ($value) {
             return $value !== null && $value !== '';
         });
     }
 
-    /**
-     * Guarda el flujo en la API y base de datos
-     */
+    // ==========================================
+    // Guardado y Comunicación con la API
+    // ==========================================
     public function save(): Model
     {
         $flowData = $this->build();
@@ -366,7 +360,7 @@ class FlowBuilder
                         'name' => 'file',
                         'contents' => $flowData['json'],
                         'filename' => 'flow.json',
-                        'headers'  => ['Content-Type' => 'application/json']
+                        'headers' => ['Content-Type' => 'application/json']
                     ]
                 ]
             ];
@@ -401,13 +395,12 @@ class FlowBuilder
                     $headers
                 );
             } catch (\Exception $metaEx) {
-                // Configurar endpoint puede requerir configuraciones de la app, permitimos que siga si falla
                 Log::channel('whatsapp')->warning('No se pudo configurar el endpoint_uri del flujo', [
                     'error' => $metaEx->getMessage()
                 ]);
             }
 
-            // Crear registro en base de datos
+            // Crear registro en base de datos local
             $flow = WhatsappModelResolver::flow()->create([
                 'whatsapp_business_account_id' => $this->account->whatsapp_business_id,
                 'wa_flow_id' => $flowId,
@@ -428,17 +421,14 @@ class FlowBuilder
                 'application_link' => $response['application']['link'] ?? null,
             ]);
 
-            // Sincronizar screens y elements en la base de datos
-            // $screens = $flowData['json_structure']['screens'] ?? [];
             $screens = $this->screens;
-
             $this->flowService->syncScreensAndElements($flow, $screens);
 
             return $flow;
 
         } catch (\Exception $e) {
             Log::channel('whatsapp')->error('Error al guardar flujo: ' . $e->getMessage(), [
-                'endpoint' => $endpoint,
+                'endpoint' => $endpoint ?? 'N/A',
                 'flow_data' => $flowData
             ]);
             throw $e;
