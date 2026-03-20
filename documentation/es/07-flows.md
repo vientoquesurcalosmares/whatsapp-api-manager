@@ -120,6 +120,92 @@ $flow = $builder
     // 4. Guardar y subir a Meta
     ->save();
 
+
+
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+
+$account = WhatsappBusinessAccount::first();
+
+$flowPhoto = Whatsapp::flow()->builder($account)
+    ->name('Photo Picker Flow Corrected')
+    ->type('UTILITY')
+    ->category('OTHER')
+    ->screen('FIRST')
+        ->title('Photo Picker Example')
+        ->isStart(true) // Importante para definir el punto de entrada
+        ->terminal(true)
+        ->success(true) // <<< ESTO CORRIGE EL ERROR DE META
+        ->data([]) 
+        ->element('photo_picker')
+            ->type('PhotoPicker')
+            ->label('Upload photos')
+            ->description('Please attach images about the received items')
+            ->addAttributes([
+                'photo-source' => 'camera_gallery',
+                'min-uploaded-photos' => 1,
+                'max-uploaded-photos' => 10,
+                'max-file-size-kb' => 10240
+            ])
+        ->endElement()
+        ->element('submit_btn')
+            ->type('button')
+            ->label('Submit')
+            ->action('data_exchange', [
+                'images' => '${form.photo_picker}'
+            ])
+        ->endElement()
+    ->endScreen()
+->save();
+
+return $flowPhoto;
+
+
+
+
+
+
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+
+$account = WhatsappBusinessAccount::first();
+
+$flowDoc = Whatsapp::flow()->builder($account)
+    ->name('Document Picker Flow Test')
+    ->type('UTILITY')
+    ->category('OTHER')
+    ->screen('SECOND')
+        ->title('Document Picker Example')
+        ->isStart(true)
+        ->terminal(true)
+        ->success(true) // Requerido por Meta para pantallas terminales
+        ->data([]) 
+        ->element('document_picker')
+            ->type('DocumentPicker')
+            ->label('Contract')
+            ->description('Attach the signed copy of the contract')
+            ->addAttributes([
+                'min-uploaded-documents' => 1,
+                'max-uploaded-documents' => 1,
+                'max-file-size-kb' => 1024,
+                'allowed-mime-types' => [
+                    'image/jpeg',
+                    'application/pdf'
+                ]
+            ])
+        ->endElement()
+        ->element('submit_btn')
+            ->type('button')
+            ->label('Submit')
+            ->action('complete', [
+                'documents' => '${form.document_picker}'
+            ])
+        ->endElement()
+    ->endScreen()
+->save();
+
+return $flowDoc;
+
 ```
 
 
