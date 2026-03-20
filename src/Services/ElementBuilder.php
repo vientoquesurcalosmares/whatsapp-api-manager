@@ -325,4 +325,13 @@ class ElementBuilder
     {
         return $this->elementData;
     }
+
+    // ==========================================
+    // Atributos Genéricos / Dinámicos
+    // ==========================================
+    public function addAttributes(array $attributes): self
+    {
+        $this->elementData = array_merge($this->elementData, $attributes);
+        return $this;
+    }
 }

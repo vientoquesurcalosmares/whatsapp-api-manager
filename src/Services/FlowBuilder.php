@@ -67,27 +67,15 @@ class FlowBuilder
             'OTHER'
         ];
         if (!in_array($category, $validCategories)) {
-            throw new InvalidArgumentException(
-                'Categoría inválida. Valores permitidos: ' . implode(', ', $validCategories)
-            );
+            throw new InvalidArgumentException('Categoría inválida: ' . $category);
         }
         $this->flowData['categories'] = [$category];
         return $this;
     }
 
-    /**
-     * Permite inyectar una estructura JSON avanzada completa.
-     * Si se usa, el método build() saltará la compilación de pantallas fluidas.
-     */
     public function setJsonStructure(array $structure): self
     {
         $this->flowData['json_structure'] = $structure;
-        return $this;
-    }
-
-    public function routingModel(array $routingModel): self
-    {
-        $this->flowData['routing_model'] = $routingModel;
         return $this;
     }
 
@@ -100,20 +88,12 @@ class FlowBuilder
             throw new InvalidArgumentException('El nombre de la pantalla es obligatorio.');
         }
 
-        // Finalizar la pantalla actual si existe
         if ($this->currentScreen) {
             $this->screens[] = $this->currentScreen->build();
         }
 
-        // Crear una nueva pantalla con el nombre especificado
         $this->currentScreen = new ScreenBuilder($this, $name);
         return $this->currentScreen;
-    }
-
-    public function addScreen(array $screenData): self
-    {
-        $this->screens[] = $screenData;
-        return $this;
     }
 
     // ==========================================
@@ -121,18 +101,6 @@ class FlowBuilder
     // ==========================================
     public function build(): array
     {
-        // 1. Si el desarrollador inyectó su propio JSON completo, lo respetamos
-        if (!empty($this->flowData['json_structure']['screens'])) {
-            $this->flowData['endpoint_uri'] = config('app.url') . '/whatsapp/flows/endpoint';
-            $this->flowData['data_api_version'] = '3.0';
-
-            if (empty($this->flowData['categories'])) {
-                $this->flowData['categories'] = ['OTHER'];
-            }
-            return $this->flowData;
-        }
-
-        // 2. Si usamos la API Fluida, cerramos la pantalla en curso
         if ($this->currentScreen) {
             $this->screens[] = $this->currentScreen->build();
             $this->currentScreen = null;
@@ -143,27 +111,18 @@ class FlowBuilder
         }
 
         $whatsappScreens = [];
-        $screenIds = [];
         foreach ($this->screens as $screen) {
             $whatsappScreens[] = $this->convertToWhatsappScreen($screen);
-            $screenIds[] = strtoupper($screen['name']);
-        }
-
-        $routingModel = $this->flowData['routing_model'] ?? [];
-        if (empty($routingModel) && count($screenIds) > 0) {
-            for ($i = 0; $i < count($screenIds) - 1; $i++) {
-                $routingModel[$screenIds[$i]] = [$screenIds[$i + 1]];
-            }
-            $routingModel[$screenIds[count($screenIds) - 1]] = [];
         }
 
         $this->flowData['json_structure'] = [
             'version' => '7.3',
             'data_api_version' => '3.0',
-            'routing_model' => empty($routingModel) ? new \stdClass() : $routingModel,
+            'routing_model' => new \stdClass(),
             'screens' => $whatsappScreens,
         ];
 
+        // Lógica de categorías por defecto
         if (empty($this->flowData['categories'])) {
             $typeToCategory = [
                 'AUTHENTICATION' => 'SIGN_IN',
@@ -171,9 +130,7 @@ class FlowBuilder
                 'UTILITY' => 'CUSTOMER_SUPPORT',
                 'SERVICE' => 'CUSTOMER_SUPPORT',
             ];
-            $flowType = $this->flowData['flow_type'] ?? 'UTILITY';
-            $category = $typeToCategory[$flowType] ?? 'OTHER';
-            $this->flowData['categories'] = [$category];
+            $this->flowData['categories'] = [$typeToCategory[$this->flowData['flow_type'] ?? 'UTILITY'] ?? 'OTHER'];
         }
 
         $this->flowData['endpoint_uri'] = config('app.url') . '/whatsapp/flows/endpoint';
@@ -185,134 +142,86 @@ class FlowBuilder
     protected function convertToWhatsappScreen(array $screen): array
     {
         $children = [];
-        $buttons = [];
+        $footerElement = null;
 
         foreach ($screen['elements'] ?? [] as $element) {
-            if ($element['type'] === 'button') {
-                $buttons[] = $element;
+            if ($element['type'] === 'button' || $element['type'] === 'Footer') {
+                $footerElement = $element;
             } else {
                 $children[] = $this->convertToWhatsappElement($element);
             }
         }
 
         if (!empty($screen['title'])) {
-            array_unshift($children, [
-                'type' => 'TextHeading',
-                'text' => $screen['title']
-            ]);
+            array_unshift($children, ['type' => 'TextHeading', 'text' => $screen['title']]);
         }
 
-        if (!empty($screen['content'])) {
-            array_unshift($children, [
-                'type' => 'TextBody',
-                'text' => $screen['content']
-            ]);
-        }
-
-        // NUEVO FORMATO DE FOOTER (v3.0+)
-        if (!empty($buttons)) {
-            $primaryBtn = $buttons[0];
+        if (!empty($footerElement)) {
             $children[] = [
                 'type' => 'Footer',
-                'label' => $primaryBtn['label'] ?? 'Continuar',
-                'on-click-action' => $primaryBtn['action'] ?? [
+                'label' => $footerElement['label'] ?? 'Continuar',
+                'on-click-action' => $footerElement['action'] ?? [
                     'name' => 'complete',
                     'payload' => (object) []
                 ]
             ];
         }
 
-        // Construir la pantalla base
-        $whatsappScreen = [
+        return [
             'id' => strtoupper($screen['name']),
             'title' => $screen['title'] ?? '',
+            'terminal' => $screen['terminal'] ?? false,
+            'success' => $screen['success'] ?? false,
             'data' => !empty($screen['data']) ? $screen['data'] : (object) [],
             'layout' => [
                 'type' => 'SingleColumnLayout',
-                'children' => $children
+                'children' => [
+                    [
+                        'type' => 'Form',
+                        'name' => 'flow_path',
+                        'children' => $children
+                    ]
+                ]
             ]
         ];
-
-        // Agregar banderas opcionales si existen (terminal, success)
-        if (isset($screen['terminal'])) {
-            $whatsappScreen['terminal'] = $screen['terminal'];
-        }
-        if (isset($screen['success'])) {
-            $whatsappScreen['success'] = $screen['success'];
-        }
-
-        // Auto-corrección: Si el botón principal tiene la acción 'complete', 
-        // Meta exige que la pantalla sea terminal. Lo forzamos automáticamente.
-        if (!empty($buttons)) {
-            $primaryBtnAction = $buttons[0]['action']['name'] ?? 'complete';
-            if ($primaryBtnAction === 'complete') {
-                $whatsappScreen['terminal'] = true;
-            }
-        }
-        return $whatsappScreen;
     }
 
     protected function convertToWhatsappElement(array $element): array
     {
-        // ElementBuilder ya construye las llaves casi perfectas (ej. 'input-type', 'data-source')
-        // Aquí solo hacemos el mapeo final del tipo de componente y limpiamos variables basura.
-
         $base = $element;
-        unset($base['name']); // Name se usa internamente o como id en inputs, lo procesaremos
+        $type = strtolower($element['type']);
 
-        switch ($element['type']) {
+        switch ($type) {
             case 'input':
                 $base['type'] = 'TextInput';
-                $base['name'] = $element['name'];
-
-                // MEJORA DEFENSIVA: Si el dev usó placeholder por costumbre, lo pasamos a helper-text o lo borramos.
-                if (isset($base['placeholder'])) {
-                    if (!isset($base['helper-text'])) {
-                        $base['helper-text'] = $base['placeholder'];
-                    }
-                    unset($base['placeholder']); // Meta odia esto, lo borramos.
-                }
                 break;
-
             case 'dropdown':
                 $base['type'] = 'Dropdown';
-                $base['name'] = $element['name'];
                 if (isset($base['options'])) {
-                    $base['options'] = array_map(function ($option) {
-                        return [
-                            'id' => $option['value'] ?? '',
-                            'title' => $option['label'] ?? ''
-                        ];
-                    }, $base['options']);
+                    $base['options'] = array_map(fn($o) => ['id' => $o['value'], 'title' => $o['label']], $base['options']);
                 }
                 break;
-
+            case 'photopicker':
+                $base['type'] = 'PhotoPicker';
+                $base['photo-source'] = $element['photo-source'] ?? 'camera_gallery';
+                break;
             case 'checkbox':
                 $base['type'] = 'Checkbox';
-                $base['name'] = $element['name'];
                 break;
-
-            // Componentes que pasan casi idénticos
-            case 'TextHeading':
-            case 'TextSubheading':
-            case 'TextBody':
-            case 'TextCaption':
-            case 'RadioButtonsGroup':
-            case 'If':
-                // ElementBuilder ya los preparó correctamente, solo aseguramos el 'name' en Radio
-                if ($element['type'] === 'RadioButtonsGroup') {
-                    $base['name'] = $element['name'];
-                }
+            case 'radiobuttonsgroup':
+                $base['type'] = 'RadioButtonsGroup';
                 break;
-
+            case 'if':
+                $base['type'] = 'If';
+                break;
             default:
-                throw new InvalidArgumentException("Tipo de elemento no soportado o mapeo faltante: {$element['type']}");
+                // Si el tipo ya es PascalCase (ej. TextHeading), lo dejamos pasar
+                $base['type'] = $element['type'];
         }
 
-        // Limpieza estricta de nulos para no enviar basura a Meta
-        return array_filter($base, function ($value) {
-            return $value !== null && $value !== '';
-        });
+        unset($base['action']); // Las acciones solo van en el Footer/Buttons
+
+        return array_filter($base, fn($v) => $v !== null && $v !== '');
     }
 
     // ==========================================
@@ -321,124 +230,51 @@ class FlowBuilder
     public function save(): Model
     {
         $flowData = $this->build();
-
-        $flowData['json'] = json_encode($flowData['json_structure'], JSON_UNESCAPED_UNICODE);
-
-        $endpoint = Endpoints::build(Endpoints::CREATE_FLOW, [
-            'waba_id' => $this->account->whatsapp_business_id,
-        ]);
-
         $headers = [
             'Authorization' => 'Bearer ' . $this->account->api_token,
             'Content-Type' => 'application/json',
         ];
 
         try {
-            // 1. Crear el flujo
-            $response = $this->apiClient->request(
-                'POST',
-                $endpoint,
-                [],
-                [
-                    'name' => $flowData['name'],
-                    'categories' => $flowData['categories'],
-                ],
-                [],
-                $headers
-            );
+            // 1. Crear el flujo en Meta
+            $endpoint = Endpoints::build(Endpoints::CREATE_FLOW, ['waba_id' => $this->account->whatsapp_business_id]);
+            $response = $this->apiClient->request('POST', $endpoint, [], [
+                'name' => $flowData['name'],
+                'categories' => $flowData['categories'],
+            ], [], $headers);
 
             $flowId = $response['id'];
 
-            // 2. Subir el JSON (Componentes) del flujo
-            $assetEndpoint = Endpoints::build(Endpoints::UPDATE_FLOW_ASSETS, [
-                'flow_id' => $flowId,
-            ]);
-
-            $multipartData = [
+            // 2. Subir el JSON (Assets)
+            $assetEndpoint = Endpoints::build(Endpoints::UPDATE_FLOW_ASSETS, ['flow_id' => $flowId]);
+            $this->apiClient->request('POST', $assetEndpoint, [], [
                 'multipart' => [
-                    [
-                        'name' => 'name',
-                        'contents' => 'flow.json'
-                    ],
-                    [
-                        'name' => 'asset_type',
-                        'contents' => 'FLOW_JSON'
-                    ],
+                    ['name' => 'name', 'contents' => 'flow.json'],
+                    ['name' => 'asset_type', 'contents' => 'FLOW_JSON'],
                     [
                         'name' => 'file',
-                        'contents' => $flowData['json'],
+                        'contents' => json_encode($flowData['json_structure'], JSON_UNESCAPED_UNICODE),
                         'filename' => 'flow.json',
                         'headers' => ['Content-Type' => 'application/json']
                     ]
                 ]
-            ];
+            ], [], ['Authorization' => 'Bearer ' . $this->account->api_token]);
 
-            $multipartHeaders = [
-                'Authorization' => 'Bearer ' . $this->account->api_token,
-            ];
-
-            $assetResponse = $this->apiClient->request(
-                'POST',
-                $assetEndpoint,
-                [],
-                $multipartData,
-                [],
-                $multipartHeaders
-            );
-
-            // 3. Opcional: Configurar endpoint_uri si se requiere
-            try {
-                $metaEndpoint = Endpoints::build(Endpoints::UPDATE_FLOW_METADATA, [
-                    'flow_id' => $flowId,
-                ]);
-
-                $this->apiClient->request(
-                    'POST',
-                    $metaEndpoint,
-                    [],
-                    [
-                        'endpoint_uri' => $flowData['endpoint_uri'],
-                    ],
-                    [],
-                    $headers
-                );
-            } catch (\Exception $metaEx) {
-                Log::channel('whatsapp')->warning('No se pudo configurar el endpoint_uri del flujo', [
-                    'error' => $metaEx->getMessage()
-                ]);
-            }
-
-            // Crear registro en base de datos local
+            // 3. Crear registro local
             $flow = WhatsappModelResolver::flow()->create([
                 'whatsapp_business_account_id' => $this->account->whatsapp_business_id,
                 'wa_flow_id' => $flowId,
                 'name' => $flowData['name'],
-                'flow_type' => $flowData['flow_type'] ?? 'UNKNOWN',
-                'description' => $flowData['description'] ?? '',
                 'json_structure' => $flowData['json_structure'],
-                'status' => $response['status'] ?? 'DRAFT',
-                'version' => $response['version'] ?? '1.0',
-                'categories' => $response['categories'] ?? null,
-                'preview_url' => $response['preview']['preview_url'] ?? null,
-                'preview_expires_at' => $response['preview']['expires_at'] ?? null,
-                'validation_errors' => $assetResponse['validation_errors'] ?? ($response['validation_errors'] ?? null),
-                'json_version' => $assetResponse['json_version'] ?? ($response['json_version'] ?? null),
-                'health_status' => $response['health_status'] ?? null,
-                'application_id' => $response['application']['id'] ?? null,
-                'application_name' => $response['application']['name'] ?? null,
-                'application_link' => $response['application']['link'] ?? null,
+                'status' => 'DRAFT'
             ]);
 
-            $screens = $this->screens;
-            $this->flowService->syncScreensAndElements($flow, $screens);
+            $this->flowService->syncScreensAndElements($flow, $this->screens);
 
             return $flow;
 
         } catch (\Exception $e) {
-            Log::channel('whatsapp')->error('Error al guardar flujo: ' . $e->getMessage(), [
-                'endpoint' => $endpoint ?? 'N/A',
-                'flow_data' => $flowData
-            ]);
+            Log::channel('whatsapp')->error('Error en FlowBuilder: ' . $e->getMessage());
             throw $e;
         }
     }
