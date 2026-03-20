@@ -293,4 +293,40 @@ class FlowService
             throw new \RuntimeException('Error al publicar el flujo: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Establece la llave pública de encriptación para un número de teléfono en Meta.
+     */
+    public function setBusinessPublicKey(Model $account, string $publicKey): array
+    {
+        $endpoint = config('whatsapp.api.base_url') . '/' . config('whatsapp.api.version') . '/' . $account->phone_number_id . '/whatsapp_business_encryption';
+
+        $response = $this->apiClient->request(
+            'POST',
+            $endpoint,
+            [],
+            ['business_public_key' => $publicKey],
+            [],
+            ['Authorization' => 'Bearer ' . $account->api_token]
+        );
+
+        return $response;
+    }
+
+    /**
+     * Obtiene el estado de la llave pública registrada en Meta.
+     */
+    public function getBusinessPublicKeyStatus(Model $account): array
+    {
+        $endpoint = config('whatsapp.api.base_url') . '/' . config('whatsapp.api.version') . '/' . $account->phone_number_id . '/whatsapp_business_encryption';
+
+        return $this->apiClient->request(
+            'GET',
+            $endpoint,
+            [],
+            null,
+            [],
+            ['Authorization' => 'Bearer ' . $account->api_token]
+        );
+    }
 }

@@ -4,6 +4,7 @@ namespace ScriptDevelop\WhatsappManager\Facades;
 
 use Illuminate\Support\Facades\Facade;
 use ScriptDevelop\WhatsappManager\Services\WhatsappService;
+use ScriptDevelop\WhatsappManager\Services\Flows\FlowResponse;
 //use ScriptDevelop\WhatsappManager\Models\Flow;
 
 /**
@@ -74,5 +75,13 @@ class Whatsapp extends Facade
     public static function service()
     {
         return app('whatsapp.service');
+    }
+
+    /**
+     * @method static \ScriptDevelop\WhatsappManager\Services\Flows\FlowResponse flowResponse()
+     */
+    public static function flowResponse()
+    {
+        return new FlowResponse();
     }
 }

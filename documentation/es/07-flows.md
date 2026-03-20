@@ -619,3 +619,164 @@ Si este proyecto te resulta útil, considera apoyar su desarrollo:
 
 📄 Licencia
 MIT License - Ver LICENSE para más detalles
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+📋 PLAN DE ACCIÓN ACTUALIZADO (V3.0) - Enfoque Autoconfigurable
+FASE 1: Criptografía y Configuración Automática
+1.1. Hook de Instalación: * Aprovecharemos el comando whatsapp:install (o el proceso de publicación de configuración) para preguntar al usuario: "¿Deseas generar automáticamente las llaves RSA para WhatsApp Flows?".
+
+Si acepta, el paquete ejecutará internamente la lógica de creación sin que el usuario toque la terminal.
+
+1.2. Comando Manual whatsapp:keys:
+
+Servirá para Regenerar (en caso de compromiso de seguridad) o Subir llaves existentes.
+
+Opciones: --force (para sobrescribir) y --upload-only (si ya tiene las llaves en storage).
+
+1.3. Service Provider Inteligente:
+
+El WhatsappServiceProvider verificará si las llaves existen. Si no, y el modo Flows está activo, lanzará una alerta en los logs o una notificación en la consola.
+
+1.4. Actualización de FlowService.php:
+
+Método uploadKeysToMeta(): Automatiza el envío de la llave pública a Meta tras la generación.
+
+FASE 2: El Motor del Endpoint (Data Channel)
+2.1. Middleware de Desencriptación: Crearemos un Middleware que se encargue de la "magia sucia" (RSA + AES-GCM) antes de que la petición llegue al controlador.
+
+2.2. Controlador Base de Flows: Un endpoint único que gestiona el ping de salud y delega el data_exchange al procesador del desarrollador.
+
+FASE 3: Procesamiento Multimedia (Media Upload)
+3.1. FlowMediaService: Sistema de descarga y descifrado AES-256-CBC para los componentes PhotoPicker y DocumentPicker.
+
+FASE 4: Webhooks de Estado y Métricas
+4.1. Monitor de Salud: Captura de eventos ENDPOINT_LATENCY, ERROR_RATE, etc., y actualización automática del modelo WhatsappFlow local.
+
+FASE 5: Actualización de Builders (v7.3)
+5.1. ElementBuilder Avanzado: Métodos para todos los nuevos componentes (RichText, Chips, etc.) y validaciones de seguridad.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+🏗️ Plan Maestro: WhatsApp Flows Enterprise Integration
+Fase 1: Infraestructura Criptográfica (The Security Layer)
+Esta fase establece la confianza entre el servidor de Laravel y Meta.
+
+1.1. Almacenamiento Seguro: Definir una ruta protegida en storage/app/whatsapp/keys/ no accesible vía web.
+
+1.2. Generador Automático (GenerateWhatsappKeys): * Lógica para detectar si OpenSSL está instalado.
+
+Generación de par de llaves (2048-bit).
+
+Encriptación opcional de la llave privada.
+
+1.3. Gestor de Registro en Meta (FlowEncryptionService):
+
+Método setPublicKey(string $phoneNumberId): Lee el archivo .pem y lo envía a la API de Meta.
+
+Método getPublicKeyStatus(): Consulta si la llave en Meta coincide con la local (VALID / MISMATCH).
+
+1.4. Automatización del Setup: Integración en el comando de instalación para que el usuario solo confirme con un "yes".
+
+Fase 2: El Motor del Data Channel (The Crypto Engine)
+Aquí es donde ocurre la magia de la desencriptación en tiempo real.
+
+2.1. Clase FlowCrypto: * Desencriptación Inbound: Usar la llave privada para obtener la clave AES temporal y luego desencriptar el cuerpo del mensaje (AES-128-GCM).
+
+Encriptación Outbound: Re-encriptar la respuesta de Laravel antes de enviarla a WhatsApp.
+
+2.2. Validación de Firma: Validar que la petición viene realmente de Meta (X-Hub-Signature).
+
+2.3. Manejador de Pings: Responder automáticamente a las pruebas de salud de Meta para que el Flow nunca pase a estado "Blocked".
+
+Fase 3: Routing y Procesamiento de Endpoints (The Delivery Layer)
+Cómo el paquete entrega los datos al código del desarrollador.
+
+3.1. Controller Centralizado (FlowEndpointController): Un solo punto de entrada que gestiona errores criptográficos y devuelve códigos HTTP correctos a Meta.
+
+3.2. Abstracción de Acciones: Mapear automáticamente las acciones del Flow (data_exchange, init, back) a métodos específicos en PHP.
+
+3.3. Base Processor Class: El desarrollador creará clases como App\Whatsapp\Flows\LoginProcessor que extiendan de nuestro paquete.
+
+Fase 4: Gestión de Media (The Binary Layer)
+Desencriptación de archivos subidos por el usuario (PhotoPicker/DocumentPicker).
+
+4.1. Downloader Seguro: Descarga desde el CDN de WhatsApp usando el Access Token.
+
+4.2. Doble Validación: 1.  Validar SHA256 del archivo cifrado.
+2.  Validar HMAC con la clave de autenticación provista por Meta.
+
+4.3. Descifrado AES-256-CBC: Convertir el binario cifrado en un archivo real (JPEG, PDF, etc.).
+
+4.4. Limpieza de Padding: Implementar des-relleno PKCS7 para que el archivo no esté corrupto.
+
+Fase 5: Ciclo de Vida y Monitoreo (The Intelligence Layer)
+Escuchar lo que Meta dice sobre nuestros flujos.
+
+5.1. Flows Webhook Handler: Extender el procesador de webhooks para manejar el campo flows.
+
+5.2. Sistema de Alertas (Alert System): * Disparar eventos de Laravel (FlowThrottled, FlowBlocked, LatencyHigh) para que el desarrollador pueda reaccionar (ej. mandar un email de alerta).
+
+5.3. Sincronización de Modelos: Actualizar la tabla whatsapp_flows automáticamente cuando cambie su estado en Meta.
+
+Fase 6: Finalización y UX (The Completion Layer)
+6.1. nfm_reply Handler: Procesar el mensaje de confirmación final que llega al chat cuando el usuario termina el flujo.
+
+6.2. Documentación v7.3: Actualizar el FlowBuilder con los componentes que faltan (ChipsSelector, NavigationList, etc.).
+
+🚀 Hoja de Ruta de Desarrollo
+Para no cometer errores, seguiremos este orden de construcción:
+
+Semana 1 (Cripto): Terminamos la Fase 1 (Llaves) y el Motor de la Fase 2 (Crypto Engine).
+
+Semana 2 (Endpoints): Implementamos el Controlador y la lógica de respuesta para que el desarrollador pueda probar data_exchange.
+
+Semana 3 (Media): Construimos el servicio de descifrado de fotos y documentos.
+
+Semana 4 (Webhooks): Finalizamos con el sistema de monitoreo y alertas de estado.
