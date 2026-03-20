@@ -14,6 +14,29 @@
 
 ---
 
+<div align="center">
+<h3>✨ <b>WhatsApp Flows Support (BETA)</b> ✨</h3>
+
+<p><b>🇪🇸 Español:</b> Estamos integrando soporte completo para <b>WhatsApp Flows</b>. Esta funcionalidad permite crear experiencias interactivas avanzadas directamente en el chat. Las características añadidas incluyen:</p>
+<ul>
+<li>🛡️ <b>Motor Criptográfico:</b> Desencriptación automática de datos (RSA-OAEP + AES-GCM).</li>
+<li>📂 <b>Media Service:</b> Descarga y descifrado automático de archivos enviados desde Flows.</li>
+<li>⚙️ <b>Instalador Premium:</b> Generación automática de llaves RSA mediante Artisan.</li>
+<li>🚀 <b>Response Builder:</b> Navegación dinámica entre pantallas de flujo.</li>
+</ul>
+
+<p><b>🇬🇧 English:</b> We are integrating full support for <b>WhatsApp Flows</b>. This feature allows building advanced interactive experiences directly within the chat. Key features included:</p>
+<ul>
+<li>🛡️ <b>Crypto Engine:</b> Automatic data decryption (RSA-OAEP + AES-GCM).</li>
+<li>📂 <b>Media Service:</b> Automatic download and decryption of files sent from Flows.</li>
+<li>⚙️ <b>Premium Installer:</b> Automatic RSA key generation via Artisan.</li>
+<li>🚀 <b>Response Builder:</b> Dynamic navigation between flow screens.</li>
+</ul>
+<p><i>⚠️ Currently in BETA phase / Actualmente en fase BETA.</i></p>
+</div>
+
+---
+
 <p align="center">
 <a href="https://packagist.org/packages/scriptdevelop/whatsapp-manager"><img src="https://img.shields.io/packagist/v/scriptdevelop/whatsapp-manager.svg?style=flat-square" alt="Latest Version"></a>
 <a href="https://php.net/"><img src="https://img.shields.io/badge/PHP-8.2%2B-8892BF.svg?style=flat-square" alt="PHP Version"></a>
