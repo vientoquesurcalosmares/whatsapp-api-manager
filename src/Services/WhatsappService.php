@@ -444,6 +444,159 @@ class WhatsappService
     }
 
     /**
+     * Sobrescribe la URL de devolución de llamada de webhooks para la WABA actual.
+     *
+     * @param string $url URL alternativa (max 200 caracteres).
+     * @param string $verifyToken Token de verificación para la URL.
+     * @return array
+     */
+    public function overrideWabaWebhook(string $url, string $verifyToken): array
+    {
+        $this->ensureAccountIsSet();
+
+        $requestBody = [
+            'override_callback_uri' => $url,
+            'verify_token' => $verifyToken
+        ];
+
+        Log::channel('whatsapp')->debug('Sobrescribiendo webhook de WABA', [
+            'business_id' => $this->businessAccount->whatsapp_business_id,
+            'url' => $url
+        ]);
+
+        return $this->apiClient->request(
+            'POST',
+            Endpoints::SUBSCRIBE_APP,
+            ['whatsapp_business_id' => $this->businessAccount->whatsapp_business_id],
+            $requestBody,
+            headers: $this->getAuthHeaders()
+        );
+    }
+
+    /**
+     * Elimina la URL de devolución de llamada alternativa de la WABA actual,
+     * restaurando la configurada en el panel de la aplicación.
+     *
+     * @return array
+     */
+    public function removeWabaWebhookOverride(): array
+    {
+        $this->ensureAccountIsSet();
+
+        Log::channel('whatsapp')->debug('Eliminando sobreescritura de webhook de WABA', [
+            'business_id' => $this->businessAccount->whatsapp_business_id
+        ]);
+
+        // Según la documentación oficial, se envía el POST sin parámetros en el cuerpo
+        return $this->apiClient->request(
+            'POST',
+            Endpoints::SUBSCRIBE_APP,
+            ['whatsapp_business_id' => $this->businessAccount->whatsapp_business_id],
+            [],
+            headers: $this->getAuthHeaders()
+        );
+    }
+
+    /**
+     * Sobrescribe la URL de devolución de llamada de webhooks para un número telefónico.
+     *
+     * @param string $phoneNumberId El ID del número de teléfono local.
+     * @param string $url URL alternativa.
+     * @param string $verifyToken Token de verificación.
+     * @return array
+     */
+    public function overridePhoneWebhook(string $phoneNumberId, string $url, string $verifyToken): array
+    {
+        $this->ensureAccountIsSet();
+
+        $phone = WhatsappModelResolver::phone_number()->find($phoneNumberId);
+        if (!$phone) {
+            throw new \RuntimeException('Número telefónico no encontrado');
+        }
+
+        $apiPhoneId = $phone->api_phone_number_id;
+
+        $endpointUrl = Endpoints::build(Endpoints::MANAGE_PHONE_NUMBER, [
+            'phone_number_id' => $apiPhoneId
+        ]);
+
+        $requestBody = [
+            'webhook_configuration' => [
+                'override_callback_uri' => $url,
+                'verify_token' => $verifyToken
+            ]
+        ];
+
+        Log::channel('whatsapp')->debug('Sobrescribiendo webhook de Phone Number', [
+            'phone_number_id' => $apiPhoneId,
+            'url' => $url
+        ]);
+
+        $response = $this->apiClient->request(
+            'POST',
+            $endpointUrl,
+            [], // Parámetros de consulta
+            $requestBody,
+            ['headers' => $this->getAuthHeaders()]
+        );
+
+        $phone->update([
+            'webhook_configuration' => [
+                'url' => $url,
+                'verify_token' => $verifyToken
+            ]
+        ]);
+
+        return $response;
+    }
+
+    /**
+     * Elimina la URL de devolución de llamada alternativa de un número telefónico.
+     *
+     * @param string $phoneNumberId El ID del número de teléfono local.
+     * @return array
+     */
+    public function removePhoneWebhookOverride(string $phoneNumberId): array
+    {
+        $this->ensureAccountIsSet();
+
+        $phone = WhatsappModelResolver::phone_number()->find($phoneNumberId);
+        if (!$phone) {
+            throw new \RuntimeException('Número telefónico no encontrado');
+        }
+
+        $apiPhoneId = $phone->api_phone_number_id;
+
+        $endpointUrl = Endpoints::build(Endpoints::MANAGE_PHONE_NUMBER, [
+            'phone_number_id' => $apiPhoneId
+        ]);
+
+        $requestBody = [
+            'webhook_configuration' => [
+                'override_callback_uri' => ''
+            ]
+        ];
+
+        Log::channel('whatsapp')->debug('Eliminando sobreescritura de webhook de Phone Number', [
+            'phone_number_id' => $apiPhoneId
+        ]);
+
+        $response = $this->apiClient->request(
+            'POST',
+            $endpointUrl,
+            [], // Parámetros de consulta
+            $requestBody,
+            ['headers' => $this->getAuthHeaders()]
+        );
+
+        $phone->update([
+            'webhook_configuration' => null
+        ]);
+
+        return $response;
+    }
+
+    /**
      * Registra un número telefónico en la API de WhatsApp
      * Nota: Limitado a 10 solicitudes por número de negocio en 72 horas
      *
