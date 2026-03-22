@@ -58,6 +58,9 @@ return [
         // Modelo para la cuenta empresarial de WhatsApp
         'business_account' => \ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount::class,
 
+        // Modelo de Códigos QR
+        'qr_code' => \ScriptDevelop\WhatsappManager\Models\WhatsappQrCode::class,
+
         //Perfil de la cuenta de Whatsapp
         'business_profile' => \ScriptDevelop\WhatsappManager\Models\WhatsappBusinessProfile::class,
 
@@ -451,6 +454,20 @@ return [
             'enabled' => env('WHATSAPP_CRON_GET_GENERAL_TEMPLATE_ANALYTICS', false), //Activar o desactivar la tarea CRON
             'schedule' => env('WHATSAPP_CRONTIME_GET_GENERAL_TEMPLATE_ANALYTICS', '0 0 * * *'), //Diario a la medianoche por default
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Configuración de WhatsApp Flows
+    |--------------------------------------------------------------------------
+    |
+    | Define la versión por defecto del JSON para publicar nuevos Flows.
+    | La versión actual recomendada por Meta es 7.3 (u 8.0/9.0 según changelogs).
+    | https://developers.facebook.com/docs/whatsapp/flows/changelogs/
+    */
+    'flows' => [
+        'default_version' => env('WHATSAPP_FLOWS_DEFAULT_VERSION', '7.3'),
+        'data_api_version' => env('WHATSAPP_FLOWS_DATA_API_VERSION', '3.0'),
     ],
 
     /**

@@ -6,6 +6,14 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
+/**
+ * Clase Factory para instanciar Modelos usando configuraciones.
+ * 
+ * @method static \Illuminate\Database\Eloquent\Builder phone_number()
+ * @method static \Illuminate\Database\Eloquent\Builder message()
+ * @method static \Illuminate\Database\Eloquent\Builder flow()
+ * @method static \Illuminate\Database\Eloquent\Builder qr_code()
+ */
 class WhatsappModelResolver
 {
     /**

@@ -43,6 +43,18 @@ class FlowBuilder
         return $this;
     }
 
+    public function cloneFlowId(string $flowId): self
+    {
+        $this->flowData['clone_flow_id'] = $flowId;
+        return $this;
+    }
+
+    public function endpointUri(string $uri): self
+    {
+        $this->flowData['endpoint_uri'] = $uri;
+        return $this;
+    }
+
     public function type(string $type): self
     {
         $validTypes = ['AUTHENTICATION', 'MARKETING', 'UTILITY', 'SERVICE'];
@@ -116,8 +128,8 @@ class FlowBuilder
         }
 
         $this->flowData['json_structure'] = [
-            'version' => '7.3',
-            'data_api_version' => '3.0',
+            'version' => config('whatsapp.flows.default_version', '7.3'),
+            'data_api_version' => config('whatsapp.flows.data_api_version', '3.0'),
             'routing_model' => new \stdClass(),
             'screens' => $whatsappScreens,
         ];
@@ -134,7 +146,7 @@ class FlowBuilder
         }
 
         $this->flowData['endpoint_uri'] = config('app.url') . '/whatsapp/flows/endpoint';
-        $this->flowData['data_api_version'] = '3.0';
+        $this->flowData['data_api_version'] = config('whatsapp.flows.data_api_version', '3.0');
 
         return $this->flowData;
     }
@@ -238,10 +250,20 @@ class FlowBuilder
         try {
             // 1. Crear el flujo en Meta
             $endpoint = Endpoints::build(Endpoints::CREATE_FLOW, ['waba_id' => $this->account->whatsapp_business_id]);
-            $response = $this->apiClient->request('POST', $endpoint, [], [
+            
+            $payload = [
                 'name' => $flowData['name'],
                 'categories' => $flowData['categories'],
-            ], [], $headers);
+            ];
+
+            if (!empty($this->flowData['clone_flow_id'])) {
+                $payload['clone_flow_id'] = $this->flowData['clone_flow_id'];
+            }
+            if (!empty($this->flowData['endpoint_uri'])) {
+                $payload['endpoint_uri'] = $this->flowData['endpoint_uri'];
+            }
+
+            $response = $this->apiClient->request('POST', $endpoint, [], $payload, [], $headers);
 
             $flowId = $response['id'];
 

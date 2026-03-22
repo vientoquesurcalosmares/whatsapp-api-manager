@@ -84,6 +84,12 @@ class WhatsappServiceProvider extends ServiceProvider
             );
         });
 
+        $this->app->singleton('whatsapp.qr_code', function ($app) {
+            return new \ScriptDevelop\WhatsappManager\Services\QrCodeService(
+                $app->make(ApiClient::class)
+            );
+        });
+
         $this->app->singleton(FlowMediaService::class, function ($app) {
             return new FlowMediaService();
         });
