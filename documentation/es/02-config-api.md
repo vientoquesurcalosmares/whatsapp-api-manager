@@ -49,7 +49,9 @@
 
   - Suscripción con Campos Personalizados
 
-7. Configuración de Códigos de País
+7. Sobreescritura de Webhooks (Webhook Overrides)
+
+8. Configuración de Códigos de País
 
 
 ### 🔑 Credenciales de Meta
@@ -328,9 +330,67 @@ $account = $registrationService->register($accountData, $customFields);
     ],
 ],
 ```
+---
+
+# 7. Sobreescritura de Webhooks (Webhook Overrides)
+
+La API de Meta permite definir una URL de webhook distinta a la configurada globalmente en el panel de tu App. Esto es sumamente útil para arquitecturas multi-tenant (SaaS) donde cada cliente (o número telefónico) debe enviar sus eventos a una URL específica.
+
+El paquete expone métodos para sobrescribir (y eliminar la sobreescritura) tanto a nivel de cuenta (WABA) como a nivel de un número de teléfono individual.
+
+> **Importante:**
+> - El orden de prioridad de Meta es: **Número Telefónico** -> **WABA** -> **App**.
+> - En todos los casos, **debes instanciar primero el contexto de tu cuenta** utilizando `Whatsapp::account()->forAccount('ID_LOCAL_DE_LA_WABA')` o instanciándote el `WhatsappService` y usando `$whatsappService->forAccount(...)`.
+
+## 7.1 Sobreescritura a Nivel WABA (Toda la cuenta)
+
+Utiliza este método si quieres que absolutamente todos los números pertenecientes a esta WhatsApp Business Account apunten al nuevo webhook.
+
+```php
+use ScriptDevelop\WhatsappManager\Services\WhatsappService;
+
+$whatsappService = app(WhatsappService::class);
+
+// 1. Establecer el contexto de la WABA
+$whatsappService->forAccount('ID_LOCAL_O_BUSINESS_ID');
+
+// 2. Establecer la nueva URL del webhook
+$response = $whatsappService->overrideWabaWebhook(
+    'https://tu-dominio.com/api/webhooks/waba-cliente-1',
+    'tu_verify_token_seguro'
+);
+
+// 3. Restaurar al webhook original de la App
+$whatsappService->removeWabaWebhookOverride();
+```
+
+## 7.2 Sobreescritura a Nivel de Número de Teléfono
+
+Ideal si gestionas números de diferentes sucursales o clientes bajo una misma WABA pero necesitas que cada uno envíe sus eventos a una URL única.
+
+```php
+use ScriptDevelop\WhatsappManager\Services\WhatsappService;
+
+$whatsappService = app(WhatsappService::class);
+$whatsappService->forAccount('ID_LOCAL_O_BUSINESS_ID');
+
+// El parámetro phoneNumberId debe coincidir con el ID local en tu tabla `whatsapp_phone_numbers`
+$idLocalDelNumero = 15; 
+
+// 1. Establecer el webhook específico para el número
+$response = $whatsappService->overridePhoneWebhook(
+    $idLocalDelNumero,
+    'https://tu-dominio.com/api/webhooks/numero-15',
+    'token_seguro_del_numero'
+);
+
+// 2. Eliminar la URL específica y heredar nuevamente de WABA o de la App
+$whatsappService->removePhoneWebhookOverride($idLocalDelNumero);
+```
 
 ---
-# Configuración de Códigos de País
+
+# 8. Configuración de Códigos de País
 
 El paquete incluye un sistema flexible para gestionar códigos de país que se utiliza durante el registro de números de teléfono para extraer correctamente el código de país y el número local.
 

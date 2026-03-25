@@ -23,6 +23,7 @@ class Endpoints
     const GET_PHONE_DETAILS = '{phone_number_id}';
     const GET_BUSINESS_PROFILE = '{phone_number_id}/whatsapp_business_profile';
     const CONFIGURE_WEBHOOK = '{phone_number_id}/webhooks';
+    const MANAGE_PHONE_NUMBER = '{phone_number_id}';
     const BLOCK_USERS = '{phone_number_id}/block_users';
     const UNBLOCK_USERS = '{phone_number_id}/block_users';
     const LIST_BLOCKED_USERS = '{phone_number_id}/block_users';

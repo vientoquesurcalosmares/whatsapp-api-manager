@@ -14,6 +14,8 @@ use ScriptDevelop\WhatsappManager\Services\BlockService;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
 use ScriptDevelop\WhatsappManager\Services\TemplateService;
 use ScriptDevelop\WhatsappManager\Services\FlowService;
+use ScriptDevelop\WhatsappManager\Services\Flows\FlowMediaService;
+use ScriptDevelop\WhatsappManager\Services\Flows\FlowCryptoService;
 
 class WhatsappServiceProvider extends ServiceProvider
 {
@@ -59,12 +61,6 @@ class WhatsappServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->singleton('whatsapp.manager', function ($app) {
-            return new WhatsappManager(
-                $app->make(MessageDispatcherService::class)
-            );
-        });
-
         $this->app->alias(WhatsappService::class, 'whatsapp.phone');
         $this->app->alias(MessageDispatcherService::class, 'whatsapp.message');
         $this->app->alias(AccountRegistrationService::class, 'whatsapp.account');
@@ -88,11 +84,20 @@ class WhatsappServiceProvider extends ServiceProvider
             );
         });
 
+        $this->app->singleton(FlowMediaService::class, function ($app) {
+            return new FlowMediaService();
+        });
+
+        $this->app->singleton(FlowCryptoService::class, function ($app) {
+            return new FlowCryptoService();
+        });
+
         // Registrar el procesador de webhook con valor por defecto
         $this->app->bind(
             \ScriptDevelop\WhatsappManager\Contracts\WebhookProcessorInterface::class,
             function () {
-                $processorClass = config('whatsapp.webhook.processor',
+                $processorClass = config(
+                    'whatsapp.webhook.processor',
                     \ScriptDevelop\WhatsappManager\Services\WebhookProcessors\BaseWebhookProcessor::class
                 );
 
@@ -179,13 +184,13 @@ class WhatsappServiceProvider extends ServiceProvider
     protected function createStorageDirectories()
     {
         $basePath = storage_path('app/public/whatsapp');
-        $folders = ['audios', 'documents', 'images', 'stickers', 'videos'];
+        // Añadimos 'flows/keys' y 'flows/media'
+        $folders = ['audios', 'documents', 'images', 'stickers', 'videos', 'flows/keys', 'flows/media'];
 
         foreach ($folders as $folder) {
             $path = "{$basePath}/{$folder}";
             if (!is_dir($path)) {
                 mkdir($path, 0755, true);
-                $this->app['log']->info("Directorio creado: {$path}");
             }
         }
     }

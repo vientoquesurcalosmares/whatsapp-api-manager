@@ -41,6 +41,44 @@ Antes de instalar el paquete, necesitarás una cuenta de WhatsApp API Cloud:
     composer require scriptdevelop/whatsapp-manager
     ```
 
+⚡ Paso 2: Instalación Automática (Recomendado)
+    Para facilitar la puesta en marcha, hemos creado un asistente de instalación que realiza las tareas más tediosas por ti.
+
+    ¿Qué hace este comando?
+
+    Publica los archivos de configuración, rutas y migraciones.
+
+    Configura automáticamente el canal de logs whatsapp en tu proyecto.
+
+    Crea la estructura de carpetas en storage para archivos multimedia y llaves de seguridad.
+
+    Genera el par de llaves RSA de 2048 bits necesarias para WhatsApp Flows.
+
+    Ejecuta el asistente:
+
+
+```bash
+php artisan whatsapp:install
+```
+
+Nota para usuarios de Windows (Laragon/XAMPP):
+Si la terminal parece detenerse en la pregunta de las llaves RSA y no ves las opciones, usa las flechas del teclado [↑/↓] para seleccionar y presiona Enter.
+
+
+🔐 Paso 3: Gestión de Llaves de Seguridad (WhatsApp Flows)
+WhatsApp Flows requiere encriptación de extremo a extremo para el intercambio de datos (Data Channel). El instalador genera estas llaves en:
+storage/app/public/whatsapp/flows/keys/
+
+Si en el futuro necesitas regenerar estas llaves sin reinstalar todo el paquete, utiliza:
+
+```bash
+php artisan whatsapp:generate-keys --show
+```
+
+El flag --show imprimirá la llave pública en tu consola para que puedas copiarla y pegarla directamente en el Dashboard de Meta.
+
+
+
 2. **Publicar archivos de configuración:**:
     Este comando publicara archivos de configuracion base del paquete:
    - Configuración principal (config/whatsapp.php).

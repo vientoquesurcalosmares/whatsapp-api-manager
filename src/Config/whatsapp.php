@@ -158,8 +158,8 @@ return [
                 'system' => [
                     'received' => \Scriptdevelop\WhatsappManager\Events\SystemMessageReceived::class,
                 ],
-                'edited'    => \Scriptdevelop\WhatsappManager\Events\MessageEdited::class,
-                'revoked'   => \Scriptdevelop\WhatsappManager\Events\MessageRevoked::class,
+                'edited' => \Scriptdevelop\WhatsappManager\Events\MessageEdited::class,
+                'revoked' => \Scriptdevelop\WhatsappManager\Events\MessageRevoked::class,
             ],
             'reaction' => [
                 /**
@@ -202,6 +202,9 @@ return [
             'app_uninstalled' => \ScriptDevelop\WhatsappManager\Events\PartnerAppUninstalled::class,
             'partner_added' => \ScriptDevelop\WhatsappManager\Events\PartnerAdded::class,
             'partner_removed' => \ScriptDevelop\WhatsappManager\Events\PartnerRemoved::class,
+        ],
+        'flows' => [
+            'status_updated' => \ScriptDevelop\WhatsappManager\Events\FlowStatusUpdated::class,
         ],
     ],
 
@@ -393,10 +396,10 @@ return [
     |
     */
     'meta_auth' => [
-        'client_id'     => env('META_CLIENT_ID'),
+        'client_id' => env('META_CLIENT_ID'),
         'client_secret' => env('META_CLIENT_SECRET'),
-        'redirect_uri'  => env('META_REDIRECT_URI'),
-        'scopes'        => env('META_SCOPES', 'whatsapp_business_management,whatsapp_business_messaging'),
+        'redirect_uri' => env('META_REDIRECT_URI'),
+        'scopes' => env('META_SCOPES', 'whatsapp_business_management,whatsapp_business_messaging'),
     ],
 
     /*
@@ -445,7 +448,7 @@ return [
     'crontimes' => [
         //Patrón de tiempo para tarea CRON que obtiene las estadísticas GENERALES de plantillas
         'get_general_template_analytics' => [
-            'enabled'=> env('WHATSAPP_CRON_GET_GENERAL_TEMPLATE_ANALYTICS', false), //Activar o desactivar la tarea CRON
+            'enabled' => env('WHATSAPP_CRON_GET_GENERAL_TEMPLATE_ANALYTICS', false), //Activar o desactivar la tarea CRON
             'schedule' => env('WHATSAPP_CRONTIME_GET_GENERAL_TEMPLATE_ANALYTICS', '0 0 * * *'), //Diario a la medianoche por default
         ],
     ],

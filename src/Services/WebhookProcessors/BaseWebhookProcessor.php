@@ -16,6 +16,9 @@ use ScriptDevelop\WhatsappManager\Contracts\WebhookProcessorInterface;
 use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
 use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
 use ScriptDevelop\WhatsappManager\Services\TemplateService;
+use ScriptDevelop\WhatsappManager\Services\Flows\FlowCryptoService;
+use ScriptDevelop\WhatsappManager\Events\FlowStatusUpdated;
+use ScriptDevelop\WhatsappManager\Services\Flows\FlowMediaService;
 
 class BaseWebhookProcessor implements WebhookProcessorInterface
 {
@@ -31,6 +34,11 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         }
 
         if ($request->isMethod('post')) {
+            // CASO ESPECIAL: Si es una petición encriptada de Flow Endpoint (Data Channel)
+            if ($request->has(['encrypted_aes_key', 'encrypted_flow_data'])) {
+                return $this->handleFlowEndpointRequest($request);
+            }
+
             return $this->processIncomingMessage($request);
         }
         Log::channel('whatsapp')->error('Registro webhook invalido', [$request]);
@@ -81,6 +89,10 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             case 'business_capability_update':
                 $this->handleBusinessCapabilityUpdate($value, $payload);
                 return response()->json(['success' => true]);
+
+            case 'flows':
+                $this->handleFlowStatusAndPerformance($value);
+                return response()->json(['success' => true]);
         }
 
         if ($field === 'phone_number_name_update') {
@@ -93,7 +105,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             return response()->json(['success' => true]);
         }
 
-        if ($field === 'message_template' or $field=== 'message_template_status_update') {
+        if ($field === 'message_template' or $field === 'message_template_status_update') {
             $this->handleTemplateEvent($payload, $field, $value);
             return response()->json(['success' => true]);
         }
@@ -132,7 +144,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         }
 
         // Si es mensaje normal
-        elseif (isset($value['messages'][0])) {
+        if (isset($value['messages'][0])) {
             $message = $value['messages'][0];
             $messageType = $message['type'] ?? '';
 
@@ -154,6 +166,10 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                     $message,
                     $value['metadata'] ?? null
                 );
+            }
+            if ($messageType === 'interactive' && data_get($message, 'interactive.type') === 'nfm_reply') {
+                $this->handleFlowResponseMessage($message, $value['contacts'][0] ?? null, $value['metadata'] ?? null);
+                return response()->json(['success' => true]);
             } else {
                 $this->handleIncomingMessage(
                     $message,
@@ -322,7 +338,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // Manejar mensajes de media
         if (in_array($messageType, ['image', 'audio', 'video', 'document', 'sticker'])) {
-            $messageRecord =  $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
+            $messageRecord = $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
 
             $this->fireMediaMessageReceived($contactRecord, $messageRecord);
         }
@@ -456,18 +472,18 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // 6. Crear el nuevo mensaje de tipo EDIT que apunta al original
         $editMessageData = [
-            'wa_id'               => $message['id'],
-            'whatsapp_phone_id'   => $whatsappPhone->phone_number_id,
-            'contact_id'          => $contactRecord->contact_id,
-            'conversation_id'     => $originalMessage->conversation_id,
-            'messaging_product'   => $message['messaging_product'] ?? 'whatsapp',
-            'message_from'        => preg_replace('/[\D+]/', '', $message['from']),
-            'message_to'          => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
-            'message_type'        => 'EDIT',
-            'message_content'     => $content,
-            'json_content'        => json_encode($message),
-            'status'              => 'received',
-            'message_context_id'  => $this->getContextMessageId($newMessage),
+            'wa_id' => $message['id'],
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+            'contact_id' => $contactRecord->contact_id,
+            'conversation_id' => $originalMessage->conversation_id,
+            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+            'message_from' => preg_replace('/[\D+]/', '', $message['from']),
+            'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+            'message_type' => 'EDIT',
+            'message_content' => $content,
+            'json_content' => json_encode($message),
+            'status' => 'received',
+            'message_context_id' => $this->getContextMessageId($newMessage),
             'original_message_id' => $originalMessage->message_id, // <-- NUEVO: referencia al original
         ];
 
@@ -490,8 +506,10 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                         }
 
                         $extension = $this->getFileExtension($mimeType);
-                        if ($newMessageType === 'audio' && $extension === 'bin') $extension = 'ogg';
-                        if ($newMessageType === 'sticker' && $extension === 'bin') $extension = 'webp';
+                        if ($newMessageType === 'audio' && $extension === 'bin')
+                            $extension = 'ogg';
+                        if ($newMessageType === 'sticker' && $extension === 'bin')
+                            $extension = 'webp';
 
                         $fileName = "{$mediaId}.{$extension}";
                         $directory = rtrim($directory, '/');
@@ -504,21 +522,21 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                         WhatsappModelResolver::media_file()->updateOrCreate(
                             [
                                 'message_id' => $editMessageRecord->message_id,
-                                'media_id'   => $mediaId,
+                                'media_id' => $mediaId,
                             ],
                             [
                                 'media_type' => $newMessageType,
-                                'file_name'  => $fileName,
-                                'url'        => $publicPath,
-                                'mime_type'  => $mimeType,
-                                'sha256'     => $sha256,
+                                'file_name' => $fileName,
+                                'url' => $publicPath,
+                                'mime_type' => $mimeType,
+                                'sha256' => $sha256,
                             ]
                         );
                     }
                 }
             } catch (\Exception $e) {
                 Log::channel('whatsapp')->error('Error downloading media for edit', [
-                    'error'    => $e->getMessage(),
+                    'error' => $e->getMessage(),
                     'media_id' => $mediaId
                 ]);
             }
@@ -526,9 +544,9 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // 8. Actualizar el mensaje original con marcas de edición
         $originalMessage->update([
-            'is_edited'            => true,
+            'is_edited' => true,
             'last_edit_message_id' => $editMessageRecord->message_id,
-            'edited_at'            => now(), // usamos el campo existente
+            'edited_at' => now(), // usamos el campo existente
         ]);
 
         // 9. Disparar evento de edición
@@ -536,8 +554,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         Log::channel('whatsapp')->info('Edit message processed', [
             'original_message_id' => $originalMessage->message_id,
-            'edit_message_id'     => $editMessageRecord->message_id,
-            'new_type'            => $newMessageType,
+            'edit_message_id' => $editMessageRecord->message_id,
+            'new_type' => $newMessageType,
         ]);
     }
 
@@ -604,23 +622,23 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // 5. Marcar el mensaje original como revocado
         $originalMessage->update([
-            'is_revoked'  => true,
-            'revoked_at'  => now(),
+            'is_revoked' => true,
+            'revoked_at' => now(),
         ]);
 
         // 6. (Opcional) Crear un mensaje de tipo REVOKE para registrar el evento
         $revokeMessageData = [
-            'wa_id'               => $message['id'], // ID del evento de revocación
-            'whatsapp_phone_id'   => $whatsappPhone->phone_number_id,
-            'contact_id'          => $contactRecord->contact_id,
-            'conversation_id'     => $originalMessage->conversation_id, // hereda la conversación del original
-            'messaging_product'   => $message['messaging_product'] ?? 'whatsapp',
-            'message_from'        => preg_replace('/[\D+]/', '', $message['from']),
-            'message_to'          => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
-            'message_type'        => 'REVOKE',
-            'message_content'     => 'Mensaje revocado', // Podría ser un texto genérico o vacío
-            'json_content'        => json_encode($message),
-            'status'              => 'received',
+            'wa_id' => $message['id'], // ID del evento de revocación
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+            'contact_id' => $contactRecord->contact_id,
+            'conversation_id' => $originalMessage->conversation_id, // hereda la conversación del original
+            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+            'message_from' => preg_replace('/[\D+]/', '', $message['from']),
+            'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+            'message_type' => 'REVOKE',
+            'message_content' => 'Mensaje revocado', // Podría ser un texto genérico o vacío
+            'json_content' => json_encode($message),
+            'status' => 'received',
             'original_message_id' => $originalMessage->message_id, // referencia al original
         ];
 
@@ -631,7 +649,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         Log::channel('whatsapp')->info('Revoke message processed', [
             'original_message_id' => $originalMessage->message_id,
-            'revoke_message_id'   => $revokeMessageRecord->message_id,
+            'revoke_message_id' => $revokeMessageRecord->message_id,
         ]);
     }
 
@@ -685,7 +703,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         // 5. Buscar el contacto existente por wa_id antiguo o por número
         $contactRecord = WhatsappModelResolver::contact()
             ->where('wa_id', $from)
-            ->orWhere(function($query) use ($countryCode, $phoneNumber) {
+            ->orWhere(function ($query) use ($countryCode, $phoneNumber) {
                 $query->where('country_code', $countryCode)
                     ->where('phone_number', $phoneNumber);
             })
@@ -694,10 +712,10 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         if (!$contactRecord) {
             // Crear nuevo contacto con los datos antiguos
             $contactRecord = WhatsappModelResolver::contact()->create([
-                'wa_id'         => $from,
-                'country_code'  => $countryCode,
-                'phone_number'  => $phoneNumber,
-                'contact_name'  => $contactName,
+                'wa_id' => $from,
+                'country_code' => $countryCode,
+                'phone_number' => $phoneNumber,
+                'contact_name' => $contactName,
             ]);
             Log::channel('whatsapp')->info('Contact created from system message', [
                 'contact_id' => $contactRecord->contact_id
@@ -761,7 +779,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'json_content' => json_encode($message),
                 'status' => 'received',
                 'message_context_id' => $this->getContextMessageId($message),
-            ]);
+            ]
+        );
 
         Log::channel('whatsapp')->info('Text message processed and saved.', [
             'message_id' => $messageRecord->message_id,
@@ -805,7 +824,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'json_content' => json_encode($message),
                 'status' => 'received',
                 'message_context_id' => $this->getContextMessageId($message),
-            ]);
+            ]
+        );
 
         Log::channel('whatsapp')->info('Mensaje interactivo procesado y guardado.', [
             'message_id' => $messageRecord->message_id,
@@ -851,7 +871,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         }
 
         // Obtener el tipo de media pluralizado según la configuración
-        $mediaType = $message['type']. 's'; // Por defecto pluralizar el tipo de media
+        $mediaType = $message['type'] . 's'; // Por defecto pluralizar el tipo de media
 
         // Obtener la ruta de almacenamiento configurada desde la config
         $directory = config("whatsapp.media.storage_path.$mediaType");
@@ -876,7 +896,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         }
 
         $fileName = "{$mediaId}.{$extension}";
-        if( Str::endsWith($directory, '/')) {
+        if (Str::endsWith($directory, '/')) {
             $directory = rtrim($directory, '/');
         }
         $filePath = "{$directory}/{$fileName}";
@@ -906,7 +926,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'json_content' => json_encode($message),
                 'status' => 'received',
                 'message_context_id' => $this->getContextMessageId($message),
-            ]);
+            ]
+        );
 
         // Actualizar ó Crear el registro del archivo multimedia en la base de datos
         WhatsappModelResolver::media_file()->updateOrCreate(
@@ -920,7 +941,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'url' => $publicPath,
                 'mime_type' => $mimeType,
                 'sha256' => $message[$message['type']]['sha256'] ?? null,
-            ]);
+            ]
+        );
 
         Log::channel('whatsapp')->info('Media file and message saved.', [
             'message_id' => $messageRecord->message_id,
@@ -964,7 +986,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'json_content' => json_encode($message),
                 'status' => 'received',
                 'message_context_id' => $this->getContextMessageId($message),
-            ]);
+            ]
+        );
 
         Log::channel('whatsapp')->info('Location message processed.', [
             'message_id' => $messageRecord->message_id,
@@ -1005,7 +1028,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'json_content' => json_encode($message),
                 'status' => 'received',
                 'message_context_id' => $this->getContextMessageId($message),
-            ]);
+            ]
+        );
 
         Log::channel('whatsapp')->info('Contact shared message processed.', [
             'message_id' => $messageRecord->message_id,
@@ -1043,7 +1067,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'json_content' => json_encode($message),
                 'status' => 'received',
                 'message_context_id' => $originalMessage?->message_id ?? null,
-            ]);
+            ]
+        );
 
         Log::channel('whatsapp')->info('Reacción procesada.', [
             'message_id' => $messageRecord->message_id,
@@ -1060,15 +1085,14 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
      */
     protected function getContextMessageId(array $message): ?string
     {
-        if( isset($message['context']) and isset($message['context']['id']) )
-        {
+        if (isset($message['context']) and isset($message['context']['id'])) {
             // Si el mensaje tiene contexto, buscar ese id en la base de datos
             $context_message = WhatsappModelResolver::message()
                 ->select('message_id')
                 ->where('wa_id', '=', $message['context']['id'])
                 ->first();
 
-            if( $context_message ){
+            if ($context_message) {
                 return $context_message->message_id;
             }
         }
@@ -1116,10 +1140,10 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
             'text/plain' => 'txt',
             'image/webp' => 'webp',
-            default => function() use ($mimeType) {
-                Log::channel('whatsapp')->warning("Extensión desconocida para MIME type: {$mimeType}");
-                return 'bin';
-            },
+            default => function () use ($mimeType) {
+                    Log::channel('whatsapp')->warning("Extensión desconocida para MIME type: {$mimeType}");
+                    return 'bin';
+                },
         };
     }
 
@@ -1145,10 +1169,12 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         $messageUpdated = $this->updateMessageStatus($messageRecord, $status);
 
         switch ($statusValue) {
-            case 'delivered': $this->fireMessageDelivered($messageUpdated);
+            case 'delivered':
+                $this->fireMessageDelivered($messageUpdated);
                 break;
 
-            case 'read': $this->fireMessageRead($messageUpdated);
+            case 'read':
+                $this->fireMessageRead($messageUpdated);
                 break;
 
             case 'failed':
@@ -1202,7 +1228,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         if ($timestamp) {
             $date = \Carbon\Carbon::createFromTimestamp($timestamp);
 
-            match($statusValue) {
+            match ($statusValue) {
                 'delivered' => $updateData['delivered_at'] = $date,
                 'read' => $updateData['read_at'] = $date,
                 'failed' => $updateData['failed_at'] = $date,
@@ -1222,14 +1248,14 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 $updateData['details_error'] = $firstError;
             } elseif (is_array($firstError)) {
                 // Caso: error con estructura (code, title, message, error_data)
-                $updateData['code_error'] = (int)($firstError['code'] ?? 0);
+                $updateData['code_error'] = (int) ($firstError['code'] ?? 0);
                 $updateData['title_error'] = $firstError['title'] ?? 'Unknown error';
                 $updateData['message_error'] = $firstError['message'] ?? '';
 
                 if (isset($firstError['error_data'])) {
                     $updateData['details_error'] = is_array($firstError['error_data'])
                         ? ($firstError['error_data']['details'] ?? json_encode($firstError['error_data']))
-                        : (string)$firstError['error_data'];
+                        : (string) $firstError['error_data'];
                 }
 
                 // Manejar código específico de marketing opt-out
@@ -1251,8 +1277,10 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // Validar expiration_timestamp
         $expirationTimestamp = null;
-        if (isset($conversationData['expiration_timestamp'])
-            && is_numeric($conversationData['expiration_timestamp'])) {
+        if (
+            isset($conversationData['expiration_timestamp'])
+            && is_numeric($conversationData['expiration_timestamp'])
+        ) {
             $expirationTimestamp = \Carbon\Carbon::createFromTimestamp(
                 $conversationData['expiration_timestamp']
             );
@@ -1405,7 +1433,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     {
         $event = $templateData['event'] ?? null;
         $templateId = $templateData['id'] ?? null;
-        if( empty($templateId) ) {
+        if (empty($templateId)) {
             $templateId = $templateData['message_template_id'] ?? null;
         }
 
@@ -1443,7 +1471,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         $templateId = $templateData['id'] ?? null;
 
         $message_template_id = $templateData['message_template_id'] ?? null;
-        if( !empty($message_template_id) ) {
+        if (!empty($message_template_id)) {
             $templateId = $message_template_id;
         }
         $newStatus = $templateData['event'] ?? null; // APPROVED, REJECTED, PENDING
@@ -1455,7 +1483,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             return;
         }
 
-        if( $field==='message_template_status_update' ){
+        if ($field === 'message_template_status_update') {
             Log::channel('whatsapp')->info("Get template ID: {$templateId}", $templateData);
             //Usar la API para obtener el template, esto puede suceder por que se creó ó editó la plantilla desde el portal de Whatsapp Business, esto hará que en cuanto se aprueve o rechace se emita un webhook que esta clase procesará.
             $this->findTemplateAPI($payload);
@@ -1521,7 +1549,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         $businessAccountId = $entry['id'] ?? null;
         $templateId = $entry['changes'][0]['value']['message_template_id'] ?? null;
 
-        if( empty($businessAccountId) || empty($templateId) ) {
+        if (empty($businessAccountId) || empty($templateId)) {
             Log::channel('whatsapp')->warning('Missing business account ID or template ID for API lookup.', $payload);
             return;
         }
@@ -1597,7 +1625,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
      */
     protected function createOrUpdateDefaultTemplateVersion(string $status, Model $template, Model $version): void
     {
-        if( $status === 'APPROVED' && $template && $version ){
+        if ($status === 'APPROVED' && $template && $version) {
             $templateVersionDefaultModel = config('whatsapp.models.template_version_default');
             $templateVersionDefaultModel::upsertDefault($template->template_id, $version->version_id);
         }
@@ -1606,7 +1634,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     protected function handleTemplateCreation(array $templateData): void
     {
         $templateId = $templateData['id'] ?? null;
-        if( empty($templateId) ) {
+        if (empty($templateId)) {
             $templateId = $templateData['message_template_id'] ?? null;
         }
         $businessAccountId = $templateData['business_account_id'] ?? null;
@@ -1653,7 +1681,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     protected function handleTemplateUpdate(array $templateData): void
     {
         $templateId = $templateData['id'] ?? null;
-        if( empty($templateId) ) {
+        if (empty($templateId)) {
             $templateId = $templateData['message_template_id'] ?? null;
         }
         $components = $templateData['components'] ?? [];
@@ -1730,7 +1758,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // 4. Preparar datos para actualizar
         $updateData = [
-            'messaging_limit_tier'       => $newLimitTier,
+            'messaging_limit_tier' => $newLimitTier,
             'messaging_limit_updated_at' => now(),
         ];
 
@@ -1751,7 +1779,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     protected function handleTemplateDeletion(array $templateData): void
     {
         $templateId = $templateData['id'] ?? null;
-        if( empty($templateId) ) {
+        if (empty($templateId)) {
             $templateId = $templateData['message_template_id'] ?? null;
         }
 
@@ -1781,7 +1809,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     protected function handleTemplateDisable(array $templateData): void
     {
         $templateId = $templateData['id'] ?? null;
-        if( empty($templateId) ) {
+        if (empty($templateId)) {
             $templateId = $templateData['message_template_id'] ?? null;
         }
 
@@ -1810,7 +1838,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
     protected function resolveCategoryId(?string $categoryName): ?string
     {
-        if (!$categoryName) return null;
+        if (!$categoryName)
+            return null;
 
         $category = WhatsappModelResolver::template_category()
             ->where('name', $categoryName)
@@ -1824,7 +1853,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
      * Ahora el disparo de los eventos estáran en métodos, y se usarán las clases de los eventos configuradas en el archivo de configuración whatsapp.events!
      */
 
-    protected function fireTextMessageReceived($contactRecord, $messageRecord){
+    protected function fireTextMessageReceived($contactRecord, $messageRecord)
+    {
         $event = config('whatsapp.events.messages.text.received');
         event(new $event([
             'contact' => $contactRecord,
@@ -1832,7 +1862,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         ]));
     }
 
-    protected function fireInteractiveMessageReceived($contactRecord, $messageRecord){
+    protected function fireInteractiveMessageReceived($contactRecord, $messageRecord)
+    {
         $event = config('whatsapp.events.messages.interactive.received');
         event(new $event([
             'contact' => $contactRecord,
@@ -1852,7 +1883,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         ]));
     }
 
-    protected function fireLocationMessageReceived($contactRecord, $messageRecord){
+    protected function fireLocationMessageReceived($contactRecord, $messageRecord)
+    {
         $event = config('whatsapp.events.messages.location.received');
         event(new $event([
             'contact' => $contactRecord,
@@ -1860,7 +1892,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         ]));
     }
 
-    protected function fireContactMessageReceived($contactRecord, $messageRecord){
+    protected function fireContactMessageReceived($contactRecord, $messageRecord)
+    {
         $event = config('whatsapp.events.messages.contact.received');
         event(new $event([
             'contact' => $contactRecord,
@@ -1868,7 +1901,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         ]));
     }
 
-    protected function fireReactionReceived($contactRecord, $messageRecord){
+    protected function fireReactionReceived($contactRecord, $messageRecord)
+    {
         $event = config('whatsapp.events.messages.reaction.received');
         event(new $event([
             'contact' => $contactRecord,
@@ -1876,7 +1910,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         ]));
     }
 
-    protected function fireMediaMessageReceived($contactRecord, $messageRecord){
+    protected function fireMediaMessageReceived($contactRecord, $messageRecord)
+    {
         $event = config('whatsapp.events.messages.media.received');
         event(new $event([
             'contact' => $contactRecord,
@@ -1884,7 +1919,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         ]));
     }
 
-    protected function fireMessageReceived($contactRecord, $messageRecord){
+    protected function fireMessageReceived($contactRecord, $messageRecord)
+    {
         $event = config('whatsapp.events.messages.message.received');
         event(new $event([
             'contact' => $contactRecord,
@@ -1892,21 +1928,24 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         ]));
     }
 
-    protected function fireMessageDelivered($messageUpdated){
+    protected function fireMessageDelivered($messageUpdated)
+    {
         $event = config('whatsapp.events.messages.message.delivered');
         event(new $event([
             'message' => $messageUpdated,
         ]));
     }
 
-    protected function fireMessageRead($messageUpdated){
+    protected function fireMessageRead($messageUpdated)
+    {
         $event = config('whatsapp.events.messages.message.read');
         event(new $event([
             'message' => $messageUpdated,
         ]));
     }
 
-    protected function fireMessageFailed($messageUpdated){
+    protected function fireMessageFailed($messageUpdated)
+    {
         $event = config('whatsapp.events.messages.message.failed');
         event(new $event([
             'message' => $messageUpdated,
@@ -1983,8 +2022,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         Model $whatsappPhone,
         string $body,
         ?string $newWaId
-    ): ?Model
-    {
+    ): ?Model {
         // Actualizar el contacto con el nuevo wa_id
         if ($newWaId) {
             $contact->update(['wa_id' => $newWaId]);
@@ -2717,7 +2755,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // Actualizar todos los números de teléfono asociados
         $phoneNumbers = $businessAccount->phoneNumbers ?? collect();
-        $phoneNumbers->each(function($phone) {
+        $phoneNumbers->each(function ($phone) {
             $phone->update([
                 'status' => 'active',
                 'disconnected_at' => null,
@@ -2772,7 +2810,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // Actualizar todos los números de teléfono asociados
         $phoneNumbers = $businessAccount->phoneNumbers ?? collect();
-        $phoneNumbers->each(function($phone) {
+        $phoneNumbers->each(function ($phone) {
             $phone->update([
                 'status' => 'active',
                 'disconnected_at' => null,
@@ -2827,9 +2865,9 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         // 3. Preparar datos para actualizar
         $updateData = [
             'requested_verified_name' => $requestedName,
-            'name_decision'           => $decision,
-            'name_rejection_reason'   => $rejectionReason,
-            'name_verified_at'        => now(),
+            'name_decision' => $decision,
+            'name_rejection_reason' => $rejectionReason,
+            'name_verified_at' => now(),
         ];
 
         // Si la decisión es APPROVED, también actualizamos el verified_name
@@ -2889,7 +2927,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // Actualizar todos los números de teléfono asociados
         $phoneNumbers = $businessAccount->phoneNumbers ?? collect();
-        $phoneNumbers->each(function($phone) {
+        $phoneNumbers->each(function ($phone) {
             $phone->update([
                 'status' => 'disconnected',
                 'disconnected_at' => now(),
@@ -2945,7 +2983,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // Actualizar todos los números de teléfono asociados
         $phoneNumbers = $businessAccount->phoneNumbers ?? collect();
-        $phoneNumbers->each(function($phone) {
+        $phoneNumbers->each(function ($phone) {
             $phone->update([
                 'status' => 'removed',
                 'disconnected_at' => now(),
@@ -3386,6 +3424,139 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     }
 
     /**
+     * Maneja el Data Channel de los Flows (Endpoint encriptado)
+     */
+    protected function handleFlowEndpointRequest(Request $request): Response
+    {
+        try {
+            $cryptoService = app(FlowCryptoService::class);
+
+            // Desencriptar
+            $decryptedBody = $cryptoService->decryptRequest(
+                $request->input('encrypted_aes_key'),
+                $request->input('encrypted_flow_data'),
+                $request->input('initial_vector')
+            );
+
+            Log::channel('whatsapp')->info('Flow Endpoint Decrypted Request:', $decryptedBody);
+
+            // 1. Manejar Health Check (Ping)
+            if (($decryptedBody['action'] ?? '') === 'ping') {
+                $responseData = ['data' => ['status' => 'active']];
+            } else {
+                // 2. Ejecutar lógica del desarrollador (Hook personalizable)
+                $responseData = $this->processFlowDataExchange($decryptedBody);
+            }
+
+            // Encriptar respuesta
+            $encryptedResponse = $cryptoService->encryptResponse(
+                $responseData,
+                $request->input('encrypted_aes_key'),
+                $request->input('initial_vector')
+            );
+
+            return response($encryptedResponse);
+
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Flow Crypto Error: ' . $e->getMessage());
+            return response('Decryption failed', 421);
+        }
+    }
+
+    /**
+     * Maneja cambios de estado (PUBLISHED, BLOCKED) y errores de latencia
+     */
+    protected function handleFlowStatusAndPerformance(array $value): void
+    {
+        $flowId = $value['flow_id'] ?? null;
+        $event = $value['event'] ?? null;
+
+        Log::channel('whatsapp')->info("Flow Webhook Event: {$event} for Flow: {$flowId}", $value);
+
+        // Sincronización con base de datos
+        $flowRecord = WhatsappModelResolver::flow()->where('wa_flow_id', $flowId)->first();
+        if ($flowRecord && isset($value['new_status'])) {
+            $flowRecord->update(['status' => $value['new_status']]);
+        }
+
+        // Disparar el evento usando la configuración
+        $this->fireFlowStatusUpdated($value);
+    }
+
+
+    /**
+     * Procesa el JSON final que envía el Flow al terminar (nfm_reply)
+     * Incluye el procesamiento automático de archivos multimedia (Fase 3)
+     */
+    protected function handleFlowResponseMessage(array $message, ?array $contact, ?array $metadata): void
+    {
+        // 1. Extraer y decodificar el JSON de respuesta del Flow
+        $responseJson = data_get($message, 'interactive.nfm_reply.response_json');
+        $decodedResponse = json_decode($responseJson, true);
+
+        Log::channel('whatsapp')->info('Flow Response Received:', [
+            'flow_token' => $decodedResponse['flow_token'] ?? 'N/A',
+            'data' => $decodedResponse
+        ]);
+
+        // 2. PROCESAMIENTO DE MEDIOS (Fase 3)
+        // Buscamos si en la respuesta vienen objetos de archivos (url + encryption_key)
+        $mediaService = app(FlowMediaService::class);
+        $processedFiles = [];
+
+        foreach ($decodedResponse as $key => $value) {
+            // Meta envía los archivos como arrays que contienen 'url' y 'encryption_key'
+            if (is_array($value) && isset($value['encryption_key'], $value['url'])) {
+                try {
+                    // Descargar y desencriptar el archivo
+                    $fileInfo = $mediaService->downloadAndDecrypt($value, 'flows');
+
+                    // Inyectamos la URL local en el array de respuesta para que el dev la use fácil
+                    $decodedResponse[$key . '_local_url'] = $fileInfo['url'];
+                    $processedFiles[] = $fileInfo;
+
+                    Log::channel('whatsapp')->info("Flow Media Processed: {$key}", $fileInfo);
+                } catch (\Exception $e) {
+                    Log::channel('whatsapp')->error("Error procesando media de Flow en campo [{$key}]: " . $e->getMessage());
+                }
+            }
+        }
+
+        // 3. Registrar en la base de datos como un mensaje recibido
+        // Esto usará tu lógica estándar de handleIncomingMessage
+        $this->handleIncomingMessage($message, $contact, $metadata);
+
+        // 4. Disparar evento de finalización de Flow
+        // Pasamos los datos del contacto, los datos del flujo procesados y los archivos descargados
+        $eventClass = config('whatsapp.events.messages.interactive.received');
+
+        if ($eventClass && class_exists($eventClass)) {
+            event(new $eventClass([
+                'contact' => $contact,
+                'message_id' => $message['id'] ?? null,
+                'flow_data' => $decodedResponse, // Contiene las nuevas llaves _local_url
+                'files' => $processedFiles,      // Lista detallada de archivos procesados
+                'is_flow_completion' => true
+            ]));
+        }
+    }
+
+    /**
+     * HOOK: El desarrollador puede sobreescribir este método en su procesador personalizado
+     * para manejar la lógica de los Endpoints (Data Exchange).
+     */
+    protected function processFlowDataExchange(array $decryptedData): array
+    {
+        // Por defecto, devolvemos un success genérico o una pantalla de carga
+        return [
+            'version' => '3.0', // Data API Version
+            'data' => [
+                'status' => 'processed_by_base'
+            ]
+        ];
+    }
+
+    /**
      * Dispara evento para mensajes eco de SMB
      */
     protected function fireSmbMessageEcho(Model $contactRecord, Model $messageRecord): void
@@ -3503,7 +3674,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     protected function firePartnerAppUninstalled(Model $businessAccount, array $wabaInfo): void
     {
         $event = config('whatsapp.events.partner.app_uninstalled');
-        if( $event ) {
+        if ($event) {
             $eventData = [
                 'business_account' => $businessAccount,
                 'waba_info' => $wabaInfo,
@@ -3526,7 +3697,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     protected function firePartnerRemoved(Model $businessAccount, array $wabaInfo): void
     {
         $event = config('whatsapp.events.partner.partner_removed');
-        if( $event ) {
+        if ($event) {
             $eventData = [
                 'business_account' => $businessAccount,
                 'waba_info' => $wabaInfo,
@@ -3549,7 +3720,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     protected function fireAccountStatusUpdated(Model $businessAccount, string $status): void
     {
         $event = config('whatsapp.events.account.status_updated');
-        if( $event ) {
+        if ($event) {
             $eventData = [
                 'business_account' => $businessAccount,
                 'new_status' => $status,
@@ -3572,7 +3743,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     protected function firePartnerAppInstalled(Model $businessAccount, array $wabaInfo): void
     {
         $event = config('whatsapp.events.partner.app_installed');
-        if( $event ) {
+        if ($event) {
             $eventData = [
                 'business_account' => $businessAccount,
                 'waba_info' => $wabaInfo,
@@ -3595,7 +3766,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     protected function firePartnerAdded(Model $businessAccount, array $wabaInfo): void
     {
         $event = config('whatsapp.events.partner.partner_added');
-        if( $event ) {
+        if ($event) {
             $eventData = [
                 'business_account' => $businessAccount,
                 'waba_info' => $wabaInfo,
@@ -3618,7 +3789,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         if ($event) {
             event(new $event([
                 'original_message' => $originalMessage,
-                'edit_message'     => $editMessage,
+                'edit_message' => $editMessage,
             ]));
         }
     }
@@ -3629,7 +3800,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         if ($event) {
             event(new $event([
                 'original_message' => $originalMessage,
-                'revoke_message'   => $revokeMessage,
+                'revoke_message' => $revokeMessage,
             ]));
         }
     }
@@ -3640,7 +3811,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         if ($event) {
             event(new $event([
                 'phone_number' => $phoneNumber,
-                'payload'      => $payload,
+                'payload' => $payload,
             ]));
         }
     }
@@ -3651,7 +3822,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         if ($event) {
             event(new $event([
                 'phone_number' => $phoneNumber,
-                'payload'      => $payload,
+                'payload' => $payload,
             ]));
         }
     }
@@ -3715,6 +3886,15 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             ]);
         } else {
             Log::channel('whatsapp')->warning('⚠️ [BUSINESS_CAPABILITY] No messaging limit found in webhook', $value);
+        }
+    }
+
+    protected function fireFlowStatusUpdated(array $payload)
+    {
+        $event = config('whatsapp.events.flows.status_updated');
+
+        if ($event && class_exists($event)) {
+            event(new $event($payload));
         }
     }
 
