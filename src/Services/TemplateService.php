@@ -1338,22 +1338,7 @@ class TemplateService
     protected function getMediaTypeFromMimeType(string $mimeType): string
     {
         // Mapear tipos MIME a categorías de medios
-        $mediaTypes = [
-            'image' => ['image/jpeg', 'image/png'],
-            'audio' => ['audio/aac', 'audio/mp4', 'audio/mpeg', 'audio/amr', 'audio/ogg'],
-            'video' => ['video/mp4', 'video/3gp'],
-            'document' => [
-                'text/plain',
-                'application/pdf',
-                'application/vnd.ms-powerpoint',
-                'application/msword',
-                'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            ],
-            'sticker' => ['image/webp'],
-        ];
+        $mediaTypes = config('whatsapp.media.allowed_types', []);
 
         foreach ($mediaTypes as $type => $mimeTypes) {
             if (in_array($mimeType, $mimeTypes)) {
