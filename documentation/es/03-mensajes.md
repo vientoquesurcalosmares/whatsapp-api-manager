@@ -816,6 +816,55 @@ Características principales:
 
 ---
 
+## 7. BSUID (Business-Scoped User ID)
+
+> A partir del 31 de marzo de 2026, WhatsApp introduce el **BSUID**: un identificador único por usuario y portfolio de negocio, con formato `CC.XXXXXXXXXX` (ej: `US.13491208655302741918`).
+> Cuando un usuario activa la función de nombre de usuario, su número de teléfono deja de estar disponible en los webhooks. El BSUID es el único identificador estable en ese caso.
+
+### Acceder al BSUID de un contacto
+
+Los contactos recibidos vía webhook almacenan automáticamente su BSUID. Podés consultarlo así:
+
+```php
+use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
+
+$phone = WhatsappPhoneNumber::find('tu-phone-number-id');
+
+// Buscar contacto por BSUID
+$contact = $phone->contacts()->where('bsuid', 'US.13491208655302741918')->first();
+
+// Obtener el identificador disponible (BSUID si existe, wa_id si no)
+$identifier = $contact->getBsuidOrWaId();
+```
+
+### Envío de mensajes por BSUID *(pendiente — mayo 2026)*
+
+WhatsApp habilitará el envío por BSUID en mayo de 2026 (campo `recipient` en lugar de `to`).
+La infraestructura interna ya está preparada. Los métodos públicos de envío (`sendTextMessage`, etc.) se actualizarán cuando WhatsApp active esta funcionalidad.
+
+Mientras tanto, los usuarios con BSUID que aún tengan número de teléfono registrado en la base de datos pueden seguir siendo contactados normalmente por `wa_id`.
+
+### Bloquear y desbloquear por BSUID
+
+`BlockService` detecta automáticamente si el identificador es un BSUID o un teléfono y construye el payload correcto:
+
+```php
+$phone = WhatsappPhoneNumber::find('tu-phone-number-id');
+
+// Funciona con teléfonos y BSUIDs mezclados en el mismo array
+Whatsapp::block()->blockUsers($phone->phone_number_id, [
+    '573237121901',            // número de teléfono → payload: { "user": "..." }
+    'US.13491208655302741918', // BSUID             → payload: { "user_id": "..." }
+]);
+
+// Desbloquear
+Whatsapp::block()->unblockUsers($phone->phone_number_id, [
+    'US.13491208655302741918',
+]);
+```
+
+---
+
 <div align="center">
 <table>
   <tr>

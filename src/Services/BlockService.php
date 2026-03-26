@@ -51,7 +51,7 @@ class BlockService
         
         $payload = [
             'messaging_product' => 'whatsapp',
-            'block_users' => array_map(fn($user) => ['user' => $user], $usersToBlock)
+            'block_users' => array_map(fn($user) => $this->buildUserPayload($user), $usersToBlock)
         ];
         
         $response = $this->apiClient->request(
@@ -103,7 +103,7 @@ class BlockService
         
         $payload = [
             'messaging_product' => 'whatsapp',
-            'block_users' => array_map(fn($user) => ['user' => $user], $usersToUnblock)
+            'block_users' => array_map(fn($user) => $this->buildUserPayload($user), $usersToUnblock)
         ];
         
         try {
@@ -153,16 +153,45 @@ class BlockService
     protected function formatUsers(WhatsappPhoneNumber $phone, array $users): array
     {
         return array_map(function($user) use ($phone) {
-            // Eliminar espacios y caracteres no numéricos
+            // Si el valor es un BSUID (formato XX.XXXX...) lo dejamos intacto
+            if ($this->isBsuid($user)) {
+                return $user;
+            }
+
+            // De lo contrario, normalizar como número de teléfono
             $cleanNumber = preg_replace('/[^0-9]/', '', $user);
-            
+
             // Asegurar formato internacional
             if (!str_starts_with($cleanNumber, $phone->country_code)) {
                 $cleanNumber = $phone->country_code . ltrim($cleanNumber, '0');
             }
-            
+
             return $cleanNumber;
         }, $users);
+    }
+
+    /**
+     * Determina si un identificador es un BSUID (ej: US.13491208655302741918)
+     * en lugar de un número de teléfono.
+     */
+    protected function isBsuid(string $identifier): bool
+    {
+        // Los BSUID tienen el formato: CC.XXXXXXXXXX
+        // donde CC es el código de país ISO 3166 alpha-2 (2 letras) y el resto son alfanuméricos
+        return (bool) preg_match('/^[A-Z]{2}\.[A-Za-z0-9]{1,128}$/', $identifier);
+    }
+
+    /**
+     * Construye el payload correcto según si el identificador es BSUID o teléfono.
+     * - Teléfono: { "user": "<phone>" }
+     * - BSUID:    { "user_id": "<bsuid>" }
+     */
+    protected function buildUserPayload(string $identifier): array
+    {
+        if ($this->isBsuid($identifier)) {
+            return ['user_id' => $identifier];
+        }
+        return ['user' => $identifier];
     }
 
     protected function findOrCreateContact(string $businessAccountId, string $userIdentifier): Contact

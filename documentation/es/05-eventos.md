@@ -287,17 +287,18 @@ El paquete incluye una serie de eventos que se disparan automáticamente en dife
 
 A continuación, se describen los eventos disponibles en el paquete, cómo se configuran y cómo escucharlos desde el frontend.
 
-| Evento                       | Canal                | Alias                      |
-|------------------------------|----------------------|----------------------------|
-| BusinessSettingsUpdated      | whatsapp.business    | business.settings.updated  |
-| MessageReceived              | whatsapp.messages    | message.received           |
-| MessageDelivered             | whatsapp.status      | message.delivered          |
-| MessageRead                  | whatsapp.status      | message.read               |
-| TemplateCreated              | whatsapp.templates   | template.created           |
-| TemplateApproved             | whatsapp.templates   | template.approved          |
-| TemplateRejected             | whatsapp.templates   | template.rejected          |
-| InteractiveMessageReceived   | whatsapp.messages    | interactive.received       |
-| MediaMessageReceived         | whatsapp.messages    | media.received             |
+| Evento                       | Canal                | Alias                         |
+|------------------------------|----------------------|-------------------------------|
+| BusinessSettingsUpdated      | whatsapp.business    | business.settings.updated     |
+| BusinessUsernameUpdated      | whatsapp.business    | business.username.updated     |
+| MessageReceived              | whatsapp.messages    | message.received              |
+| MessageDelivered             | whatsapp.status      | message.delivered             |
+| MessageRead                  | whatsapp.status      | message.read                  |
+| TemplateCreated              | whatsapp.templates   | template.created              |
+| TemplateApproved             | whatsapp.templates   | template.approved             |
+| TemplateRejected             | whatsapp.templates   | template.rejected             |
+| InteractiveMessageReceived   | whatsapp.messages    | interactive.received          |
+| MediaMessageReceived         | whatsapp.messages    | media.received                |
 
 ---
 
@@ -441,6 +442,50 @@ window.Echo.private('whatsapp.messages')
     .listen('.media.received', (e) => {
         console.log('Mensaje multimedia recibido:', e.data);
     });
+```
+
+---
+
+##### **10. `BusinessUsernameUpdated`** *(disponible desde v1.2.0 — BSUID)*
+
+- **Descripción:** Se dispara cuando WhatsApp notifica un cambio de estado en el nombre de usuario del negocio. Esto ocurre cuando el nombre de usuario es aprobado, rechazado o eliminado por la plataforma.
+- **Canal:** `whatsapp.business`
+- **Alias:** `business.username.updated`
+
+**Payload del evento:**
+```json
+{
+  "display_phone_number": "+1 555 123 4567",
+  "username": "mi_negocio",
+  "status": "AVAILABLE"
+}
+```
+
+> Los posibles valores de `status` son: `AVAILABLE`, `PENDING_REVIEW`, `UNAVAILABLE`, `RESTRICTED`.
+
+**Ejemplo de uso en el frontend:**
+```js
+window.Echo.private('whatsapp.business')
+    .listen('.business.username.updated', (e) => {
+        console.log('Nombre de usuario del negocio actualizado:', e);
+        // e.username  → el nombre de usuario
+        // e.status    → estado actual
+    });
+```
+
+**Ejemplo de listener en Laravel:**
+```php
+use ScriptDevelop\WhatsappManager\Events\BusinessUsernameUpdated;
+
+class HandleBusinessUsernameUpdated
+{
+    public function handle(BusinessUsernameUpdated $event): void
+    {
+        // $event->username      → nombre de usuario
+        // $event->status        → estado (AVAILABLE, PENDING_REVIEW, etc.)
+        // $event->displayPhoneNumber → número de teléfono del negocio
+    }
+}
 ```
 
 ---
@@ -629,6 +674,19 @@ Ejemplo de uso en el frontend:
 window.Echo.private('whatsapp.messages')
     .listen('.media.received', (e) => {
         console.log('Mensaje multimedia recibido:', e.data);
+    });
+```
+
+10. BusinessUsernameUpdated *(disponible desde v1.2.0 — BSUID)*
+Descripción: Se dispara cuando WhatsApp notifica un cambio de estado en el nombre de usuario del negocio.
+Canal: whatsapp.business
+Alias: business.username.updated
+Ejemplo de uso en el frontend:
+
+```js
+window.Echo.private('whatsapp.business')
+    .listen('.business.username.updated', (e) => {
+        console.log('Nombre de usuario del negocio actualizado:', e);
     });
 ```
 

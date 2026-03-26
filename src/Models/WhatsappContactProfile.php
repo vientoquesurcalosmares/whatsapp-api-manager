@@ -21,6 +21,7 @@ class WhatsappContactProfile extends Model
         'contact_id',
         'profile_picture',
         'alias',
+        'username',
         'contact_name',
         'first_name',
         'last_name',

@@ -28,6 +28,10 @@ class Endpoints
     const UNBLOCK_USERS = '{phone_number_id}/block_users';
     const LIST_BLOCKED_USERS = '{phone_number_id}/block_users';
 
+    // Username Endpoints (disponibles desde 2026)
+    const BUSINESS_USERNAME = '{phone_number_id}/username';
+    const BUSINESS_USERNAME_SUGGESTIONS = '{phone_number_id}/username_suggestions';
+
     // Message Endpoints
     const SEND_MESSAGE = '{phone_number_id}/messages';
     const MARK_MESSAGE_AS_READ = '{phone_number_id}/messages';

@@ -3931,7 +3931,8 @@ class MessageDispatcherService
         string $to,
         string $type,
         array $parameters,
-        ?string $contextMessageId = null
+        ?string $contextMessageId = null,
+        ?string $bsuid = null
     ): array {
         $endpoint = Endpoints::build(Endpoints::SEND_MESSAGE, [
             'phone_number_id' => $phone->api_phone_number_id
@@ -3945,13 +3946,29 @@ class MessageDispatcherService
             'contextMessageId' => $contextMessageId
         ]);
 
-        // Construir el cuerpo base de la solicitud
+        // Construir el cuerpo base de la solicitud.
+        // Si se proporciona BSUID, se incluye en el campo 'recipient'.
+        // Si se proporcionan ambos (teléfono y BSUID), WhatsApp da prioridad al teléfono ('to').
+        // A partir de mayo de 2026 es posible omitir 'to' y enviar solo con 'recipient' (BSUID).
         $data = [
             'messaging_product' => 'whatsapp',
-            'recipient_type' => 'individual',
-            'to' => $to,
-            'type' => $type,
+            'recipient_type'    => 'individual',
+            'type'              => $type,
         ];
+
+        if (!empty($to)) {
+            $data['to'] = $to;
+        }
+
+        if (!empty($bsuid)) {
+            $data['recipient'] = $bsuid;
+        }
+
+        if (empty($data['to']) && empty($data['recipient'])) {
+            throw new \InvalidArgumentException(
+                'Se requiere al menos un destinatario: número de teléfono (to) o BSUID (recipient).'
+            );
+        }
 
         // Agregar contexto si se proporciona
         if ($contextMessageId) {
