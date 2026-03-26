@@ -85,7 +85,7 @@ class WhatsappService
             Endpoints::GET_BUSINESS_ACCOUNT,
             ['whatsapp_business_id' => $whatsappBusinessId],
             null,
-            ['fields' => 'id,name,timezone_id,whatsapp_business_manager_messaging_limit,message_template_namespace'],
+            ['fields' => 'id,name,timezone_id,currency,country,status,whatsapp_business_manager_messaging_limit,message_template_namespace'],
             $this->getAuthHeaders()
         );
 
@@ -628,6 +628,229 @@ class WhatsappService
         );
 
         Log::channel('whatsapp')->debug('Respuesta de registerPhone:', $response);
+        return $response;
+    }
+
+    /**
+     * Actualiza el perfil de empresa del número de teléfono en la API de WhatsApp
+     * y sincroniza los campos escalares en la base de datos local.
+     *
+     * Campos permitidos: about, address, description, email, vertical,
+     *                    profile_picture_handle, websites
+     *
+     * @param string $phoneNumberId ID de la API del número de teléfono (api_phone_number_id)
+     * @param array  $data          Campos a actualizar
+     * @return array Respuesta de la API ({ "success": true })
+     */
+    public function updateBusinessProfile(string $phoneNumberId, array $data): array
+    {
+        $this->ensureAccountIsSet();
+
+        $endpoint = Endpoints::build(Endpoints::GET_BUSINESS_PROFILE, [
+            'phone_number_id' => $phoneNumberId,
+        ]);
+
+        $payload = array_merge(['messaging_product' => 'whatsapp'], $data);
+
+        $response = $this->apiClient->request(
+            'POST',
+            $endpoint,
+            [],
+            $payload,
+            [],
+            $this->getAuthHeaders()
+        );
+
+        Log::channel('whatsapp')->debug('Respuesta de updateBusinessProfile:', $response);
+
+        // Sincronizar campos escalares en la BD local
+        if (isset($response['success']) && $response['success']) {
+            $phone = WhatsappModelResolver::phone_number()
+                ->where('api_phone_number_id', $phoneNumberId)
+                ->with('businessProfile')
+                ->first();
+
+            if ($phone && $phone->businessProfile) {
+                $syncable = array_intersect_key($data, array_flip([
+                    'about', 'address', 'description', 'email', 'vertical',
+                ]));
+                if (!empty($syncable)) {
+                    $phone->businessProfile->update($syncable);
+                }
+            }
+        }
+
+        return $response;
+    }
+
+    /**
+     * Solicita un cambio de nombre visible al número de teléfono.
+     * El nombre queda en estado PENDING_REVIEW hasta que Meta lo aprueba o rechaza.
+     * El webhook phone_number_name_update notifica la decisión final.
+     *
+     * @param string $phoneNumberId  ID de la API del número de teléfono (api_phone_number_id)
+     * @param string $newDisplayName Nuevo nombre visible solicitado
+     * @return array Respuesta de la API ({ "success": true })
+     */
+    public function updateDisplayName(string $phoneNumberId, string $newDisplayName): array
+    {
+        $this->ensureAccountIsSet();
+
+        $url = Endpoints::build(Endpoints::MANAGE_PHONE_NUMBER, [
+            'phone_number_id' => $phoneNumberId,
+        ]) . '?' . http_build_query(['new_display_name' => $newDisplayName]);
+
+        $response = $this->apiClient->request(
+            'POST',
+            $url,
+            [],
+            [],
+            [],
+            $this->getAuthHeaders()
+        );
+
+        Log::channel('whatsapp')->debug('Respuesta de updateDisplayName:', $response);
+
+        // Persistir estado pendiente en la BD para que la app pueda mostrarlo
+        if (isset($response['success']) && $response['success']) {
+            WhatsappModelResolver::phone_number()
+                ->where('api_phone_number_id', $phoneNumberId)
+                ->update([
+                    'new_display_name' => $newDisplayName,
+                    'new_name_status'  => 'PENDING_REVIEW',
+                ]);
+        }
+
+        return $response;
+    }
+
+    /**
+     * Consulta el estado actual del nombre visible en revisión directamente desde la API
+     * y sincroniza new_display_name y new_name_status en la BD local.
+     *
+     * @param string $phoneNumberId ID de la API del número de teléfono (api_phone_number_id)
+     * @return array Respuesta de la API ({ new_display_name, new_name_status, id })
+     */
+    public function getDisplayNamePendingStatus(string $phoneNumberId): array
+    {
+        $this->ensureAccountIsSet();
+
+        $url = Endpoints::build(Endpoints::MANAGE_PHONE_NUMBER, [
+            'phone_number_id' => $phoneNumberId,
+        ]) . '?' . http_build_query(['fields' => 'new_display_name,new_name_status']);
+
+        $response = $this->apiClient->request(
+            'GET',
+            $url,
+            [],
+            null,
+            [],
+            $this->getAuthHeaders()
+        );
+
+        Log::channel('whatsapp')->debug('Respuesta de getDisplayNamePendingStatus:', $response);
+
+        // Sincronizar BD
+        $updateData = array_filter([
+            'new_display_name' => $response['new_display_name'] ?? null,
+            'new_name_status'  => $response['new_name_status'] ?? null,
+        ], fn($v) => $v !== null);
+
+        if (!empty($updateData)) {
+            WhatsappModelResolver::phone_number()
+                ->where('api_phone_number_id', $phoneNumberId)
+                ->update($updateData);
+        }
+
+        return $response;
+    }
+
+    /**
+     * Envía una solicitud de estado de Cuenta de Empresa Oficial (OBA).
+     * La aprobación/rechazo llega por notificación de Meta Business Suite —
+     * no existe un webhook específico; se recomienda consultar periódicamente
+     * con getOfficialBusinessAccountStatus().
+     *
+     * @param string $phoneNumberId ID de la API del número de teléfono (api_phone_number_id)
+     * @param array  $data          Datos del formulario OBA:
+     *                              - additional_supporting_information (string, opcional)
+     *                              - business_website_url (string)
+     *                              - parent_business_or_brand (string)
+     *                              - primary_country_of_operation (string)
+     *                              - primary_language (string)
+     *                              - supporting_links (array de URLs, máx. 5)
+     * @return array Respuesta de la API ({ "success": true })
+     */
+    public function requestOfficialBusinessAccount(string $phoneNumberId, array $data): array
+    {
+        $this->ensureAccountIsSet();
+
+        $endpoint = Endpoints::build(Endpoints::OFFICIAL_BUSINESS_ACCOUNT, [
+            'phone_number_id' => $phoneNumberId,
+        ]);
+
+        $response = $this->apiClient->request(
+            'POST',
+            $endpoint,
+            [],
+            $data,
+            [],
+            $this->getAuthHeaders()
+        );
+
+        Log::channel('whatsapp')->debug('Respuesta de requestOfficialBusinessAccount:', $response);
+
+        // Marcar como pendiente en BD si el envío fue exitoso
+        if (isset($response['success']) && $response['success']) {
+            WhatsappModelResolver::phone_number()
+                ->where('api_phone_number_id', $phoneNumberId)
+                ->update(['oba_status' => 'PENDING']);
+        }
+
+        return $response;
+    }
+
+    /**
+     * Consulta el estado actual de la solicitud OBA directamente desde la API
+     * y sincroniza oba_status e is_official en la BD local.
+     *
+     * @param string $phoneNumberId ID de la API del número de teléfono (api_phone_number_id)
+     * @return array Respuesta de la API con el campo official_business_account
+     */
+    public function getOfficialBusinessAccountStatus(string $phoneNumberId): array
+    {
+        $this->ensureAccountIsSet();
+
+        $url = Endpoints::build(Endpoints::MANAGE_PHONE_NUMBER, [
+            'phone_number_id' => $phoneNumberId,
+        ]) . '?' . http_build_query(['fields' => 'official_business_account,is_official_business_account']);
+
+        $response = $this->apiClient->request(
+            'GET',
+            $url,
+            [],
+            null,
+            [],
+            $this->getAuthHeaders()
+        );
+
+        Log::channel('whatsapp')->debug('Respuesta de getOfficialBusinessAccountStatus:', $response);
+
+        // Sincronizar BD
+        $obaStatus  = $response['official_business_account']['oba_status'] ?? null;
+        $isOfficial = $response['is_official_business_account'] ?? null;
+
+        $updateData = array_filter([
+            'oba_status' => $obaStatus,
+            'is_official' => $isOfficial !== null ? (bool) $isOfficial : null,
+        ], fn($v) => $v !== null);
+
+        if (!empty($updateData)) {
+            WhatsappModelResolver::phone_number()
+                ->where('api_phone_number_id', $phoneNumberId)
+                ->update($updateData);
+        }
+
         return $response;
     }
 }

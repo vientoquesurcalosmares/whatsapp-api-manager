@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Actualización de perfil de empresa:** `WhatsappService::updateBusinessProfile()` — POST a `/{phone_number_id}/whatsapp_business_profile`. Actualiza campos (`about`, `address`, `description`, `email`, `vertical`, `profile_picture_handle`, `websites`) y sincroniza los escalares en la BD local.
+- **Solicitar cambio de nombre visible:** `WhatsappService::updateDisplayName()` — POST `new_display_name` al endpoint del número. Persiste el nombre y estado `PENDING_REVIEW` en BD hasta que el webhook `phone_number_name_update` notifique la decisión.
+- **Consultar nombre visible en revisión:** `WhatsappService::getDisplayNamePendingStatus()` — GET `new_display_name,new_name_status` desde la API y sincroniza en BD.
+- **Campos `new_display_name` y `new_name_status`** en `whatsapp_phone_numbers` para reflejar el estado de la solicitud de nombre pendiente.
+- **Solicitar Cuenta de Empresa Oficial (OBA):** `WhatsappService::requestOfficialBusinessAccount()` — POST a `/{phone_number_id}/official_business_account` con los datos del formulario (supporting links, país, marca, etc.).
+- **Consultar estado OBA:** `WhatsappService::getOfficialBusinessAccountStatus()` — GET estado `oba_status` e `is_official_business_account` desde la API y sincroniza en BD.
+- **Campo `oba_status`** en `whatsapp_phone_numbers` para persistir el estado de la solicitud OBA (`PENDING`, `APPROVED`, `REJECTED`, `NOT_STARTED`).
+- **GET WABA enriquecido:** `getBusinessAccount()` ahora solicita también los campos `currency`, `country` y `status` a la API.
+- **Constante `Endpoints::OFFICIAL_BUSINESS_ACCOUNT`** — `{phone_number_id}/official_business_account`.
+- **`FUTURE_PROPOSALS.md`** — documento con propuestas planificadas para versiones futuras orientadas a BSP y operadores multi-tenant.
+
 - **Soporte BSUID (Business-Scoped User ID):** Implementación completa del nuevo identificador BSUID de WhatsApp, efectivo desde el 31 de marzo de 2026. El BSUID es único por usuario/portfolio y reemplaza al `wa_id` cuando el usuario activa la función de nombre de usuario.
 - **Campo `bsuid` en contactos:** Nueva columna `bsuid` (varchar 150, única, indexada) en la tabla de contactos para persistir el identificador BSUID. También se añadieron `parent_bsuid` (para portfolios vinculados) y `username` (nombre de usuario de WhatsApp).
 - **Campos BSUID en mensajes:** Nuevas columnas `from_bsuid`, `from_parent_bsuid`, `recipient_bsuid` y `parent_recipient_bsuid` en la tabla de mensajes para registrar el origen y destino por BSUID.
