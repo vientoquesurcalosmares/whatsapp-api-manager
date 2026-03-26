@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Perfil de empresa y cuenta oficial
 - **Actualización de perfil de empresa:** `WhatsappService::updateBusinessProfile()` — POST a `/{phone_number_id}/whatsapp_business_profile`. Actualiza `about`, `address`, `description`, `email`, `vertical`, `profile_picture_handle` y `websites`. Sincroniza campos escalares en la BD local tras éxito.
+- **Actualización de foto de perfil de empresa en un paso:** `WhatsappService::updateBusinessProfilePicture()` — recibe la ruta local del archivo, gestiona internamente la sesión de carga y el upload a Meta, y aplica el handle resultante al perfil.
 - **Solicitar cambio de nombre visible:** `WhatsappService::updateDisplayName()` — POST `new_display_name` al endpoint del número. Persiste el nombre y estado `PENDING_REVIEW` en BD hasta que el webhook `phone_number_name_update` notifique la decisión final.
 - **Consultar nombre visible en revisión:** `WhatsappService::getDisplayNamePendingStatus()` — GET `new_display_name` y `new_name_status` desde la API; sincroniza en BD.
 - **Campos `new_display_name` y `new_name_status`** en `whatsapp_phone_numbers` para reflejar el estado de la solicitud de nombre pendiente de aprobación.

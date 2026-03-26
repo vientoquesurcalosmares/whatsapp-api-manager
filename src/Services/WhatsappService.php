@@ -853,4 +853,159 @@ class WhatsappService
 
         return $response;
     }
+
+    /**
+     * Sube una imagen y la establece como foto de perfil de empresa en un solo paso.
+     *
+     * Internamente crea la sesión de carga, sube el archivo y llama a updateBusinessProfile()
+     * con el handle resultante — el usuario solo provee la ruta local y el mime type.
+     *
+     * @param string $phoneNumberId ID de la API del número de teléfono (api_phone_number_id)
+     * @param string $filePath      Ruta absoluta al archivo de imagen (jpg, png)
+     * @param string $mimeType      MIME type del archivo (por defecto image/jpeg)
+     * @return array Respuesta de la API ({ "success": true })
+     */
+    public function updateBusinessProfilePicture(
+        string $phoneNumberId,
+        string $filePath,
+        string $mimeType = 'image/jpeg'
+    ): array {
+        $this->ensureAccountIsSet();
+
+        if (!file_exists($filePath)) {
+            throw new \InvalidArgumentException("El archivo no existe: {$filePath}");
+        }
+
+        // 1. Crear sesión de carga
+        $sessionId = $this->createProfilePictureUploadSession($filePath, $mimeType);
+
+        // 2. Subir el archivo y obtener el handle
+        $handle = $this->uploadProfilePictureFile($sessionId, $filePath);
+
+        // 3. Actualizar perfil con el handle
+        return $this->updateBusinessProfile($phoneNumberId, [
+            'profile_picture_handle' => $handle,
+        ]);
+    }
+
+    /**
+     * Crea una sesión de carga para la foto de perfil de empresa.
+     * Retorna el ID de sesión a usar en el upload.
+     */
+    private function createProfilePictureUploadSession(string $filePath, string $mimeType): string
+    {
+        $appId = !empty($this->businessAccount->app_id)
+            ? $this->businessAccount->app_id
+            : config('whatsapp.meta_auth.client_id');
+
+        if (empty($appId)) {
+            throw new \RuntimeException(
+                "No se encontró un App ID válido. Verifica 'whatsapp.meta_auth.client_id'."
+            );
+        }
+
+        $baseUrl = config('whatsapp.api.base_url', 'https://graph.facebook.com');
+        $version = config('whatsapp.api.version', 'v22.0');
+        $url     = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . "/{$appId}/uploads";
+
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL            => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST  => 'POST',
+            CURLOPT_POSTFIELDS     => json_encode([
+                'file_name' => basename($filePath),
+                'file_type' => $mimeType,
+            ]),
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $this->businessAccount->api_token,
+                'Content-Type: application/json',
+            ],
+        ]);
+
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+        if (curl_errno($curl)) {
+            $error = curl_error($curl);
+            curl_close($curl);
+            throw new \RuntimeException("cURL error al crear sesión de carga: {$error}");
+        }
+        curl_close($curl);
+
+        if ($httpCode !== 200) {
+            throw new \RuntimeException(
+                "Error al crear sesión de carga. HTTP {$httpCode}: {$response}"
+            );
+        }
+
+        $data = json_decode($response, true);
+        $sessionId = $data['id'] ?? null;
+
+        if (!$sessionId) {
+            throw new \RuntimeException('No se pudo obtener el ID de sesión de carga.');
+        }
+
+        Log::channel('whatsapp')->info('Sesión de carga de foto de perfil creada.', [
+            'session_id' => $sessionId,
+        ]);
+
+        return $sessionId;
+    }
+
+    /**
+     * Sube el archivo de imagen a la sesión de carga y retorna el handle resultante.
+     */
+    private function uploadProfilePictureFile(string $sessionId, string $filePath): string
+    {
+        $baseUrl = config('whatsapp.api.base_url', 'https://graph.facebook.com');
+        $version = config('whatsapp.api.version', 'v22.0');
+        $url     = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . "/{$sessionId}";
+
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL            => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST  => 'POST',
+            CURLOPT_POSTFIELDS     => file_get_contents($filePath),
+            CURLOPT_HTTPHEADER     => [
+                'file_offset: 0',
+                'Content-Type: application/octet-stream',
+                'Authorization: OAuth ' . $this->businessAccount->api_token,
+            ],
+        ]);
+
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+        if (curl_errno($curl)) {
+            $error = curl_error($curl);
+            curl_close($curl);
+            throw new \RuntimeException("cURL error al subir foto de perfil: {$error}");
+        }
+        curl_close($curl);
+
+        if ($httpCode !== 200) {
+            throw new \RuntimeException(
+                "Error al subir foto de perfil. HTTP {$httpCode}: {$response}"
+            );
+        }
+
+        $data   = json_decode($response, true);
+        $handle = $data['h'] ?? null;
+
+        if (!$handle) {
+            throw new \RuntimeException('No se pudo obtener el handle del archivo subido.');
+        }
+
+        Log::channel('whatsapp')->info('Foto de perfil de empresa subida exitosamente.', [
+            'handle' => $handle,
+        ]);
+
+        return $handle;
+    }
 }

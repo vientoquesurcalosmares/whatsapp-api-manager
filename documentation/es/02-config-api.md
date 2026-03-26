@@ -515,7 +515,27 @@ $response = Whatsapp::account()->updateBusinessProfile('API_PHONE_NUMBER_ID', [
 ```
 
 > Los campos escalares (`about`, `address`, `description`, `email`, `vertical`) se sincronizan automáticamente en la base de datos local tras un POST exitoso.
-> Para actualizar la foto de perfil, primero debés subir la imagen a través de una sesión de carga de medios y usar el `profile_picture_handle` resultante.
+
+### Actualizar la foto de perfil de empresa
+
+El paquete maneja el proceso completo en un solo método — no necesitás gestionar sesiones de carga ni handles manualmente:
+
+```php
+Whatsapp::account()->forAccount('WABA_ID');
+
+$response = Whatsapp::account()->updateBusinessProfilePicture(
+    'API_PHONE_NUMBER_ID',
+    '/ruta/absoluta/al/logo.jpg',  // jpg o png
+    'image/jpeg'                   // mime type (por defecto: image/jpeg)
+);
+
+// { "success": true }
+```
+
+Internamente el método:
+1. Crea la sesión de carga en Meta
+2. Sube el archivo y obtiene el handle
+3. Llama a `updateBusinessProfile()` con el handle resultante
 
 **Valores válidos para `vertical`:**
 
