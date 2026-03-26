@@ -1130,7 +1130,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             'image/jpeg' => 'jpg',
             'image/png' => 'png',
             'audio/ogg', 'audio/aac', 'audio/mp4', 'audio/mpeg', 'audio/amr' => 'ogg',
-            'video/mp4', 'video/3gp' => 'mp4',
+            'video/mp4', 'video/3gpp' => 'mp4',
             'application/pdf' => 'pdf',
             'application/msword' => 'doc',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',

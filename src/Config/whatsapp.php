@@ -321,7 +321,7 @@ return [
         'allowed_types' => [
             'image' => ['image/jpeg', 'image/png'], // Imágenes
             'audio' => ['audio/aac', 'audio/mp4', 'audio/mpeg', 'audio/amr', 'audio/ogg'], // Audios
-            'video' => ['video/mp4', 'video/3gp'], // Videos
+            'video' => ['video/mp4', 'video/3gpp'], // Videos
             'document' => [ // Documentos
                 'text/plain',
                 'application/pdf',
