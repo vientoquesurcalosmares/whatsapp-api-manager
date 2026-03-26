@@ -8,33 +8,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Actualización de perfil de empresa:** `WhatsappService::updateBusinessProfile()` — POST a `/{phone_number_id}/whatsapp_business_profile`. Actualiza campos (`about`, `address`, `description`, `email`, `vertical`, `profile_picture_handle`, `websites`) y sincroniza los escalares en la BD local.
-- **Solicitar cambio de nombre visible:** `WhatsappService::updateDisplayName()` — POST `new_display_name` al endpoint del número. Persiste el nombre y estado `PENDING_REVIEW` en BD hasta que el webhook `phone_number_name_update` notifique la decisión.
-- **Consultar nombre visible en revisión:** `WhatsappService::getDisplayNamePendingStatus()` — GET `new_display_name,new_name_status` desde la API y sincroniza en BD.
-- **Campos `new_display_name` y `new_name_status`** en `whatsapp_phone_numbers` para reflejar el estado de la solicitud de nombre pendiente.
-- **Solicitar Cuenta de Empresa Oficial (OBA):** `WhatsappService::requestOfficialBusinessAccount()` — POST a `/{phone_number_id}/official_business_account` con los datos del formulario (supporting links, país, marca, etc.).
-- **Consultar estado OBA:** `WhatsappService::getOfficialBusinessAccountStatus()` — GET estado `oba_status` e `is_official_business_account` desde la API y sincroniza en BD.
-- **Campo `oba_status`** en `whatsapp_phone_numbers` para persistir el estado de la solicitud OBA (`PENDING`, `APPROVED`, `REJECTED`, `NOT_STARTED`).
-- **GET WABA enriquecido:** `getBusinessAccount()` ahora solicita también los campos `currency`, `country` y `status` a la API.
+
+#### Perfil de empresa y cuenta oficial
+- **Actualización de perfil de empresa:** `WhatsappService::updateBusinessProfile()` — POST a `/{phone_number_id}/whatsapp_business_profile`. Actualiza `about`, `address`, `description`, `email`, `vertical`, `profile_picture_handle` y `websites`. Sincroniza campos escalares en la BD local tras éxito.
+- **Solicitar cambio de nombre visible:** `WhatsappService::updateDisplayName()` — POST `new_display_name` al endpoint del número. Persiste el nombre y estado `PENDING_REVIEW` en BD hasta que el webhook `phone_number_name_update` notifique la decisión final.
+- **Consultar nombre visible en revisión:** `WhatsappService::getDisplayNamePendingStatus()` — GET `new_display_name` y `new_name_status` desde la API; sincroniza en BD.
+- **Campos `new_display_name` y `new_name_status`** en `whatsapp_phone_numbers` para reflejar el estado de la solicitud de nombre pendiente de aprobación.
+- **Solicitar Cuenta de Empresa Oficial (OBA):** `WhatsappService::requestOfficialBusinessAccount()` — POST a `/{phone_number_id}/official_business_account` con supporting links, país de operación, marca principal e idioma.
+- **Consultar estado OBA:** `WhatsappService::getOfficialBusinessAccountStatus()` — GET `oba_status` e `is_official_business_account` desde la API; sincroniza en BD.
+- **Campo `oba_status`** en `whatsapp_phone_numbers` — valores posibles: `NOT_STARTED`, `PENDING`, `APPROVED`, `REJECTED`.
+- **GET WABA enriquecido:** `getBusinessAccount()` ahora solicita `currency`, `country` y `status` además de los campos existentes.
 - **Constante `Endpoints::OFFICIAL_BUSINESS_ACCOUNT`** — `{phone_number_id}/official_business_account`.
-- **`FUTURE_PROPOSALS.md`** — documento con propuestas planificadas para versiones futuras orientadas a BSP y operadores multi-tenant.
+- **`FUTURE_PROPOSALS.md`** — roadmap de funcionalidades planificadas para BSP y operadores multi-tenant (Embedded Signup, líneas de crédito, permisos multi-tenant, etc.).
 
-- **Soporte BSUID (Business-Scoped User ID):** Implementación completa del nuevo identificador BSUID de WhatsApp, efectivo desde el 31 de marzo de 2026. El BSUID es único por usuario/portfolio y reemplaza al `wa_id` cuando el usuario activa la función de nombre de usuario.
-- **Campo `bsuid` en contactos:** Nueva columna `bsuid` (varchar 150, única, indexada) en la tabla de contactos para persistir el identificador BSUID. También se añadieron `parent_bsuid` (para portfolios vinculados) y `username` (nombre de usuario de WhatsApp).
-- **Campos BSUID en mensajes:** Nuevas columnas `from_bsuid`, `from_parent_bsuid`, `recipient_bsuid` y `parent_recipient_bsuid` en la tabla de mensajes para registrar el origen y destino por BSUID.
-- **Campo `username` en perfiles de contacto:** Nueva columna `username` en `whatsapp_contact_profiles` para reflejar el nombre de usuario de WhatsApp del contacto.
-- **Resolución de contactos BSUID-first:** El procesador de webhooks ahora resuelve contactos priorizando `bsuid`, con fallback a `wa_id` para contactos previos al 31/03/2026. Crea contactos nuevos cuando solo existe el BSUID (usuarios con nombre de usuario activo).
-- **Campos opcionales `wa_id` y `from`:** Las columnas `phone_number`, `country_code` en contactos y `message_from` en mensajes ahora aceptan `NULL` para soportar mensajes de usuarios cuyo número de teléfono está oculto.
-- **Infraestructura interna para envío por BSUID:** `sendViaApi()` (método privado) ya construye el payload con `recipient` cuando se le pasa un BSUID en lugar de `to`. Los métodos públicos de envío (`sendTextMessage`, `sendImageMessage`, etc.) aún no exponen este parámetro — la API pública de BSUID será habilitada por WhatsApp en mayo 2026 y se completará en ese momento.
-- **Soporte de bloqueo/desbloqueo por BSUID:** `BlockService` detecta automáticamente si el identificador es un BSUID (formato `CC.XXXXX`) o un número de teléfono y construye el payload correcto (`user_id` vs `user`).
-- **Nuevo evento `BusinessUsernameUpdated`:** Se dispara cuando WhatsApp notifica un cambio de estado en el nombre de usuario del negocio (`business_username_update`). Canal: `whatsapp.business`, alias: `business.username.updated`.
-- **Nuevo tipo de mensaje de sistema `user_changed_user_id`:** Soporte para el webhook que WhatsApp envía cuando un usuario cambia su número de teléfono y su BSUID es regenerado. Persiste el nuevo BSUID en el contacto.
-- **Nuevo servicio `UsernameService`:** Gestión del nombre de usuario del negocio en WhatsApp. Métodos: `setUsername()`, `getUsername()`, `deleteUsername()`, `getUsernameSuggestions()`.
-- **Nuevo DTO `MessageResponse` extendido:** Ahora incluye `waId`, `bsuid`, `parentBsuid` y `recipientId` para reflejar la estructura completa de la respuesta de la API de mensajes con soporte BSUID.
-- **Actualización de BSUID en webhooks de estado:** `handleStatusUpdate()` actualiza automáticamente el campo `bsuid` y `parent_bsuid` del contacto cuando el webhook de estado incluye el campo `contacts`.
-- **Helpers en modelo `Contact`:** Nuevo método `getBsuidOrWaId()` que retorna el identificador disponible (BSUID preferido sobre `wa_id`). Los métodos `blockOn()` y `unblockOn()` lo usan automáticamente.
+#### BSUID — Business-Scoped User ID (efectivo 31/03/2026)
+- **Soporte BSUID:** Implementación completa del nuevo identificador BSUID de WhatsApp. Es único por usuario/portfolio y reemplaza al `wa_id` cuando el usuario activa la función de nombre de usuario.
+- **Campo `bsuid` en contactos:** Nueva columna `bsuid` (varchar 150, única, indexada). También `parent_bsuid` (para portfolios vinculados) y `username` (nombre de usuario de WhatsApp).
+- **Campos BSUID en mensajes:** `from_bsuid`, `from_parent_bsuid`, `recipient_bsuid` y `parent_recipient_bsuid`.
+- **Campo `username` en perfiles de contacto:** Nueva columna `username` en `whatsapp_contact_profiles`.
+- **Resolución de contactos BSUID-first:** El webhook processor resuelve contactos priorizando `bsuid`, con fallback a `wa_id` para contactos existentes. Crea contactos nuevos cuando solo existe el BSUID.
+- **Campos opcionales:** `phone_number`, `country_code` en contactos y `message_from` en mensajes ahora aceptan `NULL` — necesario para usuarios con número oculto.
+- **Infraestructura para envío por BSUID:** `sendViaApi()` construye payload con `recipient` cuando se provee BSUID. Los métodos públicos de envío se actualizarán cuando WhatsApp habilite la API en mayo 2026.
+- **Bloqueo/desbloqueo por BSUID:** `BlockService` detecta automáticamente formato BSUID (`CC.XXXXX`) y construye el payload correcto (`user_id` vs `user`).
+- **Nuevo evento `BusinessUsernameUpdated`:** Webhook `business_username_update`. Canal: `whatsapp.business`, alias: `business.username.updated`.
+- **Soporte `user_changed_user_id`:** Nuevo tipo de mensaje de sistema que se dispara cuando un usuario cambia de número y su BSUID se regenera. Persiste el nuevo BSUID en el contacto.
+- **`UsernameService`:** Gestión del nombre de usuario del negocio — `setUsername()`, `getUsername()`, `deleteUsername()`, `getUsernameSuggestions()`.
+- **`MessageResponse` DTO extendido:** Nuevos campos `waId`, `bsuid`, `parentBsuid` y `recipientId` leídos de `contacts[0]` en la respuesta de la API.
+- **BSUID en webhooks de estado:** `handleStatusUpdate()` actualiza `bsuid` y `parent_bsuid` del contacto cuando el webhook incluye el array `contacts`.
+- **`Contact::getBsuidOrWaId()`:** Helper que retorna BSUID si existe, `wa_id` si no. Usado por `blockOn()` y `unblockOn()`.
 
-### Added
+#### Funcionalidades previas
 - **Webhooks Overrides:** Soporte explícito e integrado para reescribir webhooks a nivel WABA y número de teléfono de forma opcional (` WhatsappService::overrideWabaWebhook()`, `WhatsappService::overridePhoneWebhook()`, etc.).
 - **Nativo WhatsApp Flows (Send):** Inyección para armar dinámicamente JSONs de mensajes interactivos tipo Flow (`MessageDispatcherService::sendViaApi()`). Incluye el helper público de primer nivel `sendInteractiveFlowMessage()`.
 - **Configuración Global de Flows:** Los JSONs de compilación en `FlowBuilder` ya no usan valores fijos. Ahora implementan la versión `7.3` para el framework de interfaz y `3.0` como Data API directamente leyendo desde la variable central `config('whatsapp.flows.*')`.

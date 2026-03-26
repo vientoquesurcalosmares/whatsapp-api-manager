@@ -53,6 +53,12 @@
 
 8. Configuración de Códigos de País
 
+9. Perfil de Empresa
+
+10. Nombre Visible
+
+11. Cuenta de Empresa Oficial (OBA)
+
 
 ### 🔑 Credenciales de Meta
 Para integrar tu aplicación con WhatsApp Business API, necesitas configurar las credenciales de Meta en tu entorno:
@@ -462,6 +468,198 @@ $subscribedApps = Whatsapp::account()->subscribedApps();
 // Cancelar suscripción
 $response = Whatsapp::account()->unsubscribeApp();
 ```
+
+---
+
+## 9. Perfil de Empresa
+
+El perfil de empresa del número de teléfono proporciona información adicional visible en WhatsApp: descripción, dirección, sitio web, etc.
+
+### Obtener el perfil de empresa
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+Whatsapp::account()->forAccount('WABA_ID');
+
+$profile = Whatsapp::account()->getBusinessProfile('API_PHONE_NUMBER_ID');
+
+// Respuesta ejemplo:
+// [
+//   "about"               => "Especialistas en suculentas",
+//   "address"             => "Calle 123, Bogotá",
+//   "description"         => "Vendemos plantas desde 2010...",
+//   "email"               => "info@empresa.com",
+//   "profile_picture_url" => "https://pps.whatsapp.net/...",
+//   "websites"            => ["https://empresa.com"],
+//   "vertical"            => "RETAIL",
+// ]
+```
+
+### Actualizar el perfil de empresa
+
+```php
+Whatsapp::account()->forAccount('WABA_ID');
+
+$response = Whatsapp::account()->updateBusinessProfile('API_PHONE_NUMBER_ID', [
+    'about'       => 'Especialistas en suculentas desde 2010.',
+    'address'     => 'Calle 123 #45-67, Bogotá, Colombia',
+    'description' => 'Ofrecemos una amplia variedad de plantas suculentas.',
+    'email'       => 'info@empresa.com',
+    'vertical'    => 'RETAIL',
+    'websites'    => ['https://empresa.com'],
+    // 'profile_picture_handle' => 'handle_obtenido_de_upload_session',
+]);
+
+// { "success": true }
+```
+
+> Los campos escalares (`about`, `address`, `description`, `email`, `vertical`) se sincronizan automáticamente en la base de datos local tras un POST exitoso.
+> Para actualizar la foto de perfil, primero debés subir la imagen a través de una sesión de carga de medios y usar el `profile_picture_handle` resultante.
+
+**Valores válidos para `vertical`:**
+
+| Valor | Descripción |
+|-------|-------------|
+| `RETAIL` | Comercio minorista |
+| `ENTERTAINMENT` | Entretenimiento |
+| `EDUCATION` | Educación |
+| `BEAUTY_SPA_SALON` | Belleza y spa |
+| `HEALTH_AND_BEAUTY` | Salud y belleza |
+| `OTHER` | Otro |
+
+---
+
+## 10. Nombre Visible
+
+El nombre visible es el que aparece en el perfil de WhatsApp del número de teléfono. Todo cambio pasa por un proceso de revisión de Meta.
+
+### Obtener el nombre visible actual
+
+```php
+Whatsapp::account()->forAccount('WABA_ID');
+
+$status = Whatsapp::account()->getPhoneNumberNameStatus('API_PHONE_NUMBER_ID');
+
+// {
+//   "verified_name": "Mi Empresa",
+//   "name_status":   "APPROVED",
+//   "id":            "106540352242922"
+// }
+```
+
+> `verified_name` es el nombre actualmente aprobado. `name_status` indica su estado de aprobación.
+
+### Solicitar un cambio de nombre visible
+
+```php
+Whatsapp::account()->forAccount('WABA_ID');
+
+$response = Whatsapp::account()->updateDisplayName(
+    'API_PHONE_NUMBER_ID',
+    'Mi Empresa Renovada'
+);
+
+// { "success": true }
+```
+
+Tras un POST exitoso, el paquete persiste automáticamente en la BD:
+- `new_display_name` → el nombre solicitado
+- `new_name_status` → `PENDING_REVIEW`
+
+Cuando Meta aprueba o rechaza el nombre, llega el webhook `phone_number_name_update` que actualiza `verified_name` y `name_status` (ya manejado automáticamente por el paquete).
+
+### Consultar el estado del nombre en revisión
+
+```php
+Whatsapp::account()->forAccount('WABA_ID');
+
+$pending = Whatsapp::account()->getDisplayNamePendingStatus('API_PHONE_NUMBER_ID');
+
+// {
+//   "new_display_name": "Mi Empresa Renovada",
+//   "new_name_status":  "PENDING_REVIEW",
+//   "id":               "106540352242922"
+// }
+```
+
+**Valores posibles de `new_name_status`:**
+
+| Valor | Descripción |
+|-------|-------------|
+| `PENDING_REVIEW` | En revisión por Meta |
+| `APPROVED` | Aprobado (pasará a `verified_name`) |
+| `DECLINED` | Rechazado — revisar normas de nomenclatura |
+| `AVAILABLE_WITHOUT_REVIEW` | Aprobado sin revisión |
+| `EXPIRED` | La solicitud venció sin respuesta |
+
+---
+
+## 11. Cuenta de Empresa Oficial (OBA)
+
+Una Cuenta de Empresa Oficial (OBA) es un número verificado como marca auténtica y relevante. Aparece con una marca de verificación azul en WhatsApp.
+
+> **Requisitos previos:**
+> - La empresa debe llevar al menos 30 días en la plataforma.
+> - La verificación del negocio en Meta debe estar completa.
+> - El número debe tener verificación en dos pasos activa.
+> - El nombre visible debe estar aprobado.
+
+### Solicitar estado OBA
+
+```php
+Whatsapp::account()->forAccount('WABA_ID');
+
+$response = Whatsapp::account()->requestOfficialBusinessAccount(
+    'API_PHONE_NUMBER_ID',
+    [
+        'business_website_url'              => 'https://www.miempresa.com',
+        'parent_business_or_brand'          => 'Mi Empresa S.A.S.',
+        'primary_country_of_operation'      => 'Colombia',
+        'primary_language'                  => 'Spanish',
+        'additional_supporting_information' => 'También somos mencionados en Revista Dinero y El Espectador.',
+        'supporting_links' => [
+            'https://www.revistadiero.com/2025/mi-empresa',
+            'https://www.elespectador.com/2025/mi-empresa',
+            'https://www.portafolio.co/2025/mi-empresa',
+        ],
+    ]
+);
+
+// { "success": true }
+// Nota: true indica que la solicitud se envió, NO que fue aprobada.
+```
+
+Tras un envío exitoso, el paquete registra `oba_status = 'PENDING'` en la BD local.
+
+### Consultar el estado de la solicitud OBA
+
+```php
+Whatsapp::account()->forAccount('WABA_ID');
+
+$status = Whatsapp::account()->getOfficialBusinessAccountStatus('API_PHONE_NUMBER_ID');
+
+// {
+//   "official_business_account": {
+//     "oba_status": "NOT_STARTED"
+//   },
+//   "is_official_business_account": false,
+//   "id": "106540352242922"
+// }
+```
+
+El paquete sincroniza automáticamente `oba_status` e `is_official` en la BD.
+
+**Valores posibles de `oba_status`:**
+
+| Valor | Descripción |
+|-------|-------------|
+| `NOT_STARTED` | Sin solicitud enviada |
+| `PENDING` | Solicitud enviada, en revisión |
+| `APPROVED` | Aprobada — el número tiene marca azul |
+| `REJECTED` | Rechazada — podés reintentar en 30 días |
+
+> Si la solicitud es rechazada, el paquete no dispara ningún webhook automáticamente — Meta notifica por Business Suite. Se recomienda consultar periódicamente con `getOfficialBusinessAccountStatus()`.
 
 ---
 

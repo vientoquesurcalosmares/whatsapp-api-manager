@@ -38,6 +38,9 @@ LARAVEL WHatsapp Manager
    - Credenciales de Meta
    - Configuración de webhooks
    - Gestión de números telefónicos
+   - Perfil de empresa (GET y actualización)
+   - Nombre visible (solicitar cambio y consultar estado)
+   - Cuenta de Empresa Oficial (OBA)
 
 <a href="03-mensajes.md" title="Documentación en Español">
 3. 💬 Gestión de Mensajes
