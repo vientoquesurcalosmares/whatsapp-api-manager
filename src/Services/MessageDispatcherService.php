@@ -111,6 +111,65 @@ class MessageDispatcherService
     }
 
     /**
+     * Envía un mensaje interactivo de tipo Flow.
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $countryCode Código de país del destinatario
+     * @param string $phoneNumber Número de teléfono del destinatario
+     * @param array $flowParams Parámetros del flujo (flow_id/flow_name, flow_cta, flow_action, flow_token, flow_action_payload)
+     * @param array $messageContent Contenido del mensaje (body [requerido], header, footer)
+     * @return Model Modelo del mensaje creado
+     * @throws WhatsappApiException Si falla el envío por la API
+     */
+    public function sendInteractiveFlowMessage(
+        string $phoneNumberId,
+        string $countryCode,
+        string $phoneNumber,
+        array $flowParams,
+        array $messageContent
+    ): Model {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje Flow interactivo.', [
+            'phoneNumberId' => $phoneNumberId,
+            'countryCode' => $countryCode,
+            'phoneNumber' => $phoneNumber,
+            'flowParams' => $flowParams,
+            'messageContent' => $messageContent,
+        ]);
+
+        $fullPhoneNumber = CountryCodes::normalizeInternationalPhone($countryCode, $phoneNumber)['fullPhoneNumber'];
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+        $contact = $this->resolveContact($countryCode, $phoneNumber);
+
+        $message = WhatsappModelResolver::message()->create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id' => $contact->contact_id,
+            'message_from' => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to' => $fullPhoneNumber,
+            'message_type' => 'INTERACTIVE',
+            'message_content' => $messageContent['body'] ?? 'Flow',
+            'message_method' => 'OUTPUT',
+            'status' => MessageStatus::PENDING
+        ]);
+
+        try {
+            $parameters = array_merge([
+                'interactive_type' => 'flow',
+            ], $flowParams, $messageContent);
+
+            $response = $this->sendViaApi($phoneNumberModel, $fullPhoneNumber, 'interactive', $parameters);
+            
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            Log::channel('whatsapp')->error('Error al enviar mensaje Flow por API WhatsApp.', [
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
+                'details' => $e->getDetails()
+            ]);
+            return $this->handleError($message, $e);
+        }
+    }
+
+    /**
      * Envía un mensaje de texto como respuesta a otro mensaje
      *
      * @param string $phoneNumberId ID del número telefónico registrado
@@ -4107,6 +4166,44 @@ class MessageDispatcherService
                         ]
                     ];
 
+                    if (!empty($parameters['footer'])) {
+                        $interactiveData['footer'] = ['text' => $parameters['footer']];
+                    }
+                }
+                elseif ($interactiveType === 'flow') {
+                    $interactiveData = [
+                        'type' => 'flow',
+                        'action' => [
+                            'name' => 'flow',
+                            'parameters' => [
+                                'flow_message_version' => $parameters['flow_message_version'] ?? '3',
+                                'flow_token' => $parameters['flow_token'] ?? 'unused',
+                                'flow_cta' => $parameters['flow_cta'] ?? 'Abrir',
+                                'flow_action' => $parameters['flow_action'] ?? 'navigate',
+                            ]
+                        ]
+                    ];
+                    
+                    if (!empty($parameters['mode'])) {
+                        $interactiveData['action']['parameters']['mode'] = $parameters['mode'];
+                    }
+
+                    if (!empty($parameters['flow_id'])) {
+                        $interactiveData['action']['parameters']['flow_id'] = $parameters['flow_id'];
+                    } elseif (!empty($parameters['flow_name'])) {
+                        $interactiveData['action']['parameters']['flow_name'] = $parameters['flow_name'];
+                    }
+
+                    if (!empty($parameters['flow_action_payload'])) {
+                        $interactiveData['action']['parameters']['flow_action_payload'] = $parameters['flow_action_payload'];
+                    }
+                    
+                    if (!empty($parameters['header'])) {
+                        $interactiveData['header'] = $parameters['header'];
+                    }
+                    if (!empty($parameters['body'])) {
+                        $interactiveData['body'] = ['text' => $parameters['body']];
+                    }
                     if (!empty($parameters['footer'])) {
                         $interactiveData['footer'] = ['text' => $parameters['footer']];
                     }

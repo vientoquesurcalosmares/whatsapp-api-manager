@@ -525,7 +525,7 @@ class TemplateBuilder
      * @return self
      * @throws InvalidArgumentException Si se violan restricciones de la API
      */
-    public function addFlowButton(string $text, string $flowId, ?string $flowToken = null): self
+    public function addFlowButton(string $text, string $flowId, ?string $navigateScreen = null, string $flowAction = 'navigate'): self
     {
         if ($this->buttonCount >= 10) {
             throw new InvalidArgumentException('No se pueden agregar más de 10 botones a una plantilla.');
@@ -552,14 +552,66 @@ class TemplateBuilder
             'type' => 'FLOW',
             'text' => $text,
             'flow_id' => $flowId,
-            'flow_action' => 'navigate',
+            'flow_action' => $flowAction,
         ];
 
-        if (!empty($flowToken)) {
-            $button['flow_token'] = $flowToken;
+        if (!empty($navigateScreen)) {
+            $button['navigate_screen'] = $navigateScreen;
         }
 
-        // Agregar el botón al componente BUTTONS
+        $this->pushFlowButton($button);
+        return $this;
+    }
+
+    /**
+     * Agrega un botón FLOW a la plantilla (Por Nombre).
+     */
+    public function addFlowButtonByName(string $text, string $flowName, ?string $navigateScreen = null, string $flowAction = 'navigate'): self
+    {
+        if ($this->buttonCount >= 10) throw new InvalidArgumentException('Límite de 10 botones excedido.');
+        if (strlen($text) > 25) throw new InvalidArgumentException('El texto del botón no puede exceder los 25 caracteres.');
+        if (empty($flowName)) throw new InvalidArgumentException('El nombre del flujo (flow_name) es obligatorio.');
+
+        $button = [
+            'type' => 'FLOW',
+            'text' => $text,
+            'flow_name' => $flowName,
+            'flow_action' => $flowAction,
+        ];
+
+        if (!empty($navigateScreen)) $button['navigate_screen'] = $navigateScreen;
+
+        $this->pushFlowButton($button);
+        return $this;
+    }
+
+    /**
+     * Agrega un botón FLOW a la plantilla (Por JSON).
+     */
+    public function addFlowButtonByJson(string $text, string $flowJson, ?string $navigateScreen = null, string $flowAction = 'navigate'): self
+    {
+        if ($this->buttonCount >= 10) throw new InvalidArgumentException('Límite de 10 botones excedido.');
+        if (strlen($text) > 25) throw new InvalidArgumentException('El texto del botón no puede exceder los 25 caracteres.');
+        if (empty($flowJson)) throw new InvalidArgumentException('El JSON del flujo es obligatorio.');
+
+        $button = [
+            'type' => 'FLOW',
+            'text' => $text,
+            'flow_json' => $flowJson,
+            'flow_action' => $flowAction,
+        ];
+
+        if (!empty($navigateScreen)) $button['navigate_screen'] = $navigateScreen;
+
+        $this->pushFlowButton($button);
+        return $this;
+    }
+
+    /**
+     * Helper para insertar el botón Flow dentro del bloque estructurado de META.
+     */
+    protected function pushFlowButton(array $button): void
+    {
         $existingButtons = $this->getComponentsByType('BUTTONS');
 
         if (empty($existingButtons)) {
@@ -573,8 +625,6 @@ class TemplateBuilder
         }
 
         $this->buttonCount++;
-
-        return $this;
     }
 
     /**

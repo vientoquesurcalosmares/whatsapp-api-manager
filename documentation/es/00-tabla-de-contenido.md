@@ -72,7 +72,21 @@ LARAVEL WHatsapp Manager
    - Estructura de eventos
    - Tipos de mensajes soportados
 
+<a href="07-flows.md" title="Documentación en Español">
+7. 🌊 WhatsApp Flows
+</a>
 
+   - Creación visual de flujos
+   - Webhooks para endpoint de datos
+   - Criptografía de respuesta
+
+<a href="08-qr-codes.md" title="Documentación en Español">
+8. 📱 Códigos QR
+</a>
+
+   - Crear QRs personalizables
+   - Sincronización masiva
+   - Manipulación de pre-mensajes
 
 ---
 

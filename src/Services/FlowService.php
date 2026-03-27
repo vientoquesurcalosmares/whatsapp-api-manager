@@ -329,4 +329,167 @@ class FlowService
             ['Authorization' => 'Bearer ' . $account->api_token]
         );
     }
+
+    /**
+     * Clona un conjunto de flujos de un WABA origen al WABA destino actual.
+     * Si no se especifican nombres de flujos, se clonan todos.
+     * 
+     * @param Model $account La cuenta destino.
+     * @param string $sourceWabaId ID del WABA origen.
+     * @param array|null $flowNames Arreglo de nombres de flujos a migrar.
+     */
+    public function migrateFlows(Model $account, string $sourceWabaId, ?array $flowNames = null): array
+    {
+        $endpoint = Endpoints::build(Endpoints::MIGRATE_FLOWS, [
+            'waba_id' => $account->whatsapp_business_id,
+        ]);
+
+        $payload = [
+            'source_waba_id' => $sourceWabaId,
+        ];
+
+        if (!empty($flowNames)) {
+            $payload['source_flow_names'] = json_encode($flowNames);
+        }
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $account->api_token,
+        ];
+
+        $response = $this->apiClient->request('POST', $endpoint, [], $payload, [], $headers);
+
+        return $response;
+    }
+
+    /**
+     * Regenera y obtiene una URL de previsualización fresca invalidando la anterior.
+     * 
+     * @param Model $account
+     * @param string $flowId ID del flujo en WhatsApp (wa_flow_id)
+     */
+    public function getFreshPreviewUrl(Model $account, string $flowId): ?array
+    {
+        $endpoint = Endpoints::build(Endpoints::GET_FLOW, [
+            'flow_id' => $flowId,
+        ]);
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $account->api_token,
+        ];
+
+        $queryParams = [
+            'fields' => 'preview.invalidate(true)',
+        ];
+
+        try {
+            $response = $this->apiClient->request('GET', $endpoint, [], null, $queryParams, $headers);
+
+            if (!empty($response['preview'])) {
+                // Actualizamos la base local
+                $flow = WhatsappModelResolver::flow()->where('wa_flow_id', $flowId)->first();
+                if ($flow) {
+                    $flow->update([
+                        'preview_url' => $response['preview']['preview_url'] ?? null,
+                        'preview_expires_at' => $response['preview']['expires_at'] ?? null,
+                    ]);
+                }
+            }
+
+            return $response;
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error al solicitar regeneración preventiva de preview URL: ' . $e->getMessage(), [
+                'flow_id' => $flowId,
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Obtiene la lista de Assets asociados a un Flow.
+     * Típicamente usado para obtener la URL de descarga (download_url) del JSON publicado.
+     *
+     * @param Model $flow Flujo del que se desean obtener los assets.
+     */
+    public function getFlowAssets(Model $flow): array
+    {
+        if (empty($flow->wa_flow_id)) {
+            throw new InvalidArgumentException('El flujo no tiene un ID válido de Meta.');
+        }
+
+        $endpoint = Endpoints::build(Endpoints::LIST_FLOW_ASSETS, [
+            'flow_id' => $flow->wa_flow_id,
+        ]);
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $flow->whatsappBusinessAccount->api_token,
+        ];
+
+        return $this->apiClient->request('GET', $endpoint, [], null, [], $headers);
+    }
+
+    /**
+     * Marca un Flujo como DEPRECADO.
+     * Operación irreversible que evita que Meta siga enviando el flujo a terminales.
+     *
+     * @param Model $flow Flujo a deprecar.
+     * @return bool
+     */
+    public function deprecate(Model $flow): bool
+    {
+        if (empty($flow->wa_flow_id)) {
+            throw new InvalidArgumentException('El flujo no tiene un ID válido para ser deprecado.');
+        }
+
+        $endpoint = Endpoints::build(Endpoints::DEPRECATE_FLOW, [
+            'flow_id' => $flow->wa_flow_id,
+        ]);
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $flow->whatsappBusinessAccount->api_token,
+        ];
+
+        try {
+            $this->apiClient->request('POST', $endpoint, [], [], [], $headers);
+            $flow->update(['status' => 'DEPRECATED']);
+            return true;
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error al deprecar el flujo: ' . $e->getMessage(), [
+                'flow_id' => $flow->wa_flow_id,
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Elimina el flujo de los servidores de Meta y de la base local.
+     * Irreversible. Sólo puede invocarse contra un Flujo en status DRAFT.
+     *
+     * @param Model $flow Flujo a eliminar.
+     * @return bool
+     */
+    public function delete(Model $flow): bool
+    {
+        if (empty($flow->wa_flow_id)) {
+            throw new InvalidArgumentException('El flujo no tiene un ID válido para ser eliminado de Meta.');
+        }
+
+        $endpoint = Endpoints::build(Endpoints::DELETE_FLOW, [
+            'flow_id' => $flow->wa_flow_id,
+        ]);
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $flow->whatsappBusinessAccount->api_token,
+        ];
+
+        try {
+            $this->apiClient->request('DELETE', $endpoint, [], [], [], $headers);
+            $flow->delete(); // Soft-delete o hard-delete según defina tu modelo Eloquent
+            return true;
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error al eliminar el flujo: ' . $e->getMessage(), [
+                'flow_id' => $flow->wa_flow_id,
+            ]);
+            return false;
+        }
+    }
 }

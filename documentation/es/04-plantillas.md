@@ -407,6 +407,33 @@ Gracias por tu apoyo 💙
             ->addButton('QUICK_REPLY', 'Unsubscribe from All')
             ->save();
     ```
+
+---
+
+- ### Crear Plantillas Atadas a WhatsApp Flows
+
+    El paquete soporta la inyección dinámica de botones para abrir formularios de WhatsApp Flows.
+
+    ```php
+        // Puedes pasar directamente el ID del flujo o inyectarlo usando el Nombre o Data JSON puro
+        $template = Whatsapp::template()
+            ->createUtilityTemplate($account)
+            ->setName('agendar_cita_flow')
+            ->setLanguage('es_CO')
+            ->addBody('Para agendar tu cita presiona el botón:')
+            // Botón flow por ID (se asume que la pantalla es 'FIRST_SCREEN' por defecto)
+            ->addFlowButton('Agendar Cita', '12345678910', 'navigate', 'FIRST_SCREEN')
+            ->save();
+
+        // O mejor aún, buscar de tu tabla local el workflow dinámicamente:
+        $templatePorNombre = Whatsapp::template()
+            ->createMarketingTemplate($account)
+            ->setName('lead_generation_flow')
+            ->setLanguage('es')
+            ->addBody('Llena este registro')
+            ->addFlowButtonByName('Completar Formulario', 'Mi Flujo de Encuesta', 'navigate', 'CONTACT_INFO')
+            ->save();
+    ```
     # Notas
 
     - Verifica que las imágenes usadas en las plantillas cumplan con los requisitos de la API de WhatsApp: formato (JPEG, PNG), tamaño máximo permitido y dimensiones recomendadas.
@@ -631,6 +658,71 @@ Gracias por tu apoyo 💙
 - **Nombres de botones:** Deben coincidir exactamente con el texto definido al crear la plantilla.
 - **Parámetros dinámicos:** Solo los botones de tipo URL con placeholders `{{1}}` requieren parámetros.
 - **Orden de componentes:** Siempre debes agregar los componentes en el mismo orden que fueron definidos en la plantilla: Header → Body → Botones.
+
+---
+
+## Sobreescribir Botones Dinámicos de Enlace (Tap Target Configuration)
+
+Si tu plantilla fue configurada como un Interactive Message con un formato genérico que debe comportarse como botón URL (anulación de componente visual principal), puedes sobrescribirlo al vuelo **justo antes de presionar Enviar**, sin necesidad de esperar aprobación de Meta.
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+Whatsapp::message()->viaTemplate()
+    ->usingTemplate('august_promotion', 'EN')
+    ->to('57', '3001234567')
+    ->addBody(['John'])
+    // Esto se incrusta en el payload y sobrescribe el call to action
+    ->addTapTargetConfiguration('https://www.luckyshrubs.com/offer-1', 'Offer Details!')
+    ->send();
+```
+
+---
+
+## Monitorear Calidad de la Plantilla (Quality Score)
+
+Cada plantilla posee un ranking de salud basado en la interacción de tus usuarios y tasas de lectura (`GREEN`, `YELLOW`, `RED`, `UNKNOWN`). Es vital revisarlo para tomar decisiones antes de que Meta aplique pausas automáticas a la plantilla de baja calidad.
+
+Puedes consultarlo en tiempo real a Meta con el siguiente método:
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+$account = Whatsapp::account()->getBusinessAccount('TU_BUSINESS_ID');
+$templateId = '918237198237129';
+
+$qualityData = Whatsapp::template()->getQualityScore($account, $templateId);
+
+if ($qualityData) {
+    echo "Score actual: " . $qualityData['score']; // GREEN, YELLOW, RED, UNKNOWN
+    
+    // Si deseas convertir el Timestamp de Meta a Fecha Carbon
+    $fechaCalificacion = \Carbon\Carbon::createFromTimestamp($qualityData['date']);
+    echo " (Actualizado el: " . $fechaCalificacion->toDateTimeString() . ")";
+}
+```
+
+---
+
+## Despausar Plantillas (Unpause)
+
+Si una plantilla baja su calificación de calidad (score RED), Meta la pausará automáticamente por 3h, 6h, etc., para proteger tu número API y rechazar envíos a esa campaña.
+
+Puedes reactivar (despausar) manual o programáticamente tu plantilla una vez corregida la lógica comercial usando su ID real de Meta:
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+// Obtienes tu cuenta WABA activa
+$account = Whatsapp::account()->getBusinessAccount('TU_BUSINESS_ID');
+
+$templateId = '918237198237129'; // ID de Meta (wa_template_id)
+$reactivada = Whatsapp::template()->unpauseTemplate($account, $templateId);
+
+if ($reactivada) {
+    echo "¡La plantilla ahora está Activa para envíos nuevamente!";
+}
+```
 
 ---
 

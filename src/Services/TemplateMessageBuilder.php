@@ -244,6 +244,34 @@ class TemplateMessageBuilder
         return $this;
     }
 
+    /**
+     * Agrega la configuración Tap Target para sobrescribir la acción URL de una plantilla de mensaje
+     * basada en texto, imagen o sin encabezado, permitiendo cambiar el enlace de llamada a la acción en caliente.
+     *
+     * @param string $url La URL de destino real
+     * @param string $title El título del botón interactivo
+     * @return self
+     */
+    public function addTapTargetConfiguration(string $url, string $title): self
+    {
+        $this->components['TAP_TARGET_CONFIGURATION'] = [
+            'type' => 'TAP_TARGET_CONFIGURATION',
+            'parameters' => [
+                [
+                    'type' => 'tap_target_configuration',
+                    'tap_target_configuration' => [
+                        [
+                            'url' => $url,
+                            'title' => $title
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        return $this;
+    }
+
     public function addButton(string $buttonText, array $parameter = []): self
     {
         $this->ensureTemplateStructureLoaded();
@@ -309,6 +337,66 @@ class TemplateMessageBuilder
         return $this;
     }
 
+    /**
+     * Inyecta tokens y datos adicionales (flow_action_data) a un botón FLOW de la plantilla.
+     */
+    public function addFlowActionData(string $buttonText, string $flowToken, array $flowActionData = []): self
+    {
+        $this->ensureTemplateStructureLoaded();
+
+        if (empty($this->buttonTextIndexMap)) {
+            $buttonsComponent = $this->templateStructure['by_type']['BUTTONS'] ??
+                                $this->templateStructure['by_type']['buttons'] ??
+                                null;
+
+            if ($buttonsComponent && isset($buttonsComponent['buttons'])) {
+                foreach ($buttonsComponent['buttons'] as $index => $button) {
+                    $normalizedText = strtolower(trim($button['text']));
+                    $this->buttonTextIndexMap[$normalizedText] = $index;
+                }
+            }
+        }
+
+        if (empty($this->buttonTextIndexMap)) {
+            throw new InvalidArgumentException("La plantilla no contiene botones.");
+        }
+
+        $normalizedButtonText = strtolower(trim($buttonText));
+        if (!isset($this->buttonTextIndexMap[$normalizedButtonText])) {
+            $availableButtons = implode("', '", array_keys($this->buttonTextIndexMap));
+            throw new InvalidArgumentException(
+                "Botón '$buttonText' no encontrado. Botones disponibles: '$availableButtons'"
+            );
+        }
+
+        $buttonIndex = $this->buttonTextIndexMap[$normalizedButtonText];
+        $button = $this->templateStructure['by_type']['BUTTONS']['buttons'][$buttonIndex] ?? null;
+
+        if (!$button) {
+            throw new InvalidArgumentException("Botón '$buttonText' no encontrado en la estructura.");
+        }
+
+        if (strtoupper($button['type'] ?? '') !== 'FLOW') {
+            throw new InvalidArgumentException("Solo botones FLOW pueden tener datos de acción ('flow_action_data').");
+        }
+
+        $actionData = [
+            'flow_token' => $flowToken,
+        ];
+        if (!empty($flowActionData)) {
+            $actionData['flow_action_data'] = $flowActionData;
+        }
+
+        $this->buttonParameters[$buttonIndex] = [
+            [
+                'type' => 'action',
+                'action' => $actionData
+            ]
+        ];
+
+        return $this;
+    }
+
     protected function buildButtonComponents(): array
     {
         $buttonComponents = [];
@@ -319,19 +407,27 @@ class TemplateMessageBuilder
 
         foreach ($this->templateStructure['by_type']['BUTTONS']['buttons'] as $index => $button) {
             $type = strtoupper($button['type'] ?? '');
-            if ($type !== 'URL') {
-                continue;
-            }
+            
+            if ($type === 'URL') {
+                $needsParams = preg_match('/\{\{\d+\}\}/', $button['url'] ?? '');
 
-            $needsParams = preg_match('/\{\{\d+\}\}/', $button['url'] ?? '');
-
-            if ($needsParams && isset($this->buttonParameters[$index])) {
-                $buttonComponents[] = [
-                    'type' => 'button',
-                    'sub_type' => 'url',
-                    'index' => (string)$index,
-                    'parameters' => $this->buttonParameters[$index]
-                ];
+                if ($needsParams && isset($this->buttonParameters[$index])) {
+                    $buttonComponents[] = [
+                        'type' => 'button',
+                        'sub_type' => 'url',
+                        'index' => (string)$index,
+                        'parameters' => $this->buttonParameters[$index]
+                    ];
+                }
+            } elseif ($type === 'FLOW') {
+                if (isset($this->buttonParameters[$index])) {
+                    $buttonComponents[] = [
+                        'type' => 'button',
+                        'sub_type' => 'flow',
+                        'index' => (string)$index,
+                        'parameters' => $this->buttonParameters[$index]
+                    ];
+                }
             }
         }
 
@@ -644,8 +740,8 @@ class TemplateMessageBuilder
     {
         $components = [];
 
-        // Solo agrega HEADER, BODY, FOOTER si el usuario los personalizó
-        foreach (['HEADER', 'BODY', 'FOOTER'] as $componentType) {
+        // Solo agrega HEADER, BODY, FOOTER, y TAP_TARGET_CONFIGURATION si el usuario los personalizó
+        foreach (['HEADER', 'BODY', 'FOOTER', 'TAP_TARGET_CONFIGURATION'] as $componentType) {
             if (isset($this->components[$componentType]) && !empty($this->components[$componentType]['parameters'])) {
                 $components[] = [
                     'type' => strtolower($componentType),

@@ -145,6 +145,11 @@ class WhatsappPhoneNumber extends Model
         return $this->hasMany(WhatsappContactProfile::class, 'phone_number_id');
     }
 
+    public function qrCodes()
+    {
+        return $this->hasMany(config('whatsapp.models.qr_code'), 'phone_number_id', 'phone_number_id');
+    }
+
     public function blockedUsers()
     {
         return $this->hasMany(config('whatsapp.models.blocked_user'), 'phone_number_id');

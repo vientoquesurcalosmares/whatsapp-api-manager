@@ -49,6 +49,7 @@ class Endpoints
     const CREATE_TEMPLATE = '{waba_id}/message_templates';
     const DELETE_TEMPLATE = '{waba_id}/message_templates';
     const UPDATE_TEMPLATE = '{template_id}';
+    const UNPAUSE_TEMPLATE = '{template_id}/unpause';
 
     // Flow Endpoints
     const GET_FLOWS = '{waba_id}/flows';
@@ -57,6 +58,17 @@ class Endpoints
     const UPDATE_FLOW_METADATA = '{flow_id}';
     const UPDATE_FLOW_ASSETS = '{flow_id}/assets';
     const PUBLISH_FLOW = '{flow_id}/publish';
+    const MIGRATE_FLOWS = '{waba_id}/migrate_flows';
+    const LIST_FLOW_ASSETS = '{flow_id}/assets';
+    const DEPRECATE_FLOW = '{flow_id}/deprecate';
+    const DELETE_FLOW = '{flow_id}';
+
+    // QR Codes Endpoints
+    const GET_QR_CODES = '{phone_number_id}/message_qrdls';
+    const GET_QR_CODE = '{phone_number_id}/message_qrdls/{qr_code_id}';
+    const CREATE_QR_CODE = '{phone_number_id}/message_qrdls';
+    const UPDATE_QR_CODE = '{phone_number_id}/message_qrdls';
+    const DELETE_QR_CODE = '{phone_number_id}/message_qrdls/{qr_code_id}';
 
     // Helper method to build URLs with dynamic parameters
     /**

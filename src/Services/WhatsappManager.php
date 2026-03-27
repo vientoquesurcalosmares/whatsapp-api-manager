@@ -74,6 +74,11 @@ class WhatsappManager
         return app('whatsapp.service');
     }
 
+    public function qrCode()
+    {
+        return app('whatsapp.qr_code');
+    }
+
     public function deletePhoneNumber(string $phoneNumberId): bool
     {
         return $this->phone()->deletePhoneNumber($phoneNumberId);
