@@ -1654,7 +1654,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                     $directory = rtrim($directory, '/');
                 }
                 $filePath = "{$directory}/{$fileName}";
-                Storage::put($filePath, $mediaContent);
+                file_put_contents($filePath, $mediaContent);
 
                 // Convertir el path absoluto a relativo para Storage::url
                 $relativePath = str_replace(storage_path('app/public/'), '', $directory . '/' . $fileName);
