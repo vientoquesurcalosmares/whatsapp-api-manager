@@ -1615,7 +1615,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         foreach ($components as $component) {
             if (Str::upper($component['type']) === 'HEADER') {
                 $headerFormat = Str::upper($component['format']) ?? null;
-                $headerUrlMultimedia = $component['example']['header_handle'] ?? null;
+                $headerUrlMultimedia = $component['example']['header_handle'][0] ?? null;
                 break;
             }
         }
