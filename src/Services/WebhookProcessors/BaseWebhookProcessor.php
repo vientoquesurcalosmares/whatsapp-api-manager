@@ -1672,20 +1672,21 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 ]);
 
                 Log::channel('whatsapp')->info('Template version header media saved', [
-                    'version_id' => $version->version_id,
+                    'version_id'       => $version->version_id,
+                    'mediaType'        => $mediaType,
                     'header_media_url' => $publicPath
                 ]);
             } else {
                 Log::channel('whatsapp')->warning('Failed to download template header media', [
                     'version_id' => $version->version_id,
-                    'media_url' => $mediaUrl,
-                    'status' => $response->status()
+                    'media_url'  => $mediaUrl,
+                    'status'     => $response->status()
                 ]);
             }
         } catch (\Exception $e) {
             Log::channel('whatsapp')->error('Error saving template version header media', [
-                'version_id' => $version->version_id,
-                'media_url' => $mediaUrl,
+                'version_id'    => $version->version_id,
+                'media_url'     => $mediaUrl,
                 'error_message' => $e->getMessage()
             ]);
         }
