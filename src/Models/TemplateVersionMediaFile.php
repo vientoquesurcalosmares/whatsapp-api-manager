@@ -32,6 +32,6 @@ class TemplateVersionMediaFile extends Model
 
     public function version()
     {
-        return $this->belongsTo(config('whatsapp.models.template_version'), 'version_id');
+        return $this->belongsTo(config('whatsapp.models.template_version'), 'version_id', 'version_id');
     }
 }
