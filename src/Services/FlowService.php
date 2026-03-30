@@ -64,7 +64,7 @@ class FlowService
                     [],
                     null,
                     [
-                        'fields' => 'id,name,categories,preview,status,validation_errors,json_version,data_api_version,data_channel_uri,health_status,whatsapp_business_account,application'
+                        'fields' => 'id,name,categories,preview,status,validation_errors,json_version,data_api_version,data_channel_uri,health_status,whatsapp_business_account,application,json_structure'
                     ],
                     $headers
                 );
@@ -99,9 +99,7 @@ class FlowService
             [
                 'whatsapp_business_account_id' => $businessId,
                 'name' => $flowData['name'],
-                // 'flow_type' => $flowData['flow_type'] ?? 'UNKNOWN',
-                // 'description' => $flowData['description'] ?? '',
-                // 'json_structure' => $flowData['json_structure'] ?? null,
+                'json_structure' => !empty($flowData['json_structure']) ? $flowData['json_structure'] : null,
                 'status' => $flowData['status'] ?? 'DRAFT',
                 'version' => $flowData['version'] ?? '1.0',
 
@@ -165,7 +163,7 @@ class FlowService
         ];
 
         $queryParams = [
-            'fields' => 'id,name,categories,preview,status,validation_errors,json_version,data_api_version,data_channel_uri,health_status,whatsapp_business_account,application',
+            'fields' => 'id,name,categories,preview,status,validation_errors,json_version,data_api_version,data_channel_uri,health_status,whatsapp_business_account,application,json_structure',
         ];
 
         try {
@@ -399,6 +397,80 @@ class FlowService
         } catch (\Exception $e) {
             Log::channel('whatsapp')->error('Error al solicitar regeneración preventiva de preview URL: ' . $e->getMessage(), [
                 'flow_id' => $flowId,
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Descarga el JSON del flow desde Meta vía el endpoint de assets y lo persiste en BD.
+     * Útil cuando json_structure es null tras una sincronización (p. ej. flows creados externamente).
+     *
+     * @param Model $flow Flujo cuyo JSON se desea obtener.
+     * @return array|null La estructura JSON del flow, o null si no pudo obtenerse.
+     */
+    public function syncFlowJson(Model $flow): ?array
+    {
+        if (empty($flow->wa_flow_id)) {
+            return null;
+        }
+
+        try {
+            $assets = $this->getFlowAssets($flow);
+            $data   = $assets['data'] ?? [];
+
+            // Buscar el asset de tipo FLOW_JSON con download_url
+            $asset = collect($data)->first(
+                fn($a) => ($a['asset_type'] ?? '') === 'FLOW_JSON' && !empty($a['download_url'])
+            );
+
+            if (!$asset) {
+                Log::channel('whatsapp')->warning('No se encontró asset FLOW_JSON para el flow', [
+                    'flow_id' => $flow->wa_flow_id,
+                    'assets'  => $data,
+                ]);
+                return null;
+            }
+
+            // Descargar el JSON desde la URL firmada de Meta
+            $token    = $flow->whatsappBusinessAccount->api_token;
+            $curl     = curl_init();
+            curl_setopt_array($curl, [
+                CURLOPT_URL            => $asset['download_url'],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token],
+            ]);
+            $body      = curl_exec($curl);
+            $curlError = curl_error($curl);
+            curl_close($curl);
+
+            if ($curlError || !$body) {
+                Log::channel('whatsapp')->error('Error descargando JSON del flow', [
+                    'flow_id' => $flow->wa_flow_id,
+                    'error'   => $curlError,
+                ]);
+                return null;
+            }
+
+            $jsonStructure = json_decode($body, true);
+
+            if (!$jsonStructure) {
+                return null;
+            }
+
+            // Persistir en BD
+            $flow->update(['json_structure' => json_encode($jsonStructure)]);
+
+            Log::channel('whatsapp')->info('JSON del flow sincronizado desde assets', [
+                'flow_id' => $flow->wa_flow_id,
+            ]);
+
+            return $jsonStructure;
+
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('syncFlowJson error', [
+                'flow_id' => $flow->wa_flow_id,
+                'error'   => $e->getMessage(),
             ]);
             return null;
         }

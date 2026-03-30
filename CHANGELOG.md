@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.31] - 2026-03-30
+
+### Changed
+- **Desacople Arquitectónico en FlowService:** Se han removido las restricciones de tipos estrictos que obligaban a inyectar directamente `WhatsappBusinessAccount` y `WhatsappFlow` (comentando esos _use_). Ahora se ha flexibilizado a `Illuminate\Database\Eloquent\Model` para permitir usar modelos customizados o sobreescritos sin reventar por un fatal error de PHP.
+
 ## [1.1.30] - 2026-03-30
 
 ### Added
