@@ -91,6 +91,19 @@ LARAVEL WHatsapp Manager
    - Sincronización masiva
    - Manipulación de pre-mensajes
 
+<a href="09-gestion-cuenta.md" title="Documentación en Español">
+9. 🏢 Gestión de Cuenta y Número de Teléfono
+</a>
+
+   - Datos de la WABA (obtener y actualizar)
+   - Suscripciones y overrides de webhooks
+   - Números de teléfono (listar, detalle, registrar, eliminar)
+   - Perfil de empresa (GET, actualización, foto de perfil)
+   - Nombre visible (solicitar cambio y consultar estado)
+   - Cuenta Oficial de Empresa (OBA)
+   - Usuarios bloqueados (bloquear, desbloquear, listar)
+   - Nombre de usuario del negocio (username)
+
 ---
 
 
