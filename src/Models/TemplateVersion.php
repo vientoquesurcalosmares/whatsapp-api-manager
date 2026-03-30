@@ -36,4 +36,15 @@ class TemplateVersion extends Model
     {
         return $this->belongsTo(config('whatsapp.models.template'), 'template_id');
     }
+
+    public function mediaFiles()
+    {
+        return $this->hasMany(config('whatsapp.models.template_media_file'), 'version_id', 'version_id');
+    }
+
+    public function latestMediaFile()
+    {
+        return $this->hasOne(config('whatsapp.models.template_media_file'), 'version_id', 'version_id')
+            ->orderBy('created_at', 'desc');
+    }
 }

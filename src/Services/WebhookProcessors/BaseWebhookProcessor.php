@@ -1130,7 +1130,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             'image/jpeg' => 'jpg',
             'image/png' => 'png',
             'audio/ogg', 'audio/aac', 'audio/mp4', 'audio/mpeg', 'audio/amr' => 'ogg',
-            'video/mp4', 'video/3gp' => 'mp4',
+            'video/mp4', 'video/3gpp' => 'mp4',
             'application/pdf' => 'pdf',
             'application/msword' => 'doc',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
@@ -1609,10 +1609,87 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         $this->createOrUpdateDefaultTemplateVersion($event, $template, $version);
 
+        //Guardar el archivo del header si es que tiene
+        $headerFormat = null;
+        $headerUrlMultimedia = null;
+        foreach ($components as $component) {
+            if (Str::upper($component['type']) === 'HEADER') {
+                $headerFormat = Str::upper($component['format']) ?? null;
+                $headerUrlMultimedia = $component['example']['header_handle'][0] ?? null;
+                break;
+            }
+        }
+        if ($headerFormat && $headerUrlMultimedia && in_array($headerFormat, ['IMAGE', 'VIDEO', 'DOCUMENT'])) {
+            $this->saveTemplateVersionMedia($version, $headerUrlMultimedia, $headerFormat);
+        }
+
         Log::channel('whatsapp')->info('New template version created', [
             'template_id' => $template->template_id,
             'version_id' => $version->version_id
         ]);
+    }
+
+    protected function saveTemplateVersionMedia(Model $version, string $mediaUrl, string $mediaType): void
+    {
+        try {
+            $response = Http::get($mediaUrl);
+            if ($response->successful()) {
+                $mediaContent = $response->body();
+                $extension    = $this->getFileExtension($response->header('Content-Type'));
+                $mediaType    = Str::lower($mediaType);
+
+                // Obtener la ruta de almacenamiento configurada desde la config
+                $directory = config('whatsapp.media.storage_path.'.$mediaType.'s'); // Por defecto pluralizar el tipo de media
+
+                if (!$directory) {
+                    throw new \RuntimeException("No se ha configurado una ruta de almacenamiento para el tipo de media: $mediaType");
+                }
+
+                if (!file_exists($directory)) {
+                    mkdir($directory, 0755, true);
+                }
+
+                $fileName = "{$version->version_id}_{$mediaType}.{$extension}";
+                if (Str::endsWith($directory, '/')) {
+                    $directory = rtrim($directory, '/');
+                }
+                $filePath = "{$directory}/{$fileName}";
+                file_put_contents($filePath, $mediaContent);
+
+                // Convertir el path absoluto a relativo para Storage::url
+                $relativePath = str_replace(storage_path('app/public/'), '', $directory . '/' . $fileName);
+
+                // Guardar la URL pública en el campo header_media_url de la versión
+                $publicPath = Storage::url($relativePath);
+
+                WhatsappModelResolver::template_media_file()->create([
+                    'version_id' => $version->version_id,
+                    'media_type' => $mediaType,
+                    'file_name'  => $fileName,
+                    'mime_type'  => $response->header('Content-Type'),
+                    'url'        => $publicPath,
+                    'file_size'  => strlen($mediaContent),
+                ]);
+
+                Log::channel('whatsapp')->info('Template version header media saved', [
+                    'version_id'       => $version->version_id,
+                    'mediaType'        => $mediaType,
+                    'header_media_url' => $publicPath
+                ]);
+            } else {
+                Log::channel('whatsapp')->warning('Failed to download template header media', [
+                    'version_id' => $version->version_id,
+                    'media_url'  => $mediaUrl,
+                    'status'     => $response->status()
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::channel('whatsapp')->error('Error saving template version header media', [
+                'version_id'    => $version->version_id,
+                'media_url'     => $mediaUrl,
+                'error_message' => $e->getMessage()
+            ]);
+        }
     }
 
     /**

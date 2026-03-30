@@ -44,6 +44,9 @@ return [
         //Versión por defecto de plantillas
         'template_version_default' => \ScriptDevelop\WhatsappManager\Models\TemplateVersionDefault::class,
 
+        //Archivos multimedia de versiones de plantillas
+        'template_media_file' => \ScriptDevelop\WhatsappManager\Models\TemplateVersionMediaFile::class,
+
         //Template analytics
         'general_template_analytics' => \ScriptDevelop\WhatsappManager\Models\GeneralTemplateAnalytics::class,
 
@@ -324,7 +327,7 @@ return [
         'allowed_types' => [
             'image' => ['image/jpeg', 'image/png'], // Imágenes
             'audio' => ['audio/aac', 'audio/mp4', 'audio/mpeg', 'audio/amr', 'audio/ogg'], // Audios
-            'video' => ['video/mp4', 'video/3gp'], // Videos
+            'video' => ['video/mp4', 'video/3gpp'], // Videos
             'document' => [ // Documentos
                 'text/plain',
                 'application/pdf',
