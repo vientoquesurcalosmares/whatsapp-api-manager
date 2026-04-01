@@ -26,6 +26,8 @@ class WhatsappPhoneNumber extends Model
         'phone_number',
         'api_phone_number_id',
         'verified_name',
+        'new_display_name',
+        'new_name_status',
 
         'code_verification_status',
         'quality_rating',
@@ -34,6 +36,7 @@ class WhatsappPhoneNumber extends Model
         'throughput',
         'webhook_configuration',
         'is_official',
+        'oba_status',
         'is_pin_enabled',
 
         // Nuevos campos

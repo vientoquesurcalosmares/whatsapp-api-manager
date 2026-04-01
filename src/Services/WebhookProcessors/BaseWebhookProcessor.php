@@ -18,6 +18,7 @@ use ScriptDevelop\WhatsappManager\Services\MessageDispatcherService;
 use ScriptDevelop\WhatsappManager\Services\TemplateService;
 use ScriptDevelop\WhatsappManager\Services\Flows\FlowCryptoService;
 use ScriptDevelop\WhatsappManager\Events\FlowStatusUpdated;
+use ScriptDevelop\WhatsappManager\Events\BusinessUsernameUpdated;
 use ScriptDevelop\WhatsappManager\Services\Flows\FlowMediaService;
 
 class BaseWebhookProcessor implements WebhookProcessorInterface
@@ -133,6 +134,11 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             return response()->json(['success' => true]);
         }
 
+        if ($field === 'business_username_update') {
+            $this->handleBusinessUsernameUpdate($value);
+            return response()->json(['success' => true]);
+        }
+
         if (!$value) {
             Log::channel('whatsapp')->warning('No value found in webhook payload.', $payload);
             return response()->json(['error' => 'Invalid payload.'], 422);
@@ -181,7 +187,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // Si es status de mensaje (entregado, leído, etc.)
         elseif (isset($value['statuses'][0])) {
-            $this->handleStatusUpdate($value['statuses'][0]);
+            $this->handleStatusUpdate($value['statuses'][0], $value['contacts'] ?? []);
         }
 
         return response()->json(['success' => true]);
@@ -201,47 +207,22 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             'metadata' => $metadata,
         ]);
 
-        if (empty($contact['wa_id'])) {
-            Log::channel('whatsapp')->warning('No wa_id found in contact.', $contact ?? []);
+        $contactRecord = $this->resolveContactFromWebhook($contact ?? [], $message);
+
+        if (!$contactRecord) {
+            Log::channel('whatsapp')->warning('No se pudo resolver el contacto: faltan bsuid y wa_id.', [
+                'contact'      => $contact,
+                'message_from' => $message['from'] ?? null,
+            ]);
             return;
         }
 
-        $fullPhone = preg_replace('/\D/', '', $message['from'] ?? '');
-
-        [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
-
-        if (empty($countryCode) || empty($phoneNumber)) {
-            Log::channel('whatsapp')->warning('Unable to split phone number.', ['fullPhone' => $fullPhone]);
-            return;
-        }
-        $contactName = $contact['profile']['name'] ?? null;
-
-        Log::channel('whatsapp')->info('CONTACT Processing message from contact.', [
-            'wa_id' => $contact['wa_id'],
-            'country_code' => $countryCode,
-            'phone_number' => $phoneNumber,
-            'contact_name' => $contactName,
-            'raw_profile' => $contact['profile'] ?? null,
-        ]);
-
-        // Usar updateOrCreate
-        $contactRecord = WhatsappModelResolver::contact()->updateOrCreate(
-            [
-                'wa_id' => $contact['wa_id'],
-            ],
-            [
-                'country_code' => $countryCode,
-                'phone_number' => $phoneNumber,
-                'contact_name' => $contactName,
-            ]
-        );
-
-        Log::channel('whatsapp')->info('CONTACT After updateOrCreate.', [
-            'contact_id' => $contactRecord->contact_id,
-            'wa_id' => $contactRecord->wa_id,
-            'contact_name' => $contactRecord->contact_name,
+        Log::channel('whatsapp')->info('CONTACT resuelto desde webhook.', [
+            'contact_id'  => $contactRecord->contact_id,
+            'bsuid'       => $contactRecord->bsuid,
+            'wa_id'       => $contactRecord->wa_id,
+            'username'    => $contactRecord->username,
             'was_created' => $contactRecord->wasRecentlyCreated,
-            'attributes' => $contactRecord->getAttributes(),
         ]);
 
         // Actualizar el contacto con los datos más recientes
@@ -357,11 +338,12 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         $this->fireMessageReceived($contactRecord, $messageRecord);
 
         Log::channel('whatsapp')->info('Incoming message processed.', [
-            'message_id' => $message['id'],
-            'contact_id' => $contactRecord->contact_id,
-            'phone_number' => $fullPhone,
+            'message_id'   => $message['id'],
+            'contact_id'   => $contactRecord->contact_id,
+            'bsuid'        => $contactRecord->bsuid,
+            'wa_id'        => $contactRecord->wa_id,
             'message_type' => $messageType,
-            'content' => $logMessage,
+            'content'      => $logMessage,
         ]);
     }
 
@@ -389,26 +371,14 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             return;
         }
 
-        // 2. Obtener o crear el contacto (igual)
-        if (empty($contact['wa_id'])) {
-            Log::channel('whatsapp')->warning('No wa_id found in contact for edit.', $contact ?? []);
+        // 2. Obtener o crear el contacto usando la estrategia BSUID-first
+        $contactRecord = $this->resolveContactFromWebhook($contact ?? [], $message);
+        if (!$contactRecord) {
+            Log::channel('whatsapp')->warning('No se pudo resolver el contacto para edit.', [
+                'contact' => $contact,
+            ]);
             return;
         }
-        $fullPhone = preg_replace('/\D/', '', $message['from'] ?? '');
-        [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
-        if (empty($countryCode) || empty($phoneNumber)) {
-            Log::channel('whatsapp')->warning('Unable to split phone number in edit.', ['fullPhone' => $fullPhone]);
-            return;
-        }
-        $contactName = $contact['profile']['name'] ?? null;
-        $contactRecord = WhatsappModelResolver::contact()->updateOrCreate(
-            ['wa_id' => $contact['wa_id']],
-            [
-                'country_code' => $countryCode,
-                'phone_number' => $phoneNumber,
-                'contact_name' => $contactName,
-            ]
-        );
 
         // 3. Extraer datos de edición
         $editData = $message['edit'] ?? [];
@@ -472,19 +442,21 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // 6. Crear el nuevo mensaje de tipo EDIT que apunta al original
         $editMessageData = [
-            'wa_id' => $message['id'],
-            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
-            'contact_id' => $contactRecord->contact_id,
-            'conversation_id' => $originalMessage->conversation_id,
-            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-            'message_from' => preg_replace('/[\D+]/', '', $message['from']),
-            'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
-            'message_type' => 'EDIT',
-            'message_content' => $content,
-            'json_content' => json_encode($message),
-            'status' => 'received',
+            'wa_id'              => $message['id'],
+            'whatsapp_phone_id'  => $whatsappPhone->phone_number_id,
+            'contact_id'         => $contactRecord->contact_id,
+            'conversation_id'    => $originalMessage->conversation_id,
+            'messaging_product'  => $message['messaging_product'] ?? 'whatsapp',
+            'message_from'       => isset($message['from']) ? preg_replace('/[\D+]/', '', $message['from']) : null,
+            'from_bsuid'         => $message['from_user_id'] ?? null,
+            'from_parent_bsuid'  => $message['from_parent_user_id'] ?? null,
+            'message_to'         => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+            'message_type'       => 'EDIT',
+            'message_content'    => $content,
+            'json_content'       => json_encode($message),
+            'status'             => 'received',
             'message_context_id' => $this->getContextMessageId($newMessage),
-            'original_message_id' => $originalMessage->message_id, // <-- NUEVO: referencia al original
+            'original_message_id' => $originalMessage->message_id,
         ];
 
         $editMessageRecord = WhatsappModelResolver::message()->create($editMessageData);
@@ -583,26 +555,14 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             return;
         }
 
-        // 2. Obtener o crear el contacto (necesario para registrar el evento, aunque no haya nuevo contenido)
-        if (empty($contact['wa_id'])) {
-            Log::channel('whatsapp')->warning('No wa_id found in contact for revoke.', $contact ?? []);
+        // 2. Obtener o crear el contacto usando la estrategia BSUID-first
+        $contactRecord = $this->resolveContactFromWebhook($contact ?? [], $message);
+        if (!$contactRecord) {
+            Log::channel('whatsapp')->warning('No se pudo resolver el contacto para revoke.', [
+                'contact' => $contact,
+            ]);
             return;
         }
-        $fullPhone = preg_replace('/\D/', '', $message['from'] ?? '');
-        [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
-        if (empty($countryCode) || empty($phoneNumber)) {
-            Log::channel('whatsapp')->warning('Unable to split phone number in revoke.', ['fullPhone' => $fullPhone]);
-            return;
-        }
-        $contactName = $contact['profile']['name'] ?? null;
-        $contactRecord = WhatsappModelResolver::contact()->updateOrCreate(
-            ['wa_id' => $contact['wa_id']],
-            [
-                'country_code' => $countryCode,
-                'phone_number' => $phoneNumber,
-                'contact_name' => $contactName,
-            ]
-        );
 
         // 3. Extraer el ID del mensaje original
         $revokeData = $message['revoke'] ?? [];
@@ -628,15 +588,17 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         // 6. (Opcional) Crear un mensaje de tipo REVOKE para registrar el evento
         $revokeMessageData = [
-            'wa_id' => $message['id'], // ID del evento de revocación
+            'wa_id'             => $message['id'],
             'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
-            'contact_id' => $contactRecord->contact_id,
-            'conversation_id' => $originalMessage->conversation_id, // hereda la conversación del original
+            'contact_id'        => $contactRecord->contact_id,
+            'conversation_id'   => $originalMessage->conversation_id,
             'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-            'message_from' => preg_replace('/[\D+]/', '', $message['from']),
-            'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
-            'message_type' => 'REVOKE',
-            'message_content' => 'Mensaje revocado', // Podría ser un texto genérico o vacío
+            'message_from'      => isset($message['from']) ? preg_replace('/[\D+]/', '', $message['from']) : null,
+            'from_bsuid'        => $message['from_user_id'] ?? null,
+            'from_parent_bsuid' => $message['from_parent_user_id'] ?? null,
+            'message_to'        => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+            'message_type'      => 'REVOKE',
+            'message_content'   => 'Mensaje revocado',
             'json_content' => json_encode($message),
             'status' => 'received',
             'original_message_id' => $originalMessage->message_id, // referencia al original
@@ -677,48 +639,56 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         }
 
         // 2. Extraer datos del mensaje
-        $from = $message['from'] ?? ''; // número antiguo (puede ser el wa_id)
-        $system = $message['system'] ?? [];
+        $from       = $message['from'] ?? null; // número antiguo (puede estar ausente con usernames)
+        $system     = $message['system'] ?? [];
         $systemType = $system['type'] ?? '';
-        $newWaId = $system['wa_id'] ?? null; // nuevo ID (puede ser el nuevo número)
-        $body = $system['body'] ?? ''; // texto descriptivo
+        $newWaId    = $system['wa_id'] ?? null;        // nuevo wa_id tras cambio de número
+        $newBsuid   = $system['user_id'] ?? null;      // nuevo BSUID (user_changed_user_id)
+        $newParentBsuid = $system['parent_user_id'] ?? null;
+        $body       = $system['body'] ?? '';
 
-        // 3. Normalizar el número antiguo y dividir en código de país + número
-        $fullPhone = preg_replace('/\D/', '', $from);
-        [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
-        if (empty($countryCode) || empty($phoneNumber)) {
-            Log::channel('whatsapp')->warning('Unable to split phone number in system message.', ['fullPhone' => $fullPhone]);
-            return;
-        }
-
-        // 4. Intentar extraer el nombre del perfil desde el body (para crearlo si es necesario)
+        // 3. Intentar extraer el nombre del perfil desde el body
         $contactName = null;
-        if ($systemType === 'user_changed_number') {
-            // El body tiene formato: "User <name> changed from <old> to <new>"
+        if (in_array($systemType, ['user_changed_number', 'user_changed_user_id'])) {
             if (preg_match('/User (.*?) changed from/', $body, $matches)) {
                 $contactName = $matches[1];
             }
         }
 
-        // 5. Buscar el contacto existente por wa_id antiguo o por número
-        $contactRecord = WhatsappModelResolver::contact()
-            ->where('wa_id', $from)
-            ->orWhere(function ($query) use ($countryCode, $phoneNumber) {
-                $query->where('country_code', $countryCode)
-                    ->where('phone_number', $phoneNumber);
-            })
-            ->first();
+        // 4. Buscar el contacto: primero por BSUID antiguo, luego por wa_id/teléfono
+        $contactRecord = null;
+
+        // user_changed_user_id: el BSUID cambió porque el usuario cambió de número
+        // El `from` contiene el número antiguo, y system.user_id contiene el NUEVO bsuid
+        // Intentamos encontrar el contacto por el número antiguo
+        if ($from) {
+            $fullPhone = preg_replace('/\D/', '', $from);
+            [$countryCode, $phoneNumber] = $this->splitPhoneNumber($fullPhone);
+
+            if ($countryCode && $phoneNumber) {
+                $contactRecord = WhatsappModelResolver::contact()
+                    ->where('wa_id', $from)
+                    ->orWhere(function ($query) use ($countryCode, $phoneNumber) {
+                        $query->where('country_code', $countryCode)
+                              ->where('phone_number', $phoneNumber);
+                    })
+                    ->first();
+            }
+        }
 
         if (!$contactRecord) {
-            // Crear nuevo contacto con los datos antiguos
-            $contactRecord = WhatsappModelResolver::contact()->create([
-                'wa_id' => $from,
-                'country_code' => $countryCode,
-                'phone_number' => $phoneNumber,
-                'contact_name' => $contactName,
-            ]);
-            Log::channel('whatsapp')->info('Contact created from system message', [
-                'contact_id' => $contactRecord->contact_id
+            // Crear nuevo contacto con los datos disponibles
+            $createData = ['contact_name' => $contactName];
+            if ($from) {
+                $fullPhone = preg_replace('/\D/', '', $from);
+                [$cc, $pn] = $this->splitPhoneNumber($fullPhone);
+                $createData['wa_id']        = $from;
+                $createData['country_code'] = $cc;
+                $createData['phone_number'] = $pn;
+            }
+            $contactRecord = WhatsappModelResolver::contact()->create($createData);
+            Log::channel('whatsapp')->info('Contacto creado desde system message', [
+                'contact_id' => $contactRecord->contact_id,
             ]);
         }
 
@@ -772,9 +742,11 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'contact_id' => $contact->contact_id,
                 'conversation_id' => null, // Esto se puede actualizar más tarde si es necesario
                 'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-                'message_from' => preg_replace('/[\D+]/', '', $message['from']),
-                'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
-                'message_type' => 'TEXT',
+                'message_from'      => isset($message['from']) ? preg_replace('/[\D+]/', '', $message['from']) : null,
+                'from_bsuid'        => $message['from_user_id'] ?? null,
+                'from_parent_bsuid' => $message['from_parent_user_id'] ?? null,
+                'message_to'        => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+                'message_type'      => 'TEXT',
                 'message_content' => $textContent,
                 'json_content' => json_encode($message),
                 'status' => 'received',
@@ -817,7 +789,9 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'contact_id' => $contact->contact_id,
                 'conversation_id' => null,
                 'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-                'message_from' => preg_replace('/[\D+]/', '', $message['from']),
+                'message_from'      => isset($message['from']) ? preg_replace('/[\D+]/', '', $message['from']) : null,
+                'from_bsuid'        => $message['from_user_id'] ?? null,
+                'from_parent_bsuid' => $message['from_parent_user_id'] ?? null,
                 'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
                 'message_type' => strtoupper($message['type']),
                 'message_content' => $textContent,
@@ -918,7 +892,9 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'contact_id' => $contact->contact_id,
                 'conversation_id' => null, // Esto se puede actualizar más tarde si es necesario
                 'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-                'message_from' => preg_replace('/[\D+]/', '', $message['from']),
+                'message_from'      => isset($message['from']) ? preg_replace('/[\D+]/', '', $message['from']) : null,
+                'from_bsuid'        => $message['from_user_id'] ?? null,
+                'from_parent_bsuid' => $message['from_parent_user_id'] ?? null,
                 'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
                 'message_type' => strtoupper($message['type']),
                 'message_content' => $caption,
@@ -979,7 +955,9 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'contact_id' => $contact->contact_id,
                 'conversation_id' => null,
                 'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-                'message_from' => preg_replace('/[\D+]/', '', $message['from']),
+                'message_from'      => isset($message['from']) ? preg_replace('/[\D+]/', '', $message['from']) : null,
+                'from_bsuid'        => $message['from_user_id'] ?? null,
+                'from_parent_bsuid' => $message['from_parent_user_id'] ?? null,
                 'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
                 'message_type' => 'LOCATION',
                 'message_content' => $content . ' | ' . $coordinates,
@@ -1021,7 +999,9 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'contact_id' => $contact->contact_id,
                 'conversation_id' => null,
                 'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-                'message_from' => preg_replace('/[\D+]/', '', $message['from']),
+                'message_from'      => isset($message['from']) ? preg_replace('/[\D+]/', '', $message['from']) : null,
+                'from_bsuid'        => $message['from_user_id'] ?? null,
+                'from_parent_bsuid' => $message['from_parent_user_id'] ?? null,
                 'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
                 'message_type' => 'CONTACT',
                 'message_content' => $content,
@@ -1060,7 +1040,9 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'contact_id' => $contact->contact_id,
                 //'conversation_id' => $conversation->conversation_id ?? null, //Nota 2026-03-05: Por lo pronto no se usará este campo para las reacciones, ya que no es claro si se debe asociar a la conversación del mensaje original o no.
                 'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-                'message_from' => preg_replace('/[\D+]/', '', $message['from']),
+                'message_from'      => isset($message['from']) ? preg_replace('/[\D+]/', '', $message['from']) : null,
+                'from_bsuid'        => $message['from_user_id'] ?? null,
+                'from_parent_bsuid' => $message['from_parent_user_id'] ?? null,
                 'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
                 'message_type' => 'REACTION',
                 'message_content' => $reaction['emoji'],
@@ -1147,11 +1129,14 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         };
     }
 
-    protected function handleStatusUpdate(array $status): void
+    /**
+     * @param array $status   El objeto de estado del webhook (statuses[0])
+     * @param array $contacts Array opcional de contacts del webhook (presente en delivered/read)
+     */
+    protected function handleStatusUpdate(array $status, array $contacts = []): void
     {
-        $messageId = $status['id'] ?? null;
+        $messageId   = $status['id'] ?? null;
         $statusValue = $status['status'] ?? null;
-        $timestamp = $status['timestamp'] ?? null;
 
         if (empty($messageId) || empty($statusValue)) {
             Log::channel('whatsapp')->warning('Missing message ID or status in status update.', $status);
@@ -1165,8 +1150,15 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             return;
         }
 
-        // 1. Actualizar estado del mensaje
+        // 1. Actualizar estado del mensaje (incluye recipient_bsuid si llega en el status)
         $messageUpdated = $this->updateMessageStatus($messageRecord, $status);
+
+        // 2. Si llegan contacts en el webhook (sent/delivered/read), actualizar BSUID del contacto
+        if (!empty($contacts) && in_array($statusValue, ['sent', 'delivered', 'read'])) {
+            foreach ($contacts as $contactData) {
+                $this->updateContactBsuidFromStatusWebhook($contactData);
+            }
+        }
 
         switch ($statusValue) {
             case 'delivered':
@@ -1178,7 +1170,6 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 break;
 
             case 'failed':
-                // Manejar caso específico de opt-out de marketing
                 if (isset($status['errors'][0]['code']) && $status['errors'][0]['code'] == 131050) {
                     $this->fireMarketingOptOut($messageUpdated);
                 } else {
@@ -1187,17 +1178,129 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 break;
         }
 
-        // 2. Procesar datos de conversación y métricas
+        // 3. Procesar datos de conversación y métricas
         if (isset($status['conversation'])) {
             $this->processConversationData($messageRecord, $status);
         }
 
         Log::channel('whatsapp')->info('Estado actualizado', [
-            'message_id' => $messageRecord->message_id,
-            'wa_id' => $messageId,
-            'status' => $statusValue,
-            'conversation' => $messageRecord->conversation_id
+            'message_id'      => $messageRecord->message_id,
+            'wa_id'           => $messageId,
+            'status'          => $statusValue,
+            'recipient_bsuid' => $status['recipient_user_id'] ?? null,
+            'conversation'    => $messageRecord->conversation_id,
         ]);
+    }
+
+    /**
+     * Actualiza el BSUID de un contacto a partir del array contacts[] del webhook de status.
+     * Solo se incluye en webhooks sent/delivered/read — no en failed.
+     */
+    private function updateContactBsuidFromStatusWebhook(array $contactData): void
+    {
+        $bsuid       = $contactData['user_id'] ?? null;
+        $waId        = $contactData['wa_id'] ?? null;
+        $parentBsuid = $contactData['parent_user_id'] ?? null;
+        $username    = $contactData['profile']['username'] ?? null;
+
+        if (!$bsuid && !$waId) {
+            return;
+        }
+
+        $contact = null;
+        if ($bsuid) {
+            $contact = WhatsappModelResolver::contact()->where('bsuid', $bsuid)->first();
+        }
+        if (!$contact && $waId) {
+            $contact = WhatsappModelResolver::contact()->where('wa_id', $waId)->first();
+        }
+
+        if ($contact) {
+            $updateData = array_filter([
+                'bsuid'        => $bsuid,
+                'parent_bsuid' => $parentBsuid,
+                'username'     => $username,
+            ], fn($v) => $v !== null);
+
+            if (!empty($updateData)) {
+                $contact->update($updateData);
+            }
+        }
+    }
+
+    /**
+     * Resuelve o crea el contacto a partir del payload de un webhook entrante.
+     *
+     * Estrategia de búsqueda (BSUID-first para compatibilidad con nombres de usuario):
+     *   1. Si hay BSUID → buscar por bsuid (identificador primario desde el 31/03/2026)
+     *   2. Si no se encontró → buscar por wa_id (fallback para contactos pre-BSUID)
+     *   3. Si no se encontró → crear nuevo contacto con los datos disponibles
+     *
+     * Retorna null solo si no hay ningún identificador disponible (bsuid, wa_id ni from).
+     */
+    protected function resolveContactFromWebhook(array $contact, array $message): ?Model
+    {
+        $bsuid       = $contact['user_id'] ?? null;
+        $waId        = $contact['wa_id'] ?? null;
+        $parentBsuid = $contact['parent_user_id'] ?? null;
+        $username    = $contact['profile']['username'] ?? null;
+        $contactName = $contact['profile']['name'] ?? null;
+        $from        = $message['from'] ?? null;
+
+        // Resolver número de teléfono si está disponible
+        $countryCode = null;
+        $phoneNumber = null;
+        $fullPhone   = $from ?? $waId;
+        if ($fullPhone) {
+            $cleaned = preg_replace('/\D/', '', $fullPhone);
+            if ($cleaned) {
+                [$countryCode, $phoneNumber] = $this->splitPhoneNumber($cleaned);
+            }
+        }
+
+        // Si no hay ningún identificador, no podemos proceder
+        if (!$bsuid && !$waId && !$from) {
+            return null;
+        }
+
+        // Campos a actualizar/crear
+        $fillData = array_filter([
+            'contact_name' => $contactName,
+            'username'     => $username,
+            'parent_bsuid' => $parentBsuid,
+            'bsuid'        => $bsuid,
+        ], fn($v) => $v !== null);
+
+        if ($waId)        $fillData['wa_id']        = $waId;
+        if ($countryCode) $fillData['country_code'] = $countryCode;
+        if ($phoneNumber) $fillData['phone_number']  = $phoneNumber;
+
+        // 1. Buscar por BSUID (identificador estable, siempre presente desde el 31/03/2026)
+        $contactRecord = null;
+        if ($bsuid) {
+            $contactRecord = WhatsappModelResolver::contact()
+                ->where('bsuid', $bsuid)
+                ->first();
+        }
+
+        // 2. Fallback: buscar por wa_id (contactos existentes sin BSUID aún)
+        if (!$contactRecord && $waId) {
+            $contactRecord = WhatsappModelResolver::contact()
+                ->where('wa_id', $waId)
+                ->first();
+        }
+
+        if ($contactRecord) {
+            $contactRecord->update($fillData);
+            $contactRecord->refresh();
+            return $contactRecord;
+        }
+
+        // 3. Crear nuevo contacto
+        if (!isset($fillData['country_code'])) $fillData['country_code'] = null;
+        if (!isset($fillData['phone_number']))  $fillData['phone_number']  = null;
+
+        return WhatsappModelResolver::contact()->create($fillData);
     }
 
     private function splitPhoneNumber(string $fullPhone): array
@@ -1221,9 +1324,17 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     protected function updateMessageStatus(Model $message, array $status): Model
     {
         $statusValue = $status['status'] ?? null;
-        $timestamp = $status['timestamp'] ?? null;
-        $errorCode = null;
-        $updateData = ['status' => $statusValue];
+        $timestamp   = $status['timestamp'] ?? null;
+        $errorCode   = null;
+        $updateData  = ['status' => $statusValue];
+
+        // Guardar BSUID del destinatario si llega en el status (presente en delivered/read cuando se envió por BSUID)
+        if (!empty($status['recipient_user_id'])) {
+            $updateData['recipient_bsuid'] = $status['recipient_user_id'];
+        }
+        if (!empty($status['parent_recipient_user_id'])) {
+            $updateData['parent_recipient_bsuid'] = $status['parent_recipient_user_id'];
+        }
 
         if ($timestamp) {
             $date = \Carbon\Carbon::createFromTimestamp($timestamp);
@@ -1407,7 +1518,9 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'contact_id' => $contact->contact_id,
                 'conversation_id' => null,
                 'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-                'message_from' => preg_replace('/[\D+]/', '', $message['from']),
+                'message_from'      => isset($message['from']) ? preg_replace('/[\D+]/', '', $message['from']) : null,
+                'from_bsuid'        => $message['from_user_id'] ?? null,
+                'from_parent_bsuid' => $message['from_parent_user_id'] ?? null,
                 'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
                 'message_type' => 'UNSUPPORTED',
                 'message_content' => $content,
@@ -2048,13 +2161,20 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
     protected function processSystemMessage(array $message, Model $contact, Model $whatsappPhone): ?Model
     {
-        $systemType = $message['system']['type'] ?? '';
-        $body = $message['system']['body'] ?? '';
-        $newWaId = $message['system']['new_wa_id'] ?? null;
+        $systemType    = $message['system']['type'] ?? '';
+        $body          = $message['system']['body'] ?? '';
+        $newWaId       = $message['system']['new_wa_id'] ?? $message['system']['wa_id'] ?? null;
+        $newBsuid      = $message['system']['user_id'] ?? null;
+        $newParentBsuid = $message['system']['parent_user_id'] ?? null;
 
-        // Caso especial: cambio de número
+        // Caso especial: cambio de número de teléfono
         if ($systemType === 'user_changed_number') {
             return $this->processUserChangedNumber($message, $contact, $whatsappPhone, $body, $newWaId);
+        }
+
+        // Caso especial: cambio de BSUID (el usuario cambió de número, su BSUID se regeneró)
+        if ($systemType === 'user_changed_user_id') {
+            return $this->processUserChangedUserId($message, $contact, $whatsappPhone, $body, $newBsuid, $newParentBsuid);
         }
 
         if ($systemType === 'user_preference_changed') {
@@ -2071,16 +2191,18 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
             ['wa_id' => $message['id']],
             [
-                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
-                'contact_id' => $contact->contact_id,
-                'conversation_id' => null,
-                'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-                'message_from' => preg_replace('/[\D+]/', '', $message['from']),
-                'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
-                'message_type' => 'SYSTEM',
-                'message_content' => $body,
-                'json_content' => json_encode($message),
-                'status' => 'received',
+                'whatsapp_phone_id'  => $whatsappPhone->phone_number_id,
+                'contact_id'         => $contact->contact_id,
+                'conversation_id'    => null,
+                'messaging_product'  => $message['messaging_product'] ?? 'whatsapp',
+                'message_from'       => isset($message['from']) ? preg_replace('/[\D+]/', '', $message['from']) : null,
+                'from_bsuid'         => $message['system']['user_id'] ?? null,
+                'from_parent_bsuid'  => $message['system']['parent_user_id'] ?? null,
+                'message_to'         => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+                'message_type'       => 'SYSTEM',
+                'message_content'    => $body,
+                'json_content'       => json_encode($message),
+                'status'             => 'received',
                 'message_context_id' => $this->getContextMessageId($message),
             ]
         );
@@ -2118,7 +2240,9 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             'contact_id' => $contact->contact_id,
             'conversation_id' => null,
             'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
-            'message_from' => preg_replace('/[\D+]/', '', $message['from']),
+            'message_from'      => isset($message['from']) ? preg_replace('/[\D+]/', '', $message['from']) : null,
+            'from_bsuid'        => $message['from_user_id'] ?? null,
+            'from_parent_bsuid' => $message['from_parent_user_id'] ?? null,
             'message_to' => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
             'message_type' => 'SYSTEM',
             'message_content' => $body,
@@ -2160,17 +2284,30 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
         foreach ($userPreferences as $preference) {
             if ($preference['category'] === 'marketing_messages') {
-                $waId = $preference['wa_id'];
-                $value = $preference['value']; // 'stop' o 'resume'
+                $waId  = $preference['wa_id'] ?? null;   // puede estar ausente con usernames
+                $bsuid = $preference['user_id'] ?? null; // nuevo campo BSUID
+                $value = $preference['value'];
 
-                $this->updateContactMarketingPreferenceByWaId($waId, $value);
+                $this->updateContactMarketingPreferenceByIdentifier($waId, $bsuid, $value);
             }
         }
     }
 
-    protected function updateContactMarketingPreferenceByWaId(string $waId, string $preference): void
+    /**
+     * Actualiza la preferencia de marketing del contacto.
+     * Busca primero por BSUID (siempre presente desde 31/03/2026),
+     * con fallback a wa_id para contactos pre-BSUID.
+     */
+    protected function updateContactMarketingPreferenceByIdentifier(?string $waId, ?string $bsuid, string $preference): void
     {
-        $contact = WhatsappModelResolver::contact()->where('wa_id', $waId)->first();
+        $contact = null;
+
+        if ($bsuid) {
+            $contact = WhatsappModelResolver::contact()->where('bsuid', $bsuid)->first();
+        }
+        if (!$contact && $waId) {
+            $contact = WhatsappModelResolver::contact()->where('wa_id', $waId)->first();
+        }
 
         if ($contact) {
             $acceptsMarketing = ($preference === 'resume');
@@ -2178,6 +2315,89 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         }
     }
 
+
+    /**
+     * Procesa el webhook `business_username_update`.
+     *
+     * Se activa cuando el estado del nombre de usuario de empresa cambia:
+     * - approved: el nombre está aprobado y visible para usuarios
+     * - reserved: el nombre está reservado pero no visible aún
+     * - deleted:  el nombre fue eliminado (username puede estar ausente en el payload)
+     */
+    protected function handleBusinessUsernameUpdate(array $value): void
+    {
+        $displayPhone = $value['display_phone_number'] ?? null;
+        $username     = $value['username'] ?? null;
+        $status       = $value['status'] ?? null;
+
+        Log::channel('whatsapp')->info('Business username update recibido.', [
+            'display_phone_number' => $displayPhone,
+            'username'             => $username,
+            'status'               => $status,
+        ]);
+
+        event(new BusinessUsernameUpdated([
+            'display_phone_number' => $displayPhone,
+            'username'             => $username,
+            'status'               => $status,
+        ]));
+    }
+
+    /**
+     * Procesa el cambio de BSUID de un usuario.
+     *
+     * Se activa cuando el tipo de sistema es `user_changed_user_id`, lo que ocurre
+     * cuando el usuario cambia su número de teléfono en WhatsApp: su BSUID se regenera.
+     *
+     * El `from` contiene el número antiguo (si disponible). El nuevo BSUID llega en
+     * `system.user_id`. Se actualiza el contacto existente con el nuevo BSUID.
+     */
+    protected function processUserChangedUserId(
+        array $message,
+        Model $contact,
+        Model $whatsappPhone,
+        string $body,
+        ?string $newBsuid,
+        ?string $newParentBsuid = null
+    ): ?Model {
+        // Actualizar el BSUID del contacto con el nuevo identificador
+        if ($newBsuid) {
+            $contact->update(array_filter([
+                'bsuid'        => $newBsuid,
+                'parent_bsuid' => $newParentBsuid,
+            ], fn($v) => $v !== null));
+
+            Log::channel('whatsapp')->info('BSUID de contacto actualizado', [
+                'contact_id'   => $contact->contact_id,
+                'old_bsuid'    => $contact->getOriginal('bsuid'),
+                'new_bsuid'    => $newBsuid,
+                'parent_bsuid' => $newParentBsuid,
+            ]);
+        }
+
+        // Crear registro del mensaje de sistema
+        $messageRecord = WhatsappModelResolver::message()->create([
+            'wa_id'             => $message['id'],
+            'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+            'contact_id'        => $contact->contact_id,
+            'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+            'message_from'      => isset($message['from']) ? preg_replace('/\D/', '', $message['from']) : null,
+            'from_bsuid'        => $newBsuid,
+            'from_parent_bsuid' => $newParentBsuid,
+            'message_to'        => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+            'message_type'      => 'SYSTEM',
+            'message_content'   => $body,
+            'json_content'      => json_encode($message),
+            'status'            => 'received',
+        ]);
+
+        Log::channel('whatsapp')->info('System message user_changed_user_id procesado', [
+            'message_id' => $messageRecord->message_id,
+            'new_bsuid'  => $newBsuid,
+        ]);
+
+        return $messageRecord;
+    }
 
     // =========================================================================
     // COEXISTENCE WEBHOOKS IMPLEMENTATION

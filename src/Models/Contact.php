@@ -20,6 +20,9 @@ class Contact extends Model
 
     protected $fillable = [
         'wa_id',
+        'bsuid',
+        'parent_bsuid',
+        'username',
         'country_code',
         'phone_number',
         'contact_name',
@@ -92,6 +95,15 @@ class Contact extends Model
             ->exists();
     }
 
+    /**
+     * Retorna el BSUID si está disponible; de lo contrario, el wa_id (número de teléfono).
+     * Útil para operaciones de bloqueo/desbloqueo y envío de mensajes.
+     */
+    public function getBsuidOrWaId(): ?string
+    {
+        return $this->bsuid ?? $this->wa_id;
+    }
+
     public function blockOn(string $phoneNumberId): bool
     {
         if ($this->isBlockedOn($phoneNumberId)) {
@@ -99,7 +111,11 @@ class Contact extends Model
         }
 
         $service = app(BlockService::class);
-        $response = $service->blockUsers($phoneNumberId, [$this->wa_id]);
+        $identifier = $this->getBsuidOrWaId();
+        if (!$identifier) {
+            return false;
+        }
+        $response = $service->blockUsers($phoneNumberId, [$identifier]);
         return $response['success'] ?? false;
     }
 
@@ -110,7 +126,11 @@ class Contact extends Model
         }
 
         $service = app(BlockService::class);
-        $response = $service->unblockUsers($phoneNumberId, [$this->wa_id]);
+        $identifier = $this->getBsuidOrWaId();
+        if (!$identifier) {
+            return false;
+        }
+        $response = $service->unblockUsers($phoneNumberId, [$identifier]);
         return $response['success'] ?? false;
     }
 

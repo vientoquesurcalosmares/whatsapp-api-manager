@@ -156,7 +156,7 @@ class WhatsappWebhookProcessor extends BaseWebhookProcessor
      * Uncomment and modify as needed
      */
     /*
-    protected function handleStatusUpdate(array $status): void
+    protected function handleStatusUpdate(array $status, array $contacts = []): void
     {
         // Custom logic for status updates
         $messageId = $status['id'] ?? null;
@@ -167,8 +167,8 @@ class WhatsappWebhookProcessor extends BaseWebhookProcessor
         // Add custom status tracking logic
         $this->trackMessageStatus($status);
 
-        // Call parent to maintain standard processing
-        parent::handleStatusUpdate($status);
+        // Call parent to maintain standard processing (pass $contacts for BSUID enrichment)
+        parent::handleStatusUpdate($status, $contacts);
     }
     */
 
