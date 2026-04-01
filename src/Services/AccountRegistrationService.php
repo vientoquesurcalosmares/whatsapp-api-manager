@@ -166,6 +166,7 @@ class AccountRegistrationService
                 'app_name' => $appData['name'] ?? null,      // Nombre de la primera app
                 'app_link' => $appData['link'] ?? null,      // Link de la primera app
                 'message_template_namespace' => $apiData['message_template_namespace'] ?? null,
+                'primary_funding_id' => $apiData['primary_funding_id'] ?? null,
             ]
         );
 

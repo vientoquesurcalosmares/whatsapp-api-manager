@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.36] - 2026-04-01
+
+### Added
+- **Soporte de Métodos de Pago en Cuenta:** Campo `primary_funding_id` añadido al modelo `WhatsappBusinessAccount` y sincronizado en el alta de cuenta y actualización. Agregado el método utilitario `$account->hasPaymentMethod()` para validar rápidamente si la cuenta tiene tarjeta de crédito asociada.
+
 ## [1.1.35] - 2026-04-01
 
 ### Added

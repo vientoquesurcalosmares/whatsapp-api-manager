@@ -34,6 +34,7 @@ class WhatsappBusinessAccount extends Model
         'disconnection_reason', // Nuevo campo
         'messaging_limit_tier',
         'messaging_limit_value',
+        'primary_funding_id',
     ];
 
     protected $casts = [
@@ -93,5 +94,10 @@ class WhatsappBusinessAccount extends Model
     public function isRemoved(): bool
     {
         return $this->status === 'removed';
+    }
+
+    public function hasPaymentMethod(): bool
+    {
+        return !empty($this->primary_funding_id);
     }
 }
