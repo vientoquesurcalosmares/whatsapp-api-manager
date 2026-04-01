@@ -7,16 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.1.31] - 2026-03-30
-
-### Changed
-- **Desacople Arquitectónico en FlowService:** Se han removido las restricciones de tipos estrictos que obligaban a inyectar directamente `WhatsappBusinessAccount` y `WhatsappFlow` (comentando esos _use_). Ahora se ha flexibilizado a `Illuminate\Database\Eloquent\Model` para permitir usar modelos customizados o sobreescritos sin reventar por un fatal error de PHP.
-
-## [1.1.30] - 2026-03-30
+## [1.1.32] - 2026-04-01
 
 ### Added
-- **Fusión de la rama Main / PR 97 (Gestión Media de Plantillas Local):** Automatización de descargas en caliente de recursos provenientes de Meta a través de webhooks para el modelo `TemplateVersionMediaFile`.
-
 #### Perfil de empresa y cuenta oficial
 - **Actualización de perfil de empresa:** `WhatsappService::updateBusinessProfile()` — POST a `/{phone_number_id}/whatsapp_business_profile`. Actualiza `about`, `address`, `description`, `email`, `vertical`, `profile_picture_handle` y `websites`. Sincroniza campos escalares en la BD local tras éxito.
 - **Actualización de foto de perfil de empresa en un paso:** `WhatsappService::updateBusinessProfilePicture()` — recibe la ruta local del archivo, gestiona internamente la sesión de carga y el upload a Meta, y aplica el handle resultante al perfil.
@@ -45,6 +38,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`MessageResponse` DTO extendido:** Nuevos campos `waId`, `bsuid`, `parentBsuid` y `recipientId` leídos de `contacts[0]` en la respuesta de la API.
 - **BSUID en webhooks de estado:** `handleStatusUpdate()` actualiza `bsuid` y `parent_bsuid` del contacto cuando el webhook incluye el array `contacts`.
 - **`Contact::getBsuidOrWaId()`:** Helper que retorna BSUID si existe, `wa_id` si no. Usado por `blockOn()` y `unblockOn()`.
+
+### Changed
+- **Refactor QrCodeService:** Uso de named parameters de PHP 8 para solicitudes HTTP POST, mejorando la seguridad y legibilidad en las llamadas a la API.
+
+## [1.1.31] - 2026-03-30
+
+### Changed
+- **Desacople Arquitectónico en FlowService:** Se han removido las restricciones de tipos estrictos que obligaban a inyectar directamente `WhatsappBusinessAccount` y `WhatsappFlow` (comentando esos _use_). Ahora se ha flexibilizado a `Illuminate\Database\Eloquent\Model` para permitir usar modelos customizados o sobreescritos sin reventar por un fatal error de PHP.
+
+## [1.1.30] - 2026-03-30
+
+### Added
+- **Fusión de la rama Main / PR 97 (Gestión Media de Plantillas Local):** Automatización de descargas en caliente de recursos provenientes de Meta a través de webhooks para el modelo `TemplateVersionMediaFile`.
 
 #### Funcionalidades previas
 - **Webhooks Overrides:** Soporte explícito e integrado para reescribir webhooks a nivel WABA y número de teléfono de forma opcional (` WhatsappService::overrideWabaWebhook()`, `WhatsappService::overridePhoneWebhook()`, etc.).
