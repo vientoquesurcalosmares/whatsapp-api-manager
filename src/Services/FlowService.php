@@ -64,7 +64,7 @@ class FlowService
                     [],
                     null,
                     [
-                        'fields' => 'id,name,categories,preview,status,validation_errors,json_version,data_api_version,data_channel_uri,health_status,whatsapp_business_account,application,json_structure'
+                        'fields' => 'id,name,categories,preview,status,validation_errors,json_version,data_api_version,data_channel_uri,health_status,whatsapp_business_account,application'
                     ],
                     $headers
                 );
@@ -163,7 +163,7 @@ class FlowService
         ];
 
         $queryParams = [
-            'fields' => 'id,name,categories,preview,status,validation_errors,json_version,data_api_version,data_channel_uri,health_status,whatsapp_business_account,application,json_structure',
+            'fields' => 'id,name,categories,preview,status,validation_errors,json_version,data_api_version,data_channel_uri,health_status,whatsapp_business_account,application',
         ];
 
         try {

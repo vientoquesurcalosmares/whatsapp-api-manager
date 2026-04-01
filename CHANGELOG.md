@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.34] - 2026-04-01
+
+### Fixed
+- **FlowService:** Eliminación del campo `json_structure` de los `fields` solicitados a la API de Meta (líneas 67 y 166) para prevenir errores HTTP 400.
+- **WhatsappTemplateController:** La sincronización de flows ahora es un efecto secundario seguro (*safety net*). Si falla la llamada a Meta durante el `show()`, la excepción se loguea suavemente y la página de templates carga con los datos locales en lugar de fallar.
+
 ## [1.1.33] - 2026-04-01
 
 ### Added
