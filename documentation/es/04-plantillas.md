@@ -661,6 +661,98 @@ Gracias por tu apoyo 💙
 
 ---
 
+## Plantillas de WhatsApp Commerce Avanzadas
+
+Meta ha introducido funciones robustas para E-Commerce, permitiendo una inmersión total sin salir de WhatsApp. El paquete ahora soporta el anidamiento avanzado de estos componentes interactivos (Carousels, MPM, SPM, Ofertas Limitadas) directamente mediante `Closures` limpios.
+
+### 1. Mensajes Multi-Producto (MPM) y Catálogos
+
+Puedes enviar catálogos enteros o agrupar productos específicos en colecciones y mostrarlos como un interactivo (hasta 30 ítems distribuidos en 10 secciones).
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+// Envío de Catálogo General (CATALOG)
+Whatsapp::message()->viaTemplate()
+    ->to('57', '3001234567')
+    ->usingTemplate('seasonal_catalog_template')
+    ->addBody(['John'])
+    ->addCatalogButton('Ver Catálogo', 'sku_miniatura_destacada')
+    ->send();
+
+// Envío de Multi-Product Message Secuencial (MPM)
+Whatsapp::message()->viaTemplate()
+    ->to('57', '3001234567')
+    ->usingTemplate('ofertas_navidad_mpm')
+    ->addBody(['María', 'Navidad'])
+    ->addMpmButton('Ver Ofertas', 'sku_miniatura_destacada', function($sections) {
+        $sections->addSection('Combos más llevados', ['COMB01', 'COMB02']);
+        $sections->addSection('Tecnología', ['LAP01', 'MOU02', 'KEY03']);
+    })
+    ->send();
+```
+
+### 2. Tarjetas de Un Solo Producto (SPM)
+
+Un Single-Product Message envía una tarjeta visual gigante de tu catálogo en lugar de la bolsa de compras. Meta exige que el dato del producto viaje en el **HEADER**, por lo que existe un helper exclusivo.
+
+```php
+Whatsapp::message()->viaTemplate()
+    ->to('57', '3001234567')
+    ->usingTemplate('mi_producto_spm')
+    // El producto se monta sobre el header
+    ->addHeaderProduct('SKU_DEL_PRODUCTO', 'TU_CATALOG_ID_DE_BUSINESS_MANAGER')
+    ->addBody(['Llegó lo que esperabas'])
+    ->send();
+```
+
+### 3. Carruseles (Carousels)
+
+Los Carruseles permiten desplazamiento horizontal de hasta 10 tarjetas interactivas complejas (cada tarjeta tiene su propio header multimedia, body y hasta 2 botones). Funciona inyectando los parámetros por índice dinámicamente mediante Closures.
+
+```php
+Whatsapp::message()->viaTemplate()
+    ->to('57', '3001234567')
+    ->usingTemplate('nuestros_destinos_carrusel')
+    ->addCarouselCards(function($carousel) {
+        
+        // Tarjeta interactiva en la posición 0
+        $carousel->addCard(function($card) {
+            $card->addHeader('image', ['link' => 'https://img.com/cartagena.jpg'])
+                 ->addBody(['Cartagena', 'Playa Azul'])
+                 ->addButton('url', 0, ['1A']); // Reserva ruta 1A (El índice del boton es 0)
+        });
+        
+        // Tarjeta interactiva en la posición 1
+        $carousel->addCard(function($card) {
+            $card->addHeader('image', ['link' => 'https://img.com/medellin.jpg'])
+                 ->addBody(['Medellín', 'Pueblito Paisa'])
+                 ->addButton('url', 0, ['2B']);
+        });
+        
+    })
+    ->send();
+```
+
+### 4. Ofertas por Tiempo Limitado (Limited-Time Offers) y Códigos
+
+Envía banners visuales comerciales con cuenta regresiva.
+
+```php
+Whatsapp::message()->viaTemplate()
+    ->to('57', '3001234567')
+    ->usingTemplate('black_friday_lto')
+    // El timestamp debe ir imperativamente en milisegundos (ms)
+    ->addLimitedTimeOfferExpiration(1735689600000) 
+    ->addBody(['John'])
+    ->addCouponButton('Copiar Código', 'BLACK50') // Botón nativo oculto especial para Copiar al Portapapeles
+    ->send();
+```
+
+> **Pro Tip Constructores:** Si quieres CREAR una plantilla que tenga estas características de forma dinámica en WhatsApp Manager, el objeto `$template->edit()` o el `Whatsapp::template()->create...` ahora también admiten closures abstractos (`addCarousel()`, `addLimitedTimeOffer()`, `addCatalogButton()`).
+
+---
+
 ## Sobreescribir Botones Dinámicos de Enlace (Tap Target Configuration)
 
 Si tu plantilla fue configurada como un Interactive Message con un formato genérico que debe comportarse como botón URL (anulación de componente visual principal), puedes sobrescribirlo al vuelo **justo antes de presionar Enviar**, sin necesidad de esperar aprobación de Meta.

@@ -272,6 +272,67 @@ class TemplateMessageBuilder
         return $this;
     }
 
+    /**
+     * Agrega un encabezado de Producto (SPM / Multi-product Cards)
+     */
+    public function addHeaderProduct(string $productRetailerId, string $catalogId): self
+    {
+        $this->ensureTemplateStructureLoaded();
+        $this->validateComponent('HEADER', 'PRODUCT');
+
+        $this->components['HEADER'] = [
+            'parameters' => [
+                [
+                    'type' => 'product',
+                    'product' => [
+                        'product_retailer_id' => $productRetailerId,
+                        'catalog_id' => $catalogId
+                    ]
+                ]
+            ]
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Agrega el vencimiento para una oferta de tiempo limitado
+     */
+    public function addLimitedTimeOfferExpiration(int $timestampMs): self
+    {
+        $this->ensureTemplateStructureLoaded();
+
+        $this->components['LIMITED_TIME_OFFER'] = [
+            'parameters' => [
+                [
+                    'type' => 'limited_time_offer',
+                    'limited_time_offer' => [
+                        'expiration_time_ms' => $timestampMs
+                    ]
+                ]
+            ]
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Inyecta una secuencia de tarjetas dinámicas al esquema
+     */
+    public function addCarouselCards(\Closure $callback): self
+    {
+        $this->ensureTemplateStructureLoaded();
+
+        $builder = new Builders\CarouselMessageBuilder();
+        $callback($builder);
+
+        $this->components['CAROUSEL'] = [
+            'cards' => $builder->toArray()
+        ];
+
+        return $this;
+    }
+
     public function addButton(string $buttonText, array $parameter = []): self
     {
         $this->ensureTemplateStructureLoaded();
@@ -397,6 +458,105 @@ class TemplateMessageBuilder
         return $this;
     }
 
+    /**
+     * Inyecta variables para un Botón de Cupón (COPY_CODE)
+     */
+    public function addCouponButton(string $buttonText, string $couponCode): self
+    {
+        $this->ensureTemplateStructureLoaded();
+        $buttonIndex = $this->getButtonIndexByType('COPY_CODE', $buttonText);
+
+        $this->buttonParameters[$buttonIndex] = [
+            [
+                'type' => 'coupon_code',
+                'coupon_code' => $couponCode
+            ]
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Inyecta el ID del producto miniatura a un botón CATALOG
+     */
+    public function addCatalogButton(string $buttonText, string $thumbnailId): self
+    {
+        $this->ensureTemplateStructureLoaded();
+        $buttonIndex = $this->getButtonIndexByType('CATALOG', $buttonText);
+
+        $this->buttonParameters[$buttonIndex] = [
+            [
+                'type' => 'action',
+                'action' => [
+                    'thumbnail_product_retailer_id' => $thumbnailId
+                ]
+            ]
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Inyecta dependencias al botón nativo MPM (Catálogo Multi-Producto)
+     */
+    public function addMpmButton(string $buttonText, string $thumbnailId, \Closure $sectionsCallback): self
+    {
+        $this->ensureTemplateStructureLoaded();
+        $buttonIndex = $this->getButtonIndexByType('MPM', $buttonText);
+
+        $sectionBuilder = new Builders\CommerceSectionBuilder();
+        $sectionsCallback($sectionBuilder);
+
+        $this->buttonParameters[$buttonIndex] = [
+            [
+                'type' => 'action',
+                'action' => [
+                    'thumbnail_product_retailer_id' => $thumbnailId,
+                    'sections' => $sectionBuilder->toArray()
+                ]
+            ]
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Helper privado para ubicar índice de botón tolerante a fallos
+     */
+    private function getButtonIndexByType(string $buttonType, string $buttonText): int
+    {
+        if (empty($this->buttonTextIndexMap)) {
+            $buttonsComponent = $this->templateStructure['by_type']['BUTTONS'] ??
+                                $this->templateStructure['by_type']['buttons'] ??
+                                null;
+
+            if ($buttonsComponent && isset($buttonsComponent['buttons'])) {
+                foreach ($buttonsComponent['buttons'] as $index => $button) {
+                    $normalizedText = strtolower(trim($button['text']));
+                    $this->buttonTextIndexMap[$normalizedText] = $index;
+                }
+            }
+        }
+
+        if (empty($this->buttonTextIndexMap)) {
+            throw new InvalidArgumentException("La plantilla no contiene botones.");
+        }
+
+        $normalizedButtonText = strtolower(trim($buttonText));
+        if (!isset($this->buttonTextIndexMap[$normalizedButtonText])) {
+            throw new InvalidArgumentException("Botón '$buttonText' no encontrado.");
+        }
+
+        $buttonIndex = $this->buttonTextIndexMap[$normalizedButtonText];
+        $button = $this->templateStructure['by_type']['BUTTONS']['buttons'][$buttonIndex] ?? null;
+
+        if (!$button || strtoupper($button['type'] ?? '') !== strtoupper($buttonType)) {
+            throw new InvalidArgumentException("El botón '$buttonText' no es de tipo $buttonType.");
+        }
+
+        return $buttonIndex;
+    }
+
     protected function buildButtonComponents(): array
     {
         $buttonComponents = [];
@@ -424,6 +584,15 @@ class TemplateMessageBuilder
                     $buttonComponents[] = [
                         'type' => 'button',
                         'sub_type' => 'flow',
+                        'index' => (string)$index,
+                        'parameters' => $this->buttonParameters[$index]
+                    ];
+                }
+            } elseif (in_array($type, ['COPY_CODE', 'CATALOG', 'MPM'])) {
+                if (isset($this->buttonParameters[$index])) {
+                    $buttonComponents[] = [
+                        'type' => 'button',
+                        'sub_type' => strtolower($type),
                         'index' => (string)$index,
                         'parameters' => $this->buttonParameters[$index]
                     ];
@@ -740,14 +909,22 @@ class TemplateMessageBuilder
     {
         $components = [];
 
-        // Solo agrega HEADER, BODY, FOOTER, y TAP_TARGET_CONFIGURATION si el usuario los personalizó
-        foreach (['HEADER', 'BODY', 'FOOTER', 'TAP_TARGET_CONFIGURATION'] as $componentType) {
+        // Solo agrega los componentes que hayan modificado el cuerpo principal
+        foreach (['HEADER', 'BODY', 'FOOTER', 'TAP_TARGET_CONFIGURATION', 'LIMITED_TIME_OFFER'] as $componentType) {
             if (isset($this->components[$componentType]) && !empty($this->components[$componentType]['parameters'])) {
                 $components[] = [
                     'type' => strtolower($componentType),
                     'parameters' => $this->components[$componentType]['parameters']
                 ];
             }
+        }
+
+        // CAROUSEL tiene su propia lógica de Cards
+        if (isset($this->components['CAROUSEL']) && !empty($this->components['CAROUSEL']['cards'])) {
+            $components[] = [
+                'type' => 'carousel',
+                'cards' => $this->components['CAROUSEL']['cards']
+            ];
         }
 
         // ✅ Solo agrega botones si la plantilla tiene placeholders o el usuario los define

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.33] - 2026-04-01
+
+### Added
+- **Plantillas Commerce Avanzadas (Creación):** Inyección de constructores paramétricos interactivos en `TemplateBuilder`. Soporte pleno para generación automática vía Meta de `addCarousel(Closure)`, `addLimitedTimeOffer()`, `addCatalogButton()`, `addMpmButton()`, `addSpmButton()`, `addCopyCodeButton()`.
+- **Plantillas Commerce Avanzadas (Envío):** Resolutores de variables anidadas en `TemplateMessageBuilder` vía subclases fluidas. Añadidos `CommerceSectionBuilder` y `CarouselMessageBuilder` para permitir closures profundos como `addCarouselCards(Closure)` y `addMpmButton(title, Closure)`. Permite enviar secuencias de carrusel (hasta 10 tarjetas) o productos MPM (30 skus) limpiamente.
+- **Soporte SPM y Tiempo Limitado (LTO):** Nuevos inyectores en el payload final `addHeaderProduct(product, catalog)` y `addLimitedTimeOfferExpiration(ms)`.
+
+### Fixed
+- **Perfil empresarial opcional en registro:** `AccountRegistrationService::processPhoneNumberProfile()` ya no bloquea el registro cuando Meta no permite acceder al perfil (error #131000 u otro). Se loguea como warning y continúa.
+
 ## [1.1.32] - 2026-04-01
 
 ### Added

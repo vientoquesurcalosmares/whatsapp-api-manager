@@ -287,8 +287,6 @@ class AccountRegistrationService
      * Procesa el perfil empresarial de un número telefónico.
      *
      * @param Model $phone El número telefónico.
-     * @throws ApiException Si ocurre un error al interactuar con la API de WhatsApp.
-     * @throws InvalidApiResponseException Si la respuesta de la API es inválida.
      */
     private function processPhoneNumberProfile(Model $phone): void
     {
@@ -298,13 +296,16 @@ class AccountRegistrationService
                 ->getBusinessProfile($phone->api_phone_number_id);
 
             if (!isset($profileData['data'][0])) {
-                throw new InvalidApiResponseException("Perfil no encontrado");
+                Log::channel('whatsapp')->warning("Perfil no encontrado para teléfono {$phone->api_phone_number_id}, se omite.");
+                return;
             }
 
             $this->upsertBusinessProfile($phone, $profileData['data'][0]);
         } catch (ApiException | InvalidApiResponseException $e) {
-            Log::channel('whatsapp')->error("Error en perfil: {$e->getMessage()}");
-            throw $e;
+            // El perfil empresarial es opcional: si Meta no permite acceder a él
+            // (error #131000 u otro), logueamos como warning y continuamos.
+            // Esto NO debe bloquear el registro de la cuenta.
+            Log::channel('whatsapp')->warning("No se pudo obtener perfil del teléfono {$phone->api_phone_number_id}: {$e->getMessage()}");
         }
     }
 

@@ -608,10 +608,126 @@ class TemplateBuilder
     }
 
     /**
-     * Helper para insertar el botón Flow dentro del bloque estructurado de META.
+     * Agrega un Carrusel (Secuencia de Tarjetas) a la plantilla.
+     *
+     * @param \Closure $callback
+     * @return self
+     */
+    public function addCarousel(\Closure $callback): self
+    {
+        if ($this->componentExists('CAROUSEL')) {
+            throw new InvalidArgumentException('Solo se permite un componente CAROUSEL por plantilla.');
+        }
+
+        $builder = new Builders\CarouselTemplateBuilder();
+        $callback($builder);
+
+        $this->templateData['components'][] = [
+            'type' => 'CAROUSEL',
+            'cards' => $builder->toArray()
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Agrega un componente de Oferta de Tiempo Limitado.
+     *
+     * @param string $text Detalles de la oferta (máximo 16 caracteres)
+     * @param bool $hasExpiration Forzar la aparición del contador en UI
+     * @return self
+     */
+    public function addLimitedTimeOffer(string $text, bool $hasExpiration = true): self
+    {
+        if ($this->componentExists('LIMITED_TIME_OFFER')) {
+            throw new InvalidArgumentException('Solo se permite un componente LIMITED_TIME_OFFER por plantilla.');
+        }
+
+        if (strlen($text) > 16) {
+            throw new InvalidArgumentException('El texto de LIMITED_TIME_OFFER no puede exceder los 16 caracteres.');
+        }
+
+        $this->templateData['components'][] = [
+            'type' => 'LIMITED_TIME_OFFER',
+            'limited_time_offer' => [
+                'text' => $text,
+                'has_expiration' => $hasExpiration
+            ]
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Añade un Botón COPY_CODE para ofertas de tiempo limitado.
+     */
+    public function addCopyCodeButton(string $exampleCode): self
+    {
+        if (strlen($exampleCode) > 15) throw new InvalidArgumentException('El código no puede exceder los 15 caracteres.');
+
+        $this->pushFlowButton([
+            'type' => 'COPY_CODE',
+            'example' => $exampleCode
+        ]);
+        return $this;
+    }
+
+    /**
+     * Añade un Botón CATALOG (Para Catalog Templates).
+     */
+    public function addCatalogButton(string $text = 'View catalog'): self
+    {
+        $this->pushFlowButton([
+            'type' => 'CATALOG',
+            'text' => $text
+        ]);
+        return $this;
+    }
+
+    /**
+     * Añade un Botón MPM (Para Multi-Product Messages).
+     */
+    public function addMpmButton(string $text = 'View items'): self
+    {
+        $this->pushFlowButton([
+            'type' => 'MPM',
+            'text' => $text
+        ]);
+        return $this;
+    }
+
+    /**
+     * Añade un Botón SPM (Para Single-Product Messages).
+     */
+    public function addSpmButton(string $text = 'View'): self
+    {
+        $this->pushFlowButton([
+            'type' => 'SPM',
+            'text' => $text
+        ]);
+        return $this;
+    }
+
+    /**
+     * Añade el componente de solicitud de Permiso de Llamada (Call Permission Request)
+     */
+    public function addCallPermissionRequestComponent(): self
+    {
+        $this->templateData['components'][] = [
+            'type' => 'CALL_PERMISSION_REQUEST'
+        ];
+        return $this;
+    }
+
+    /**
+     * Helper para insertar botones genéricos dentro del bloque estructurado (BUTTONS).
      */
     protected function pushFlowButton(array $button): void
     {
+        if ($this->buttonCount >= 10) {
+            throw new InvalidArgumentException('No se pueden agregar más de 10 botones a una plantilla.');
+        }
+
         $existingButtons = $this->getComponentsByType('BUTTONS');
 
         if (empty($existingButtons)) {
