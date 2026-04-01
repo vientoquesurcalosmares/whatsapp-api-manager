@@ -84,10 +84,10 @@ class QrCodeService
             $phone = $this->resolvePhone($phoneNumberId);
             $endpoint = Endpoints::build(Endpoints::CREATE_QR_CODE, ['phone_number_id' => $phone->api_phone_number_id]);
 
-            $response = $this->apiClient->request('POST', $endpoint, [
+            $response = $this->apiClient->request('POST', $endpoint, data: [
                 'prefilled_message' => $prefilledMessage,
                 'generate_qr_image' => $format
-            ], [
+            ], headers: [
                 'Authorization' => "Bearer {$phone->businessAccount->api_token}"
             ]);
 
@@ -156,10 +156,10 @@ class QrCodeService
             $phone = $this->resolvePhone($phoneNumberId);
             $endpoint = Endpoints::build(Endpoints::UPDATE_QR_CODE, ['phone_number_id' => $phone->api_phone_number_id]);
 
-            $response = $this->apiClient->request('POST', $endpoint, [
+            $response = $this->apiClient->request('POST', $endpoint, data: [
                 'code' => $code,
                 'prefilled_message' => $prefilledMessage
-            ], [
+            ], headers: [
                 'Authorization' => "Bearer {$phone->businessAccount->api_token}"
             ]);
 
