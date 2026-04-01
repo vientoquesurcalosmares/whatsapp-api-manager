@@ -27,7 +27,8 @@ class TemplateMessageBuilder
     protected ApiClient $apiClient;
     public ?Model $template = null;
     protected TemplateService $templateService;
-    protected string $phoneNumber;
+    protected string $phoneNumber = '';
+    protected ?string $bsuid = null;
     protected string $templateIdentifier; // Puede ser nombre
     protected ?string $templateId = null; // ID de plantilla (opcional, se puede usar el nombre)
     protected ?string $language = null; // Opcional
@@ -97,6 +98,25 @@ class TemplateMessageBuilder
                 'phone_number' => $cleanedPhoneNumber,
                 'country_code' => $countryCode
             ]
+        );
+
+        return $this;
+    }
+
+    /**
+     * Establece el destinatario usando su BSUID (identificador específico de empresa).
+     * Usar cuando el usuario tiene username activo y no se conoce su número de teléfono.
+     * Compatible con Meta API a partir de mayo 2026.
+     *
+     * @param string $bsuid Identificador de usuario (ej: "CO.1234567890")
+     * @return self
+     */
+    public function toBsuid(string $bsuid): self
+    {
+        $this->bsuid = $bsuid;
+
+        $this->contact = WhatsappModelResolver::contact()->firstOrCreate(
+            ['bsuid' => $bsuid]
         );
 
         return $this;
@@ -649,8 +669,8 @@ class TemplateMessageBuilder
      */
     protected function validate(): void
     {
-        if (empty($this->phoneNumber)) {
-            throw new InvalidArgumentException('El número de teléfono es obligatorio.');
+        if (empty($this->phoneNumber) && empty($this->bsuid)) {
+            throw new InvalidArgumentException('Se requiere un destinatario: usa to() con teléfono o toBsuid() con BSUID.');
         }
 
         if (empty($this->templateIdentifier)) {
@@ -933,29 +953,33 @@ class TemplateMessageBuilder
             $components = array_merge($components, $buttonComponents);
         }
 
+        // Base del payload — soporta envío por teléfono, por BSUID, o ambos
+        // (Meta da prioridad a 'to' si ambos están presentes)
+        $base = ['messaging_product' => 'whatsapp', 'type' => 'template'];
+
+        if (!empty($this->phoneNumber)) {
+            $base['to'] = $this->phoneNumber;
+        }
+        if (!empty($this->bsuid)) {
+            $base['recipient'] = $this->bsuid;
+        }
+
         // ✅ Si no hay componentes ni placeholders, envía sin "components"
         if (empty($components)) {
-            $payload = [
-                'messaging_product' => 'whatsapp',
-                'to' => $this->phoneNumber,
-                'type' => 'template',
+            $payload = array_merge($base, [
                 'template' => [
                     'name' => $this->templateIdentifier,
                     'language' => ['code' => $this->language],
-                    // ❌ Sin "components"
                 ]
-            ];
+            ]);
         } else {
-            $payload = [
-                'messaging_product' => 'whatsapp',
-                'to' => $this->phoneNumber,
-                'type' => 'template',
+            $payload = array_merge($base, [
                 'template' => [
                     'name' => $this->templateIdentifier,
                     'language' => ['code' => $this->language],
                     'components' => $components
                 ]
-            ];
+            ]);
         }
 
         Log::channel('whatsapp')->info('Payload construido para el mensaje de plantilla.', ['payload' => $payload]);

@@ -488,12 +488,17 @@ class TemplateBuilder
                 // No se requiere validación adicional
                 break;
 
+            case 'REQUEST_CONTACT_INFO':
+                // Botón de solicitud de contacto — no requiere texto ni parámetros adicionales.
+                // Meta renderiza el label automáticamente. Disponible desde mayo 2026.
+                break;
+
             case 'FLOW':
                 // Este caso se maneja en otro método (addFlowButton)
                 throw new InvalidArgumentException('Usa el método addFlowButton para botones de tipo FLOW.');
 
             default:
-                throw new InvalidArgumentException('Tipo de botón no válido. Debe ser uno de: PHONE_NUMBER, URL, QUICK_REPLY.');
+                throw new InvalidArgumentException('Tipo de botón no válido. Debe ser uno de: PHONE_NUMBER, URL, QUICK_REPLY, REQUEST_CONTACT_INFO.');
         }
 
         // Buscar el componente BUTTONS existente

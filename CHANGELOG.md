@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.35] - 2026-04-01
+
+### Added
+- **Eventos BSUID (`UserIdUpdated`):** Alta del evento y el respectivo procesamiento de webhooks (`user_id_update`) cuando un contacto cambia su identificador BSUID de forma remota.
+- **Optimizaciones en Templates:** Mejoras en `TemplateBuilder` y `TemplateMessageBuilder` para el parseo de constructores comerciales y despachos de mensajes encapsulados.
+
 ## [1.1.34] - 2026-04-01
 
 ### Fixed

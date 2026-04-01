@@ -19,6 +19,7 @@ use ScriptDevelop\WhatsappManager\Services\TemplateService;
 use ScriptDevelop\WhatsappManager\Services\Flows\FlowCryptoService;
 use ScriptDevelop\WhatsappManager\Events\FlowStatusUpdated;
 use ScriptDevelop\WhatsappManager\Events\BusinessUsernameUpdated;
+use ScriptDevelop\WhatsappManager\Events\UserIdUpdated;
 use ScriptDevelop\WhatsappManager\Services\Flows\FlowMediaService;
 
 class BaseWebhookProcessor implements WebhookProcessorInterface
@@ -139,6 +140,11 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             return response()->json(['success' => true]);
         }
 
+        if ($field === 'user_id_update') {
+            $this->handleUserIdUpdate($value);
+            return response()->json(['success' => true]);
+        }
+
         if (!$value) {
             Log::channel('whatsapp')->warning('No value found in webhook payload.', $payload);
             return response()->json(['error' => 'Invalid payload.'], 422);
@@ -252,6 +258,8 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             // Recargar el modelo
             $contactRecord->refresh();
         }*/
+
+        $contactName = $contact['profile']['name'] ?? null;
 
         $apiPhoneNumberId = $metadata['phone_number_id'] ?? null;
 
@@ -2341,6 +2349,63 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             'username'             => $username,
             'status'               => $status,
         ]));
+    }
+
+    /**
+     * Procesa el webhook `user_id_update`.
+     *
+     * Se activa cuando el BSUID de un usuario cambia (normalmente porque cambió su
+     * número de teléfono). Actualiza el contacto en BD y dispara el evento UserIdUpdated.
+     */
+    protected function handleUserIdUpdate(array $value): void
+    {
+        $metadata  = $value['metadata'] ?? [];
+        $updates   = $value['user_id_update'] ?? [];
+
+        if (empty($updates)) {
+            return;
+        }
+
+        foreach ($updates as $update) {
+            $waId            = $update['wa_id'] ?? null;
+            $previousBsuid   = $update['user_id']['previous'] ?? null;
+            $currentBsuid    = $update['user_id']['current'] ?? null;
+            $previousParent  = $update['parent_user_id']['previous'] ?? null;
+            $currentParent   = $update['parent_user_id']['current'] ?? null;
+            $timestamp       = $update['timestamp'] ?? null;
+
+            Log::channel('whatsapp')->info('user_id_update recibido.', [
+                'wa_id'          => $waId,
+                'previous_bsuid' => $previousBsuid,
+                'current_bsuid'  => $currentBsuid,
+            ]);
+
+            // Actualizar el BSUID del contacto en la base de datos si tenemos el anterior
+            if ($previousBsuid && $currentBsuid) {
+                $contact = WhatsappModelResolver::contact()
+                    ->where('bsuid', $previousBsuid)
+                    ->orWhere('wa_id', $waId)
+                    ->first();
+
+                if ($contact) {
+                    $contact->update(array_filter([
+                        'bsuid'        => $currentBsuid,
+                        'parent_bsuid' => $currentParent,
+                    ], fn($v) => $v !== null));
+                }
+            }
+
+            event(new UserIdUpdated([
+                'wa_id'                  => $waId,
+                'previous_bsuid'         => $previousBsuid,
+                'current_bsuid'          => $currentBsuid,
+                'previous_parent_bsuid'  => $previousParent,
+                'current_parent_bsuid'   => $currentParent,
+                'timestamp'              => $timestamp,
+                'display_phone_number'   => $metadata['display_phone_number'] ?? null,
+                'phone_number_id'        => $metadata['phone_number_id'] ?? null,
+            ]));
+        }
     }
 
     /**

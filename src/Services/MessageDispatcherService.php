@@ -3917,6 +3917,72 @@ class MessageDispatcherService
     }
 
     /**
+     * Resuelve o crea un contacto a partir de un BSUID.
+     * Útil cuando no se conoce el número de teléfono del usuario.
+     */
+    private function resolveContactByBsuid(string $bsuid): Model
+    {
+        Log::channel('whatsapp')->info('Resolviendo contacto por BSUID.', ['bsuid' => $bsuid]);
+
+        $contact = WhatsappModelResolver::contact()->firstOrCreate(
+            ['bsuid' => $bsuid]
+        );
+
+        Log::channel('whatsapp')->info('Contacto resuelto por BSUID.', ['contact_id' => $contact->contact_id]);
+
+        return $contact;
+    }
+
+    /**
+     * Envía un mensaje de texto a un usuario identificado únicamente por su BSUID.
+     * Usar cuando no se conoce el número de teléfono (usuario con username activo).
+     *
+     * @param string $phoneNumberId ID del número telefónico registrado
+     * @param string $bsuid Identificador de usuario específico de la empresa (ej: "CO.1234567890")
+     * @param string $text Texto del mensaje
+     * @param bool $previewUrl Si se debe mostrar la vista previa de la URL
+     * @return Model Modelo del mensaje creado
+     */
+    public function sendTextMessageToBsuid(
+        string $phoneNumberId,
+        string $bsuid,
+        string $text,
+        bool $previewUrl = false
+    ): Model {
+        Log::channel('whatsapp')->info('Iniciando envío de mensaje por BSUID.', [
+            'phoneNumberId' => $phoneNumberId,
+            'bsuid' => $bsuid,
+            'text' => $text,
+        ]);
+
+        $phoneNumberModel = $this->validatePhoneNumber($phoneNumberId);
+        $contact = $this->resolveContactByBsuid($bsuid);
+
+        $message = WhatsappModelResolver::message()->create([
+            'whatsapp_phone_id' => $phoneNumberModel->phone_number_id,
+            'contact_id'        => $contact->contact_id,
+            'message_from'      => preg_replace('/[\D+]/', '', $phoneNumberModel->display_phone_number),
+            'message_to'        => null,
+            'recipient_bsuid'   => $bsuid,
+            'message_type'      => 'TEXT',
+            'message_content'   => $text,
+            'message_method'    => 'OUTPUT',
+            'status'            => MessageStatus::PENDING,
+        ]);
+
+        try {
+            $response = $this->sendViaApi($phoneNumberModel, '', 'text', [
+                'preview_url' => $previewUrl,
+                'body'        => $text,
+            ], null, $bsuid);
+
+            return $this->handleSuccess($message, $response);
+        } catch (WhatsappApiException $e) {
+            return $this->handleError($message, $e);
+        }
+    }
+
+    /**
      * Envía un mensaje a través de la API de WhatsApp
      *
      * @param Model $phone Número telefónico registrado
@@ -4568,12 +4634,20 @@ class MessageDispatcherService
             'api_response' => $response
         ]);
 
-        $message->update([
+        $updateData = [
             'wa_id' => $response['messages'][0]['id'],
             'messaging_product' => $response['messaging_product'],
             'status' => MessageStatus::SENT,
             'json_content' => $response
-        ]);
+        ];
+
+        // Captura el BSUID devuelto por Meta en la respuesta de envío
+        $responseUserId = $response['contacts'][0]['user_id'] ?? null;
+        if ($responseUserId) {
+            $updateData['recipient_bsuid'] = $responseUserId;
+        }
+
+        $message->update($updateData);
 
         return $message;
     }
