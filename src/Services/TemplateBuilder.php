@@ -522,13 +522,30 @@ class TemplateBuilder
     }
 
     /**
-     * Agrega un botón de tipo FLOW a la plantilla.
+     * Agrega un botón de tipo FLOW a la plantilla usando el wa_flow_id de Meta.
      *
-     * @param string $text Texto visible del botón (CTA)
-     * @param string $flowId ID del flujo en WhatsApp Manager
-     * @param string|null $flowToken Token opcional para autenticación/contexto
+     * PRE-REQUISITO: El flujo debe estar publicado (status = published) en Meta antes de poder
+     * usarse en una plantilla. Si está en draft, publicalo primero:
+     *
+     *   $flowService = app(\ScriptDevelop\WhatsappManager\Services\FlowService::class);
+     *   $flowService->publish($flow);
+     *
+     * Para obtener el wa_flow_id del flujo:
+     *
+     *   $flow = WhatsappModelResolver::flow()->where('name', 'Nombre exacto')->first();
+     *   echo $flow->wa_flow_id; // Ej: "682867531285187"
+     *
+     * Ejemplo de uso:
+     *
+     *   ->addFlowButton('Completar Formulario', '682867531285187', 'PRODUCT_SELECTION')
+     *
+     * @param string      $text            Texto visible del botón (máx. 25 caracteres)
+     * @param string      $flowId          wa_flow_id del flujo en Meta (numérico como string)
+     * @param string|null $navigateScreen  ID de la pantalla inicial del flujo (ej: 'PRODUCT_SELECTION').
+     *                                     Requerido cuando flow_action es NAVIGATE.
+     * @param string      $flowAction      Acción del botón: 'NAVIGATE' (por defecto) o 'DATA_EXCHANGE'
      * @return self
-     * @throws InvalidArgumentException Si se violan restricciones de la API
+     * @throws InvalidArgumentException Si el flujo no existe localmente o no está publicado
      */
     public function addFlowButton(string $text, string $flowId, ?string $navigateScreen = null, string $flowAction = 'NAVIGATE'): self
     {
@@ -571,8 +588,27 @@ class TemplateBuilder
     /**
      * Agrega un botón FLOW a la plantilla buscando el flujo por nombre exacto.
      *
-     * Si hay más de un flujo con el mismo nombre, esta operación falla con un error
-     * descriptivo. En ese caso usá addFlowButton() pasando el wa_flow_id directamente.
+     * PRE-REQUISITO: El flujo debe estar publicado (status = published) en Meta antes de poder
+     * usarse en una plantilla. Si está en draft, publicalo primero:
+     *
+     *   $flowService = app(\ScriptDevelop\WhatsappManager\Services\FlowService::class);
+     *   $flowService->publish($flow);
+     *
+     * El nombre de búsqueda es EXACTO y case-sensitive. Si hay más de un flujo con el mismo
+     * nombre, este método lanza un error indicando los wa_flow_id disponibles. En ese caso
+     * usá addFlowButton() con el wa_flow_id directamente.
+     *
+     * Ejemplo de uso:
+     *
+     *   ->addFlowButtonByName('Completar Formulario', 'Flujo de Registro de Usuario', 'PRODUCT_SELECTION')
+     *
+     * @param string      $text            Texto visible del botón (máx. 25 caracteres)
+     * @param string      $flowName        Nombre exacto del flujo (case-sensitive)
+     * @param string|null $navigateScreen  ID de la pantalla inicial del flujo (ej: 'PRODUCT_SELECTION').
+     *                                     Requerido cuando flow_action es NAVIGATE.
+     * @param string      $flowAction      Acción del botón: 'NAVIGATE' (por defecto) o 'DATA_EXCHANGE'
+     * @return self
+     * @throws InvalidArgumentException Si no existe el flujo, hay duplicados de nombre, o no está publicado
      */
     public function addFlowButtonByName(string $text, string $flowName, ?string $navigateScreen = null, string $flowAction = 'NAVIGATE'): self
     {
@@ -614,7 +650,21 @@ class TemplateBuilder
     }
 
     /**
-     * Agrega un botón FLOW a la plantilla (Por JSON).
+     * Agrega un botón FLOW a la plantilla embebiendo el JSON del flujo directamente.
+     *
+     * Útil para flujos en draft o en etapa de desarrollo que aún no están publicados en Meta.
+     * El JSON debe ser la estructura completa del flujo según la especificación de WhatsApp Flows.
+     *
+     * Ejemplo de uso:
+     *
+     *   $json = file_get_contents('mi_flujo.json');
+     *   ->addFlowButtonByJson('Abrir Formulario', $json, 'PANTALLA_INICIAL')
+     *
+     * @param string      $text            Texto visible del botón (máx. 25 caracteres)
+     * @param string      $flowJson        JSON completo del flujo (string)
+     * @param string|null $navigateScreen  ID de la pantalla inicial del flujo
+     * @param string      $flowAction      Acción del botón: 'NAVIGATE' (por defecto) o 'DATA_EXCHANGE'
+     * @return self
      */
     public function addFlowButtonByJson(string $text, string $flowJson, ?string $navigateScreen = null, string $flowAction = 'NAVIGATE'): self
     {

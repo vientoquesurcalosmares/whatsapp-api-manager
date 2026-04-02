@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.44] - 2026-04-02
+
+### Changed
+- **Documentación técnica exhaustiva de botones Flow:** Sección de *Crear Plantillas Atadas a WhatsApp Flows* en `04-plantillas.md` completamente reescrita. Ahora incluye: pre-requisito de status del flujo, tabla de parámetros por método, tabla de errores comunes y ejemplos completos para las tres variantes (`addFlowButton`, `addFlowButtonByName`, `addFlowButtonByJson`).
+- **PHPDoc mejorado en `TemplateBuilder`:** Los métodos `addFlowButtonByName()` y `addFlowButtonByJson()` ahora tienen documentación inline exhaustiva con descripción de parámetros, valores esperados, excepciones posibles y ejemplos de uso.
+
 ## [1.1.43] - 2026-04-01
 
 ### Changed

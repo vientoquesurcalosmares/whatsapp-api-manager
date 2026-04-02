@@ -412,37 +412,113 @@ Gracias por tu apoyo 💙
 
 - ### Crear Plantillas Atadas a WhatsApp Flows
 
-    El paquete soporta la inyección dinámica de botones para abrir formularios de WhatsApp Flows.
+    Los botones de tipo FLOW permiten abrir un formulario interactivo de WhatsApp Flows directamente desde una plantilla.
+
+    #### ⚠️ Pre-requisito: el flujo debe estar publicado
+
+    Meta **no permite usar un flujo en `draft`** dentro de una plantilla. Si el flujo no está publicado, primero debés publicarlo:
 
     ```php
-        // Puedes pasar directamente el ID del flujo o inyectarlo usando el Nombre o Data JSON puro
-        $template = Whatsapp::template()
-            ->createUtilityTemplate($account)
-            ->setName('agendar_cita_flow')
-            ->setLanguage('es_CO')
-            ->addBody('Para agendar tu cita presiona el botón:')
-            // Botón flow por ID (se asume que la pantalla es 'FIRST_SCREEN' por defecto)
-            ->addFlowButton('Agendar Cita', '12345678910', 'FIRST_SCREEN')
-            ->save();
+    use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
+    use ScriptDevelop\WhatsappManager\Services\FlowService;
 
-        // O buscar el flujo dinámicamente desde la tabla local por nombre:
-        // IMPORTANTE: el nombre debe ser ÚNICO en tu base de datos.
-        // Si hay más de un flujo con el mismo nombre, el método falla con un mensaje
-        // que te indica los wa_flow_id disponibles para usar addFlowButton() directamente.
-        // El flujo también debe estar en estado 'approved' o 'published'.
-        $templatePorNombre = Whatsapp::template()
-            ->createMarketingTemplate($account)
-            ->setName('lead_generation_flow')
-            ->setLanguage('es')
-            ->addBody('Llena este registro')
-            ->addFlowButtonByName('Completar Formulario', 'Mi Flujo de Encuesta', 'CONTACT_INFO')
-            ->save();
+    // Buscar el flujo localmente
+    $flow = WhatsappModelResolver::flow()
+        ->where('name', 'Nombre exacto del flujo')
+        ->first();
+
+    echo $flow->status;    // Debe ser 'published' para poder ser usado en plantillas
+    echo $flow->wa_flow_id; // ID numérico de Meta (necesario para addFlowButton)
+
+    // Si está en 'draft', publicalo primero:
+    app(FlowService::class)->publish($flow);
     ```
-    # Notas
 
-    - Verifica que las imágenes usadas en las plantillas cumplan con los requisitos de la API de WhatsApp: formato (JPEG, PNG), tamaño máximo permitido y dimensiones recomendadas.
-    - Los botones de tipo URL pueden aceptar parámetros dinámicos mediante variables de plantilla (`{{1}}`, `{{2}}`, etc.), lo que permite personalizar los enlaces para cada destinatario.
-    - Si experimentas problemas al crear plantillas, consulta los archivos de log para obtener información detallada sobre posibles errores y su solución.
+    ---
+
+    #### Opción 1: `addFlowButton()` — por `wa_flow_id` (recomendado)
+
+    Usá este método cuando conocés el ID numérico del flujo en Meta (`wa_flow_id`).
+    Es el más explícito y seguro, ya que no depende de búsquedas por nombre.
+
+    ```php
+    use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+    use ScriptDevelop\WhatsappManager\Models\WhatsappBusinessAccount;
+
+    $account = WhatsappBusinessAccount::find($accountId);
+
+    $template = Whatsapp::template()
+        ->createMarketingTemplate($account)
+        ->setName('agendar_cita_flow')
+        ->setLanguage('es')
+        ->addBody('Para agendar tu cita presiona el botón:')
+        // wa_flow_id de Meta + ID de pantalla inicial del flujo
+        ->addFlowButton('Agendar Cita', '682867531285187', 'PRODUCT_SELECTION')
+        ->save();
+    ```
+
+    **Parámetros:**
+
+    | Parámetro | Tipo | Descripción |
+    |-----------|------|-------------|
+    | `$text` | `string` | Texto del botón (máx. 25 caracteres) |
+    | `$flowId` | `string` | `wa_flow_id` del flujo en Meta |
+    | `$navigateScreen` | `string\|null` | ID de la pantalla inicial del flujo (ej: `'PRODUCT_SELECTION'`). Requerido cuando `$flowAction` es `NAVIGATE` |
+    | `$flowAction` | `string` | `'NAVIGATE'` (default) o `'DATA_EXCHANGE'` |
+
+    ---
+
+    #### Opción 2: `addFlowButtonByName()` — por nombre exacto
+
+    Buscá el flujo localmente por nombre exacto (case-sensitive). Si hay más de un flujo con
+    el mismo nombre, el método falla con un mensaje que lista los `wa_flow_id` disponibles
+    para que uses `addFlowButton()` directamente.
+
+    ```php
+    $template = Whatsapp::template()
+        ->createMarketingTemplate($account)
+        ->setName('lead_generation_flow')
+        ->setLanguage('es')
+        ->addBody('Llena este registro')
+        // Nombre exacto del flujo + pantalla inicial
+        ->addFlowButtonByName('Completar Formulario', 'Flujo de Registro de Usuario', 'PRODUCT_SELECTION')
+        ->save();
+    ```
+
+    > **Importante:** El flujo se busca en la base de datos local. Si hay nombres duplicados,
+    > se lanza un `InvalidArgumentException` indicando los `wa_flow_id` disponibles.
+
+    ---
+
+    #### Opción 3: `addFlowButtonByJson()` — por JSON embebido
+
+    Permite embeber el JSON del flujo directamente en la plantilla. Útil para pruebas
+    o flujos que todavía no están publicados en Meta.
+
+    ```php
+    $flowJson = file_get_contents(resource_path('flows/registro.json'));
+
+    $template = Whatsapp::template()
+        ->createMarketingTemplate($account)
+        ->setName('registro_flow_json')
+        ->setLanguage('es')
+        ->addBody('Mirá nuestro formulario')
+        ->addFlowButtonByJson('Abrir Formulario', $flowJson, 'PANTALLA_INICIAL')
+        ->save();
+    ```
+
+    ---
+
+    #### Posibles errores
+
+    | Error | Causa | Solución |
+    |-------|-------|----------|
+    | `InvalidArgumentException: No se encontró ningún flujo...` | El nombre no existe en la BD local | Sincronizá los flujos con Meta o corregí el nombre |
+    | `InvalidArgumentException: Hay X flujos con el nombre...` | Nombres duplicados en BD | Usá `addFlowButton()` con el `wa_flow_id` directamente |
+    | `Exception: El flujo está en status "draft"...` | El flujo no está publicado | Publicá el flujo con `app(FlowService::class)->publish($flow)` |
+    | `InvalidArgumentException: El flujo con ID... no existe` | `wa_flow_id` incorrecto o flujo sin sincronizar | Verificá el ID con `$flow->wa_flow_id` |
+
+
 
 
 ---
