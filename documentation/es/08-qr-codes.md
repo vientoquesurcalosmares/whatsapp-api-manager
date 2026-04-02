@@ -102,21 +102,23 @@ if (Whatsapp::qrCode()->delete($phoneNumberId, $codigoHash)) {
 }
 ```
 
-### 6. Descargar Imagen Física del QR Localmente
+### 6. Descarga Física Automática del QR
 
-Puedes forzar la descarga del archivo físico de la imagen generado por Meta y almacenarlo automáticamente en tu disco `public` a través de Storage. Además de descargarlo, el paquete rastreará su ruta interna y la anexará al modelo en `qr_image_path`.
+La descarga física del archivo (SVG o PNG) a tu almacenamiento local se realiza **automáticamente** cada vez que instancias un QR mediante los métodos `create()`, `syncAll()` o `get()`. El paquete entra a la URL expirable de Meta, extrae la imagen a tu disco `public` a través de Storage de forma automática, y anexa su ruta al modelo local bajo el atributo `qr_image_path`.
+
+Si necesitas forzar una redescarga manual (ej. para cambiar el formato del archivo o recuperarlo tras un borrado en disco), puedes usar explícitamente el método de descarga:
 
 ```php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
 $codigoHash = 'ANED2T5QRU7HG1';
 
-// Format defaults to 'SVG', can be 'PNG'
+// Forzar re-descarga manual sobreescribiendo la imagen física existente (Format puede ser 'SVG' o 'PNG')
 $qrModel = Whatsapp::qrCode()->downloadImage($phoneNumberId, $codigoHash, 'PNG');
 
 if ($qrModel && $qrModel->qr_image_path) {
-    echo "Imagen descargada y guardada en local storage: " . Storage::url($qrModel->qr_image_path);
+    echo "Imagen recuperada y guardada en: " . Storage::url($qrModel->qr_image_path);
 }
 ```
 
-> **Nota importante sobre el almacenamiento:** Cuando se ejecuta la eliminación de un QR por medio de `Whatsapp::qrCode()->delete()`, el paquete automáticamente detecta y borra físicamente el archivo descargado para mantener tu disco limpio.
+> **Nota importante sobre el almacenamiento:** Cuando eliminas un QR físicamente de Meta por medio de `Whatsapp::qrCode()->delete()`, el paquete automáticamente detecta y también borra el archivo físico SVG/PNG descargado previamente para que no arrastres basura en el servidor.

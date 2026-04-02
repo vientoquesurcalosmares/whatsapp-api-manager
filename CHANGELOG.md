@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.39] - 2026-04-01
+
+### Changed
+- **Automatización de Descargas QR:** El método `downloadImage()` fue refactorizado para requerir que la URL de Meta (`qr_image_url`) ya exista en la base. A cambio, los métodos de persistencia `create()`, `get()` y `syncAll()` ahora interceptan y ejecutan la descarga física de la imagen de forma nativa y automática. Esto permite popular el atributo local en disco `qr_image_path` inmediatamente tras crear o recuperar el QR sin requerir procesos paralelos.
+
 ## [1.1.38] - 2026-04-01
 
 ### Added

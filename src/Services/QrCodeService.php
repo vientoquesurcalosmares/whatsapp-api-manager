@@ -33,41 +33,63 @@ class QrCodeService
     }
 
     /**
-     * Sincroniza y trae todos los códigos QR para el número de teléfono.
-     * Retorna Data o Null en caso de fallo, encapsulando errores.
+     * Sincroniza todos los códigos QR del número, descargando cada imagen automáticamente.
+     *
+     * @param string $format Formato de imagen por defecto para QRs que aún no tienen uno ('SVG' o 'PNG').
      */
-    public function syncAll(string $phoneNumberId): ?\Illuminate\Database\Eloquent\Collection
+    public function syncAll(string $phoneNumberId, string $format = 'SVG'): ?\Illuminate\Database\Eloquent\Collection
     {
         try {
-            $phone = $this->resolvePhone($phoneNumberId);
-            $endpoint = Endpoints::build(Endpoints::GET_QR_CODES, ['phone_number_id' => $phone->api_phone_number_id]);
+            $phone    = $this->resolvePhone($phoneNumberId);
+            $endpoint = Endpoints::build(Endpoints::GET_QR_CODES, ['phone_number_id' => $phone->api_phone_number_id])
+                . "?fields=prefilled_message,deep_link_url,qr_image_url.format({$format})";
 
             $response = $this->apiClient->request('GET', $endpoint, headers: [
                 'Authorization' => "Bearer {$phone->businessAccount->api_token}"
             ]);
 
-            $qrs = $response['data'] ?? [];
+            $qrs   = $response['data'] ?? [];
             $qrIds = [];
+
             foreach ($qrs as $qr) {
-                $qrIds[] = $qr['code'];
-                WhatsappModelResolver::qr_code()->updateOrCreate(
+                $qrIds[]  = $qr['code'];
+                $qrFormat = $format;
+
+                $qrModel = WhatsappModelResolver::qr_code()->updateOrCreate(
                     [
                         'phone_number_id' => $phone->phone_number_id,
-                        'code' => $qr['code'],
+                        'code'            => $qr['code'],
                     ],
                     [
                         'prefilled_message' => $qr['prefilled_message'] ?? null,
-                        'deep_link_url' => $qr['deep_link_url'] ?? '',
+                        'deep_link_url'     => $qr['deep_link_url'] ?? '',
+                        'qr_image_url'      => $qr['qr_image_url'] ?? null,
                     ]
                 );
+
+                // Respetar el formato previo si el QR ya fue descargado antes
+                if (!empty($qrModel->qr_image_format)) {
+                    $qrFormat = $qrModel->qr_image_format;
+                }
+
+                if (!empty($qrModel->qr_image_url)) {
+                    $this->downloadImage($phoneNumberId, $qr['code'], $qrFormat);
+                }
             }
 
-            // Eliminar QRs locales que ya no existan remotamente
+            // Eliminar QRs locales que ya no existan en Meta
             if (!empty($qrIds)) {
-                WhatsappModelResolver::qr_code()
+                $toDelete = WhatsappModelResolver::qr_code()
                     ->where('phone_number_id', $phone->phone_number_id)
                     ->whereNotIn('code', $qrIds)
-                    ->delete();
+                    ->get();
+
+                foreach ($toDelete as $obsolete) {
+                    if (!empty($obsolete->qr_image_path) && Storage::disk('public')->exists($obsolete->qr_image_path)) {
+                        Storage::disk('public')->delete($obsolete->qr_image_path);
+                    }
+                    $obsolete->delete();
+                }
             }
 
             return WhatsappModelResolver::qr_code()->where('phone_number_id', $phone->phone_number_id)->get();
@@ -97,13 +119,19 @@ class QrCodeService
                 return null;
             }
 
-            return WhatsappModelResolver::qr_code()->create([
-                'phone_number_id' => $phone->phone_number_id,
-                'code' => $response['code'],
+            $qrModel = WhatsappModelResolver::qr_code()->create([
+                'phone_number_id'   => $phone->phone_number_id,
+                'code'              => $response['code'],
                 'prefilled_message' => $response['prefilled_message'] ?? $prefilledMessage,
-                'deep_link_url' => $response['deep_link_url'] ?? '',
-                'qr_image_url' => $response['qr_image_url'] ?? null,
+                'deep_link_url'     => $response['deep_link_url'] ?? '',
+                'qr_image_url'      => $response['qr_image_url'] ?? null,
             ]);
+
+            if (!empty($qrModel->qr_image_url)) {
+                $this->downloadImage($phoneNumberId, $qrModel->code, $format);
+            }
+
+            return $qrModel->fresh();
         } catch (Exception $e) {
             Log::error("QrCodeService create error: " . $e->getMessage());
             return null;
@@ -132,17 +160,26 @@ class QrCodeService
 
             $data = $response['data'][0];
 
-            return WhatsappModelResolver::qr_code()->updateOrCreate(
+            $qrModel = WhatsappModelResolver::qr_code()->updateOrCreate(
                 [
                     'phone_number_id' => $phone->phone_number_id,
-                    'code' => $code,
+                    'code'            => $code,
                 ],
                 [
                     'prefilled_message' => $data['prefilled_message'] ?? null,
-                    'deep_link_url' => $data['deep_link_url'] ?? '',
-                    'qr_image_url' => $data['qr_image_url'] ?? null,
+                    'deep_link_url'     => $data['deep_link_url'] ?? '',
+                    'qr_image_url'      => $data['qr_image_url'] ?? null,
                 ]
             );
+
+            // Respetar el formato previo si ya fue descargado antes
+            $downloadFormat = !empty($qrModel->qr_image_format) ? $qrModel->qr_image_format : $format;
+
+            if (!empty($qrModel->qr_image_url)) {
+                $this->downloadImage($phoneNumberId, $code, $downloadFormat);
+            }
+
+            return $qrModel->fresh();
         } catch (Exception $e) {
             Log::error("QrCodeService get error: " . $e->getMessage());
             return null;
@@ -189,9 +226,10 @@ class QrCodeService
     }
 
     /**
-     * Descarga la imagen del QR desde Meta y la almacena en el disco local.
+     * Descarga la imagen del QR desde la URL almacenada y la guarda en el disco local.
      *
-     * Si el registro no tiene qr_image_url, se hace un fetch previo a la API para obtenerla.
+     * Requiere que el modelo ya tenga qr_image_url (lo garantizan create/get/syncAll).
+     * Sobreescribe el archivo si ya existe — útil al actualizar o re-sincronizar.
      * El archivo se guarda en storage/app/public/whatsapp/qrcodes/{phone_number_id}/{code}.{ext}
      *
      * @param string $format 'SVG' o 'PNG'
@@ -207,13 +245,8 @@ class QrCodeService
                 ->where('code', $code)
                 ->first();
 
-            // Si no hay URL almacenada, la pedimos a Meta primero
             if (!$qrModel || empty($qrModel->qr_image_url)) {
-                $qrModel = $this->get($phoneNumberId, $code, $format);
-            }
-
-            if (!$qrModel || empty($qrModel->qr_image_url)) {
-                Log::warning("QrCodeService downloadImage: no se pudo obtener qr_image_url para code={$code}");
+                Log::warning("QrCodeService downloadImage: qr_image_url no disponible para code={$code}. Llamá a get() o create() primero.");
                 return null;
             }
 
