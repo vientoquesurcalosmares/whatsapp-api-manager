@@ -59,6 +59,9 @@ class AccountRegistrationService
 
             $account = $this->upsertBusinessAccount($data['api_token'], $accountData, $suscriptions);
 
+            // 1b. Intentar obtener el método de pago (requiere permisos BSP — opcional)
+            $this->syncPrimaryFundingId($data['api_token'], $data['business_id'], $account);
+
             // 2. Suscribir aplicación a webhooks (usando campos proporcionados o de configuración)
             // $this->whatsappService
             //     ->forAccount($account->whatsapp_business_id)
@@ -129,6 +132,33 @@ class AccountRegistrationService
     }
 
     /**
+     * Intenta sincronizar el primary_funding_id de la cuenta.
+     *
+     * Este campo requiere permisos de BSP. Si la API devuelve error de permisos
+     * (o cualquier ApiException), se loguea como warning y se continúa sin interrumpir
+     * el registro. El campo quedará null para cuentas sin permisos BSP.
+     */
+    private function syncPrimaryFundingId(string $apiToken, string $businessId, Model $account): void
+    {
+        try {
+            $fundingId = $this->whatsappService
+                ->withTempToken($apiToken)
+                ->getBusinessAccountFundingId($businessId);
+
+            if ($fundingId !== $account->primary_funding_id) {
+                $account->primary_funding_id = $fundingId;
+                $account->save();
+            }
+        } catch (ApiException $e) {
+            Log::channel('whatsapp')->warning('No se pudo obtener primary_funding_id (posiblemente requiere permisos BSP).', [
+                'business_id' => $businessId,
+                'error'       => $e->getMessage(),
+                'code'        => $e->getCode(),
+            ]);
+        }
+    }
+
+    /**
      * Registra o actualiza la cuenta empresarial en la base de datos.
      *
      * @param string $apiToken Token de la API.
@@ -166,7 +196,6 @@ class AccountRegistrationService
                 'app_name' => $appData['name'] ?? null,      // Nombre de la primera app
                 'app_link' => $appData['link'] ?? null,      // Link de la primera app
                 'message_template_namespace' => $apiData['message_template_namespace'] ?? null,
-                'primary_funding_id' => $apiData['primary_funding_id'] ?? null,
             ]
         );
 

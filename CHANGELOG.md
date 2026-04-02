@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.37] - 2026-04-01
+
+### Fixed
+- **Error 403 en obtención de cuenta:** Se extrajo el campo `primary_funding_id` de la petición general de `getBusinessAccount()`, ya que Meta requiere permisos de BSP (*Business Solution Provider*) para accederlo, bloqueando el registro a usuarios normales. Ahora se solicita mediante el nuevo método `getBusinessAccountFundingId()` gestionado de forma segura ("fail-safe") en el proceso de registro.
+
 ## [1.1.36] - 2026-04-01
 
 ### Added

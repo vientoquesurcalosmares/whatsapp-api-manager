@@ -85,12 +85,36 @@ class WhatsappService
             Endpoints::GET_BUSINESS_ACCOUNT,
             ['whatsapp_business_id' => $whatsappBusinessId],
             null,
-            ['fields' => 'id,name,timezone_id,currency,country,status,whatsapp_business_manager_messaging_limit,message_template_namespace,primary_funding_id'],
+            ['fields' => 'id,name,timezone_id,currency,country,status,whatsapp_business_manager_messaging_limit,message_template_namespace'],
             $this->getAuthHeaders()
         );
 
         Log::channel('whatsapp')->debug('Respuesta de getBusinessAccount:', $response);
         return $response;
+    }
+
+    /**
+     * Obtiene el primary_funding_id de una cuenta empresarial.
+     *
+     * Este campo requiere permisos de BSP (Business Solution Provider).
+     * Si la app no tiene esos permisos, la API devuelve error #10 (403).
+     *
+     * @param string $whatsappBusinessId El ID de la cuenta empresarial.
+     * @return string|null El primary_funding_id, o null si no tiene permisos o no está configurado.
+     */
+    public function getBusinessAccountFundingId(string $whatsappBusinessId): ?string
+    {
+        $response = $this->apiClient->request(
+            'GET',
+            Endpoints::GET_BUSINESS_ACCOUNT,
+            ['whatsapp_business_id' => $whatsappBusinessId],
+            null,
+            ['fields' => 'primary_funding_id'],
+            $this->getAuthHeaders()
+        );
+
+        Log::channel('whatsapp')->debug('Respuesta de getBusinessAccountFundingId:', $response);
+        return $response['primary_funding_id'] ?? null;
     }
 
     /**

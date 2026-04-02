@@ -1178,9 +1178,14 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 break;
 
             case 'failed':
-                if (isset($status['errors'][0]['code']) && $status['errors'][0]['code'] == 131050) {
+                $errorCode = $status['errors'][0]['code'] ?? null;
+
+                if ($errorCode == 131050) {
                     $this->fireMarketingOptOut($messageUpdated);
                 } else {
+                    if ($errorCode == 131042) {
+                        $this->markPaymentIssueOnAccount($messageUpdated);
+                    }
                     $this->fireMessageFailed($messageUpdated);
                 }
                 break;
@@ -1233,6 +1238,41 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             if (!empty($updateData)) {
                 $contact->update($updateData);
             }
+        }
+    }
+
+    /**
+     * Marca la cuenta empresarial asociada al mensaje con la fecha en que se detectó
+     * un problema de método de pago (error 131042).
+     *
+     * Solo actualiza si aún no estaba marcada para evitar escrituras innecesarias.
+     */
+    private function markPaymentIssueOnAccount(Model $message): void
+    {
+        try {
+            $phoneNumber = $message->phoneNumber;
+            if (!$phoneNumber) {
+                return;
+            }
+
+            $account = $phoneNumber->businessAccount;
+            if (!$account) {
+                return;
+            }
+
+            if ($account->payment_issue_detected_at === null) {
+                $account->payment_issue_detected_at = now();
+                $account->save();
+
+                Log::channel('whatsapp')->warning('Problema de método de pago detectado en cuenta.', [
+                    'whatsapp_business_id' => $account->whatsapp_business_id,
+                    'detected_at'          => $account->payment_issue_detected_at,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error('Error al registrar payment_issue en cuenta.', [
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

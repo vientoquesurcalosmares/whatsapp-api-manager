@@ -35,11 +35,13 @@ class WhatsappBusinessAccount extends Model
         'messaging_limit_tier',
         'messaging_limit_value',
         'primary_funding_id',
+        'payment_issue_detected_at',
     ];
 
     protected $casts = [
-        'disconnected_at' => 'datetime',
-        'fully_removed_at' => 'datetime',
+        'disconnected_at'           => 'datetime',
+        'fully_removed_at'          => 'datetime',
+        'payment_issue_detected_at' => 'datetime',
     ];
 
     public function setApiTokenAttribute($value) {
@@ -99,5 +101,16 @@ class WhatsappBusinessAccount extends Model
     public function hasPaymentMethod(): bool
     {
         return !empty($this->primary_funding_id);
+    }
+
+    public function hasKnownPaymentIssue(): bool
+    {
+        return $this->payment_issue_detected_at !== null;
+    }
+
+    public function clearPaymentIssue(): void
+    {
+        $this->payment_issue_detected_at = null;
+        $this->save();
     }
 }
