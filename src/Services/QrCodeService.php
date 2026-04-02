@@ -260,7 +260,17 @@ class QrCodeService
                 return null;
             }
 
-            $extension = strtolower($format) === 'png' ? 'png' : 'svg';
+            $contentType = $response->header('Content-Type') ?? '';
+            if (str_contains($contentType, 'svg') || str_starts_with($response->body(), '<')) {
+                $extension   = 'svg';
+                $realFormat  = 'SVG';
+            } elseif (str_contains($contentType, 'png')) {
+                $extension   = 'png';
+                $realFormat  = 'PNG';
+            } else {
+                $extension  = strtolower($format) === 'png' ? 'png' : 'svg';
+                $realFormat = strtoupper($format);
+            }
             $directory = 'whatsapp/qrcodes/' . $phone->phone_number_id;
             $fileName  = "{$code}.{$extension}";
             $filePath  = "{$directory}/{$fileName}";
@@ -269,7 +279,7 @@ class QrCodeService
 
             $qrModel->update([
                 'qr_image_path'   => $filePath,
-                'qr_image_format' => strtoupper($format),
+                'qr_image_format' => $realFormat,
             ]);
 
             Log::channel('whatsapp')->info("QR descargado y almacenado.", [

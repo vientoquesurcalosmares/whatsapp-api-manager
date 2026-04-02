@@ -111,7 +111,7 @@ if (Whatsapp::qrCode()->delete($phoneNumberId, $codigoHash)) {
 
 La descarga física del archivo (SVG o PNG) a tu almacenamiento local se realiza **automáticamente** cada vez que instancias un QR mediante los métodos `create()`, `syncAll()` o `get()`. El paquete entra a la URL expirable de Meta, extrae la imagen a tu disco `public` a través de Storage de forma automática, y anexa su ruta al modelo local bajo el atributo `qr_image_path`.
 
-Si necesitas forzar una redescarga manual (ej. para cambiar el formato del archivo o recuperarlo tras un borrado en disco), puedes usar explícitamente el método de descarga:
+El formato del archivo guardado se detecta automáticamente inspeccionando el `Content-Type` de la respuesta de Meta (`image/svg+xml` → `.svg`, `image/png` → `.png`), sin depender del parámetro que el usuario haya solicitado.
 
 ```php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;

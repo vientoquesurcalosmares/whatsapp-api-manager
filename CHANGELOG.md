@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.41] - 2026-04-01
+
+### Fixed
+- **Detección automática de formato de imagen QR:** El método `downloadImage()` de `QrCodeService` ya no depende únicamente del parámetro `$format` para determinar la extensión del archivo a guardar. Ahora inspecciona el `Content-Type` del response HTTP de Meta para detectar si la imagen enviada es `image/svg+xml` o `image/png`, asignando correctamente la extensión y el campo `qr_image_format` en el modelo. Si el Content-Type no es concluyente, cae de vuelta al parámetro recibido como fallback.
+
 ## [1.1.40] - 2026-04-01
 
 ### Fixed
