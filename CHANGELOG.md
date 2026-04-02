@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.40] - 2026-04-01
+
+### Fixed
+- **Campo `code` faltante en endpoints QR:** Los métodos `syncAll()` y `get()` de `QrCodeService` no incluían el campo `code` en los `fields` solicitados a Meta. Esto causaba que el hash identificador del QR no llegara en la respuesta y el modelo quedara con el campo `code` vacío. Se añadió `code` al listado de fields en ambos endpoints.
+
 ## [1.1.39] - 2026-04-01
 
 ### Changed

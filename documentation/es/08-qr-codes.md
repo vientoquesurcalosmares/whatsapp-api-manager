@@ -40,7 +40,7 @@ Trae íntegramente la lista de códigos QR desde Meta, limpia tu tabla local de 
 ```php
 use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
-// Sincroniza y devuelve una colección (Collection de Eloquent) 
+// Sincroniza y devuelve una colección (Collection de Eloquent)
 // de modelos WhatsappQrCode
 $allQrCodes = Whatsapp::qrCode()->syncAll($phoneNumberId);
 
@@ -50,6 +50,8 @@ if ($allQrCodes) {
     }
 }
 ```
+
+> **Nota:** Cada modelo de la colección incluye el campo `code` (hash único del QR), `prefilled_message`, `deep_link_url` y `qr_image_url`.
 
 ### 3. Obtener un QR Específico
 
@@ -67,6 +69,9 @@ if ($qr) {
     echo "El prefilled message es: " . $qr->prefilled_message;
     echo "Puedes descargar el PNG en: " . $qr->qr_image_url;
 }
+```
+
+> **Nota:** El modelo retornado incluye el campo `code` con el hash identificador del QR.
 ```
 
 ### 4. Actualizar el Mensaje de un QR Existente

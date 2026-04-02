@@ -42,7 +42,7 @@ class QrCodeService
         try {
             $phone    = $this->resolvePhone($phoneNumberId);
             $endpoint = Endpoints::build(Endpoints::GET_QR_CODES, ['phone_number_id' => $phone->api_phone_number_id])
-                . "?fields=prefilled_message,deep_link_url,qr_image_url.format({$format})";
+                . "?fields=code,prefilled_message,deep_link_url,qr_image_url.format({$format})";
 
             $response = $this->apiClient->request('GET', $endpoint, headers: [
                 'Authorization' => "Bearer {$phone->businessAccount->api_token}"
@@ -148,7 +148,7 @@ class QrCodeService
             $endpoint = Endpoints::build(Endpoints::GET_QR_CODE, [
                 'phone_number_id' => $phone->api_phone_number_id,
                 'qr_code_id' => $code
-            ]) . "?fields=prefilled_message,deep_link_url,qr_image_url.format($format)";
+            ]) . "?fields=code,prefilled_message,deep_link_url,qr_image_url.format($format)";
 
             $response = $this->apiClient->request('GET', $endpoint, headers: [
                 'Authorization' => "Bearer {$phone->businessAccount->api_token}"
