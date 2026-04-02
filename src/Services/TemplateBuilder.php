@@ -569,7 +569,10 @@ class TemplateBuilder
     }
 
     /**
-     * Agrega un botón FLOW a la plantilla (Por Nombre).
+     * Agrega un botón FLOW a la plantilla buscando el flujo por nombre exacto.
+     *
+     * Si hay más de un flujo con el mismo nombre, esta operación falla con un error
+     * descriptivo. En ese caso usá addFlowButton() pasando el wa_flow_id directamente.
      */
     public function addFlowButtonByName(string $text, string $flowName, ?string $navigateScreen = null, string $flowAction = 'NAVIGATE'): self
     {
@@ -577,11 +580,31 @@ class TemplateBuilder
         if (strlen($text) > 25) throw new InvalidArgumentException('El texto del botón no puede exceder los 25 caracteres.');
         if (empty($flowName)) throw new InvalidArgumentException('El nombre del flujo (flow_name) es obligatorio.');
 
+        $matches = WhatsappModelResolver::flow()->where('name', $flowName)->get();
+
+        if ($matches->isEmpty()) {
+            throw new InvalidArgumentException("No se encontró ningún flujo con el nombre exacto \"{$flowName}\".");
+        }
+
+        if ($matches->count() > 1) {
+            $ids = $matches->pluck('wa_flow_id')->join(', ');
+            throw new InvalidArgumentException(
+                "Hay {$matches->count()} flujos con el nombre \"{$flowName}\". " .
+                "Usá addFlowButton() con uno de estos wa_flow_id: {$ids}"
+            );
+        }
+
+        $flow = $matches->first();
+
+        if (!in_array(strtolower($flow->status), ['approved', 'published'])) {
+            throw new \Exception("El flujo \"{$flowName}\" está en status \"{$flow->status}\". Debe estar aprobado o publicado.");
+        }
+
         $button = [
-            'type' => 'FLOW',
-            'text' => $text,
-            'flow_name' => $flowName,
-            'flow_action' => $flowAction,
+            'type'        => 'FLOW',
+            'text'        => $text,
+            'flow_id'     => $flow->wa_flow_id,
+            'flow_action' => strtoupper($flowAction),
         ];
 
         if (!empty($navigateScreen)) $button['navigate_screen'] = $navigateScreen;

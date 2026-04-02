@@ -425,7 +425,11 @@ Gracias por tu apoyo 💙
             ->addFlowButton('Agendar Cita', '12345678910', 'FIRST_SCREEN')
             ->save();
 
-        // O mejor aún, buscar de tu tabla local el workflow dinámicamente:
+        // O buscar el flujo dinámicamente desde la tabla local por nombre:
+        // IMPORTANTE: el nombre debe ser ÚNICO en tu base de datos.
+        // Si hay más de un flujo con el mismo nombre, el método falla con un mensaje
+        // que te indica los wa_flow_id disponibles para usar addFlowButton() directamente.
+        // El flujo también debe estar en estado 'approved' o 'published'.
         $templatePorNombre = Whatsapp::template()
             ->createMarketingTemplate($account)
             ->setName('lead_generation_flow')

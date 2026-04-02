@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.43] - 2026-04-01
+
+### Changed
+- **`addFlowButtonByName()` robusto con validación real:** El método ahora busca el flujo en la base de datos local por nombre exacto usando `WhatsappModelResolver::flow()`. Valida que el flujo exista, que no haya duplicados (si los hay, lanza excepción con los `wa_flow_id` disponibles para usar `addFlowButton()` en su lugar), y que el flujo esté en estado `approved` o `published` antes de construir el botón. El payload ahora envía el `flow_id` real (no el `flow_name`) para compatibilidad correcta con la API de Meta.
+
 ## [1.1.42] - 2026-04-01
 
 ### Fixed
