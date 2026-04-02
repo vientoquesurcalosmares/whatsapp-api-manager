@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.42] - 2026-04-01
+
+### Fixed
+- **Valor de `flowAction` corregido a mayúsculas en botones Flow:** El valor por defecto del parámetro `$flowAction` en los métodos `addFlowButton()`, `addFlowButtonByName()` y `addFlowButtonByJson()` de `TemplateBuilder` era `'navigate'` (minúsculas), lo cual es rechazado por la API de Meta. Corregido a `'NAVIGATE'` (mayúsculas) para cumplir con la especificación oficial.
+
 ## [1.1.41] - 2026-04-01
 
 ### Fixed

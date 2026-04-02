@@ -530,7 +530,7 @@ class TemplateBuilder
      * @return self
      * @throws InvalidArgumentException Si se violan restricciones de la API
      */
-    public function addFlowButton(string $text, string $flowId, ?string $navigateScreen = null, string $flowAction = 'navigate'): self
+    public function addFlowButton(string $text, string $flowId, ?string $navigateScreen = null, string $flowAction = 'NAVIGATE'): self
     {
         if ($this->buttonCount >= 10) {
             throw new InvalidArgumentException('No se pueden agregar más de 10 botones a una plantilla.');
@@ -571,7 +571,7 @@ class TemplateBuilder
     /**
      * Agrega un botón FLOW a la plantilla (Por Nombre).
      */
-    public function addFlowButtonByName(string $text, string $flowName, ?string $navigateScreen = null, string $flowAction = 'navigate'): self
+    public function addFlowButtonByName(string $text, string $flowName, ?string $navigateScreen = null, string $flowAction = 'NAVIGATE'): self
     {
         if ($this->buttonCount >= 10) throw new InvalidArgumentException('Límite de 10 botones excedido.');
         if (strlen($text) > 25) throw new InvalidArgumentException('El texto del botón no puede exceder los 25 caracteres.');
@@ -593,7 +593,7 @@ class TemplateBuilder
     /**
      * Agrega un botón FLOW a la plantilla (Por JSON).
      */
-    public function addFlowButtonByJson(string $text, string $flowJson, ?string $navigateScreen = null, string $flowAction = 'navigate'): self
+    public function addFlowButtonByJson(string $text, string $flowJson, ?string $navigateScreen = null, string $flowAction = 'NAVIGATE'): self
     {
         if ($this->buttonCount >= 10) throw new InvalidArgumentException('Límite de 10 botones excedido.');
         if (strlen($text) > 25) throw new InvalidArgumentException('El texto del botón no puede exceder los 25 caracteres.');

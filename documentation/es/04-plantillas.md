@@ -422,7 +422,7 @@ Gracias por tu apoyo 💙
             ->setLanguage('es_CO')
             ->addBody('Para agendar tu cita presiona el botón:')
             // Botón flow por ID (se asume que la pantalla es 'FIRST_SCREEN' por defecto)
-            ->addFlowButton('Agendar Cita', '12345678910', 'navigate', 'FIRST_SCREEN')
+            ->addFlowButton('Agendar Cita', '12345678910', 'FIRST_SCREEN')
             ->save();
 
         // O mejor aún, buscar de tu tabla local el workflow dinámicamente:
@@ -431,7 +431,7 @@ Gracias por tu apoyo 💙
             ->setName('lead_generation_flow')
             ->setLanguage('es')
             ->addBody('Llena este registro')
-            ->addFlowButtonByName('Completar Formulario', 'Mi Flujo de Encuesta', 'navigate', 'CONTACT_INFO')
+            ->addFlowButtonByName('Completar Formulario', 'Mi Flujo de Encuesta', 'CONTACT_INFO')
             ->save();
     ```
     # Notas
