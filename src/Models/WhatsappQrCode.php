@@ -18,6 +18,8 @@ class WhatsappQrCode extends Model
         'prefilled_message',
         'deep_link_url',
         'qr_image_url',
+        'qr_image_path',
+        'qr_image_format',
     ];
 
     public function phoneNumber()

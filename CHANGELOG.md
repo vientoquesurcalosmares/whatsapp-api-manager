@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.38] - 2026-04-01
+
+### Added
+- **Descarga Física de Códigos QR:** Incorporado el método `Whatsapp::qrCode()->downloadImage($phoneNumberId, $codigoHash, $format)` para descargar activamente el código QR desde Meta (vía URL firmada) y persistirlo automágicamente en disco local mediante `Storage::disk('public')`. El modelo `WhatsappQrCode` ahora almacena correctamente la ruta en disco en `qr_image_path`.
+- **Limpieza Ecológica de QRs:** El método `delete()` de `QrCodeService` fue extendido para revisar e interceptar el disco duro; ahora borra simultáneamente el archivo físico SVG/PNG remanente antes de eliminar el modelo local en base de datos.
+
 ## [1.1.37] - 2026-04-01
 
 ### Fixed

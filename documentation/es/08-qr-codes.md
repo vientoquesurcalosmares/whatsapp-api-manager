@@ -101,3 +101,22 @@ if (Whatsapp::qrCode()->delete($phoneNumberId, $codigoHash)) {
     echo "Ocurrió un error (o ya estaba eliminado).";
 }
 ```
+
+### 6. Descargar Imagen Física del QR Localmente
+
+Puedes forzar la descarga del archivo físico de la imagen generado por Meta y almacenarlo automáticamente en tu disco `public` a través de Storage. Además de descargarlo, el paquete rastreará su ruta interna y la anexará al modelo en `qr_image_path`.
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+$codigoHash = 'ANED2T5QRU7HG1';
+
+// Format defaults to 'SVG', can be 'PNG'
+$qrModel = Whatsapp::qrCode()->downloadImage($phoneNumberId, $codigoHash, 'PNG');
+
+if ($qrModel && $qrModel->qr_image_path) {
+    echo "Imagen descargada y guardada en local storage: " . Storage::url($qrModel->qr_image_path);
+}
+```
+
+> **Nota importante sobre el almacenamiento:** Cuando se ejecuta la eliminación de un QR por medio de `Whatsapp::qrCode()->delete()`, el paquete automáticamente detecta y borra físicamente el archivo descargado para mantener tu disco limpio.

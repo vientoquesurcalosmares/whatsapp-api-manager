@@ -4,7 +4,9 @@ namespace ScriptDevelop\WhatsappManager\Services;
 
 use Exception;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use ScriptDevelop\WhatsappManager\Support\WhatsappModelResolver;
 use ScriptDevelop\WhatsappManager\WhatsappApi\ApiClient;
 use ScriptDevelop\WhatsappManager\WhatsappApi\Endpoints;
@@ -187,6 +189,70 @@ class QrCodeService
     }
 
     /**
+     * Descarga la imagen del QR desde Meta y la almacena en el disco local.
+     *
+     * Si el registro no tiene qr_image_url, se hace un fetch previo a la API para obtenerla.
+     * El archivo se guarda en storage/app/public/whatsapp/qrcodes/{phone_number_id}/{code}.{ext}
+     *
+     * @param string $format 'SVG' o 'PNG'
+     * @return Model|null El modelo actualizado con qr_image_path, o null si falla.
+     */
+    public function downloadImage(string $phoneNumberId, string $code, string $format = 'SVG'): ?Model
+    {
+        try {
+            $phone = $this->resolvePhone($phoneNumberId);
+
+            $qrModel = WhatsappModelResolver::qr_code()
+                ->where('phone_number_id', $phone->phone_number_id)
+                ->where('code', $code)
+                ->first();
+
+            // Si no hay URL almacenada, la pedimos a Meta primero
+            if (!$qrModel || empty($qrModel->qr_image_url)) {
+                $qrModel = $this->get($phoneNumberId, $code, $format);
+            }
+
+            if (!$qrModel || empty($qrModel->qr_image_url)) {
+                Log::warning("QrCodeService downloadImage: no se pudo obtener qr_image_url para code={$code}");
+                return null;
+            }
+
+            $response = Http::timeout(15)->get($qrModel->qr_image_url);
+
+            if (!$response->successful()) {
+                Log::warning("QrCodeService downloadImage: descarga fallida.", [
+                    'url'    => $qrModel->qr_image_url,
+                    'status' => $response->status(),
+                ]);
+                return null;
+            }
+
+            $extension = strtolower($format) === 'png' ? 'png' : 'svg';
+            $directory = 'whatsapp/qrcodes/' . $phone->phone_number_id;
+            $fileName  = "{$code}.{$extension}";
+            $filePath  = "{$directory}/{$fileName}";
+
+            Storage::disk('public')->put($filePath, $response->body());
+
+            $qrModel->update([
+                'qr_image_path'   => $filePath,
+                'qr_image_format' => strtoupper($format),
+            ]);
+
+            Log::channel('whatsapp')->info("QR descargado y almacenado.", [
+                'code'      => $code,
+                'path'      => $filePath,
+                'format'    => $format,
+            ]);
+
+            return $qrModel->fresh();
+        } catch (Exception $e) {
+            Log::error("QrCodeService downloadImage error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Elimina un código QR de Meta y localmente.
      */
     public function delete(string $phoneNumberId, string $code): bool
@@ -203,10 +269,18 @@ class QrCodeService
             ]);
 
             if (isset($response['success']) && $response['success']) {
-                WhatsappModelResolver::qr_code()
+                $qrModel = WhatsappModelResolver::qr_code()
                     ->where('phone_number_id', $phone->phone_number_id)
                     ->where('code', $code)
-                    ->delete();
+                    ->first();
+
+                if ($qrModel) {
+                    if (!empty($qrModel->qr_image_path) && Storage::disk('public')->exists($qrModel->qr_image_path)) {
+                        Storage::disk('public')->delete($qrModel->qr_image_path);
+                    }
+                    $qrModel->delete();
+                }
+
                 return true;
             }
             return false;

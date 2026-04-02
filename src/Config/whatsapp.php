@@ -312,6 +312,7 @@ return [
             'documents' => storage_path('app/public/whatsapp/documents'),
             'videos' => storage_path('app/public/whatsapp/videos'),
             'stickers' => storage_path('app/public/whatsapp/stickers'),
+            'qrcodes' => storage_path('app/public/whatsapp/qrcodes'),
         ],
         // Tamaño máximo permitido para cada tipo de archivo (en bytes)
         'max_file_size' => [
