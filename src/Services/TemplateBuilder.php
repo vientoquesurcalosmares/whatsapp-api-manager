@@ -547,7 +547,7 @@ class TemplateBuilder
      * @return self
      * @throws InvalidArgumentException Si el flujo no existe localmente o no está publicado
      */
-    public function addFlowButton(string $text, string $flowId, ?string $navigateScreen = null, string $flowAction = 'NAVIGATE'): self
+    public function addFlowButton(string $text, string $flowId, ?string $navigateScreen = null, string $flowAction = 'NAVIGATE', ?string $flowIcon = null): self
     {
         if ($this->buttonCount >= 10) {
             throw new InvalidArgumentException('No se pueden agregar más de 10 botones a una plantilla.');
@@ -579,6 +579,11 @@ class TemplateBuilder
 
         if (!empty($navigateScreen)) {
             $button['navigate_screen'] = $navigateScreen;
+        }
+
+        $validIcons = ['DEFAULT', 'DOCUMENT', 'PROMOTION', 'REVIEW'];
+        if (!empty($flowIcon) && in_array(strtoupper($flowIcon), $validIcons)) {
+            $button['flow_icon'] = strtoupper($flowIcon);
         }
 
         $this->pushFlowButton($button);

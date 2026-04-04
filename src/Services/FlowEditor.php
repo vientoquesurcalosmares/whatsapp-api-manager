@@ -26,6 +26,13 @@ class FlowEditor
     protected ?array $currentElement = null;
     protected ?int $currentElementIndex = null;
 
+    /**
+     * JSON pre-encodificado del editor visual.
+     * Cuando está seteado, save() lo usa directamente en lugar de buildFlowJson().
+     * Se pasa como string para preservar objetos vacíos como {} (no como []).
+     */
+    protected ?string $rawJsonString = null;
+
     public function __construct(Model $flow, ApiClient $apiClient, FlowService $flowService)
     {
         $this->flow = $flow;
@@ -221,6 +228,18 @@ class FlowEditor
         return $this;
     }
 
+    /**
+     * Inyecta el JSON del flow ya encodificado como string.
+     * Cuando se usa este método, save() omite buildFlowJson() y sube el JSON tal como está.
+     * Preserva objetos vacíos {} correctamente — a diferencia de pasar un array PHP
+     * que json_encode() convertiría a [].
+     */
+    public function setRawJsonStructure(string $jsonString): self
+    {
+        $this->rawJsonString = $jsonString;
+        return $this;
+    }
+
     // --- Guardar cambios en API y base de datos ---
 
     public function save(): Model
@@ -229,96 +248,65 @@ class FlowEditor
             throw new InvalidArgumentException('El flujo no tiene wa_flow_id, no puede ser editado en la API.');
         }
 
-        $flowId = $this->flow->wa_flow_id;
+        $flowId      = $this->flow->wa_flow_id;
         $accessToken = $this->flow->whatsappBusinessAccount->api_token;
+        $headers     = ['Authorization' => 'Bearer ' . $accessToken];
 
-        // 1. Actualizar metadatos
-        $metaEndpoint = Endpoints::build(Endpoints::UPDATE_FLOW_METADATA, [
-            'flow_id' => $flowId,
-        ]);
-        $metaData = [
-            'name' => $this->flowData['name'],
-            'categories' => $this->flowData['categories'] ?? [],
-            'description' => $this->flowData['description'] ?? '',
-        ];
-        $this->apiClient->request(
-            'POST',
-            $metaEndpoint,
-            [],
-            $metaData,
-            [],
-            [
-                'Authorization' => 'Bearer ' . $accessToken,
-            ]
-        );
-
-        // 2. Actualizar JSON del flujo
-        $flowJson = $this->buildFlowJson();
-        $this->flowData['json_structure'] = $flowJson;
-
-        if (empty($flowJson['screens'])) {
-            throw new InvalidArgumentException('El flujo debe tener al menos una pantalla.');
+        // 1. Actualizar metadatos del flow (nombre, categorías, descripción)
+        //    Solo si hay nombre definido — en el flujo del editor visual esto es opcional.
+        if (!empty($this->flowData['name'])) {
+            $metaEndpoint = Endpoints::build(Endpoints::UPDATE_FLOW_METADATA, ['flow_id' => $flowId]);
+            $this->apiClient->request('POST', $metaEndpoint, [], [
+                'name'        => $this->flowData['name'],
+                'categories'  => $this->flowData['categories'] ?? [],
+                'description' => $this->flowData['description'] ?? '',
+            ], [], $headers);
         }
 
+        // 2. Determinar el JSON a subir:
+        //    - rawJsonString: viene del editor visual, ya encodificado — preserva {} correctamente.
+        //    - Sin rawJsonString: buildFlowJson() para el flujo builder (API fluida).
+        if ($this->rawJsonString !== null) {
+            $jsonString = $this->rawJsonString;
+        } else {
+            $flowJson = $this->buildFlowJson();
+            if (empty($flowJson['screens'])) {
+                throw new InvalidArgumentException('El flujo debe tener al menos una pantalla.');
+            }
+            $jsonString = json_encode($flowJson, JSON_UNESCAPED_UNICODE);
+        }
+
+        // 3. Subir el JSON vía ApiClient (multipart) — igual que FlowBuilder::save()
         $tmpFile = tempnam(sys_get_temp_dir(), 'flow_') . '.json';
-        file_put_contents($tmpFile, json_encode($flowJson));
+        file_put_contents($tmpFile, $jsonString);
 
-        $baseUrl = config('whatsapp.api.base_url', 'https://graph.facebook.com');
-        $version = config('whatsapp.api.version', 'v22.0');
-        $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . '/' . $flowId . '/assets';
-
-        $curl = curl_init();
-        curl_setopt_array($curl, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => [
-                'file' => new \CURLFile($tmpFile, 'application/json', 'flow.json'),
-                'name' => 'flow.json',
-                'asset_type' => 'FLOW_JSON',
-            ],
-            CURLOPT_HTTPHEADER => [
-                'Authorization: Bearer ' . $accessToken,
-            ],
-        ]);
-
-        $response = curl_exec($curl);
-        $curlError = curl_error($curl);
-        curl_close($curl);
-        unlink($tmpFile);
-
-        if ($curlError) {
-            throw new \RuntimeException("Error en cURL: $curlError");
+        try {
+            $assetEndpoint = Endpoints::build(Endpoints::UPDATE_FLOW_ASSETS, ['flow_id' => $flowId]);
+            $this->apiClient->request('POST', $assetEndpoint, [], [
+                'multipart' => [
+                    ['name' => 'name',       'contents' => 'flow.json'],
+                    ['name' => 'asset_type', 'contents' => 'FLOW_JSON'],
+                    [
+                        'name'     => 'file',
+                        'contents' => fopen($tmpFile, 'r'),
+                        'filename' => 'flow.json',
+                        'headers'  => ['Content-Type' => 'application/json'],
+                    ],
+                ],
+            ], [], $headers);
+        } finally {
+            @unlink($tmpFile);
         }
 
-        $decoded = json_decode($response, true);
-        if (isset($decoded['error'])) {
-            throw new \RuntimeException("Error al subir el flujo: " . $decoded['error']['message']);
-        }
-
-        // 3. Actualizar la base de datos local
+        // 4. Actualizar la base de datos local
         $this->flow->update([
-            'name' => $this->flowData['name'],
-            'description' => $this->flowData['description'],
-            'json_structure' => json_encode($flowJson),
-            'status' => $this->flowData['status'] ?? 'draft',
-            'version' => $this->flowData['version'] ?? '7.0',
-            'categories' => $this->flowData['categories'] ?? [],
-            'preview_url' => $this->flowData['preview_url'] ?? null,
-            'preview_expires_at' => $this->flowData['preview_expires_at'] ?? null,
-            'validation_errors' => $this->flowData['validation_errors'] ?? [],
-            'json_version' => $this->flowData['json_version'] ?? '7.0',
-            'health_status' => $this->flowData['health_status'] ?? [],
+            'json_structure' => $jsonString,
         ]);
 
-        if (!empty($this->flowData['json_structure']['screens'])) {
-            $this->flowService->syncScreensAndElements($this->flow, $this->flowData['json_structure']['screens']);
-        }
+        Log::channel('whatsapp')->info('FlowEditor: JSON del flow actualizado en Meta', [
+            'flow_id' => $flowId,
+            'via_raw' => $this->rawJsonString !== null,
+        ]);
 
         return $this->flow->fresh();
     }

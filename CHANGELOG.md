@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.45] - 2026-04-04
+
+### Added
+- **`FlowEditor::setRawJsonStructure(string $jsonString): self`** — nuevo método para inyectar el JSON de un flow ya encodificado como string. Permite que editores visuales externos (o cualquier sistema que genere el JSON completo) suban el JSON directamente a Meta sin que PHP lo re-parsee como array y pierda los objetos vacíos `{}`. Cuando está seteado, `save()` omite `buildFlowJson()` y usa el string tal como está.
+
+### Changed
+- **`FlowEditor::save()` refactorizado:** reemplaza la implementación con cURL directo por el `ApiClient` del paquete (multipart upload), siendo consistente con `FlowBuilder::save()`. Admite dos rutas: (1) JSON raw via `setRawJsonStructure()` — preserva `{}` correctamente; (2) JSON construido via `buildFlowJson()` — flujo de edición fluida existente. La actualización de metadatos es ahora condicional — solo se dispara si `name` está seteado.
+- **`TemplateBuilder::addFlowButton()` — nuevo parámetro `$flowIcon`:** Se agrega `?string $flowIcon = null`. Valores válidos: `DEFAULT`, `DOCUMENT`, `PROMOTION`, `REVIEW`. Valores no reconocidos se ignoran silenciosamente.
+
+### Fixed
+- **Objetos vacíos `{}` en JSON de Flows:** PHP convertía `data: {}` y `payload: {}` en arrays vacíos al pasar por `json_decode($json, true)` + `json_encode`. Meta rechazaba el JSON con *"Expected property 'data' to be of type 'object' but found 'array'"*. Resuelto con `setRawJsonStructure()` que acepta el string pre-encodificado sin re-parseo.
+
 ## [1.1.44] - 2026-04-02
 
 ### Changed

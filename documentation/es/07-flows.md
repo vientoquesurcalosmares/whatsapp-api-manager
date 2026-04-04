@@ -267,6 +267,35 @@ Eliminar una pantalla completa: ->removeScreen('CONTACT_INFO')
 
 Reordenar pantallas: ->reorderScreens(['SCREEN_2', 'SCREEN_1'])
 
+---
+
+### 4b. Editar un Flow con JSON completo (`setRawJsonStructure`)
+
+Si tenés el JSON del flow ya construido (por ejemplo, desde un editor visual externo), usá `setRawJsonStructure()` en lugar de la API fluida. Esto sube el JSON tal como está, sin que PHP lo re-procese.
+
+> **¿Por qué es importante?**
+> Si PHP convierte el JSON a array (`json_decode($json, true)`) y luego lo re-encodifica, los objetos vacíos `{}` se convierten en `[]`. Meta rechaza ese JSON con el error *"Expected property 'data' to be of type 'object' but found 'array'"*. `setRawJsonStructure()` evita ese ciclo aceptando el string pre-encodificado directamente.
+
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
+
+// JSON generado por tu editor visual, ya serializado como string
+$jsonString = json_encode($myJsonStructure, JSON_UNESCAPED_UNICODE);
+
+$flow = Whatsapp::flow()->getFlowById('wa_flow_12345');
+
+Whatsapp::flow()->edit($flow)
+    ->setRawJsonStructure($jsonString)
+    ->save();
+```
+
+**Notas:**
+- `setRawJsonStructure()` y la API fluida (`->screen()->element()`) son mutuamente excluyentes. Si pasás el JSON raw, `buildFlowJson()` se omite completamente.
+- El JSON debe estar completo y ser válido para Meta (incluye `version`, `routing_model`, `screens`).
+- `save()` sube el JSON vía multipart al endpoint de assets de Meta y actualiza el registro local en la base de datos.
+
+---
+
 5. Publicar un Flujo
 Una vez que hayas terminado de diseñar y probar tu flujo, debes publicarlo para que los usuarios puedan interactuar con él.
 
