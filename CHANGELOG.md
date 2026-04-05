@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.46] - 2026-04-05
+
+### Added
+- **`FlowMediaService::processFlowMedia()`** — procesamiento completo de archivos multimedia enviados por `PhotoPicker` / `DocumentPicker` en el flujo `nfm_reply`. Recibe un ítem `{ id, file_name, mime_type, sha256 }`, llama a Meta Graph API para obtener `cdn_url` + `encryption_metadata`, y ejecuta el algoritmo de validación y descifrado completo definido por Meta.
+- **`FlowMediaService::processInlineMedia()`** — procesamiento para el caso del `data_exchange` endpoint, donde el ítem ya contiene `cdn_url` y `encryption_metadata` inline (sin necesidad de llamar a la API de Meta).
+- **`FlowMediaService::fetchMediaMetadata()`** — llamada a `GET /{media_id}` en Meta Graph API con Bearer token del número de teléfono para recuperar `cdn_url` y `encryption_metadata`.
+
+### Changed
+- **`FlowMediaService` reescrito completamente** con el algoritmo correcto según la especificación oficial de Meta para archivos del CDN de WhatsApp:
+  1. `SHA256(cdn_file) == encrypted_hash` — valida integridad del archivo descargado.
+  2. `HMAC-SHA256(hmac_key, iv || ciphertext)[0:10] == hmac10` — valida autenticidad (los últimos 10 bytes del archivo CDN son el HMAC truncado).
+  3. `AES-256-CBC(encryption_key, iv, ciphertext)` + pkcs7 unpadding automático — descifra el contenido.
+  4. `SHA256(decrypted) == plaintext_hash` — valida integridad del archivo descifrado.
+- **`handleFlowResponseMessage()` reescrito** con soporte dual para ambas estructuras de respuesta de Meta:
+  - **nfm_reply**: `photo_picker` / `document_picker` como arrays de `{ id, file_name, mime_type, sha256 }` — requiere llamada a Meta API por `media_id`.
+  - **data_exchange endpoint**: ítem con `cdn_url` + `encryption_metadata` inline.
+  - El `$whatsappPhone` se resuelve desde `metadata['phone_number_id']` (consistente con todos los demás handlers del webhook processor). Funciona con contactos BSUID y no-BSUID sin cambios, ya que la identificación del teléfono de negocio siempre viene en `metadata`.
+  - Los archivos procesados se inyectan en `flow_data` bajo la clave `{campo}_files` para acceso directo desde el evento de finalización.
+  - Log de warning cuando el phone no se puede resolver, consistente con `handleEditMessage`, `handleRevokeMessage` y `handleSystemMessage`.
+
 ## [1.1.45] - 2026-04-04
 
 ### Added

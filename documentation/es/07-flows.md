@@ -766,39 +766,145 @@ MIT License - Ver LICENSE para más detalles
 
 
 
-📋 PLAN DE ACCIÓN ACTUALIZADO (V3.0) - Enfoque Autoconfigurable
-FASE 1: Criptografía y Configuración Automática
-1.1. Hook de Instalación: * Aprovecharemos el comando whatsapp:install (o el proceso de publicación de configuración) para preguntar al usuario: "¿Deseas generar automáticamente las llaves RSA para WhatsApp Flows?".
+## 🖼️ Procesamiento de Media — PhotoPicker y DocumentPicker
 
-Si acepta, el paquete ejecutará internamente la lógica de creación sin que el usuario toque la terminal.
+Cuando un usuario completa un Flow que incluye un componente `PhotoPicker` o `DocumentPicker`, los archivos **no llegan descifrados** en el webhook. Meta los almacena temporalmente (hasta 20 días) en su CDN encriptados con AES-256-CBC + HMAC-SHA256.
 
-1.2. Comando Manual whatsapp:keys:
+El paquete maneja esto automáticamente en `handleFlowResponseMessage()`, pero también podés invocar `FlowMediaService` directamente si necesitás personalizar el flujo.
 
-Servirá para Regenerar (en caso de compromiso de seguridad) o Subir llaves existentes.
+---
 
-Opciones: --force (para sobrescribir) y --upload-only (si ya tiene las llaves en storage).
+### Cómo funciona el webhook `nfm_reply`
 
-1.3. Service Provider Inteligente:
+Cuando el usuario termina el Flow, llegás a tu webhook con un `nfm_reply` cuyo `response_json` contiene:
 
-El WhatsappServiceProvider verificará si las llaves existen. Si no, y el modo Flows está activo, lanzará una alerta en los logs o una notificación en la consola.
+```json
+{
+    "photo_picker": [
+        {
+            "file_name": "IMG_5237.jpg",
+            "mime_type": "image/jpeg",
+            "sha256": "PqHgadp8cJ/N6mvAYGNMxhs9Ra5hbZFcctCtCClXsMU=",
+            "id": "3631120727156756"
+        }
+    ],
+    "flow_token": "xyz",
+    "name": "Juan"
+}
+```
 
-1.4. Actualización de FlowService.php:
+El campo `id` es el `media_id`. El paquete llama automáticamente a Meta API con ese ID para obtener el `cdn_url` y los metadatos de encriptación, descarga el archivo, lo valida y lo descifra.
 
-Método uploadKeysToMeta(): Automatiza el envío de la llave pública a Meta tras la generación.
+---
 
-FASE 2: El Motor del Endpoint (Data Channel)
-2.1. Middleware de Desencriptación: Crearemos un Middleware que se encargue de la "magia sucia" (RSA + AES-GCM) antes de que la petición llegue al controlador.
+### Algoritmo de descifrado (según spec oficial de Meta)
 
-2.2. Controlador Base de Flows: Un endpoint único que gestiona el ping de salud y delega el data_exchange al procesador del desarrollador.
+```
+cdn_file  = ciphertext || hmac10   (el archivo del CDN tiene los últimos 10 bytes de HMAC al final)
 
-FASE 3: Procesamiento Multimedia (Media Upload)
-3.1. FlowMediaService: Sistema de descarga y descifrado AES-256-CBC para los componentes PhotoPicker y DocumentPicker.
+1. SHA256(cdn_file)                           == encrypted_hash   → valida integridad del CDN
+2. HMAC-SHA256(hmac_key, iv || ciphertext)[0:10] == hmac10        → valida autenticidad
+3. AES-256-CBC(encryption_key, iv, ciphertext) + pkcs7 unpad      → descifra el contenido
+4. SHA256(decrypted)                          == plaintext_hash   → valida el archivo final
+```
 
-FASE 4: Webhooks de Estado y Métricas
-4.1. Monitor de Salud: Captura de eventos ENDPOINT_LATENCY, ERROR_RATE, etc., y actualización automática del modelo WhatsappFlow local.
+---
 
-FASE 5: Actualización de Builders (v7.3)
-5.1. ElementBuilder Avanzado: Métodos para todos los nuevos componentes (RichText, Chips, etc.) y validaciones de seguridad.
+### Escuchar el evento de finalización
+
+```php
+use ScriptDevelop\WhatsappManager\Events\Messages\Interactive\Received;
+
+class FlowCompletedListener
+{
+    public function handle(Received $event): void
+    {
+        $data = $event->data;
+
+        // Solo procesar si es una finalización de Flow
+        if (empty($data['is_flow_completion'])) {
+            return;
+        }
+
+        $flowData = $data['flow_data'];
+        $token    = $flowData['flow_token'] ?? null;
+
+        // Archivos procesados de PhotoPicker
+        // El campo "{nombre_del_componente}_files" contiene los archivos ya descifrados
+        $photos = $flowData['photo_picker_files'] ?? [];
+
+        foreach ($photos as $photo) {
+            // $photo['url']           → URL pública (Storage::url)
+            // $photo['path']          → ruta relativa en Storage
+            // $photo['name']          → nombre generado del archivo
+            // $photo['original_name'] → nombre original del usuario
+            // $photo['mime']          → mime type detectado
+            // $photo['size']          → tamaño en bytes
+            // $photo['media_id']      → media_id original de Meta
+
+            $url = $photo['url'];
+            // Guardá la URL, procesá la imagen, etc.
+        }
+
+        // Lo mismo para DocumentPicker
+        $docs = $flowData['document_picker_files'] ?? [];
+    }
+}
+```
+
+---
+
+### Uso manual de `FlowMediaService`
+
+Si necesitás procesar un archivo fuera del webhook (por ejemplo, en un job asíncrono):
+
+```php
+use ScriptDevelop\WhatsappManager\Services\Flows\FlowMediaService;
+
+$service      = app(FlowMediaService::class);
+$phone        = \App\Models\WhatsappPhoneNumber::first(); // o el que corresponda
+
+// Caso 1: nfm_reply — solo tenés el media_id
+$mediaItem = [
+    'id'        => '3631120727156756',
+    'file_name' => 'IMG_5237.jpg',
+    'mime_type' => 'image/jpeg',
+];
+
+$result = $service->processFlowMedia($mediaItem, $phone, 'uploads');
+
+// Caso 2: data_exchange endpoint — ya tenés cdn_url + encryption_metadata
+$inlineItem = [
+    'cdn_url'             => 'https://mmg.whatsapp.net/v/...',
+    'file_name'           => 'contrato.pdf',
+    'encryption_metadata' => [
+        'encrypted_hash' => '...',
+        'iv'             => '...',
+        'encryption_key' => '...',
+        'hmac_key'       => '...',
+        'plaintext_hash' => '...',
+    ],
+];
+
+$result = $service->processInlineMedia($inlineItem, 'documentos');
+
+// $result devuelve:
+// [
+//     'path'          => 'whatsapp/flows/media/uploads/imagen_abc123.jpg',
+//     'url'           => '/storage/whatsapp/flows/media/uploads/imagen_abc123.jpg',
+//     'name'          => 'imagen_abc123.jpg',
+//     'original_name' => 'IMG_5237.jpg',
+//     'mime'          => 'image/jpeg',
+//     'size'          => 102400,
+//     'media_id'      => '3631120727156756',
+// ]
+```
+
+---
+
+### Nota sobre BSUID
+
+Si el usuario que envió el Flow usa BSUID (identificador sin número de teléfono), el comportamiento es idéntico. La resolución del número de teléfono del **negocio** siempre viene en `metadata.phone_number_id` del webhook, independientemente del tipo de identificador del contacto. El paquete maneja automáticamente ambos formatos de contacto (BSUID y `wa_id`).
 
 
 

@@ -3887,58 +3887,124 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
 
     /**
-     * Procesa el JSON final que envía el Flow al terminar (nfm_reply)
-     * Incluye el procesamiento automático de archivos multimedia (Fase 3)
+     * Procesa el JSON final que envía el Flow al terminar (nfm_reply).
+     *
+     * El nfm_reply contiene response_json con los campos del formulario.
+     * Para photo_picker / document_picker, cada ítem tiene:
+     *   { file_name, mime_type, sha256, id }
+     * El "id" es el media_id — se llama a Meta Graph API para obtener
+     * cdn_url y encryption_metadata, luego se descarga y desencripta.
      */
     protected function handleFlowResponseMessage(array $message, ?array $contact, ?array $metadata): void
     {
-        // 1. Extraer y decodificar el JSON de respuesta del Flow
-        $responseJson = data_get($message, 'interactive.nfm_reply.response_json');
-        $decodedResponse = json_decode($responseJson, true);
+        // 1. Extraer y decodificar el response_json del Flow
+        $responseJson    = data_get($message, 'interactive.nfm_reply.response_json');
+        $decodedResponse = is_string($responseJson) ? json_decode($responseJson, true) : ($responseJson ?? []);
 
-        Log::channel('whatsapp')->info('Flow Response Received:', [
+        if (! is_array($decodedResponse)) {
+            $decodedResponse = [];
+        }
+
+        Log::channel('whatsapp')->info('Flow Response Received', [
             'flow_token' => $decodedResponse['flow_token'] ?? 'N/A',
-            'data' => $decodedResponse
+            'data'       => $decodedResponse,
         ]);
 
-        // 2. PROCESAMIENTO DE MEDIOS (Fase 3)
-        // Buscamos si en la respuesta vienen objetos de archivos (url + encryption_key)
-        $mediaService = app(FlowMediaService::class);
+        // 2. Resolver el número de teléfono de WhatsApp (necesario para llamar a la API de Meta
+        //    al momento de descargar media). Meta identifica al REMITENTE mediante BSUID o wa_id,
+        //    pero el número de teléfono del negocio siempre viene en metadata.phone_number_id.
+        $apiPhoneNumberId = $metadata['phone_number_id'] ?? null;
+        $whatsappPhone    = null;
+
+        if ($apiPhoneNumberId) {
+            $whatsappPhone = WhatsappModelResolver::phone_number()
+                ->where('api_phone_number_id', $apiPhoneNumberId)
+                ->first();
+        }
+
+        if (! $whatsappPhone) {
+            Log::channel('whatsapp')->warning('Flow Response: no se pudo resolver WhatsappPhoneNumber; el procesamiento de media será omitido.', [
+                'api_phone_number_id' => $apiPhoneNumberId,
+                'flow_token'          => $decodedResponse['flow_token'] ?? 'N/A',
+            ]);
+        }
+
+        // 3. Procesar archivos multimedia
+        // Meta envía dos estructuras posibles según el modo del Flow:
+        //
+        //   a) nfm_reply (este caso): photo_picker/document_picker son arrays de
+        //      { file_name, mime_type, sha256, id } — requiere llamar a Meta API con el id
+        //
+        //   b) data_exchange endpoint: cada ítem ya trae cdn_url + encryption_metadata inline
+        //
+        $mediaService   = app(FlowMediaService::class);
         $processedFiles = [];
 
-        foreach ($decodedResponse as $key => $value) {
-            // Meta envía los archivos como arrays que contienen 'url' y 'encryption_key'
-            if (is_array($value) && isset($value['encryption_key'], $value['url'])) {
-                try {
-                    // Descargar y desencriptar el archivo
-                    $fileInfo = $mediaService->downloadAndDecrypt($value, 'flows');
+        // Campos estándar de media pickers — también detectamos dinámicamente
+        $mediaPickerKeys = ['photo_picker', 'document_picker'];
 
-                    // Inyectamos la URL local en el array de respuesta para que el dev la use fácil
-                    $decodedResponse[$key . '_local_url'] = $fileInfo['url'];
-                    $processedFiles[] = $fileInfo;
+        foreach ($decodedResponse as $fieldKey => $fieldValue) {
+            if (! is_array($fieldValue) || empty($fieldValue)) {
+                continue;
+            }
 
-                    Log::channel('whatsapp')->info("Flow Media Processed: {$key}", $fileInfo);
-                } catch (\Exception $e) {
-                    Log::channel('whatsapp')->error("Error procesando media de Flow en campo [{$key}]: " . $e->getMessage());
+            // Caso (a): nfm_reply — items con { id, file_name, mime_type, sha256 }
+            $isNfmReplyMedia = in_array($fieldKey, $mediaPickerKeys, true)
+                || (isset($fieldValue[0]) && is_array($fieldValue[0]) && isset($fieldValue[0]['id'], $fieldValue[0]['file_name']));
+
+            if ($isNfmReplyMedia && $whatsappPhone) {
+                $processedItems = [];
+                foreach ($fieldValue as $mediaItem) {
+                    if (! isset($mediaItem['id'])) {
+                        continue;
+                    }
+                    try {
+                        $fileInfo = $mediaService->processFlowMedia($mediaItem, $whatsappPhone, 'flows');
+                        $processedItems[]                       = $fileInfo;
+                        $processedFiles[]                       = array_merge($fileInfo, ['field' => $fieldKey]);
+                        Log::channel('whatsapp')->info("Flow Media Procesado [{$fieldKey}]", $fileInfo);
+                    } catch (\Exception $e) {
+                        Log::channel('whatsapp')->error(
+                            "Error procesando media de Flow [{$fieldKey}][id={$mediaItem['id']}]: " . $e->getMessage()
+                        );
+                    }
                 }
+                // Inyectamos los archivos procesados bajo la clave "{field}_files"
+                if (! empty($processedItems)) {
+                    $decodedResponse[$fieldKey . '_files'] = $processedItems;
+                }
+                continue;
+            }
+
+            // Caso (b): data_exchange — ítem único con cdn_url + encryption_metadata
+            if (isset($fieldValue['cdn_url'], $fieldValue['encryption_metadata'])) {
+                try {
+                    $fileInfo = $mediaService->processInlineMedia($fieldValue, 'flows');
+                    $decodedResponse[$fieldKey . '_file']   = $fileInfo;
+                    $processedFiles[]                       = array_merge($fileInfo, ['field' => $fieldKey]);
+                    Log::channel('whatsapp')->info("Flow Media Inline Procesado [{$fieldKey}]", $fileInfo);
+                } catch (\Exception $e) {
+                    Log::channel('whatsapp')->error(
+                        "Error procesando media inline de Flow [{$fieldKey}]: " . $e->getMessage()
+                    );
+                }
+                continue;
             }
         }
 
-        // 3. Registrar en la base de datos como un mensaje recibido
-        // Esto usará tu lógica estándar de handleIncomingMessage
+        // 4. Registrar como mensaje recibido en la base de datos
         $this->handleIncomingMessage($message, $contact, $metadata);
 
-        // 4. Disparar evento de finalización de Flow
-        // Pasamos los datos del contacto, los datos del flujo procesados y los archivos descargados
+        // 5. Disparar evento de finalización de Flow
         $eventClass = config('whatsapp.events.messages.interactive.received');
 
         if ($eventClass && class_exists($eventClass)) {
             event(new $eventClass([
-                'contact' => $contact,
-                'message_id' => $message['id'] ?? null,
-                'flow_data' => $decodedResponse, // Contiene las nuevas llaves _local_url
-                'files' => $processedFiles,      // Lista detallada de archivos procesados
-                'is_flow_completion' => true
+                'contact'            => $contact,
+                'message_id'         => $message['id'] ?? null,
+                'flow_data'          => $decodedResponse,  // Incluye claves _files / _file con info local
+                'files'              => $processedFiles,   // Lista plana de todos los archivos procesados
+                'is_flow_completion' => true,
             ]));
         }
     }
