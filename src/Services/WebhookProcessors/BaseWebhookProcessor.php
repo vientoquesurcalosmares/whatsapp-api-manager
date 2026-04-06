@@ -3995,6 +3995,65 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         // 4. Registrar como mensaje recibido en la base de datos
         $this->handleIncomingMessage($message, $contact, $metadata);
 
+        // 4.5 — Recolección de datos del Flow (persistencia de sesión y respuestas)
+        // Este bloque NO lanza excepciones — cualquier fallo solo se loguea.
+        if (config('whatsapp.flows.collect_responses', true)) {
+            try {
+                $flowToken = $decodedResponse['flow_token'] ?? null;
+
+                if ($flowToken) {
+                    /** @var \ScriptDevelop\WhatsappManager\Services\Flows\FlowSessionService $flowSessionService */
+                    $flowSessionService = app(\ScriptDevelop\WhatsappManager\Services\Flows\FlowSessionService::class);
+
+                    /** @var \ScriptDevelop\WhatsappManager\Services\Flows\FlowResponseService $flowResponseService */
+                    $flowResponseService = app(\ScriptDevelop\WhatsappManager\Services\Flows\FlowResponseService::class);
+
+                    /** @var \ScriptDevelop\WhatsappManager\Services\Flows\FlowActionDispatcher $flowActionDispatcher */
+                    $flowActionDispatcher = app(\ScriptDevelop\WhatsappManager\Services\Flows\FlowActionDispatcher::class);
+
+                    // Resolver contacto BD si tenemos wa_id
+                    $resolvedContact = null;
+                    $waId = $contact['wa_id'] ?? null;
+                    if ($waId) {
+                        $resolvedContact = WhatsappModelResolver::contact()
+                            ->where('wa_id', $waId)
+                            ->first();
+                    }
+
+                    // Crear o recuperar sesión
+                    $session = $flowSessionService->findOrCreateSession(
+                        flowToken:   $flowToken,
+                        waFlowId:    null,  // nfm_reply no incluye wa_flow_id directamente
+                        phoneNumber: $whatsappPhone,
+                        contact:     $resolvedContact,
+                        sendMethod:  'organic',
+                        isOrganic:   true
+                    );
+
+                    // Persistir campos del formulario
+                    $flowResponseService->saveFromNfmReply(
+                        $session,
+                        $decodedResponse,
+                        $whatsappPhone,
+                        $resolvedContact
+                    );
+
+                    // Marcar sesión como completada
+                    $flowSessionService->completeSession($session, $decodedResponse);
+
+                    // Ejecutar acciones configuradas post-completado
+                    $flowActionDispatcher->dispatch($session, 'on_complete', $decodedResponse);
+                }
+            } catch (\Throwable $e) {
+                Log::channel('whatsapp')->error('FlowDataCollection: error al persistir datos del flow', [
+                    'flow_token' => $decodedResponse['flow_token'] ?? 'N/A',
+                    'error'      => $e->getMessage(),
+                    'file'       => $e->getFile(),
+                    'line'       => $e->getLine(),
+                ]);
+            }
+        }
+
         // 5. Disparar evento de finalización de Flow
         $eventClass = config('whatsapp.events.messages.interactive.received');
 
@@ -4010,18 +4069,27 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     }
 
     /**
-     * HOOK: El desarrollador puede sobreescribir este método en su procesador personalizado
-     * para manejar la lógica de los Endpoints (Data Exchange).
+     * Enruta las peticiones del Data Exchange al handler configurado para el flow.
+     * Delega a FlowEndpointRouter que resuelve el handler según config (auto/webhook/class).
+     * Si el flow no tiene config o no tiene endpoint habilitado, retorna una respuesta genérica.
      */
     protected function processFlowDataExchange(array $decryptedData): array
     {
-        // Por defecto, devolvemos un success genérico o una pantalla de carga
-        return [
-            'version' => '3.0', // Data API Version
-            'data' => [
-                'status' => 'processed_by_base'
-            ]
-        ];
+        try {
+            return app(\ScriptDevelop\WhatsappManager\Services\Flows\FlowEndpointRouter::class)
+                ->route($decryptedData);
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error('FlowEndpointRouter: error en data exchange', [
+                'action' => $decryptedData['action'] ?? 'unknown',
+                'error'  => $e->getMessage(),
+                'file'   => $e->getFile(),
+                'line'   => $e->getLine(),
+            ]);
+            return [
+                'version' => config('whatsapp.flows.data_api_version', '3.0'),
+                'data'    => ['error' => 'internal_error'],
+            ];
+        }
     }
 
     /**

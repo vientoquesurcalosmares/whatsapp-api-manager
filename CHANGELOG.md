@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.47] - 2026-04-06
+
+### Added
+- **Arquitectura de WhatsApp Flows Endpoint (Data Channel):** Implementación integral para habilitar los endpoints de flujos (Data Exchange).
+  - Interfaces `FlowEndpointHandlerInterface` y `FlowActionHandlerInterface`.
+  - `FlowEndpointRouter` y `FlowActionDispatcher` para delegar de forma dinámica las peticiones según la configuración persistida en el WABA.
+  - Modelos `WhatsappFlowEndpointConfig` y `WhatsappFlowAction`.
+- **Persistencia de Sesiones y Analíticas de Flow:**
+  - Migraciones para enriquecimiento de `whatsapp_flow_sessions` (datos de contexto y finalización stateful) y `whatsapp_flow_responses`.
+  - Tabla de métricas de pantallas: `whatsapp_flow_screen_stats` y modelo `WhatsappFlowScreenStats` para monitorizar abandono y éxito en multi-step flows.
+  - Captura y registro de sesión desde Webhooks de manera pasiva (`FlowSessionService`).
+- **Evento de Sistema:** Emisión automática del evento `FlowSessionCompleted` desde `BaseWebhookProcessor` al culminar el ciclo nfm_reply final.
+- **Integración fluida en `TemplateEditor`:** Extensión del método `addFlowButton()` con parámetros explícitos para soporte `DATA_EXCHANGE`, `navigateScreen` y `flowIcon`.
+- **Integración de Servicios y Providers:** Carga de los nuevos controladores, inyector de dependencias (IoC/DI bindings) en `WhatsappServiceProvider` y configuración extendida en `whatsapp.php`.
+
 ## [1.1.46] - 2026-04-05
 
 ### Added
