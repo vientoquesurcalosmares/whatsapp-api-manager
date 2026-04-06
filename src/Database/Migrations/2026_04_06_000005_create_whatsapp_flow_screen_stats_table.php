@@ -45,8 +45,8 @@ return new class extends Migration
 
             $table->timestamps();
 
-            // UNIQUE para upsert atómico correcto
-            $table->unique(['flow_id', 'phone_number_id', 'screen_name', 'stat_date']);
+            // UNIQUE para upsert atómico correcto (nombre corto — MySQL limita a 64 chars)
+            $table->unique(['flow_id', 'phone_number_id', 'screen_name', 'stat_date'], 'flow_screen_stats_unique');
 
             // Índices adicionales para queries de analytics
             $table->index('flow_id');

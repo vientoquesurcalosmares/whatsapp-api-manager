@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.49] - 2026-04-06
+
+### Fixed
+- **Migraciones de Estadísticas de Flujo**: Corrección en nombre de clave única compuesta en la migración `create_whatsapp_flow_screen_stats_table` para no exceder el límite de 64 caracteres de MySQL (`flow_screen_stats_unique`).
+
 ## [1.1.48] - 2026-04-06
 
 ### Fixed
