@@ -1092,8 +1092,9 @@ class TemplateService
         ];
 
         $body = [
-            'file_name' => $fileName,
-            'file_type' => $mimeType,
+            'file_name'   => $fileName,
+            'file_type'   => $mimeType,
+            'file_length' => filesize($filePath),
         ];
 
         Log::channel('whatsapp')->info('Creando sesión de carga.', [
@@ -1105,16 +1106,15 @@ class TemplateService
         $curl = curl_init();
 
         curl_setopt_array($curl, [
-            CURLOPT_URL => $url,
+            CURLOPT_URL            => $url,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
+            CURLOPT_MAXREDIRS      => 10,
+            CURLOPT_TIMEOUT        => 30,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => json_encode($body),
-            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST  => 'POST',
+            CURLOPT_POSTFIELDS     => json_encode($body),
+            CURLOPT_HTTPHEADER     => $headers,
         ]);
 
         // Ejecutar la solicitud
@@ -1185,28 +1185,34 @@ class TemplateService
 
         Log::channel('whatsapp')->info('URL final para la carga de medios:', ['url' => $url]);
 
-        // Leer el contenido del archivo
-        $fileContents = file_get_contents($filePath);
+        // Leer el contenido del archivo en modo binario
+        $fileHandle = fopen($filePath, 'rb');
+        $fileSize   = filesize($filePath);
+
+        if ($fileHandle === false) {
+            throw new \RuntimeException("No se pudo abrir el archivo para lectura: $filePath");
+        }
 
         // Configurar cURL
         $curl = curl_init();
 
         curl_setopt_array($curl, [
-            CURLOPT_URL => $url,
+            CURLOPT_URL            => $url,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => $fileContents,
-            CURLOPT_HTTPHEADER => [
-                'file_offset: 0',
-                'Content-Type: application/octet-stream',
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST  => 'POST',
+            CURLOPT_PUT            => false,
+            CURLOPT_POSTFIELDS     => fread($fileHandle, $fileSize),
+            CURLOPT_HTTPHEADER     => [
                 'Authorization: OAuth ' . $account->api_token,
+                'file_offset: 0',
+                'Content-Type: ' . $mimeType,
+                'Content-Length: ' . $fileSize,
             ],
         ]);
+
+        fclose($fileHandle);
 
         // Ejecutar la solicitud
         $response = curl_exec($curl);
