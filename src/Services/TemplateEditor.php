@@ -428,14 +428,15 @@ class TemplateEditor extends TemplateBuilder
      * @return self
      * @throws TemplateComponentException
      */
-    public function addFlowButton(string $text, string $flowId, ?string $flowToken = null): self
+    /*public function addFlowButton(string $text, string $flowId, ?string $flowToken = null): self
     {
+        //Wil, comenté este código porque da error, para que luego lo revises y veas que era lo que quería hacer para este método, saludos!
         if ($this->buttonCount >= 10) {
             throw new TemplateComponentException('No se pueden agregar más de 10 botones a una plantilla.');
         }
 
         return parent::addFlowButton($text, $flowId, $flowToken);
-    }
+    }*/
 
     public function getButtons(): array
     {
