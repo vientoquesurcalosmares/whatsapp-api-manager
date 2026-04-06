@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.51] - 2026-04-06
+
+### Added
+- **Gestión de Llaves Públicas para Flow Endpoints**: Añadidos métodos `getPhoneNumberPublicKeyStatus()` y `setPhoneNumberPublicKey()` en `FlowService` para la gestión y carga de la llave asimétrica (`business_public_key`) en WhatsApp Business, requerida obligatoriamente para desencriptar peticiones de Data Exchange hacia tu Webhook.
+
 ## [1.1.50] - 2026-04-06
 
 ### Fixed

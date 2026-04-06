@@ -329,6 +329,42 @@ class FlowService
     }
 
     /**
+     * Obtiene el estado de la llave pública para un número de teléfono específico.
+     * Usa api_phone_number_id del modelo WhatsappPhoneNumber y el api_token del account.
+     */
+    public function getPhoneNumberPublicKeyStatus(Model $phoneNumber, Model $account): array
+    {
+        $endpoint = config('whatsapp.api.base_url') . '/' . config('whatsapp.api.version') . '/' . $phoneNumber->api_phone_number_id . '/whatsapp_business_encryption';
+
+        return $this->apiClient->request(
+            'GET',
+            $endpoint,
+            [],
+            null,
+            [],
+            ['Authorization' => 'Bearer ' . $account->api_token]
+        );
+    }
+
+    /**
+     * Sube la llave pública de encriptación para un número de teléfono específico.
+     * Usa api_phone_number_id del modelo WhatsappPhoneNumber y el api_token del account.
+     */
+    public function setPhoneNumberPublicKey(Model $phoneNumber, Model $account, string $publicKey): array
+    {
+        $endpoint = config('whatsapp.api.base_url') . '/' . config('whatsapp.api.version') . '/' . $phoneNumber->api_phone_number_id . '/whatsapp_business_encryption';
+
+        return $this->apiClient->request(
+            'POST',
+            $endpoint,
+            [],
+            ['business_public_key' => $publicKey],
+            [],
+            ['Authorization' => 'Bearer ' . $account->api_token]
+        );
+    }
+
+    /**
      * Clona un conjunto de flujos de un WABA origen al WABA destino actual.
      * Si no se especifican nombres de flujos, se clonan todos.
      * 
