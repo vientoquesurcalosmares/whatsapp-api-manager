@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.50] - 2026-04-06
+
+### Fixed
+- **Migraciones de Estadísticas de Flujo**: Añadido `Schema::dropIfExists('whatsapp_flow_screen_stats')` en la migración para garantizar la idempotencia al ejecutar o refrescar las migraciones.
+
 ## [1.1.49] - 2026-04-06
 
 ### Fixed

@@ -16,6 +16,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('whatsapp_flow_screen_stats');
+
         Schema::create('whatsapp_flow_screen_stats', function (Blueprint $table) {
             $table->bigIncrements('stat_id');
 
