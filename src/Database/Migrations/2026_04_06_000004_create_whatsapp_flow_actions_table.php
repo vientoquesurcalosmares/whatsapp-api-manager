@@ -32,7 +32,7 @@ return new class extends Migration
             $table->boolean('is_enabled')->default(true);
             $table->unsignedSmallInteger('execution_order')->default(0);
 
-            $table->json('config')->default('{}')
+            $table->json('config')->nullable()
                   ->comment('Config por tipo: {url,method,headers} / {to,subject,template} / {event_class,payload_mapping}');
             $table->json('retry_config')->nullable()
                   ->comment('{"attempts":3,"backoff":[10,30,60]}');

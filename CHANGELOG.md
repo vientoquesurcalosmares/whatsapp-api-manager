@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.48] - 2026-04-06
+
+### Fixed
+- **Configuración de Acciones de Flow**: Corrección en migración de `whatsapp_flow_actions` permitiendo que el campo `config` sea nulo a nivel base de datos, y establecimiento de default attribute a array vacío en el modelo `WhatsappFlowAction`.
+
 ## [1.1.47] - 2026-04-06
 
 ### Added

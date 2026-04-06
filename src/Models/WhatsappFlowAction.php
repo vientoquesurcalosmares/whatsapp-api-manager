@@ -29,6 +29,10 @@ class WhatsappFlowAction extends Model
         'retry_config',
     ];
 
+    protected $attributes = [
+        'config' => '[]',
+    ];
+
     protected $casts = [
         'config'       => 'array',
         'retry_config' => 'array',
