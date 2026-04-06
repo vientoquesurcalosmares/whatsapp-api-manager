@@ -203,29 +203,51 @@ class TemplateService
     protected function saveTemplateVersionMedia(Model $version, string $mediaUrl, string $mediaType): void
     {
         try {
-            $response = Http::get($mediaUrl);
+            $mediaType = Str::lower($mediaType);
+
+            // Obtener la ruta de almacenamiento configurada desde la config
+            $directory = config('whatsapp.media.storage_path.'.$mediaType.'s'); // Por defecto pluralizar el tipo de media
+
+            if (!$directory) {
+                throw new \RuntimeException("No se ha configurado una ruta de almacenamiento para el tipo de media: $mediaType");
+            }
+
+            if (!file_exists($directory)) {
+                mkdir($directory, 0755, true);
+            }
+
+            if (Str::endsWith($directory, '/')) {
+                $directory = rtrim($directory, '/');
+            }
+
+            $baseFileName = "{$version->version_id}_{$mediaType}";
+            $tempPath = "{$directory}/{$baseFileName}.part";
+
+            // Descargar en streaming a un archivo temporal para evitar consumo alto de memoria
+            $response = Http::withOptions(['sink' => $tempPath])->get($mediaUrl);
             if ($response->successful()) {
-                $mediaContent = $response->body();
                 $extension    = $this->getFileExtension($response->header('Content-Type'));
                 $mediaType    = Str::lower($mediaType);
-
-                // Obtener la ruta de almacenamiento configurada desde la config
-                $directory = config('whatsapp.media.storage_path.'.$mediaType.'s'); // Por defecto pluralizar el tipo de media
-
-                if (!$directory) {
-                    throw new \RuntimeException("No se ha configurado una ruta de almacenamiento para el tipo de media: $mediaType");
-                }
-
-                if (!file_exists($directory)) {
-                    mkdir($directory, 0755, true);
-                }
-
                 $fileName = "{$version->version_id}_{$mediaType}.{$extension}";
-                if (Str::endsWith($directory, '/')) {
-                    $directory = rtrim($directory, '/');
-                }
                 $filePath = "{$directory}/{$fileName}";
-                file_put_contents($filePath, $mediaContent);
+
+                if (!file_exists($tempPath)) {
+                    throw new \RuntimeException("No se pudo guardar temporalmente el media de plantilla: {$tempPath}");
+                }
+
+                $writtenBytes = filesize($tempPath);
+                if ($writtenBytes === false) {
+                    throw new \RuntimeException("No se pudo determinar el tamaño del media descargado: {$tempPath}");
+                }
+
+                // En Windows, rename() puede fallar si el destino ya existe.
+                if (file_exists($filePath) && !unlink($filePath)) {
+                    throw new \RuntimeException("No se pudo reemplazar el archivo existente: {$filePath}");
+                }
+
+                if (!rename($tempPath, $filePath)) {
+                    throw new \RuntimeException("No se pudo mover el archivo temporal al destino final: {$filePath}");
+                }
 
                 // Convertir el path absoluto a relativo para Storage::url
                 $relativePath = str_replace(storage_path('app/public/'), '', $directory . '/' . $fileName);
@@ -239,7 +261,7 @@ class TemplateService
                     'file_name'  => $fileName,
                     'mime_type'  => $response->header('Content-Type'),
                     'url'        => $publicPath,
-                    'file_size'  => strlen($mediaContent),
+                    'file_size'  => $writtenBytes,
                 ]);
 
                 Log::channel('whatsapp')->info('Template version header media saved', [
@@ -248,6 +270,10 @@ class TemplateService
                     'header_media_url' => $publicPath
                 ]);
             } else {
+                if (file_exists($tempPath)) {
+                    @unlink($tempPath);
+                }
+
                 Log::channel('whatsapp')->warning('Failed to download template header media', [
                     'version_id' => $version->version_id,
                     'media_url'  => $mediaUrl,
@@ -255,6 +281,10 @@ class TemplateService
                 ]);
             }
         } catch (\Exception $e) {
+            if (isset($tempPath) && file_exists($tempPath)) {
+                @unlink($tempPath);
+            }
+
             Log::channel('whatsapp')->error('Error saving template version header media', [
                 'version_id'    => $version->version_id,
                 'media_url'     => $mediaUrl,
