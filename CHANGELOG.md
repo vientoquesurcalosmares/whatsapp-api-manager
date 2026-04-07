@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.52] - 2026-04-07
+
+### Added
+- **Soporte Multi-Tenant en FlowCryptoService**: Refactorización para permitir cargar llaves privadas `.pem` a nivel de cuenta (`loadForAccount()`) o ruta personalizada (`loadFromPath()`), abandonando el formato de inyección forzada del singleton. Mantiene compatibilidad hacia atrás mediante `ensureKeyLoaded()` usando el path legacy.
+
 ## [1.1.51] - 2026-04-06
 
 ### Added
