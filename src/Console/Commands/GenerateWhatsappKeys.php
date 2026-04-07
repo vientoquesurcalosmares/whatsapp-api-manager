@@ -17,7 +17,8 @@ class GenerateWhatsappKeys extends Command
      */
     protected $signature = 'whatsapp:generate-keys 
                             {--force : Sobrescribe las llaves existentes sin preguntar} 
-                            {--show : Muestra la llave pública en consola después de generar}';
+                            {--show : Muestra la llave pública en consola después de generar}
+                            {--account-id= : ID de la cuenta WABA para guardar la clave en almacenamiento privado (multi-tenancy)}';
 
     /**
      * La descripción del comando.
@@ -29,7 +30,14 @@ class GenerateWhatsappKeys extends Command
      */
     public function handle()
     {
-        $path = storage_path('app/public/whatsapp/flows/keys');
+        $accountId = $this->option('account-id');
+        
+        if ($accountId) {
+            $path = storage_path("app/whatsapp/flows/keys/{$accountId}");
+        } else {
+            $path = storage_path('app/public/whatsapp/flows/keys');
+        }
+
         $privateKeyPath = "{$path}/private.pem";
         $publicKeyPath = "{$path}/public.pem";
 
@@ -124,8 +132,8 @@ class GenerateWhatsappKeys extends Command
             }, 'Generando par de llaves criptográficas...');
 
             info('✅ ¡Llaves generadas exitosamente!');
-            $this->line("  🔑 Privada: <comment>storage/app/public/whatsapp/flows/keys/private.pem</comment>");
-            $this->line("  🔒 Pública: <comment>storage/app/public/whatsapp/flows/keys/public.pem</comment>");
+            $this->line("  🔑 Privada: <comment>{$privateKeyPath}</comment>");
+            $this->line("  🔒 Pública: <comment>{$publicKeyPath}</comment>");
 
             if ($this->option('show')) {
                 $this->newLine();

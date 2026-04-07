@@ -3826,12 +3826,27 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     }
 
     /**
+     * Hook para resolver la ruta de la clave privada RSA de los Flows.
+     * El proyecto puede sobreescribir este método para multi-tenancy.
+     * Retornar null usa el comportamiento legacy/default.
+     */
+    protected function resolvePrivateKeyPath(Request $request): ?string
+    {
+        return null;
+    }
+
+    /**
      * Maneja el Data Channel de los Flows (Endpoint encriptado)
      */
     protected function handleFlowEndpointRequest(Request $request): Response
     {
         try {
             $cryptoService = app(FlowCryptoService::class);
+
+            $privateKeyPath = $this->resolvePrivateKeyPath($request);
+            if ($privateKeyPath) {
+                $cryptoService->loadFromPath($privateKeyPath);
+            }
 
             // Desencriptar
             $decryptedBody = $cryptoService->decryptRequest(

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.53] - 2026-04-07
+
+### Added
+- **Soporte Completo Multi-Tenant para Encriptado de Flows**:
+  - Comando `php artisan whatsapp:generate-keys`: Nueva opción `--account-id=` para guardar el par de claves RSA en un almacenamiento seguro particionado (`storage/app/whatsapp/flows/keys/{accountId}`) evitando usar el `public` disk.
+  - `BaseWebhookProcessor`: Añadido hook dinámico escalable `resolvePrivateKeyPath(Request $request)` que permite inyectar dinámicamente y al vuelo la clave RSA desde tu base de datos o almacenamiento aislado antes de desencriptar Data Channels multi-tenant.
+
 ## [1.1.52] - 2026-04-07
 
 ### Added
