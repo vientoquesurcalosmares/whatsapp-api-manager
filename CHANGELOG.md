@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.54] - 2026-04-07
+
+### Refactor
+- **Endpoints de Encriptación**: Simplificación de la construcción de URLs en `FlowService` delegando el prefijo de URL base y versión al `ApiClient`.
+
+### Changed
+- **Consulta de Llaves de Encriptación**: Se añadió el parámetro `fields` (`business_public_key,business_public_key_status`) a los métodos `getBusinessPublicKeyStatus` y `getPhoneNumberPublicKeyStatus` para asegurar que Meta retorne los metadatos completos de la llave.
+
 ## [1.1.53] - 2026-04-07
 
 ### Added

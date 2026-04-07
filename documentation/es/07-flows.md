@@ -906,24 +906,36 @@ $result = $service->processInlineMedia($inlineItem, 'documentos');
 
 Si el usuario que envió el Flow usa BSUID (identificador sin número de teléfono), el comportamiento es idéntico. La resolución del número de teléfono del **negocio** siempre viene en `metadata.phone_number_id` del webhook, independientemente del tipo de identificador del contacto. El paquete maneja automáticamente ambos formatos de contacto (BSUID y `wa_id`).
 
+---
 
+### 🛡️ Gestión de Llaves de Encriptación (Data Channel)
 
+Para que el **Data Exchange** (Endpoint) funcione, Meta requiere que tu WABA tenga una llave pública cargada. El paquete permite gestionar esto fácilmente.
 
+#### Consultar estado de la llave
+```php
+use ScriptDevelop\WhatsappManager\Facades\Whatsapp;
 
+$phoneNumber = $miModeloPhone; // Instancia de WhatsappPhoneNumber
+$account     = $miModeloAccount; // Instancia de WhatsappBusinessAccount
 
+$status = Whatsapp::flow()->getPhoneNumberPublicKeyStatus($phoneNumber, $account);
 
+// Retorna:
+// [
+//     'business_public_key'        => '...', 
+//     'business_public_key_status' => 'AVAILABLE' // o 'NOT_AVAILABLE'
+// ]
+```
 
+#### Cargar/Actualizar llave pública
+```php
+$publicKey = "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----";
 
+$result = Whatsapp::flow()->setPhoneNumberPublicKey($phoneNumber, $account, $publicKey);
+```
 
-
-
-
-
-
-
-
-
-
+---
 
 🏗️ Plan Maestro: WhatsApp Flows Enterprise Integration
 Fase 1: Infraestructura Criptográfica (The Security Layer)
