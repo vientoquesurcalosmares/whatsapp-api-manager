@@ -1201,90 +1201,147 @@ class TemplateService
      * @throws InvalidArgumentException Si el archivo no existe.
      * @throws \RuntimeException Si ocurre un error durante la carga.
      */
-    public function uploadMedia(Model $account, string $sessionId, string $filePath, string $mimeType): string
+    public function uploadMedia(Model $account, string $sessionId, string $filePath, string $mimeType, int $maxRetries = 3): string
     {
         // Validar que el archivo exista
         if (!file_exists($filePath)) {
             throw new InvalidArgumentException("El archivo no existe: $filePath");
         }
 
-        // Construir la URL completa
+        $fileSize = filesize($filePath);
+
+        // Limpiar sessionId para remover prefijo duplicado 'upload:'
+        $cleanSessionId = str_starts_with($sessionId, 'upload:') ? substr($sessionId, 7) : $sessionId;
         $baseUrl = config('whatsapp.api.base_url', 'https://graph.facebook.com');
         $version = config('whatsapp.api.version', 'v22.0');
-        $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . "/$sessionId";
+        $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . "/upload:$cleanSessionId";
 
-        Log::channel('whatsapp')->info('URL final para la carga de medios:', ['url' => $url]);
-
-        // Leer el contenido del archivo en modo binario
-        $fileHandle = fopen($filePath, 'rb');
-        $fileSize   = filesize($filePath);
-
-        if ($fileHandle === false) {
-            throw new \RuntimeException("No se pudo abrir el archivo para lectura: $filePath");
-        }
-
-        // Configurar cURL
-        $curl = curl_init();
-
-        curl_setopt_array($curl, [
-            CURLOPT_URL            => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST  => 'POST',
-            CURLOPT_PUT            => false,
-            CURLOPT_POSTFIELDS     => fread($fileHandle, $fileSize),
-            CURLOPT_HTTPHEADER     => [
-                'Authorization: OAuth ' . $account->api_token,
-                'file_offset: 0',
-                'Content-Type: ' . $mimeType,
-                'Content-Length: ' . $fileSize,
-            ],
+        Log::channel('whatsapp')->info('Iniciando carga de archivo.', [
+            'file_path' => $filePath,
+            'file_size' => $fileSize,
+            'url' => $url,
         ]);
 
-        fclose($fileHandle);
+        // La API de Meta no soporta chunks independientes: cada petición debe enviar
+        // todos los bytes restantes desde file_offset. El 'resumable' solo aplica
+        // para retomar tras un fallo de red, consultando el offset alcanzado.
+        $fileOffset = 0;
+        $retryCount = 0;
 
-        // Ejecutar la solicitud
-        $response = curl_exec($curl);
-        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        while ($retryCount < $maxRetries) {
+            $fileHandle = fopen($filePath, 'rb');
 
-        // Manejar errores de cURL
-        if (curl_errno($curl)) {
-            $error = curl_error($curl);
-            curl_close($curl);
-            throw new \RuntimeException("Error en cURL: $error");
+            if ($fileHandle === false) {
+                throw new \RuntimeException("No se pudo abrir el archivo para lectura: $filePath");
+            }
+
+            try {
+                fseek($fileHandle, $fileOffset);
+                $bytesRemaining = $fileSize - $fileOffset;
+
+                $curl = curl_init();
+
+                // CURLOPT_PUT habilita el streaming via CURLOPT_INFILE.
+                // CURLOPT_CUSTOMREQUEST sobreescribe el método a POST conservando el streaming.
+                curl_setopt_array($curl, [
+                    CURLOPT_URL            => $url,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_FOLLOWLOCATION => false,
+                    CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+                    CURLOPT_PUT            => true,
+                    CURLOPT_CUSTOMREQUEST  => 'POST',
+                    CURLOPT_INFILE         => $fileHandle,
+                    CURLOPT_INFILESIZE     => $bytesRemaining,
+                    CURLOPT_TIMEOUT        => 60,
+                    CURLOPT_HTTPHEADER     => [
+                        'Authorization: OAuth ' . $account->api_token,
+                        'file_offset: ' . $fileOffset,
+                        'Content-Type: ' . $mimeType,
+                        'Content-Length: ' . $bytesRemaining,
+                        'Expect:',
+                    ],
+                ]);
+
+                $response = curl_exec($curl);
+                $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+                $curlError = curl_error($curl);
+                $curlErrno = curl_errno($curl);
+
+                curl_close($curl);
+                fclose($fileHandle);
+
+                if ($curlErrno) {
+                    throw new \RuntimeException("Error en cURL: $curlError");
+                }
+
+                if ($httpCode === 200 || $httpCode === 201) {
+                    $responseData = json_decode($response, true);
+
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        throw new \RuntimeException('JSON inválido: ' . json_last_error_msg());
+                    }
+
+                    $handle = $responseData['h'] ?? $this->getUploadedFileHandle($account, $sessionId);
+
+                    if (!$handle) {
+                        throw new \RuntimeException('No se pudo obtener el identificador del archivo.');
+                    }
+
+                    Log::channel('whatsapp')->info('Archivo subido exitosamente.', [
+                        'handle' => $handle,
+                        'file_size' => $fileSize,
+                        'mime_type' => $mimeType,
+                        'session_id' => $sessionId,
+                    ]);
+
+                    return $handle;
+                }
+
+                // HTTP 206: carga parcial — verificar offset alcanzado y retomar desde ahí
+                if ($httpCode === 206) {
+                    $partialOffset = $this->getUploadOffset($account, $sessionId);
+
+                    if ($partialOffset !== null && $partialOffset > $fileOffset) {
+                        Log::channel('whatsapp')->info('Carga parcial detectada, retomando desde offset.', [
+                            'previous_offset' => $fileOffset,
+                            'new_offset'      => $partialOffset,
+                        ]);
+
+                        $fileOffset = $partialOffset;
+                        $retryCount = 0;
+                        continue;
+                    }
+                }
+
+                throw new \RuntimeException("HTTP Error $httpCode. Respuesta: $response");
+
+            } catch (\Exception $e) {
+                if (is_resource($fileHandle)) {
+                    fclose($fileHandle);
+                }
+
+                $retryCount++;
+
+                Log::channel('whatsapp')->warning("Error en intento $retryCount/$maxRetries.", [
+                    'error'       => $e->getMessage(),
+                    'file_offset' => $fileOffset,
+                ]);
+
+                if ($retryCount >= $maxRetries) {
+                    Log::channel('whatsapp')->error('Error crítico en uploadMedia.', [
+                        'error_message' => $e->getMessage(),
+                        'file_path'     => $filePath,
+                        'session_id'    => $sessionId,
+                    ]);
+
+                    throw new \RuntimeException("Falló la carga después de $maxRetries intentos. " . $e->getMessage());
+                }
+
+                usleep(1000000 * (2 ** ($retryCount - 1)));
+            }
         }
 
-        curl_close($curl);
-
-        // Registrar la respuesta
-        Log::channel('whatsapp')->info('Respuesta de la API después de subir el archivo.', [
-            'response' => $response,
-            'http_code' => $httpCode,
-        ]);
-
-        // Validar el código de respuesta HTTP
-        if ($httpCode !== 200) {
-            throw new \RuntimeException("Error al subir el archivo. Código HTTP: $httpCode. Respuesta: $response");
-        }
-
-        // Decodificar la respuesta JSON
-        $responseData = json_decode($response, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \RuntimeException('Error al decodificar la respuesta JSON: ' . json_last_error_msg());
-        }
-
-        // Obtener el identificador del archivo
-        $handle = $responseData['h'] ?? null;
-
-        if (!$handle) {
-            throw new \Exception('No se pudo obtener el identificador del archivo.');
-        }
-
-        Log::channel('whatsapp')->info('Archivo subido exitosamente.', ['handle' => $handle]);
-
-        return $handle;
+        throw new \RuntimeException("Falló la carga después de $maxRetries intentos.");
     }
 
 
@@ -1496,5 +1553,133 @@ class TemplateService
         }
 
         throw new InvalidArgumentException("No se pudo determinar el tipo de media para el MIME: $mimeType.");
+    }
+
+    /**
+     * Consulta el offset alcanzado en una sesión de carga reanudable.
+     *
+     * @param Model $account La cuenta empresarial de WhatsApp.
+     * @param string $sessionId El ID de la sesión de carga.
+     * @return int|null El offset en bytes o null si no se pudo obtener.
+     */
+    protected function getUploadOffset(Model $account, string $sessionId): ?int
+    {
+        $cleanSessionId = str_starts_with($sessionId, 'upload:') ? substr($sessionId, 7) : $sessionId;
+        $baseUrl = config('whatsapp.api.base_url', 'https://graph.facebook.com');
+        $version = config('whatsapp.api.version', 'v22.0');
+        $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . "/upload:$cleanSessionId";
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL            => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+            CURLOPT_HTTPGET        => true,
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: OAuth ' . $account->api_token,
+            ],
+        ]);
+
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curlErrno = curl_errno($curl);
+        $curlError = curl_error($curl);
+        curl_close($curl);
+
+        if ($curlErrno) {
+            Log::channel('whatsapp')->warning('getUploadOffset: error cURL.', [
+                'error'      => $curlError,
+                'session_id' => $sessionId,
+            ]);
+            return null;
+        }
+
+        if ($httpCode !== 200) {
+            Log::channel('whatsapp')->warning('getUploadOffset: respuesta inesperada.', [
+                'http_code'  => $httpCode,
+                'response'   => $response,
+                'session_id' => $sessionId,
+            ]);
+            return null;
+        }
+
+        $data = json_decode($response, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE || !isset($data['file_offset'])) {
+            Log::channel('whatsapp')->warning('getUploadOffset: no se encontró file_offset en la respuesta.', [
+                'response'   => $response,
+                'session_id' => $sessionId,
+            ]);
+            return null;
+        }
+
+        return (int) $data['file_offset'];
+    }
+
+    /**
+     * Obtiene el handle del archivo tras una carga completada.
+     *
+     * @param Model $account La cuenta empresarial de WhatsApp.
+     * @param string $sessionId El ID de la sesión de carga.
+     * @return string|null El handle del archivo o null si no se pudo obtener.
+     */
+    protected function getUploadedFileHandle(Model $account, string $sessionId): ?string
+    {
+        $cleanSessionId = str_starts_with($sessionId, 'upload:') ? substr($sessionId, 7) : $sessionId;
+        $baseUrl = config('whatsapp.api.base_url', 'https://graph.facebook.com');
+        $version = config('whatsapp.api.version', 'v22.0');
+        $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . "/upload:$cleanSessionId";
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL            => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+            CURLOPT_HTTPGET        => true,
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: OAuth ' . $account->api_token,
+            ],
+        ]);
+
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curlErrno = curl_errno($curl);
+        $curlError = curl_error($curl);
+        curl_close($curl);
+
+        if ($curlErrno) {
+            Log::channel('whatsapp')->warning('getUploadedFileHandle: error cURL.', [
+                'error'      => $curlError,
+                'session_id' => $sessionId,
+            ]);
+            return null;
+        }
+
+        if ($httpCode !== 200) {
+            Log::channel('whatsapp')->warning('getUploadedFileHandle: respuesta inesperada.', [
+                'http_code'  => $httpCode,
+                'response'   => $response,
+                'session_id' => $sessionId,
+            ]);
+            return null;
+        }
+
+        $data = json_decode($response, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE || empty($data['h'])) {
+            Log::channel('whatsapp')->warning('getUploadedFileHandle: no se encontró handle en la respuesta.', [
+                'response'   => $response,
+                'session_id' => $sessionId,
+            ]);
+            return null;
+        }
+
+        return (string) $data['h'];
     }
 }
