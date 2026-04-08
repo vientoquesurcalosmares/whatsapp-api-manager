@@ -21,6 +21,8 @@ use ScriptDevelop\WhatsappManager\Events\FlowStatusUpdated;
 use ScriptDevelop\WhatsappManager\Events\BusinessUsernameUpdated;
 use ScriptDevelop\WhatsappManager\Events\UserIdUpdated;
 use ScriptDevelop\WhatsappManager\Services\Flows\FlowMediaService;
+use ScriptDevelop\WhatsappManager\Services\TemplateMediaCompressionService;
+use ScriptDevelop\WhatsappManager\Jobs\CompressTemplateMediaJob;
 
 class BaseWebhookProcessor implements WebhookProcessorInterface
 {
@@ -1792,94 +1794,33 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
 
     protected function saveTemplateVersionMedia(Model $version, string $mediaUrl, string $mediaType): void
     {
-        try {
-            $mediaType = Str::lower($mediaType);
+        $maxTemplateMediaSize = (int) config('whatsapp.media.max_file_size.video', 16 * 1024 * 1024);
 
-            // Obtener la ruta de almacenamiento configurada desde la config
-            $directory = config('whatsapp.media.storage_path.'.$mediaType.'s'); // Por defecto pluralizar el tipo de media
+        // Ejecutar inmediatamente (sin queue) para mantener el flujo actual.
+        // Futuro: reemplazar por CompressTemplateMediaJob::dispatch(...)
+        /*$compressionJob = new CompressTemplateMediaJob(
+            $template,
+            $version,
+            $mediaUrl,
+            $mediaType,
+            $maxTemplateMediaSize,
+            3
+        );
+        $compressionResult = $compressionJob->handle(new TemplateMediaCompressionService());*/
 
-            if (!$directory) {
-                throw new \RuntimeException("No se ha configurado una ruta de almacenamiento para el tipo de media: $mediaType");
-            }
-
-            if (!file_exists($directory)) {
-                mkdir($directory, 0755, true);
-            }
-
-            if (Str::endsWith($directory, '/')) {
-                $directory = rtrim($directory, '/');
-            }
-
-            $baseFileName = "{$version->version_id}_{$mediaType}";
-            $tempPath = "{$directory}/{$baseFileName}.part";
-
-            // Descargar en streaming a un archivo temporal para evitar consumo alto de memoria
-            $response = Http::withOptions(['sink' => $tempPath])->get($mediaUrl);
-            if ($response->successful()) {
-                $extension    = $this->getFileExtension($response->header('Content-Type'));
-                $mediaType    = Str::lower($mediaType);
-                $fileName = "{$version->version_id}_{$mediaType}.{$extension}";
-                $filePath = "{$directory}/{$fileName}";
-
-                if (!file_exists($tempPath)) {
-                    throw new \RuntimeException("No se pudo guardar temporalmente el media de plantilla: {$tempPath}");
-                }
-
-                $writtenBytes = filesize($tempPath);
-                if ($writtenBytes === false) {
-                    throw new \RuntimeException("No se pudo determinar el tamaño del media descargado: {$tempPath}");
-                }
-
-                // En Windows, rename() puede fallar si el destino ya existe.
-                if (file_exists($filePath) && !unlink($filePath)) {
-                    throw new \RuntimeException("No se pudo reemplazar el archivo existente: {$filePath}");
-                }
-
-                if (!rename($tempPath, $filePath)) {
-                    throw new \RuntimeException("No se pudo mover el archivo temporal al destino final: {$filePath}");
-                }
-
-                // Convertir el path absoluto a relativo para Storage::url
-                $relativePath = str_replace(storage_path('app/public/'), '', $directory . '/' . $fileName);
-
-                // Guardar la URL pública en el campo header_media_url de la versión
-                $publicPath = Storage::url($relativePath);
-
-                WhatsappModelResolver::template_media_file()->create([
-                    'version_id' => $version->version_id,
-                    'media_type' => $mediaType,
-                    'file_name'  => $fileName,
-                    'mime_type'  => $response->header('Content-Type'),
-                    'url'        => $publicPath,
-                    'file_size'  => $writtenBytes,
-                ]);
-
-                Log::channel('whatsapp')->info('Template version header media saved', [
-                    'version_id'       => $version->version_id,
-                    'mediaType'        => $mediaType,
-                    'header_media_url' => $publicPath
-                ]);
-            } else {
-                if (file_exists($tempPath)) {
-                    @unlink($tempPath);
-                }
-
-                Log::channel('whatsapp')->warning('Failed to download template header media', [
-                    'version_id' => $version->version_id,
-                    'media_url'  => $mediaUrl,
-                    'status'     => $response->status()
-                ]);
-            }
-        } catch (\Exception $e) {
-            if (isset($tempPath) && file_exists($tempPath)) {
-                @unlink($tempPath);
-            }
-
-            Log::channel('whatsapp')->error('Error saving template version header media', [
-                'version_id'    => $version->version_id,
-                'media_url'     => $mediaUrl,
-                'error_message' => $e->getMessage()
-            ]);
+        if(
+            config('whatsapp.using_queue_download_multimedia', false)===true and
+            config('whatsapp.package_ffmpeg_installed', false) and
+            config('whatsapp.package_php_gd_installed', false)
+        ){
+            CompressTemplateMediaJob::dispatch(
+                $version,
+                $mediaUrl,
+                $mediaType,
+                $maxTemplateMediaSize,
+                3
+            )
+            ->onQueue(config('whatsapp.queue_multimedia_name', 'default')); // Puedes especificar la queue que desees
         }
     }
 

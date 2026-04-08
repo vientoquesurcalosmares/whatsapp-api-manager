@@ -193,6 +193,14 @@ class TemplateMessageBuilder
                 );
             }
 
+            $maxBytes = (int) config('whatsapp.media.max_file_size.' . strtolower($type));
+
+            if (filesize($content) > $maxBytes) {
+                throw new InvalidArgumentException(
+                    "El archivo para el HEADER de tipo $type no debe exceder el tamaño máximo permitido de " . ($maxBytes / (1024 * 1024)) . " MB para ser considerado un HEADER válido."
+                );
+            }
+
             $formattedParams[] = [
                 'type' => strtolower($type),
                 strtolower($type) => ['link' => $content]
@@ -587,7 +595,7 @@ class TemplateMessageBuilder
 
         foreach ($this->templateStructure['by_type']['BUTTONS']['buttons'] as $index => $button) {
             $type = strtoupper($button['type'] ?? '');
-            
+
             if ($type === 'URL') {
                 $needsParams = preg_match('/\{\{\d+\}\}/', $button['url'] ?? '');
 

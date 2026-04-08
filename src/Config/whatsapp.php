@@ -345,6 +345,43 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Configuración de Descarga de Multimedia de Plantillas
+    |--------------------------------------------------------------------------
+    |
+    | El paquete cuenta con un sistema de descarga de archivo multimedia cuando un Template se crea/edita y el HEADER tiene un archivo, imagen o video, la siguiente variable indica que si descaregará el archivo multimedia y almacenarlo localmente, por lo tanto la versión de un template tendrá su arhcivo multimedia, si se quiere usar esta funcion debe ponerse la siguiente  variable en true, PERO, esto hará que se dispare un trabajo en colado por lo que deberá tenerse en cuenta que se debe configurar el sistema de colas de Laravel y tener un worker ejecutándose, el comando para ejecutar el worker es php artisan queue:work, se recomienda usar un sistema de colas como redis o rabbitmq para esto, y configurar el worker para que solo ejecute la cola de multimedia, por ejemplo:
+    | php artisan queue:work --queue=default
+    |
+    */
+    'using_queue_download_multimedia' => env('WHATSAPP_USING_QUEUE_DOWNLOAD_MULTIMEDIA', false),
+
+    /*
+    |---------------------------------------------------------------------------
+    | Configuración de la Cola para Descarga de Multimedia de Plantillas
+    |--------------------------------------------------------------------------
+    |
+    | Por default la queue que se usará para descargar el multimedia de las versiones de plantilla es "default", pero se puede configurar para que use otra cola, por ejemplo "high" o "multimedia", recuerda configurar tu worker para que ejecute esa cola, por ejemplo:
+    | php artisan queue:work --queue=high,default,low
+    | Nota: Esta queue solo funciona si está en true la opción using_queue_download_multimedia
+    |
+    */
+    'queue_multimedia_name' => env('WHATSAPP_QUEUE_MULTIMEDIA_NAME', 'default'),
+
+    /*
+    |---------------------------------------------------------------------------
+    | Paqueterías de Compresión de Multimedia de Plantillas
+    |---------------------------------------------------------------------------
+    |
+    | El paquete cuenta con un sistema de compresión de archivos multimedia para las versiones de plantilla, esto es útil en el siguiente excenario: Si se crea una plantilla con un header que tiene un video y dicho video pesa 10 megas, al subirse ese video a la API de WhatsApp hace algun proceso interno que desconocemos donde puede ser que el archivo se almacene en su servidor, el cual retornará una URL, pero esa url puede ser que al intentar descargarse pese 20 megas no los 10 del archivo original, este ejemplo es real ya que lo hemos comprobado en algunas ocaciones, por lo tanto este paquete si se usa using_queue_download_multimedia verificará el tamaño del archivo descargado por la URL de Whatsapp Business Meta y si este supera el tamaño permitido intentará hacer una compresión del archivo para hacerlo de 16 megas o menos en el caso de videos o 5 megas o menos en el caso de imágenes, pero para que la compresión funcione se necesita tener instalado las siguientes librerías en el servidor:
+    | ffmpeg para la compresión de videos se puede instalar en linux con el comando sudo apt-get install ffmpeg
+    | php-gd para la compresión de imágenes se puede instalar en linux con el comando sudo apt-get install php-gd
+    | Una vez que ya los tengas instalados configura las siguientes 2 variables en true para que el sistema de compresión funcione, recuerda que esto también se hace en un trabajo encolado, por lo que debes configurar tu sistema de colas y tener un worker ejecutándose para que funcione correctamente, el comando para ejecutar el worker es php artisan queue:work
+    |
+    */
+    'package_ffmpeg_installed' => env('WHATSAPP_PACKAGE_FFMPEG_INSTALLED', false),
+    'package_php_gd_installed' => env('WHATSAPP_PACKAGE_PHP_GD_INSTALLED', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Personalización de canales
     |--------------------------------------------------------------------------
     |
