@@ -23,7 +23,7 @@ class CompressTemplateMediaJob implements ShouldQueue
     use SerializesModels;
 
     public function __construct(
-        Model $version,
+        public Model $version,
         public string $mediaUrl,
         public string $mediaType,
         public ?int $maxBytes = null,
@@ -208,7 +208,7 @@ class CompressTemplateMediaJob implements ShouldQueue
                     );
 
                     if (($compressionResult['compressed'] ?? false) && !empty($compressionResult['final_size'])) {
-                        $this->mediaFile->update([
+                        $mediaFile->update([
                             'file_size' => (string) $compressionResult['final_size'],
                         ]);
                     }
@@ -216,7 +216,7 @@ class CompressTemplateMediaJob implements ShouldQueue
                     if (!($compressionResult['success'] ?? false)) {
                         Log::channel('whatsapp')->warning('Template version media compression failed. Version marked as REJECTED.', [
                             'version_id' => $this->version->version_id,
-                            'media_file_id' => $this->mediaFile->template_media_file_id,
+                            'media_file_id' => $mediaFile->template_media_file_id,
                             'media_type' => $this->mediaType,
                             'file_path' => $filePath,
                             'max_size_bytes' => $this->maxBytes,
@@ -292,10 +292,18 @@ class CompressTemplateMediaJob implements ShouldQueue
             'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
             'text/plain' => 'txt',
             'image/webp' => 'webp',
-            default => function () use ($mimeType) {
-                    Log::channel('whatsapp')->warning("Extensión desconocida para MIME type: {$mimeType}");
-                    return 'bin';
-                },
+            default => $this->logUnknownMimeType($mimeType),
         };
+    }
+
+    private function logUnknownMimeType(?string $mimeType): string
+    {
+        Log::channel('whatsapp')->warning("Extensión desconocida para MIME type: {$mimeType}, se usará bin como extensión por defecto.", [
+            'version_id' => $this->version->version_id,
+            'media_url'  => $this->mediaUrl,
+            'mime_type'  => $mimeType,
+        ]);
+
+        return 'bin';
     }
 }
