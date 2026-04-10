@@ -1140,6 +1140,97 @@ class TemplateService
      * @throws InvalidArgumentException Si el archivo no existe.
      * @throws \RuntimeException Si ocurre un error durante la carga.
      */
+    public function uploadMediaOriginWilfredo(Model $account, string $sessionId, string $filePath, string $mimeType): string
+    {
+        // Validar que el archivo exista
+        if (!file_exists($filePath)) {
+            throw new InvalidArgumentException("El archivo no existe: $filePath");
+        }
+
+        // Construir la URL completa
+        $baseUrl = config('whatsapp.api.base_url', 'https://graph.facebook.com');
+        $version = config('whatsapp.api.version', 'v22.0');
+        $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . "/$sessionId";
+
+        Log::channel('whatsapp')->info('URL final para la carga de medios:', ['url' => $url]);
+
+        // Leer el contenido del archivo
+        $fileContents = file_get_contents($filePath);
+
+        // Configurar cURL
+        $curl = curl_init();
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => $fileContents,
+            CURLOPT_HTTPHEADER => [
+                'file_offset: 0',
+                'Content-Type: application/octet-stream',
+                'Authorization: OAuth ' . $account->api_token,
+            ],
+        ]);
+
+        // Ejecutar la solicitud
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+        // Manejar errores de cURL
+        if (curl_errno($curl)) {
+            $error = curl_error($curl);
+            curl_close($curl);
+            throw new \RuntimeException("Error en cURL: $error");
+        }
+
+        curl_close($curl);
+
+        // Registrar la respuesta
+        Log::channel('whatsapp')->info('Respuesta de la API después de subir el archivo.', [
+            'response' => $response,
+            'http_code' => $httpCode,
+        ]);
+
+        // Validar el código de respuesta HTTP
+        if ($httpCode !== 200) {
+            throw new \RuntimeException("Error al subir el archivo. Código HTTP: $httpCode. Respuesta: $response");
+        }
+
+        // Decodificar la respuesta JSON
+        $responseData = json_decode($response, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \RuntimeException('Error al decodificar la respuesta JSON: ' . json_last_error_msg());
+        }
+
+        // Obtener el identificador del archivo
+        $handle = $responseData['h'] ?? null;
+
+        if (!$handle) {
+            throw new \Exception('No se pudo obtener el identificador del archivo.');
+        }
+
+        Log::channel('whatsapp')->info('Archivo subido exitosamente.', ['handle' => $handle]);
+
+        return $handle;
+    }
+
+    /**
+     * Sube un archivo a la sesión de carga.
+     *
+     * @param Model $account La cuenta empresarial de WhatsApp.
+     * @param string $sessionId El ID de la sesión de carga.
+     * @param string $filePath La ruta del archivo.
+     * @param string $mimeType El tipo MIME del archivo.
+     * @return string El identificador del archivo subido.
+     * @throws InvalidArgumentException Si el archivo no existe.
+     * @throws \RuntimeException Si ocurre un error durante la carga.
+     */
     public function uploadMedia(Model $account, string $sessionId, string $filePath, string $mimeType, int $maxRetries = 3): string
     {
         // Validar que el archivo exista
@@ -1155,17 +1246,21 @@ class TemplateService
         $version = config('whatsapp.api.version', 'v22.0');
         $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . "/upload:$cleanSessionId";
 
-        Log::channel('whatsapp')->info('Iniciando carga de archivo.', [
+        Log::channel('whatsapp')->info('Iniciando carga de archivo (resumable).', [
             'file_path' => $filePath,
             'file_size' => $fileSize,
             'url' => $url,
+            'session_id' => $sessionId,
         ]);
 
-        // La API de Meta no soporta chunks independientes: cada petición debe enviar
-        // todos los bytes restantes desde file_offset. El 'resumable' solo aplica
-        // para retomar tras un fallo de red, consultando el offset alcanzado.
+        // Según documentación Meta Graph API: cada petición debe enviar todos los bytes
+        // restantes desde file_offset. Si se interrumpe, se consulta el offset con GET
+        // y se reanuda desde ese punto.
         $fileOffset = 0;
         $retryCount = 0;
+        $noProgressCount = 0;  // Contador de intentos sin avance de offset
+        $maxNoProgressAttempts = 3;  // Fallar si no avanzamos en 3 intentos consecutivos
+        $lastProgressOffset = 0;  // Último offset donde hubo progreso real
 
         while ($retryCount < $maxRetries) {
             $fileHandle = fopen($filePath, 'rb');
@@ -1178,81 +1273,155 @@ class TemplateService
                 fseek($fileHandle, $fileOffset);
                 $bytesRemaining = $fileSize - $fileOffset;
 
-                $curl = curl_init();
-
-                // CURLOPT_PUT habilita el streaming via CURLOPT_INFILE.
-                // CURLOPT_CUSTOMREQUEST sobreescribe el método a POST conservando el streaming.
-                curl_setopt_array($curl, [
-                    CURLOPT_URL            => $url,
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_FOLLOWLOCATION => false,
-                    CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-                    CURLOPT_PUT            => true,
-                    CURLOPT_CUSTOMREQUEST  => 'POST',
-                    CURLOPT_INFILE         => $fileHandle,
-                    CURLOPT_INFILESIZE     => $bytesRemaining,
-                    CURLOPT_TIMEOUT        => 60,
-                    CURLOPT_HTTPHEADER     => [
-                        'Authorization: OAuth ' . $account->api_token,
-                        'file_offset: ' . $fileOffset,
-                        'Content-Type: ' . $mimeType,
-                        'Content-Length: ' . $bytesRemaining,
-                        'Expect:',
-                    ],
+                $progressPercent = ($fileOffset / $fileSize) * 100;
+                Log::channel('whatsapp')->info('Enviando chunk de archivo.', [
+                    'file_offset'      => $fileOffset,
+                    'bytes_remaining'  => $bytesRemaining,
+                    'progress_percent' => round($progressPercent, 2),
+                    'session_id'       => $sessionId,
                 ]);
 
-                $response = curl_exec($curl);
-                $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-                $curlError = curl_error($curl);
-                $curlErrno = curl_errno($curl);
+                // Usamos Guzzle en lugar de cURL directo porque Guzzle usa internamente
+                // CURLOPT_POST + CURLOPT_POSTFIELDSIZE + CURLOPT_READFUNCTION, que es la
+                // única combinación binary-safe garantizada: POSTFIELDSIZE informa el tamaño
+                // exacto a libcurl sin que tenga que usar strlen() en C (que se detiene en
+                // bytes nulos 0x00 presentes en archivos MP4 desde el primer megabyte).
+                // LimitStream informa a Guzzle exactamente cuántos bytes enviar, lo que
+                // también permite reanudar correctamente desde un offset específico.
+                $phpStream     = \GuzzleHttp\Psr7\Utils::streamFor($fileHandle);
+                $limitedStream = new \GuzzleHttp\Psr7\LimitStream($phpStream, $bytesRemaining);
 
-                curl_close($curl);
-                fclose($fileHandle);
+                $guzzle = new \GuzzleHttp\Client(['http_errors' => false]);
+                $guzzleResponse = $guzzle->request('POST', $url, [
+                    'headers' => [
+                        'Authorization' => 'OAuth ' . $account->api_token,
+                        'file_offset'   => (string) $fileOffset,
+                        'Content-Type'  => $mimeType,
+                        'Content-Length'=> (string) $bytesRemaining,
+                    ],
+                    'expect'          => false,
+                    'body'            => $limitedStream,
+                    'timeout'         => 120,
+                    'connect_timeout' => 30,
+                ]);
 
-                if ($curlErrno) {
-                    throw new \RuntimeException("Error en cURL: $curlError");
+                // Desvinculamos el handle del wrapper antes del fclose manual.
+                $phpStream->detach();
+                if (is_resource($fileHandle)) {
+                    fclose($fileHandle);
                 }
 
+                $httpCode = $guzzleResponse->getStatusCode();
+                $response = (string) $guzzleResponse->getBody();
+
+                //dd($fileOffset, $bytesRemaining, $sessionId, $url, $mimeType, $response, $httpCode);
+
+                Log::channel('whatsapp')->debug('Respuesta recibida de Meta.', [
+                    'http_code'       => $httpCode,
+                    'bytes_expected'  => $bytesRemaining,
+                    'response_preview'=> substr($response, 0, 500),
+                    'session_id'      => $sessionId,
+                ]);
+
+                // HTTP 200/201: Verificar que se subieron TODOS los bytes antes de confirmar
                 if ($httpCode === 200 || $httpCode === 201) {
+                    // Consultar el offset para verificar que la carga se completó realmente
+                    $uploadOffsetData = $this->getUploadOffset($account, $sessionId);
+                    $finalOffset = $uploadOffsetData['offset'] ?? null;
+
+                    // Si no se puede confirmar offset, no se acepta como éxito.
+                    if ($finalOffset === null) {
+                        throw new \RuntimeException(
+                            'Meta respondió éxito HTTP, pero no se pudo confirmar file_offset. Reintentando para evitar archivo truncado.'
+                        );
+                    }
+
+                    // Detectar si hubo progreso
+                    if ($finalOffset !== null && $finalOffset > $lastProgressOffset) {
+                        $lastProgressOffset = $finalOffset;
+                        $noProgressCount = 0;  // Reiniciar contador de estancamiento
+                    } else {
+                        $noProgressCount++;
+                    }
+
+                    // Fallar si no avanzamos después de varios intentos
+                    if ($noProgressCount >= $maxNoProgressAttempts) {
+                        throw new \RuntimeException(
+                            "La carga se estancó. El offset no avanza desde: $finalOffset / $fileSize bytes. " .
+                            "Meta no está aceptando más datos. Posibles causas: " .
+                            "(1) Sesión expirada, (2) Archivo corrupto, (3) Token revocado."
+                        );
+                    }
+
+                    if ($finalOffset < $fileSize) {
+                        // No se subieron todos los bytes, reanudar la carga
+                        Log::channel('whatsapp')->warning('HTTP 200 pero offset incompleto. Reanudando carga.', [
+                            'final_offset' => $finalOffset,
+                            'expected_size' => $fileSize,
+                            'no_progress_count' => $noProgressCount,
+                            'session_id' => $sessionId,
+                        ]);
+                        $fileOffset = $finalOffset;
+                        $retryCount = 0;
+                        continue;
+                    }
+
+                    // Offset completo, obtener el handle
                     $responseData = json_decode($response, true);
 
                     if (json_last_error() !== JSON_ERROR_NONE) {
                         throw new \RuntimeException('JSON inválido: ' . json_last_error_msg());
                     }
 
-                    $handle = $responseData['h'] ?? $this->getUploadedFileHandle($account, $sessionId);
+                    // Priorizar el handle canónico consultado por sesión ya completada.
+                    // Si no está disponible, usar el retornado en la respuesta del POST.
+                    $rawHandle = $responseData['h'] ?? null;
+                    $handle = $rawHandle;
+                    //$handle = $this->normalizeUploadHandle($rawHandle);
+
+                    //dd($responseData, $rawHandle, $handle, $finalOffset, $uploadOffsetData);
 
                     if (!$handle) {
                         throw new \RuntimeException('No se pudo obtener el identificador del archivo.');
                     }
 
-                    Log::channel('whatsapp')->info('Archivo subido exitosamente.', [
+                    Log::channel('whatsapp')->info('Archivo subido exitosamente. Carga completada al 100%.', [
                         'handle' => $handle,
                         'file_size' => $fileSize,
+                        'final_offset' => $finalOffset,
                         'mime_type' => $mimeType,
                         'session_id' => $sessionId,
+                        'total_attempts' => ($retryCount + 1),
                     ]);
 
                     return $handle;
                 }
 
-                // HTTP 206: carga parcial — verificar offset alcanzado y retomar desde ahí
+                // HTTP 206: Carga parcial aceptada — según Meta, verificar offset y reanudar
                 if ($httpCode === 206) {
-                    $partialOffset = $this->getUploadOffset($account, $sessionId);
+                    $uploadOffsetData = $this->getUploadOffset($account, $sessionId);
+                    $partialOffset = $uploadOffsetData['offset'] ?? null;
 
-                    if ($partialOffset !== null && $partialOffset > $fileOffset) {
-                        Log::channel('whatsapp')->info('Carga parcial detectada, retomando desde offset.', [
+                    if ($partialOffset !== null && $partialOffset >= 0) {
+                        Log::channel('whatsapp')->info('HTTP 206: carga parcial aceptada, consultando offset alcanzado.', [
                             'previous_offset' => $fileOffset,
-                            'new_offset'      => $partialOffset,
+                            'returned_offset' => $partialOffset,
+                            'session_id' => $sessionId,
                         ]);
 
-                        $fileOffset = $partialOffset;
-                        $retryCount = 0;
-                        continue;
+                        // Si el offset retornado es mayor, avanzamos desde ahí
+                        if ($partialOffset > $fileOffset) {
+                            $fileOffset = $partialOffset;
+                            $retryCount = 0;
+                            continue;
+                        }
                     }
+
+                    throw new \RuntimeException("HTTP 206 pero no se pudo obtener el offset válido.");
                 }
 
-                throw new \RuntimeException("HTTP Error $httpCode. Respuesta: $response");
+                // Cualquier otro código HTTP es un error
+                throw new \RuntimeException("HTTP Error $httpCode. Respuesta: " . substr($response, 0, 500));
 
             } catch (\Exception $e) {
                 if (is_resource($fileHandle)) {
@@ -1261,22 +1430,69 @@ class TemplateService
 
                 $retryCount++;
 
-                Log::channel('whatsapp')->warning("Error en intento $retryCount/$maxRetries.", [
-                    'error'       => $e->getMessage(),
-                    'file_offset' => $fileOffset,
+                Log::channel('whatsapp')->warning("Error en intento $retryCount/$maxRetries. Verificando offset alcanzado.", [
+                    'error'          => $e->getMessage(),
+                    'current_offset' => $fileOffset,
+                    'session_id'     => $sessionId,
                 ]);
 
                 if ($retryCount >= $maxRetries) {
-                    Log::channel('whatsapp')->error('Error crítico en uploadMedia.', [
+                    Log::channel('whatsapp')->error('Error crítico en uploadMedia: máximos reintentos alcanzados.', [
                         'error_message' => $e->getMessage(),
                         'file_path'     => $filePath,
                         'session_id'    => $sessionId,
+                        'last_offset'   => $fileOffset,
+                        'file_size'     => $fileSize,
                     ]);
 
                     throw new \RuntimeException("Falló la carga después de $maxRetries intentos. " . $e->getMessage());
                 }
 
-                usleep(1000000 * (2 ** ($retryCount - 1)));
+                // Antes de reintentar, consultar el offset alcanzado según Meta docs
+                $uploadOffsetData = $this->getUploadOffset($account, $sessionId);
+                $recoveredOffset = $uploadOffsetData['offset'] ?? null;
+
+                // Detectar si hubo progreso
+                if ($recoveredOffset !== null && $recoveredOffset > $lastProgressOffset) {
+                    $lastProgressOffset = $recoveredOffset;
+                    $noProgressCount = 0;  // Reiniciar contador
+                } else {
+                    $noProgressCount++;
+                }
+
+                // Fallar si estamos estancados
+                if ($noProgressCount >= $maxNoProgressAttempts) {
+                    throw new \RuntimeException(
+                        "ESTANCAMIENTO DETECTADO: El offset no avanza desde: " . ($recoveredOffset ?? $fileOffset) . " / $fileSize bytes. " .
+                        "Después de {$noProgressCount} intentos consecutivos sin progreso. " .
+                        "Verifica: (1) que el token sea válido, (2) que la sesión no haya expirado, (3) que el archivo no sea corrupto."
+                    );
+                }
+
+                if ($recoveredOffset !== null && $recoveredOffset > $fileOffset) {
+                    Log::channel('whatsapp')->info('Offset recuperado de la sesión. Reanudando carga.', [
+                        'previous_offset' => $fileOffset,
+                        'recovered_offset' => $recoveredOffset,
+                        'no_progress_count' => $noProgressCount,
+                        'session_id' => $sessionId,
+                    ]);
+                    $fileOffset = $recoveredOffset;
+                } else {
+                    Log::channel('whatsapp')->warning('No se pudo recuperar offset, reintentando desde último offset conocido.', [
+                        'file_offset' => $fileOffset,
+                        'recovered_offset' => $recoveredOffset,
+                        'no_progress_count' => $noProgressCount,
+                        'session_id' => $sessionId,
+                    ]);
+                }
+
+                // Backoff exponencial: esperar entre reintentos
+                $waitSeconds = min(30, 2 ** ($retryCount - 1));
+                Log::channel('whatsapp')->info("Esperando $waitSeconds segundos antes de reintentar.", [
+                    'retry_count' => $retryCount,
+                    'session_id' => $sessionId,
+                ]);
+                usleep($waitSeconds * 1000000);
             }
         }
 
@@ -1474,6 +1690,162 @@ class TemplateService
     }
 
     /**
+     * Prepara media para que sea aceptada por WhatsApp templates.
+     *
+     * Para video, fuerza H.264 + AAC cuando detecta codecs incompatibles (ej. HEVC).
+     * Devuelve la ruta/mimetype final, si requiere limpieza de archivo temporal, e indica si hubo cambios.
+     *
+     * @return array{file_path:string,mime_type:string,cleanup:bool,changed:bool}
+     */
+    public function prepareMediaForTemplateUpload(string $filePath, string $mimeType): array
+    {
+        $mediaType = $this->getMediaTypeFromMimeType($mimeType);
+
+        // El proceso de verificación/transcodificación por codecs solo se activa
+        // cuando el integrador marca explícitamente que quiere usar ffmpeg.
+        $ffmpegFeatureEnabled = (bool) config('whatsapp.package_ffmpeg_installed', false);
+
+        if (!$ffmpegFeatureEnabled) {
+            Log::channel('whatsapp')->info('La verificación de codecs está deshabilitada. Se subirá el archivo tal cual.', [
+                'file_path' => $filePath,
+                'mime_type' => $mimeType,
+                'media_type' => $mediaType,
+            ]);
+            return [
+                'file_path' => $filePath,
+                'mime_type' => $mimeType,
+                'cleanup' => false,
+                'changed' => false,
+            ];
+        }
+
+        if ($mediaType !== 'video') {
+            Log::channel('whatsapp')->info('El archivo no es video, no se requiere verificación de codecs. Se subirá tal cual.', [
+                'file_path' => $filePath,
+                'mime_type' => $mimeType,
+                'media_type' => $mediaType,
+            ]);
+            return [
+                'file_path' => $filePath,
+                'mime_type' => $mimeType,
+                'cleanup' => false,
+                'changed' => false,
+            ];
+        }
+
+        $codecs = $this->probeVideoCodecs($filePath);
+        $videoCodec = strtolower((string) ($codecs['video_codec'] ?? ''));
+        $audioCodec = strtolower((string) ($codecs['audio_codec'] ?? ''));
+
+        $isVideoCompatible = in_array($videoCodec, ['h264', 'avc1'], true);
+        $isAudioCompatible = ($audioCodec === '' || in_array($audioCodec, ['aac', 'mp4a'], true));
+
+        if ($isVideoCompatible && $isAudioCompatible) {
+            return [
+                'file_path' => $filePath,
+                'mime_type' => $mimeType,
+                'cleanup' => false,
+                'changed' => false,
+            ];
+        }
+
+        if (!$this->isFfmpegBinaryAvailable()) {
+            throw new InvalidArgumentException(
+                'El video usa codecs no compatibles con Meta (se requiere H.264/AAC) y ffmpeg no está disponible para convertirlo automáticamente.'
+            );
+        }
+
+        $convertedPath = $this->buildMetaCompatibleTempPath($filePath);
+
+        $command = sprintf(
+            'ffmpeg -y -i %s -c:v libx264 -pix_fmt yuv420p -profile:v high -level 4.1 -c:a aac -b:a 128k -movflags +faststart %s 2>&1',
+            escapeshellarg($filePath),
+            escapeshellarg($convertedPath)
+        );
+
+        $output = shell_exec($command);
+
+        if (!is_file($convertedPath) || filesize($convertedPath) === false || filesize($convertedPath) <= 0) {
+            throw new InvalidArgumentException(
+                'No se pudo convertir el video a H.264/AAC para WhatsApp. ' . trim((string) $output)
+            );
+        }
+
+        Log::channel('whatsapp')->warning('Video convertido a formato compatible para template.', [
+            'source_path' => $filePath,
+            'converted_path' => $convertedPath,
+            'source_video_codec' => $videoCodec,
+            'source_audio_codec' => $audioCodec,
+        ]);
+
+        return [
+            'file_path' => $convertedPath,
+            'mime_type' => 'video/mp4',
+            'cleanup' => true,
+            'changed' => true,
+        ];
+    }
+
+    /**
+     * @return array{video_codec:?string,audio_codec:?string}
+     */
+    protected function probeVideoCodecs(string $filePath): array
+    {
+        $videoCodec = null;
+        $audioCodec = null;
+
+        if (!$this->isFfprobeBinaryAvailable()) {
+            return [
+                'video_codec' => $videoCodec,
+                'audio_codec' => $audioCodec,
+            ];
+        }
+
+        $videoCmd = sprintf(
+            'ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 %s 2>&1',
+            escapeshellarg($filePath)
+        );
+        $audioCmd = sprintf(
+            'ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 %s 2>&1',
+            escapeshellarg($filePath)
+        );
+
+        $videoOut = trim((string) shell_exec($videoCmd));
+        $audioOut = trim((string) shell_exec($audioCmd));
+
+        if ($videoOut !== '') {
+            $videoCodec = strtolower(explode("\n", $videoOut)[0]);
+        }
+        if ($audioOut !== '') {
+            $audioCodec = strtolower(explode("\n", $audioOut)[0]);
+        }
+
+        return [
+            'video_codec' => $videoCodec,
+            'audio_codec' => $audioCodec,
+        ];
+    }
+
+    protected function isFfmpegBinaryAvailable(): bool
+    {
+        $output = shell_exec('ffmpeg -version 2>&1');
+        return is_string($output) && stripos($output, 'ffmpeg version') !== false;
+    }
+
+    protected function isFfprobeBinaryAvailable(): bool
+    {
+        $output = shell_exec('ffprobe -version 2>&1');
+        return is_string($output) && stripos($output, 'ffprobe version') !== false;
+    }
+
+    protected function buildMetaCompatibleTempPath(string $filePath): string
+    {
+        $dir = pathinfo($filePath, PATHINFO_DIRNAME);
+        $name = pathinfo($filePath, PATHINFO_FILENAME);
+        return $dir . DIRECTORY_SEPARATOR . $name . '.meta_h264_aac.mp4';
+    }
+
+    /**
      * Obtiene el tipo de medio a partir del tipo MIME.
      *
      * @param string $mimeType El tipo MIME del archivo.
@@ -1501,45 +1873,68 @@ class TemplateService
      * @param string $sessionId El ID de la sesión de carga.
      * @return int|null El offset en bytes o null si no se pudo obtener.
      */
-    protected function getUploadOffset(Model $account, string $sessionId): ?int
+    protected function getUploadOffset(Model $account, string $sessionId): ?array
     {
         $cleanSessionId = str_starts_with($sessionId, 'upload:') ? substr($sessionId, 7) : $sessionId;
         $baseUrl = config('whatsapp.api.base_url', 'https://graph.facebook.com');
         $version = config('whatsapp.api.version', 'v22.0');
         $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . "/upload:$cleanSessionId";
 
+        $headers = [
+            'Authorization: OAuth ' . $account->api_token,
+            'Authorization: Bearer ' . $account->api_token,
+        ];
+
         $curl = curl_init();
 
-        curl_setopt_array($curl, [
-            CURLOPT_URL            => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-            CURLOPT_HTTPGET        => true,
-            CURLOPT_TIMEOUT        => 15,
-            CURLOPT_HTTPHEADER     => [
-                'Authorization: OAuth ' . $account->api_token,
-            ],
-        ]);
+        $response = null;
+        $httpCode = 0;
+        $curlErrno = 0;
+        $curlError = '';
 
-        $response = curl_exec($curl);
-        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        $curlErrno = curl_errno($curl);
-        $curlError = curl_error($curl);
+        // Intentar primero OAuth y luego Bearer para máxima compatibilidad.
+        foreach ($headers as $authHeader) {
+            curl_setopt_array($curl, [
+                CURLOPT_URL            => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => false,
+                CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+                CURLOPT_HTTPGET        => true,
+                CURLOPT_TIMEOUT        => 15,
+                CURLOPT_HTTPHEADER     => [$authHeader],
+            ]);
+
+            $response = curl_exec($curl);
+            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $curlErrno = curl_errno($curl);
+            $curlError = curl_error($curl);
+
+            if ($curlErrno === 0 && $httpCode === 200) {
+                break;
+            }
+        }
+
         curl_close($curl);
 
+        Log::channel('whatsapp')->debug('getUploadOffset: consultando offset.', [
+            'url'        => $url,
+            'session_id' => $sessionId,
+            'http_code'  => $httpCode,
+        ]);
+
         if ($curlErrno) {
-            Log::channel('whatsapp')->warning('getUploadOffset: error cURL.', [
-                'error'      => $curlError,
-                'session_id' => $sessionId,
+            Log::channel('whatsapp')->error('getUploadOffset: error cURL.', [
+                'curl_errno'  => $curlErrno,
+                'error'       => $curlError,
+                'session_id'  => $sessionId,
             ]);
             return null;
         }
 
         if ($httpCode !== 200) {
-            Log::channel('whatsapp')->warning('getUploadOffset: respuesta inesperada.', [
+            Log::channel('whatsapp')->error('getUploadOffset: respuesta inesperada del servidor.', [
                 'http_code'  => $httpCode,
-                'response'   => $response,
+                'response'   => substr($response, 0, 500),
                 'session_id' => $sessionId,
             ]);
             return null;
@@ -1547,78 +1942,61 @@ class TemplateService
 
         $data = json_decode($response, true);
 
-        if (json_last_error() !== JSON_ERROR_NONE || !isset($data['file_offset'])) {
-            Log::channel('whatsapp')->warning('getUploadOffset: no se encontró file_offset en la respuesta.', [
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Log::channel('whatsapp')->error('getUploadOffset: JSON inválido en respuesta.', [
+                'json_error' => json_last_error_msg(),
                 'response'   => $response,
                 'session_id' => $sessionId,
             ]);
             return null;
         }
 
-        return (int) $data['file_offset'];
+        if (!isset($data['file_offset'])) {
+            Log::channel('whatsapp')->error('getUploadOffset: respuesta no contiene file_offset.', [
+                'response'   => $response,
+                'session_id' => $sessionId,
+            ]);
+            return null;
+        }
+
+        $offset = (int) $data['file_offset'];
+
+        Log::channel('whatsapp')->debug('getUploadOffset: offset recuperado.', [
+            'response'    => $response,
+            'file_offset' => $offset,
+            'session_id'  => $sessionId,
+        ]);
+
+        return ['offset' => $offset, 'data' => $data];
     }
 
+
+
     /**
-     * Obtiene el handle del archivo tras una carga completada.
+     * Normaliza el valor del handle preservando el contenido exacto devuelto por Meta.
      *
-     * @param Model $account La cuenta empresarial de WhatsApp.
-     * @param string $sessionId El ID de la sesión de carga.
-     * @return string|null El handle del archivo o null si no se pudo obtener.
+     * Importante: cuando Meta devuelve múltiples líneas en `h`, ese bloque completo
+     * puede representar el handle compuesto. No se debe partir en primero/último.
      */
-    protected function getUploadedFileHandle(Model $account, string $sessionId): ?string
+    protected function normalizeUploadHandle(?string $rawHandle): ?string
     {
-        $cleanSessionId = str_starts_with($sessionId, 'upload:') ? substr($sessionId, 7) : $sessionId;
-        $baseUrl = config('whatsapp.api.base_url', 'https://graph.facebook.com');
-        $version = config('whatsapp.api.version', 'v22.0');
-        $url = rtrim($baseUrl, '/') . '/' . ltrim($version, '/') . "/upload:$cleanSessionId";
-
-        $curl = curl_init();
-
-        curl_setopt_array($curl, [
-            CURLOPT_URL            => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-            CURLOPT_HTTPGET        => true,
-            CURLOPT_TIMEOUT        => 15,
-            CURLOPT_HTTPHEADER     => [
-                'Authorization: OAuth ' . $account->api_token,
-            ],
-        ]);
-
-        $response = curl_exec($curl);
-        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        $curlErrno = curl_errno($curl);
-        $curlError = curl_error($curl);
-        curl_close($curl);
-
-        if ($curlErrno) {
-            Log::channel('whatsapp')->warning('getUploadedFileHandle: error cURL.', [
-                'error'      => $curlError,
-                'session_id' => $sessionId,
-            ]);
+        if ($rawHandle === null) {
             return null;
         }
 
-        if ($httpCode !== 200) {
-            Log::channel('whatsapp')->warning('getUploadedFileHandle: respuesta inesperada.', [
-                'http_code'  => $httpCode,
-                'response'   => $response,
-                'session_id' => $sessionId,
-            ]);
+        $normalized = trim((string) $rawHandle);
+
+        if ($normalized === '') {
             return null;
         }
 
-        $data = json_decode($response, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE || empty($data['h'])) {
-            Log::channel('whatsapp')->warning('getUploadedFileHandle: no se encontró handle en la respuesta.', [
-                'response'   => $response,
-                'session_id' => $sessionId,
+        /*$lineCount = substr_count($normalized, "\n") + 1;
+        if ($lineCount > 1) {
+            Log::channel('whatsapp')->info('Meta devolvió handle multilínea; se preserva completo.', [
+                'lines' => $lineCount,
             ]);
-            return null;
-        }
+        }*/
 
-        return (string) $data['h'];
+        return $normalized;
     }
 }
