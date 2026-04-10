@@ -327,6 +327,13 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             $this->fireReactionReceived($contactRecord, $messageRecord);
         }
 
+        //Este sirve por ejemplo cuando se envía un mensaje de tipo template y este tiene un botón de respuesta rápida de tipo QUICK_REPLY, cuando se da click en ese botón se dispara un webhook de tipo "button" que ahora es procesado por el método processButtonMessage
+        if ($messageType === 'button') {
+            $messageRecord = $this->processButtonMessage($message, $contactRecord, $whatsappPhone);
+
+            $this->fireButtonMessageReceived($contactRecord, $messageRecord);
+        }
+
         // Manejar mensajes de media
         if (in_array($messageType, ['image', 'audio', 'video', 'document', 'sticker'])) {
             $messageRecord = $this->processMediaMessage($message, $contactRecord, $whatsappPhone);
@@ -757,6 +764,52 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 'from_parent_bsuid' => $message['from_parent_user_id'] ?? null,
                 'message_to'        => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
                 'message_type'      => 'TEXT',
+                'message_content' => $textContent,
+                'json_content' => json_encode($message),
+                'status' => 'received',
+                'message_context_id' => $this->getContextMessageId($message),
+            ]
+        );
+
+        Log::channel('whatsapp')->info('Text message processed and saved.', [
+            'message_id' => $messageRecord->message_id,
+            'wa_id' => $message['id'],
+            'content' => $textContent,
+        ]);
+
+        return $messageRecord;
+    }
+
+    protected function processButtonMessage(array $message, Model $contact, Model $whatsappPhone): ?Model
+    {
+        $textContent = $message['button']['text'] ?? $message['button']['payload'] ?? null;
+
+        Log::channel('whatsapp')->info('Processing button message.', [
+            'message' => $message,
+            'contact' => $contact,
+            'whatsappPhone' => $whatsappPhone,
+            'textContent' => $textContent,
+        ]);
+
+        if (!$textContent) {
+            Log::channel('whatsapp')->warning('No text content found in message.', $message);
+            return null;
+        }
+
+        $messageRecord = WhatsappModelResolver::message()->firstOrCreate(
+            [
+                'wa_id' => $message['id'],
+            ],
+            [
+                'whatsapp_phone_id' => $whatsappPhone->phone_number_id,
+                'contact_id' => $contact->contact_id,
+                'conversation_id' => null, // Esto se puede actualizar más tarde si es necesario
+                'messaging_product' => $message['messaging_product'] ?? 'whatsapp',
+                'message_from'      => isset($message['from']) ? preg_replace('/[\D+]/', '', $message['from']) : null,
+                'from_bsuid'        => $message['from_user_id'] ?? null,
+                'from_parent_bsuid' => $message['from_parent_user_id'] ?? null,
+                'message_to'        => preg_replace('/[\D+]/', '', $whatsappPhone->display_phone_number),
+                'message_type'      => 'BUTTON',
                 'message_content' => $textContent,
                 'json_content' => json_encode($message),
                 'status' => 'received',
@@ -2065,6 +2118,19 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     protected function fireTextMessageReceived($contactRecord, $messageRecord)
     {
         $event = config('whatsapp.events.messages.text.received');
+        event(new $event([
+            'contact' => $contactRecord,
+            'message' => $messageRecord,
+        ]));
+    }
+
+    /**
+     * Ahora el disparo de los eventos estáran en métodos, y se usarán las clases de los eventos configuradas en el archivo de configuración whatsapp.events!
+     */
+
+    protected function fireButtonMessageReceived($contactRecord, $messageRecord)
+    {
+        $event = config('whatsapp.events.messages.button.received');
         event(new $event([
             'contact' => $contactRecord,
             'message' => $messageRecord,

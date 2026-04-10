@@ -179,6 +179,12 @@ return [
                  */
                 'received' => \Scriptdevelop\WhatsappManager\Events\TextMessageReceived::class,
             ],
+            'button' => [
+                /**
+                 * Se dispara cuando se envía al webhook mensaje de recibido de tipo text, recibe como parámetro el objeto de contacto y el objeto de mensaje
+                 */
+                'received' => \Scriptdevelop\WhatsappManager\Events\ButtonMessageReceived::class,
+            ],
             'unsupported' => [
                 /**
                  * Se dispara cuando se envía al webhook mensaje de recibido de tipo unsupported, recibe como parámetro el objeto de contacto y el objeto de mensaje
