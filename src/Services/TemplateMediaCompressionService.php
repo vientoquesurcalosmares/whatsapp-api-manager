@@ -2,6 +2,8 @@
 
 namespace ScriptDevelop\WhatsappManager\Services;
 
+use Illuminate\Support\Facades\Log;
+
 class TemplateMediaCompressionService
 {
     /**
@@ -13,6 +15,20 @@ class TemplateMediaCompressionService
     {
         $mediaType = strtolower($mediaType);
         $currentSize = filesize($filePath);
+
+        if( config('whatsapp.allow_compression_multimedia_template', false) === false ) {
+            Log::channel('whatsapp')->info('La compresión de multimedia para plantillas está deshabilitada en la configuración. Se omite la compresión.', [
+                'file_path' => $filePath,
+                'media_type' => $mediaType,
+                'current_size' => $currentSize,
+            ]);
+            return [
+                'success' => true,
+                'compressed' => false,
+                'final_size' => $currentSize,
+                'message' => null,
+            ];
+        }
 
         //Esto se hace en el job, pero se deja aquí para poder usar esta función de forma independiente si se desea.
         /*if( empty($filePath) || empty($mediaType) ) {

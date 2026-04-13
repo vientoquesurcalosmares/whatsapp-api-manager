@@ -213,7 +213,9 @@ class CompressTemplateMediaJob implements ShouldQueue
                         ]);
                     }
 
-                    if (!($compressionResult['success'] ?? false)) {
+                    if (!($compressionResult['success'] ?? false) and
+                        config('whatsapp.allow_compression_multimedia_template', false) === true
+                    ) {
                         Log::channel('whatsapp')->warning('Template version media compression failed. Version marked as REJECTED.', [
                             'version_id' => $this->version->version_id,
                             'media_file_id' => $mediaFile->template_media_file_id,
