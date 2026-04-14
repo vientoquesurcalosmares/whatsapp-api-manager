@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.54] - 2026-04-07
+
+### Refactor
+- **Endpoints de Encriptación**: Simplificación de la construcción de URLs en `FlowService` delegando el prefijo de URL base y versión al `ApiClient`.
+
+### Changed
+- **Consulta de Llaves de Encriptación**: Se añadió el parámetro `fields` (`business_public_key,business_public_key_status`) a los métodos `getBusinessPublicKeyStatus` y `getPhoneNumberPublicKeyStatus` para asegurar que Meta retorne los metadatos completos de la llave.
+
+## [1.1.53] - 2026-04-07
+
+### Added
+- **Soporte Completo Multi-Tenant para Encriptado de Flows**:
+  - Comando `php artisan whatsapp:generate-keys`: Nueva opción `--account-id=` para guardar el par de claves RSA en un almacenamiento seguro particionado (`storage/app/whatsapp/flows/keys/{accountId}`) evitando usar el `public` disk.
+  - `BaseWebhookProcessor`: Añadido hook dinámico escalable `resolvePrivateKeyPath(Request $request)` que permite inyectar dinámicamente y al vuelo la clave RSA desde tu base de datos o almacenamiento aislado antes de desencriptar Data Channels multi-tenant.
+
+## [1.1.52] - 2026-04-07
+
+### Added
+- **Soporte Multi-Tenant en FlowCryptoService**: Refactorización para permitir cargar llaves privadas `.pem` a nivel de cuenta (`loadForAccount()`) o ruta personalizada (`loadFromPath()`), abandonando el formato de inyección forzada del singleton. Mantiene compatibilidad hacia atrás mediante `ensureKeyLoaded()` usando el path legacy.
+
+## [1.1.51] - 2026-04-06
+
+### Added
+- **Gestión de Llaves Públicas para Flow Endpoints**: Añadidos métodos `getPhoneNumberPublicKeyStatus()` y `setPhoneNumberPublicKey()` en `FlowService` para la gestión y carga de la llave asimétrica (`business_public_key`) en WhatsApp Business, requerida obligatoriamente para desencriptar peticiones de Data Exchange hacia tu Webhook.
+
+## [1.1.50] - 2026-04-06
+
+### Fixed
+- **Migraciones de Estadísticas de Flujo**: Añadido `Schema::dropIfExists('whatsapp_flow_screen_stats')` en la migración para garantizar la idempotencia al ejecutar o refrescar las migraciones.
+
+## [1.1.49] - 2026-04-06
+
+### Fixed
+- **Migraciones de Estadísticas de Flujo**: Corrección en nombre de clave única compuesta en la migración `create_whatsapp_flow_screen_stats_table` para no exceder el límite de 64 caracteres de MySQL (`flow_screen_stats_unique`).
+
+## [1.1.48] - 2026-04-06
+
+### Fixed
+- **Configuración de Acciones de Flow**: Corrección en migración de `whatsapp_flow_actions` permitiendo que el campo `config` sea nulo a nivel base de datos, y establecimiento de default attribute a array vacío en el modelo `WhatsappFlowAction`.
+
+## [1.1.47] - 2026-04-06
+
+### Added
+- **Arquitectura de WhatsApp Flows Endpoint (Data Channel):** Implementación integral para habilitar los endpoints de flujos (Data Exchange).
+  - Interfaces `FlowEndpointHandlerInterface` y `FlowActionHandlerInterface`.
+  - `FlowEndpointRouter` y `FlowActionDispatcher` para delegar de forma dinámica las peticiones según la configuración persistida en el WABA.
+  - Modelos `WhatsappFlowEndpointConfig` y `WhatsappFlowAction`.
+- **Persistencia de Sesiones y Analíticas de Flow:**
+  - Migraciones para enriquecimiento de `whatsapp_flow_sessions` (datos de contexto y finalización stateful) y `whatsapp_flow_responses`.
+  - Tabla de métricas de pantallas: `whatsapp_flow_screen_stats` y modelo `WhatsappFlowScreenStats` para monitorizar abandono y éxito en multi-step flows.
+  - Captura y registro de sesión desde Webhooks de manera pasiva (`FlowSessionService`).
+- **Evento de Sistema:** Emisión automática del evento `FlowSessionCompleted` desde `BaseWebhookProcessor` al culminar el ciclo nfm_reply final.
+- **Integración fluida en `TemplateEditor`:** Extensión del método `addFlowButton()` con parámetros explícitos para soporte `DATA_EXCHANGE`, `navigateScreen` y `flowIcon`.
+- **Integración de Servicios y Providers:** Carga de los nuevos controladores, inyector de dependencias (IoC/DI bindings) en `WhatsappServiceProvider` y configuración extendida en `whatsapp.php`.
+
 ## [1.1.46] - 2026-04-05
 
 ### Added

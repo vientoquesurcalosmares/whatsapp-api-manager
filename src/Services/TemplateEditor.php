@@ -422,21 +422,22 @@ class TemplateEditor extends TemplateBuilder
     /**
      * Agrega un botón de tipo FLOW a la plantilla.
      *
-     * @param string $text Texto visible del botón
-     * @param string $flowId ID del flujo configurado en Meta
-     * @param string|null $flowToken Token opcional para el flujo
+     * @param string      $text           Texto visible del botón (máx. 25 caracteres)
+     * @param string      $flowId         wa_flow_id del flujo en Meta
+     * @param string|null $navigateScreen ID de la pantalla inicial (requerido si flowAction = NAVIGATE)
+     * @param string      $flowAction     'NAVIGATE' (por defecto) o 'DATA_EXCHANGE'
+     * @param string|null $flowIcon       Icono opcional: DEFAULT, DOCUMENT, PROMOTION, REVIEW
      * @return self
      * @throws TemplateComponentException
      */
-    /*public function addFlowButton(string $text, string $flowId, ?string $flowToken = null): self
+    public function addFlowButton(string $text, string $flowId, ?string $navigateScreen = null, string $flowAction = 'NAVIGATE', ?string $flowIcon = null): self
     {
-        //Wil, comenté este código porque da error, para que luego lo revises y veas que era lo que quería hacer para este método, saludos!
         if ($this->buttonCount >= 10) {
             throw new TemplateComponentException('No se pueden agregar más de 10 botones a una plantilla.');
         }
 
-        return parent::addFlowButton($text, $flowId, $flowToken);
-    }*/
+        return parent::addFlowButton($text, $flowId, $navigateScreen, $flowAction, $flowIcon);
+    }
 
     public function getButtons(): array
     {

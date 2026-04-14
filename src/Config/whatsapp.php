@@ -77,6 +77,13 @@ return [
 
         'flow_session' => \ScriptDevelop\WhatsappManager\Models\WhatsappFlowSession::class,
 
+        // Modelos de recolección de datos de Flows (agregados en flow-data-collection)
+        'flow_endpoint_config' => \ScriptDevelop\WhatsappManager\Models\WhatsappFlowEndpointConfig::class,
+
+        'flow_action' => \ScriptDevelop\WhatsappManager\Models\WhatsappFlowAction::class,
+
+        'flow_screen_stats' => \ScriptDevelop\WhatsappManager\Models\WhatsappFlowScreenStats::class,
+
         //Números de celular configurados en Whatsapp Business
         'phone_number' => \ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber::class,
 
@@ -514,8 +521,36 @@ return [
     | https://developers.facebook.com/docs/whatsapp/flows/changelogs/
     */
     'flows' => [
-        'default_version' => env('WHATSAPP_FLOWS_DEFAULT_VERSION', '7.3'),
-        'data_api_version' => env('WHATSAPP_FLOWS_DATA_API_VERSION', '3.0'),
+        'default_version'   => env('WHATSAPP_FLOWS_DEFAULT_VERSION', '7.3'),
+        'data_api_version'  => env('WHATSAPP_FLOWS_DATA_API_VERSION', '3.0'),
+
+        // ── Flow Data Collection ───────────────────────────────────────────────
+        // Habilita la recolección automática de respuestas al recibir nfm_reply
+        'collect_responses'    => env('WHATSAPP_FLOWS_COLLECT_RESPONSES', true),
+
+        // TTL de sesiones activas sin completar (en horas)
+        'session_ttl_hours'    => env('WHATSAPP_FLOWS_SESSION_TTL', 24),
+
+        // Timeout para el proxy webhook en milisegundos (máx 8000 por límite Meta)
+        'endpoint_timeout'     => env('WHATSAPP_FLOWS_ENDPOINT_TIMEOUT', 6000),
+
+        // Crea sesiones automáticamente al recibir nfm_reply
+        // Si false, solo usa sesiones proactivas (creadas antes de enviar el flow)
+        'auto_create_sessions' => env('WHATSAPP_FLOWS_AUTO_SESSIONS', true),
+
+        // Handlers de acciones registrados.
+        // El proyecto puede sobrescribir o agregar nuevos tipos en su config/whatsapp.php.
+        'action_handlers' => [
+            // 'webhook_post'       => \App\Flows\Actions\WebhookPostHandler::class,
+            // 'email_notification' => \App\Flows\Actions\EmailNotificationHandler::class,
+            // 'internal_event'     => \App\Flows\Actions\InternalEventHandler::class,
+        ],
+
+        // Handlers custom registrados por nombre (uso futuro para FlowEndpointRouter::resolveHandler)
+        'flow_handlers' => [
+            // 'mi_handler' => \App\Flows\MiHandler::class,
+        ],
+        // ── Fin Flow Data Collection ───────────────────────────────────────────
     ],
 
     /**
