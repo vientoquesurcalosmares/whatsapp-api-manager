@@ -24,9 +24,20 @@ class WhatsappFlowResponse extends Model
         'element_name',
         'response_value',
         'responded_at',
+        // Campos de enriquecimiento (migration 2026_04_06_000002)
+        'phone_number_id',
+        'contact_id',
+        'screen_name',
+        'field_type',
+        'raw_value',
+        'display_value',
     ];
 
     protected $dates = ['responded_at'];
+
+    // -------------------------------------------------------------------------
+    // Relaciones base
+    // -------------------------------------------------------------------------
 
     public function session()
     {
@@ -36,5 +47,48 @@ class WhatsappFlowResponse extends Model
     public function screen()
     {
         return $this->belongsTo(config('whatsapp.models.flow_screen'), 'screen_id', 'screen_id');
+    }
+
+    // -------------------------------------------------------------------------
+    // Relaciones nuevas (ownership)
+    // -------------------------------------------------------------------------
+
+    public function phoneNumber()
+    {
+        return $this->belongsTo(
+            config('whatsapp.models.phone_number'),
+            'phone_number_id',
+            'phone_number_id'
+        );
+    }
+
+    public function contact()
+    {
+        return $this->belongsTo(
+            config('whatsapp.models.contact'),
+            'contact_id',
+            'contact_id'
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // Métodos helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the best available human-readable value for this response.
+     * Priority: display_value → raw_value → empty string.
+     */
+    public function getFormattedValue(): string
+    {
+        if ($this->display_value !== null) {
+            return $this->display_value;
+        }
+
+        if ($this->raw_value !== null) {
+            return $this->raw_value;
+        }
+
+        return '';
     }
 }

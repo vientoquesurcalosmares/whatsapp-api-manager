@@ -98,6 +98,55 @@ class WhatsappServiceProvider extends ServiceProvider
             return new FlowCryptoService();
         });
 
+        // ── Flow Data Collection Services ─────────────────────────────────────
+        $this->app->singleton(
+            \ScriptDevelop\WhatsappManager\Services\Flows\FlowSessionService::class,
+            function ($app) {
+                return new \ScriptDevelop\WhatsappManager\Services\Flows\FlowSessionService();
+            }
+        );
+
+        $this->app->singleton(
+            \ScriptDevelop\WhatsappManager\Services\Flows\FlowResponseService::class,
+            function ($app) {
+                return new \ScriptDevelop\WhatsappManager\Services\Flows\FlowResponseService();
+            }
+        );
+
+        $this->app->singleton(
+            \ScriptDevelop\WhatsappManager\Services\Flows\Handlers\AutoFlowHandler::class,
+            function ($app) {
+                return new \ScriptDevelop\WhatsappManager\Services\Flows\Handlers\AutoFlowHandler(
+                    $app->make(\ScriptDevelop\WhatsappManager\Services\Flows\FlowSessionService::class)
+                );
+            }
+        );
+
+        $this->app->singleton(
+            \ScriptDevelop\WhatsappManager\Services\Flows\Handlers\WebhookProxyHandler::class,
+            function ($app) {
+                return new \ScriptDevelop\WhatsappManager\Services\Flows\Handlers\WebhookProxyHandler();
+            }
+        );
+
+        $this->app->singleton(
+            \ScriptDevelop\WhatsappManager\Services\Flows\FlowEndpointRouter::class,
+            function ($app) {
+                return new \ScriptDevelop\WhatsappManager\Services\Flows\FlowEndpointRouter(
+                    $app->make(\ScriptDevelop\WhatsappManager\Services\Flows\FlowSessionService::class)
+                );
+            }
+        );
+
+        // bind (no singleton) — ejecuta side effects externos, mejor no compartir estado
+        $this->app->bind(
+            \ScriptDevelop\WhatsappManager\Services\Flows\FlowActionDispatcher::class,
+            function ($app) {
+                return new \ScriptDevelop\WhatsappManager\Services\Flows\FlowActionDispatcher();
+            }
+        );
+        // ── Fin Flow Data Collection Services ────────────────────────────────
+
         // Registrar el procesador de webhook con valor por defecto
         $this->app->bind(
             \ScriptDevelop\WhatsappManager\Contracts\WebhookProcessorInterface::class,
