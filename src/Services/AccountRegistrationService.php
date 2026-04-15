@@ -62,16 +62,10 @@ class AccountRegistrationService
             // 1b. Intentar obtener el método de pago (requiere permisos BSP — opcional)
             $this->syncPrimaryFundingId($data['api_token'], $data['business_id'], $account);
 
-            if( !$subscribedFields ) {
-                $subscribedFields = config('whatsapp_manager.default_webhook_fields', []);
-            }
-
-            if( !empty($subscribedFields) ){
-                // 2. Suscribir aplicación a webhooks (usando campos proporcionados o de configuración)
-                $this->whatsappService
-                    ->forAccount($account->whatsapp_business_id)
-                    ->subscribeApp($data['business_id'], $subscribedFields);
-            }
+            // 2. Suscribir aplicación a webhooks (usando campos proporcionados o de configuración)
+            $this->whatsappService
+                ->forAccount($account->whatsapp_business_id)
+                ->subscribeApp($subscribedFields);
 
             // 3. Registrar números telefónicos
             $this->registerPhoneNumbers($account);
