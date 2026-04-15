@@ -62,9 +62,9 @@ class AccountRegistrationService
             // 1b. Intentar obtener el método de pago (requiere permisos BSP — opcional)
             $this->syncPrimaryFundingId($data['api_token'], $data['business_id'], $account);
 
+
             // 2. Suscribir aplicación a webhooks (usando campos proporcionados o de configuración)
-            $this->whatsappService
-                ->forAccount($account->whatsapp_business_id)
+            $this->whatsappService->forAccount($account->whatsapp_business_id)
                 ->subscribeApp($subscribedFields);
 
             // 3. Registrar números telefónicos
