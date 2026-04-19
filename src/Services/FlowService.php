@@ -288,7 +288,7 @@ class FlowService
             Log::channel('whatsapp')->error('Error al publicar el flujo: ' . $e->getMessage(), [
                 'flow_id' => $flow->wa_flow_id,
             ]);
-            throw new \RuntimeException('Error al publicar el flujo: ' . $e->getMessage());
+            throw $e;
         }
     }
 
