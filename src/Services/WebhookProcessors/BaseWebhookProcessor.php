@@ -1429,6 +1429,17 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         $statusValue = $status['status'] ?? null;
         $timestamp   = $status['timestamp'] ?? null;
         $errorCode   = null;
+
+        if( !empty($message->delivered_at) ){
+            $statusValue = 'delivered';
+        }
+        if( !empty($message->read_at) ){
+            $statusValue = 'read';
+        }
+        if( !empty($message->failed_at) ){
+            $statusValue = 'failed';
+        }
+
         $updateData  = ['status' => $statusValue];
 
         // Guardar BSUID del destinatario si llega en el status (presente en delivered/read cuando se envió por BSUID)
