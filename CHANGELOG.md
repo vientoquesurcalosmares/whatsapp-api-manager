@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.57] - 2026-04-25
+
+### Added
+- **AutoFlowHandler**: Emisión del evento `FlowSessionCompleted` al cerrar un flujo por falta de siguiente pantalla.
+
 ## [1.1.56] - 2026-04-19
 ### Added
 - Nuevo método `FlowService::updateFlow()` para sincronizar metadatos (como `endpoint_uri`) con la API de Meta.
