@@ -5,6 +5,7 @@ namespace ScriptDevelop\WhatsappManager\Services\Flows\Handlers;
 use Illuminate\Support\Facades\Log;
 use ScriptDevelop\WhatsappManager\Contracts\FlowEndpointHandlerInterface;
 use ScriptDevelop\WhatsappManager\Models\WhatsappFlowEndpointConfig;
+use ScriptDevelop\WhatsappManager\Events\FlowSessionCompleted;
 use ScriptDevelop\WhatsappManager\Services\Flows\FlowResponse;
 use ScriptDevelop\WhatsappManager\Services\Flows\FlowSessionService;
 
@@ -75,6 +76,10 @@ class AutoFlowHandler implements FlowEndpointHandlerInterface
             }
 
             // Sin siguiente pantalla → cerrar flow
+            if (isset($session)) {
+                event(new FlowSessionCompleted($session, $data));
+            }
+
             return FlowResponse::complete([]);
         }
 
