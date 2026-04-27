@@ -240,6 +240,31 @@ class FlowService
     }
 
     /**
+     * Actualiza los metadatos de un flujo en Meta (p. ej. endpoint_uri).
+     *
+     * @param Model $flow El flujo que se desea actualizar.
+     * @param array $data Los datos a actualizar (p. ej. ['endpoint_uri' => '...']).
+     * @return array La respuesta de la API de Meta.
+     * @throws InvalidArgumentException Si el flujo no tiene un ID de Meta válido.
+     */
+    public function updateFlow(Model $flow, array $data): array
+    {
+        if (empty($flow->wa_flow_id)) {
+            throw new InvalidArgumentException('El flujo no tiene un ID de Meta válido.');
+        }
+
+        $endpoint = Endpoints::build(Endpoints::UPDATE_FLOW_METADATA, [
+            'flow_id' => $flow->wa_flow_id,
+        ]);
+
+        $headers = [
+            'Authorization' => 'Bearer ' . $flow->whatsappBusinessAccount->api_token,
+        ];
+
+        return $this->apiClient->request('POST', $endpoint, [], $data, [], $headers);
+    }
+
+    /**
      * Publica un flujo en la API de WhatsApp.
      *
      * @param Model $flow El flujo que se desea publicar.
@@ -288,7 +313,7 @@ class FlowService
             Log::channel('whatsapp')->error('Error al publicar el flujo: ' . $e->getMessage(), [
                 'flow_id' => $flow->wa_flow_id,
             ]);
-            throw new \RuntimeException('Error al publicar el flujo: ' . $e->getMessage());
+            throw $e;
         }
     }
 
