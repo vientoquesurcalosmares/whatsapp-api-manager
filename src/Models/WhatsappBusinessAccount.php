@@ -36,6 +36,7 @@ class WhatsappBusinessAccount extends Model
         'messaging_limit_value',
         'primary_funding_id',
         'payment_issue_detected_at',
+        'meta_business_id',
     ];
 
     protected $casts = [

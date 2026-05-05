@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.69] - 2026-05-05
+
+### Added
+- Migration: `meta_business_id` column + index on `whatsapp_business_accounts` table. Enables linking WABAs to specific Meta Business Managers for catalog-WhatsApp connection filtering.
+- Model: `meta_business_id` added to `WhatsappBusinessAccount::$fillable`
+
 ## [1.1.68] - 2026-04-30
 
 ### Fixed
