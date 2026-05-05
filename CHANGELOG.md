@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.70] - 2026-05-05
+
+### Added
+- `WhatsappService::getBusinessAccount()`: added `owner_business_id` to API fields request. This field returns the Meta Business Manager ID that owns the WABA.
+- `AccountRegistrationService::upsertBusinessAccount()`: saves `owner_business_id` as `meta_business_id` on WABA records, enabling catalog-WhatsApp linking by Business Manager.
+
 ## [1.1.69] - 2026-05-05
 
 ### Added

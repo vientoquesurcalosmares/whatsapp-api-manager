@@ -85,7 +85,7 @@ class WhatsappService
             Endpoints::GET_BUSINESS_ACCOUNT,
             ['whatsapp_business_id' => $whatsappBusinessId],
             null,
-            ['fields' => 'id,name,timezone_id,currency,country,status,whatsapp_business_manager_messaging_limit,message_template_namespace'],
+            ['fields' => 'id,name,timezone_id,currency,country,status,owner_business_id,whatsapp_business_manager_messaging_limit,message_template_namespace'],
             $this->getAuthHeaders()
         );
 
