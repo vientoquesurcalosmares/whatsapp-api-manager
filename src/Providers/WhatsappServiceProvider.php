@@ -169,10 +169,19 @@ class WhatsappServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        // Cargar traducciones del paquete (src/Lang)
+        $this->loadTranslationsFrom(__DIR__ . '/../Lang', 'whatsapp');
+        $this->loadJsonTranslationsFrom(__DIR__ . '/../Lang');
+
         // Publicar archivos de configuración
         $this->publishes([
             __DIR__ . '/../Config/whatsapp.php' => config_path('whatsapp.php'),
         ], 'whatsapp-config');
+
+        // Publicar archivos de idioma del paquete
+        $this->publishes([
+            __DIR__ . '/../Lang' => lang_path('vendor/whatsapp'),
+        ], 'whatsapp-lang');
 
         // Publicar migraciones
         $this->publishes([
