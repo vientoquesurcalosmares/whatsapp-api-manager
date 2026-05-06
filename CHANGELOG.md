@@ -7,6 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.71] - 2026-05-05
+
+### Fixed
+- Revert `owner_business_id` from `getBusinessAccount()` fields — this field doesn't exist in the REST API `GET /{waba_id}`. It's only available in webhook payloads. Prevents `(#100) Tried accessing nonexisting field` error.
+
+## [1.1.70] - 2026-05-05
+
+### Added
+- `WhatsappService::getBusinessAccount()`: added `owner_business_id` to API fields request. This field returns the Meta Business Manager ID that owns the WABA.
+- `AccountRegistrationService::upsertBusinessAccount()`: saves `owner_business_id` as `meta_business_id` on WABA records, enabling catalog-WhatsApp linking by Business Manager.
+
+## [1.1.69] - 2026-05-05
+
+### Added
+- Migration: `meta_business_id` column + index on `whatsapp_business_accounts` table. Enables linking WABAs to specific Meta Business Managers for catalog-WhatsApp connection filtering.
+- Model: `meta_business_id` added to `WhatsappBusinessAccount::$fillable`
+
+## [1.1.68] - 2026-04-30
+
+### Fixed
+- **Evento `TemplateMessageSent` envuelto en try/catch**: Un fallo en el listener `CreateFlowSessionOnTemplateSent` (u otro listener registrado) ya no rompe la respuesta HTTP al frontend. El mensaje ya fue enviado a Meta — el error solo se loguea como warning.
+
+## [1.1.67] - 2026-04-30
+
+### Added
+- **Sesiones proactivas de Flow al enviar templates**: Al enviar un template con botón FLOW, el paquete ahora crea automáticamente una `WhatsappFlowSession` con `flow_id` correcto antes de que el usuario abra el flow. Esto garantiza que cuando llegue el `nfm_reply`, `findOrCreateSession` encuentre la sesión existente por `flow_token` y las respuestas queden vinculadas al flow correcto en la vista de datos.
+- Nuevo evento `TemplateMessageSent` despachado al final de `TemplateMessageBuilder::sendMessage()` tras respuesta exitosa de Meta.
+- Nuevo listener interno `CreateFlowSessionOnTemplateSent` que detecta botones FLOW en el payload y llama a `FlowSessionService::createProactive()` automáticamente.
+- Métodos helper públicos en `TemplateMessageBuilder`: `getPhone()`, `getContact()`, `getRecipientPhone()`, `getFlowButtons()`, `getButtonToken()`.
+- Constructor de `TemplateMessageSent` actualizado para aceptar el builder + payload + response (backward compatible con el modo array simple).
+
+### Changed
+- `TemplateMessageSent` ahora soporta dos modos de construcción: array simple (legacy) y builder + payload + response (nuevo).
+
+## [1.1.66] - 2026-04-29
+
+### Added
+- Soporte para webhook `PHONE_NUMBER_REMOVED` en `BaseWebhookProcessor.handleAccountUpdate()`
+- Método `handlePhoneNumberRemoved()`: soft-deletea el registro local cuando Meta elimina un número
+
+### Fixed
+- Los números eliminados desde Meta ya no caen en "Unhandled account update event"
+- Al recibir `PHONE_NUMBER_REMOVED`, se marca `status=removed`, `fully_removed_at` y se aplica soft-delete
+- Previene que números desvinculados interfieran con health checks y publicación de flows
+
+## [1.1.65] - 2026-04-28
+
+### Fixed
+- **FlowEditor**: Mejora en el procesamiento del JSON del editor visual para asegurar que los objetos se traten como objetos (`stdClass`) y no como arreglos asociativos al validar la pantalla terminal. Esto garantiza que los objetos vacíos `{}` se preserven correctamente en el JSON final enviado a Meta.
+
+## [1.1.64] - 2026-04-28
+
+### Fixed
+- **FlowBuilder & FlowEditor**: Ahora se asegura automáticamente que al menos una pantalla terminal tenga la propiedad `success: true`, cumpliendo con los requisitos de validación de Meta ("At least one terminal screen must have property 'success' set as true").
+
+## [1.1.63] - 2026-04-28
+
+### Fixed
+- **FlowBuilder::save()**: Ahora establece `application_id`, `application_name` y `application_link` al crear un flow localmente usando `META_CLIENT_ID` de la configuración. Esto previene el error "You need to connect a Meta app to the Flow before you can publish it" cuando se publican flows creados desde la aplicación.
+
+## [1.1.62] - 2026-04-28
+- Version bump.
+
+## [1.1.58] - 2026-04-27
+
+### Fixed
+- **WhatsappFlow Model**: Added `setStatusAttribute` mutator to normalize status to lowercase before saving, preventing PostgreSQL check constraint violations when Meta returns uppercase values (e.g., `PUBLISHED`).
+- **FlowService**: `storeOrUpdateFlow()` now uses `strtolower()` on status from Meta API. Also fixed hardcoded `PUBLISHED`/`DEPRECATED` values to use lowercase.
+
+### Changed
+- **Constraint Compatibility**: Enum in migration uses lowercase values only; normalization is handled by the model mutator for cross-database compatibility (MySQL and PostgreSQL).
+
 ## [1.1.57] - 2026-04-25
 
 ### Added

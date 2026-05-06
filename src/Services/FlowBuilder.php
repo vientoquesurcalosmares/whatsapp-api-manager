@@ -127,6 +127,9 @@ class FlowBuilder
             $whatsappScreens[] = $this->convertToWhatsappScreen($screen);
         }
 
+        // Ensure at least one terminal screen has success:true (Meta requirement)
+        $whatsappScreens = $this->ensureSuccessOnTerminal($whatsappScreens);
+
         $this->flowData['json_structure'] = [
             'version' => config('whatsapp.flows.default_version', '7.3'),
             'data_api_version' => config('whatsapp.flows.data_api_version', '3.0'),
@@ -283,12 +286,16 @@ class FlowBuilder
             ], [], ['Authorization' => 'Bearer ' . $this->account->api_token]);
 
             // 3. Crear registro local
+            $metaAppId = config('whatsapp.meta_auth.client_id');
             $flow = WhatsappModelResolver::flow()->create([
                 'whatsapp_business_account_id' => $this->account->whatsapp_business_id,
                 'wa_flow_id' => $flowId,
                 'name' => $flowData['name'],
                 'json_structure' => $flowData['json_structure'],
-                'status' => 'DRAFT'
+                'status' => 'DRAFT',
+                'application_id' => $metaAppId,
+                'application_name' => config('app.name', 'WhatsApp Business'),
+                'application_link' => 'https://business.facebook.com/apps/' . $metaAppId,
             ]);
 
             $this->flowService->syncScreensAndElements($flow, $this->screens);
@@ -299,5 +306,59 @@ class FlowBuilder
             Log::channel('whatsapp')->error('Error en FlowBuilder: ' . $e->getMessage());
             throw $e;
         }
+    }
+
+    /**
+     * Asegura que al menos una pantalla terminal tenga success:true.
+     *
+     * Meta requiere: "At least one terminal screen must have property 'success' set as true."
+     * Si ninguna pantalla tiene success:true, se lo asignamos a la última pantalla terminal,
+     * o a la última pantalla si no hay ninguna terminal.
+     *
+     * @param array $screens Arreglo de pantallas en formato WhatsApp
+     * @return array Pantallas con success:true garantizado
+     */
+    protected function ensureSuccessOnTerminal(array $screens): array
+    {
+        if (empty($screens)) {
+            return $screens;
+        }
+
+        // Verificar si alguna pantalla ya tiene success:true
+        $hasSuccessScreen = false;
+        foreach ($screens as $screen) {
+            if (($screen['success'] ?? false) === true) {
+                $hasSuccessScreen = true;
+                break;
+            }
+        }
+
+        // Si ya hay una pantalla con success:true, no modificar
+        if ($hasSuccessScreen) {
+            return $screens;
+        }
+
+        // Buscar pantallas con terminal:true
+        $terminalIndexes = [];
+        foreach ($screens as $index => $screen) {
+            if (($screen['terminal'] ?? false) === true) {
+                $terminalIndexes[] = $index;
+            }
+        }
+
+        // Agregar success:true a la última pantalla terminal, o a la última pantalla
+        if (!empty($terminalIndexes)) {
+            $lastTerminalIndex = end($terminalIndexes);
+            $screens[$lastTerminalIndex]['success'] = true;
+        } else {
+            // No hay pantallas con terminal:true, marcar la última como terminal y success
+            $lastIndex = count($screens) - 1;
+            $screens[$lastIndex]['terminal'] = true;
+            $screens[$lastIndex]['success'] = true;
+        }
+
+        Log::channel('whatsapp')->info('FlowBuilder: success:true agregado a última pantalla terminal');
+
+        return $screens;
     }
 }
