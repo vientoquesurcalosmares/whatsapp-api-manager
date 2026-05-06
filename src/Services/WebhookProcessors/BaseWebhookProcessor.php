@@ -23,7 +23,6 @@ use ScriptDevelop\WhatsappManager\Events\UserIdUpdated;
 use ScriptDevelop\WhatsappManager\Services\Flows\FlowMediaService;
 use ScriptDevelop\WhatsappManager\Services\TemplateMediaCompressionService;
 use ScriptDevelop\WhatsappManager\Jobs\CompressTemplateMediaJob;
-use ScriptDevelop\WhatsappManager\Models\WhatsappPhoneNumber;
 
 class BaseWebhookProcessor implements WebhookProcessorInterface
 {
@@ -3185,7 +3184,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             return;
         }
 
-        $phone = WhatsappPhoneNumber::where('display_phone_number', $displayPhoneNumber)->first();
+        $phone = WhatsappModelResolver::phone_number()->where('display_phone_number', $displayPhoneNumber)->first();
 
         if (!$phone) {
             Log::channel('whatsapp')->warning('📵 [ACCOUNT] PHONE_NUMBER_REMOVED: número no encontrado en DB', [
