@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('whatsapp_business_accounts', function (Blueprint $table) {
             if (!Schema::hasColumn('whatsapp_business_accounts', 'meta_business_id')) {
-                $table->string('meta_business_id')->nullable()->after('company_id');
+                $table->string('meta_business_id')->nullable()->after('whatsapp_business_id');
                 $table->index('meta_business_id');
             }
         });
