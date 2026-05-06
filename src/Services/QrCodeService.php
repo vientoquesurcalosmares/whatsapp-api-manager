@@ -94,7 +94,7 @@ class QrCodeService
 
             return WhatsappModelResolver::qr_code()->where('phone_number_id', $phone->phone_number_id)->get();
         } catch (Exception $e) {
-            Log::error("QrCodeService syncAll error: " . $e->getMessage());
+            Log::channel('whatsapp')->error("QrCodeService syncAll error: " . $e->getMessage());
             return null;
         }
     }
@@ -133,7 +133,7 @@ class QrCodeService
 
             return $qrModel->fresh();
         } catch (Exception $e) {
-            Log::error("QrCodeService create error: " . $e->getMessage());
+            Log::channel('whatsapp')->error("QrCodeService create error: " . $e->getMessage());
             return null;
         }
     }
@@ -181,7 +181,7 @@ class QrCodeService
 
             return $qrModel->fresh();
         } catch (Exception $e) {
-            Log::error("QrCodeService get error: " . $e->getMessage());
+            Log::channel('whatsapp')->error("QrCodeService get error: " . $e->getMessage());
             return null;
         }
     }
@@ -220,7 +220,7 @@ class QrCodeService
 
             return $this->get($phoneNumberId, $code);
         } catch (Exception $e) {
-            Log::error("QrCodeService update error: " . $e->getMessage());
+            Log::channel('whatsapp')->error("QrCodeService update error: " . $e->getMessage());
             return null;
         }
     }
@@ -246,14 +246,14 @@ class QrCodeService
                 ->first();
 
             if (!$qrModel || empty($qrModel->qr_image_url)) {
-                Log::warning("QrCodeService downloadImage: qr_image_url no disponible para code={$code}. Llamá a get() o create() primero.");
+                Log::channel('whatsapp')->warning("QrCodeService downloadImage: qr_image_url no disponible para code={$code}. Llamá a get() o create() primero.");
                 return null;
             }
 
             $response = Http::timeout(15)->get($qrModel->qr_image_url);
 
             if (!$response->successful()) {
-                Log::warning("QrCodeService downloadImage: descarga fallida.", [
+                Log::channel('whatsapp')->warning("QrCodeService downloadImage: descarga fallida.", [
                     'url'    => $qrModel->qr_image_url,
                     'status' => $response->status(),
                 ]);
@@ -290,7 +290,7 @@ class QrCodeService
 
             return $qrModel->fresh();
         } catch (Exception $e) {
-            Log::error("QrCodeService downloadImage error: " . $e->getMessage());
+            Log::channel('whatsapp')->error("QrCodeService downloadImage error: " . $e->getMessage());
             return null;
         }
     }
@@ -328,7 +328,7 @@ class QrCodeService
             }
             return false;
         } catch (Exception $e) {
-            Log::error("QrCodeService delete error: " . $e->getMessage());
+            Log::channel('whatsapp')->error("QrCodeService delete error: " . $e->getMessage());
             return false;
         }
     }

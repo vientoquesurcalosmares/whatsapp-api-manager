@@ -123,7 +123,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
         } catch (\Exception $e) {
             $this->logError("💥 Error general: " . $e->getMessage());
             if ($this->option('show-errors')) {
-                Log::error('WhatsApp Analytics Cron Error', [
+                Log::channel('whatsapp')->error('WhatsApp Analytics Cron Error', [
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
@@ -234,7 +234,7 @@ class WhatsappBusinessGetGeneralTemplateAnalyticsCommand extends Command
 
         } catch (\Exception $e) {
             if ($this->option('show-errors')) {
-                Log::error('WhatsApp Analytics Account Processing Error', [
+                Log::channel('whatsapp')->error('WhatsApp Analytics Account Processing Error', [
                     'account_id' => $account->whatsapp_business_id,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
