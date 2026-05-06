@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.71] - 2026-05-05
+
+### Fixed
+- Revert `owner_business_id` from `getBusinessAccount()` fields — this field doesn't exist in the REST API `GET /{waba_id}`. It's only available in webhook payloads. Prevents `(#100) Tried accessing nonexisting field` error.
+
 ## [1.1.70] - 2026-05-05
 
 ### Added
