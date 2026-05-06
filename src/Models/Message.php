@@ -5,6 +5,7 @@ namespace ScriptDevelop\WhatsappManager\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
@@ -219,6 +220,46 @@ class Message extends Model
             ];
         }
         return $content;
+    }
+
+    /**
+     * un getter que obtendrá el campo details_error y primeramente verifica si el campo code_error tiene un valor entonces buscará en el archivo de idioma correspondiente el mensaje de error traducido, si existe una traducción para ese código de error entonces devolverá el mensaje traducido, si no existe la traducción entonces devolverá el valor original del campo details_error.
+     * @param string $value
+     * @return string|null
+     */
+    public function getDetailsErrorAttribute($value): ?string
+    {
+        if( empty($this->code_error) ){
+            return $value;
+        }
+
+        $langKeys = [
+            'whatsapp_codes.'.$this->code_error,
+            'whatsapp::whatsapp_codes.'.$this->code_error,
+        ];
+
+        $langKey = collect($langKeys)->first(function ($key) {
+            return Lang::has($key);
+        });
+
+        if( empty($langKey) ){
+            return $value;
+        }
+
+        $errorTranslation = __($langKey);
+
+        if( !is_array($errorTranslation) ){
+            return $value;
+        }
+
+        $translatedMessage = collect([
+                Arr::get($errorTranslation, 'detail'),
+                Arr::get($errorTranslation, 'solution'),
+            ])
+            ->filter()
+            ->implode(' ');
+
+        return $translatedMessage ?: $value;
     }
 
     public function contact()

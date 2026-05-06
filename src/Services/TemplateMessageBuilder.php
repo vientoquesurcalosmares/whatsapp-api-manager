@@ -649,7 +649,7 @@ class TemplateMessageBuilder
 
         foreach ($this->templateStructure['by_type']['BUTTONS']['buttons'] as $index => $button) {
             $type = strtoupper($button['type'] ?? '');
-            
+
             if ($type === 'URL') {
                 $needsParams = preg_match('/\{\{\d+\}\}/', $button['url'] ?? '');
 
