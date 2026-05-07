@@ -1427,22 +1427,48 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
     protected function updateMessageStatus(Model $message, array $status): Model
     {
         $statusValue = $status['status'] ?? null;
-        $timestamp   = $status['timestamp'] ?? null;
+        $timestamp   = $status['timestamp'] ?? now()->timestamp;
         $errorCode   = null;
+        $updateData  = [];
 
-        if( empty($statusValue) ){
-            if( !empty($message->delivered_at) ){
-                $statusValue = 'delivered';
-            }
-            if( !empty($message->read_at) ){
-                $statusValue = 'read';
-            }
-            if( !empty($message->failed_at) ){
-                $statusValue = 'failed';
-            }
+        if ($timestamp) {
+            $date = \Carbon\Carbon::createFromTimestamp($timestamp);
+
+            // Solo guardar el timestamp si el campo aún no tiene valor en la DB.
+            // Los webhooks pueden llegar duplicados o desordenados; el primer registro
+            // cronológico de cada evento es el canónico y no debe sobreescribirse.
+            match ($statusValue) {
+                'delivered' => empty($message->delivered_at) ? $updateData['delivered_at'] = $date : null,
+                'read'      => empty($message->read_at)      ? $updateData['read_at']      = $date : null,
+                'failed'    => empty($message->failed_at)    ? $updateData['failed_at']    = $date : null,
+                default     => null,
+            };
         }
 
-        $updateData  = ['status' => $statusValue];
+        // Prioridad de estados: failed(4) > read(3) > delivered(2) > sent(1)
+        // Los webhooks pueden llegar desordenados; nunca debemos degradar a un estado
+        // de menor prioridad que el ya almacenado en la base de datos.
+        $statusPriority = [
+            'failed'    => 4,
+            'read'      => 3,
+            'delivered' => 2,
+            'sent'      => 1,
+        ];
+
+        $effectiveDbStatus = null;
+        if (!empty($message->failed_at))       $effectiveDbStatus = 'failed';
+        elseif (!empty($message->read_at))     $effectiveDbStatus = 'read';
+        elseif (!empty($message->delivered_at)) $effectiveDbStatus = 'delivered';
+
+        $incomingPriority = $statusPriority[$statusValue] ?? 0;
+        $dbPriority       = $statusPriority[$effectiveDbStatus] ?? 0;
+
+        // Solo reemplazamos el status si el que llega tiene igual o mayor prioridad
+        if ($dbPriority > $incomingPriority) {
+            $statusValue = $effectiveDbStatus;
+        }
+
+        $updateData['status']  = $statusValue;
 
         // Guardar BSUID del destinatario si llega en el status (presente en delivered/read cuando se envió por BSUID)
         if (!empty($status['recipient_user_id'])) {
@@ -1450,17 +1476,6 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         }
         if (!empty($status['parent_recipient_user_id'])) {
             $updateData['parent_recipient_bsuid'] = $status['parent_recipient_user_id'];
-        }
-
-        if ($timestamp) {
-            $date = \Carbon\Carbon::createFromTimestamp($timestamp);
-
-            match ($statusValue) {
-                'delivered' => $updateData['delivered_at'] = $date,
-                'read' => $updateData['read_at'] = $date,
-                'failed' => $updateData['failed_at'] = $date,
-                default => null
-            };
         }
 
         // Procesar errores de forma robusta
@@ -1500,7 +1515,7 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
             'new_status' => $statusValue,
             'timestamp' => $timestamp,
             'status_payload' => $status,
-            'update_data' => $updateData,
+            'updateData' => $updateData,
         ]);
 
         $message->update($updateData);
