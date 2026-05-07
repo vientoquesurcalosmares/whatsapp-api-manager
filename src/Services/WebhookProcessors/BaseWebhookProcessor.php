@@ -1430,14 +1430,16 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
         $timestamp   = $status['timestamp'] ?? null;
         $errorCode   = null;
 
-        if( !empty($message->delivered_at) ){
-            $statusValue = 'delivered';
-        }
-        if( !empty($message->read_at) ){
-            $statusValue = 'read';
-        }
-        if( !empty($message->failed_at) ){
-            $statusValue = 'failed';
+        if( empty($statusValue) ){
+            if( !empty($message->delivered_at) ){
+                $statusValue = 'delivered';
+            }
+            if( !empty($message->read_at) ){
+                $statusValue = 'read';
+            }
+            if( !empty($message->failed_at) ){
+                $statusValue = 'failed';
+            }
         }
 
         $updateData  = ['status' => $statusValue];
@@ -1490,6 +1492,16 @@ class BaseWebhookProcessor implements WebhookProcessorInterface
                 }
             }
         }
+
+        Log::channel('whatsapp')->info('Data to update message status.', [
+            'message_id' => $message->message_id,
+            'wa_id' => $message->wa_id,
+            'current_status' => $message->status,
+            'new_status' => $statusValue,
+            'timestamp' => $timestamp,
+            'status_payload' => $status,
+            'update_data' => $updateData,
+        ]);
 
         $message->update($updateData);
         return $message;
