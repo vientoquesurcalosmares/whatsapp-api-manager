@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.72] - 2026-05-06
+
+### Fixed
+- Migration `add_meta_business_id`: changed `after('company_id')` to `after('whatsapp_business_id')` because `company_id` is added by the host project, not the package.
+
 ## [1.1.71] - 2026-05-05
 
 ### Fixed
